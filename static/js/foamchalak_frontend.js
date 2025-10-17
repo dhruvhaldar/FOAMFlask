@@ -6,6 +6,9 @@ let openfoamVersion = ""; // from server
 let plotUpdateInterval = null;
 let plotsVisible = false;
 let aeroVisible = false;
+let isUpdatingPlots = false;
+let pendingPlotUpdate = false;
+let plotsInViewport = true;
 
 // Custom color palette
 const plotlyColors = {
@@ -49,6 +52,16 @@ const plotLayout = {
     linecolor: 'rgba(0,0,0,0.1)',
     linewidth: 1
   }
+};
+
+// Plotly config for performance
+const plotConfig = {
+  responsive: true,
+  displayModeBar: false,
+  staticPlot: false,
+  scrollZoom: false,
+  doubleClick: false,
+  showTips: false
 };
 
 // Common line style
@@ -212,12 +225,34 @@ function togglePlots() {
     btn.textContent = 'Hide Plots';
     aeroBtn.classList.remove('hidden');
     startPlotUpdates();
+    setupIntersectionObserver();
   } else {
     container.classList.add('hidden');
     btn.textContent = 'Show Plots';
     aeroBtn.classList.add('hidden');
     stopPlotUpdates();
   }
+}
+
+// Setup Intersection Observer to pause updates when plots are not visible
+function setupIntersectionObserver() {
+  const plotsContainer = document.getElementById('plotsContainer');
+  
+  if (!plotsContainer || plotsContainer.dataset.observerSetup) {
+    return;
+  }
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      plotsInViewport = entry.isIntersecting;
+    });
+  }, {
+    threshold: 0.1,
+    rootMargin: '50px'
+  });
+  
+  observer.observe(plotsContainer);
+  plotsContainer.dataset.observerSetup = 'true';
 }
 
 function toggleAeroPlots() {
@@ -237,7 +272,17 @@ function toggleAeroPlots() {
 
 function startPlotUpdates() {
   updatePlots(); // Initial update
-  plotUpdateInterval = setInterval(updatePlots, 2000); // Update every 2 seconds
+  plotUpdateInterval = setInterval(() => {
+    // Skip updates if plots are not in viewport or already updating
+    if (!plotsInViewport) {
+      return;
+    }
+    if (!isUpdatingPlots) {
+      updatePlots();
+    } else {
+      pendingPlotUpdate = true;
+    }
+  }, 2000); // Update every 2 seconds
 }
 
 function stopPlotUpdates() {
@@ -249,9 +294,11 @@ function stopPlotUpdates() {
 
 function updatePlots() {
   const selectedTutorial = document.getElementById("tutorialSelect").value;
-  if (!selectedTutorial) {
+  if (!selectedTutorial || isUpdatingPlots) {
     return;
   }
+  
+  isUpdatingPlots = true;
   
   fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`)
     .then(r => r.json())
@@ -288,7 +335,7 @@ function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Pressure (Pa)'
           }
-        });
+        }, plotConfig);
       }
       
       // Update velocity plot
@@ -362,7 +409,7 @@ function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Velocity (m/s)'
           }
-        });
+        }, plotConfig);
       }
       
       // Update turbulence plot
@@ -418,7 +465,7 @@ function updatePlots() {
           autosize: true,
           showlegend: true
         };
-        Plotly.react('turbulence-plot', turbTraces, layout);
+        Plotly.react('turbulence-plot', turbTraces, layout, plotConfig);
       }
       
       // Update residuals plot
@@ -429,7 +476,14 @@ function updatePlots() {
         updateAeroPlots();
       }
     })
-    .catch(err => console.error('Error updating plots:', err));
+    .catch(err => console.error('Error updating plots:', err))
+    .finally(() => {
+      isUpdatingPlots = false;
+      if (pendingPlotUpdate) {
+        pendingPlotUpdate = false;
+        requestAnimationFrame(updatePlots);
+      }
+    });
 }
 
 function updateResidualsPlot(tutorial) {
@@ -467,7 +521,7 @@ function updateResidualsPlot(tutorial) {
           autosize: true,
           showlegend: true
         };
-        Plotly.react('residuals-plot', traces, layout);
+        Plotly.react('residuals-plot', traces, layout, plotConfig);
       }
     })
     .catch(err => console.error('Error updating residuals:', err));
@@ -514,7 +568,7 @@ function updateAeroPlots() {
           autosize: true,
           showlegend: true
         };
-        Plotly.react('cp-plot', [cpTrace], layout);
+        Plotly.react('cp-plot', [cpTrace], layout, plotConfig);
       }
       
       // Plot velocity profile
@@ -541,7 +595,7 @@ function updateAeroPlots() {
           autosize: true,
           showlegend: true
         };
-        Plotly.react('velocity-profile-plot', [velocityTrace], layout);
+        Plotly.react('velocity-profile-plot', [velocityTrace], layout, plotConfig);
       }
     })
     .catch(err => console.error('Error updating aero plots:', err));

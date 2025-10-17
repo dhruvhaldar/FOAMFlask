@@ -18,6 +18,27 @@
       }
     }
   </script>
+  
+  <!-- Performance optimizations for plots -->
+  <style>
+    /* Optimize plot containers for smooth scrolling */
+    #plotsContainer, #aeroContainer {
+      contain: layout style paint;
+      will-change: auto;
+    }
+    
+    #pressure-plot, #velocity-plot, #turbulence-plot, #residuals-plot,
+    #cp-plot, #velocity-profile-plot {
+      contain: layout style paint;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+    
+    /* Reduce repaints during scroll */
+    .js-plotly-plot {
+      will-change: auto;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen p-4 sm:p-6">
 
