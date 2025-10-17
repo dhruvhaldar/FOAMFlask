@@ -280,6 +280,10 @@ def run_case():
 
         docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
 
+        # # For OpenFOAM commands, use the full path to the binary
+        # openfoam_bin_path = f"/opt/openfoam{OPENFOAM_VERSION}/platforms/linux64GccDPInt32Opt/bin"
+        # docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && {openfoam_bin_path}/{command}'"
+
         container = docker_client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
