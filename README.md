@@ -4,9 +4,9 @@
 [![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 
-# FOAMचालक
+# FOAMFlask
 
-**FOAMChalak** is a lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser.
+**FOAMFlask** is a lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser.
 
 Pronounced `FOAMChaluck`. 
 
@@ -28,8 +28,8 @@ Pronounced `FOAMChaluck`.
 1. **Clone the repository**:
 
 ```bash
-git clone https://github.com/dhruvhaldar/FOAMChalak
-cd FOAMChalak
+git clone https://github.com/dhruvhaldar/FOAMFlask
+cd FOAMFlask
 ```
 
 2. **Install dependencies**:
@@ -66,12 +66,12 @@ Live output is shown in the console panel.
 
 ## Project Structure
 ```
-FOAMChalak/
+FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
 ├── static/
-│ ├── foamchalak_frontend.html # HTML template
-│ └── js/foamchalak_frontend.js # JavaScript logic
+│ ├── FOAMFlask_frontend.html # HTML template
+│ └── js/FOAMFlask_frontend.js # JavaScript logic
 ├── my-py-env/ # Optional: local Python virtual environment
 ├── requirements.txt # Python dependencies
 └── README.md # This file
@@ -79,4 +79,50 @@ FOAMChalak/
 
 ## License
 
-FOAMChalak is released under the GPLv3 License.
+FOAMFlask is released under the GPLv3 License.
+
+## Realtime Plotting
+
+FOAMChalak includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
+
+### Features
+
+- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
+- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
+- **Realtime Updates**: Plots update every 2 seconds during simulation
+- **Multiple Plot Types**:
+  - Pressure vs Time
+  - Velocity components (Ux, Uy, Uz) and magnitude
+  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
+  - Residuals (logarithmic scale)
+- **Aerodynamic Analysis** (optional):
+  - Pressure coefficient (Cp)
+  - 3D velocity profiles
+
+### Usage
+
+1. Load a tutorial case
+2. Click "Show Plots" to enable realtime plotting
+3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
+4. Watch the plots update in realtime
+5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
+
+### Technical Details
+
+The plotting system uses:
+- **Plotly.js** for interactive browser-based plots (no external software needed)
+- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
+- **Flask API endpoints** for serving plot data
+- **Automatic field parsing** for both uniform and nonuniform fields
+
+## For Developers
+
+### Quick Start
+```powershell
+.\my-python313-venv-win\Scripts\python.exe app.py
+```
+
+### Installing Dependencies
+```powershell
+.\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
+```

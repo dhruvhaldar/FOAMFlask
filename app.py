@@ -8,6 +8,7 @@ import logging
 import threading
 import time
 from flask import Flask, request, jsonify, render_template_string, Response
+from realtime_plots import OpenFOAMFieldParser, get_available_fields
 
 app = Flask(__name__)
 
@@ -311,6 +312,81 @@ def run_case():
                 logger.error("[FOAMPilot] Could not remove container")
 
     return Response(stream_container_logs(), mimetype="text/html")
+
+# --- Realtime Plotting Endpoints ---
+@app.route("/api/available_fields", methods=["GET"])
+def api_available_fields():
+    """Get list of available fields in the current case."""
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+    
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    if not os.path.exists(case_dir):
+        return jsonify({"error": "Case directory not found"}), 404
+    
+    try:
+        fields = get_available_fields(case_dir)
+        return jsonify({"fields": fields})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/plot_data", methods=["GET"])
+def api_plot_data():
+    """Get realtime plot data for the current case."""
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+    
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    if not os.path.exists(case_dir):
+        return jsonify({"error": "Case directory not found"}), 404
+    
+    try:
+        parser = OpenFOAMFieldParser(case_dir)
+        data = parser.get_all_time_series_data(max_points=100)
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"Error getting plot data: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/latest_data", methods=["GET"])
+def api_latest_data():
+    """Get the latest time step data."""
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+    
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    if not os.path.exists(case_dir):
+        return jsonify({"error": "Case directory not found"}), 404
+    
+    try:
+        parser = OpenFOAMFieldParser(case_dir)
+        data = parser.get_latest_time_data()
+        return jsonify(data if data else {})
+    except Exception as e:
+        logger.error(f"Error getting latest data: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/residuals", methods=["GET"])
+def api_residuals():
+    """Get residuals from log file."""
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+    
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    if not os.path.exists(case_dir):
+        return jsonify({"error": "Case directory not found"}), 404
+    
+    try:
+        parser = OpenFOAMFieldParser(case_dir)
+        residuals = parser.get_residuals_from_log()
+        return jsonify(residuals)
+    except Exception as e:
+        logger.error(f"Error getting residuals: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

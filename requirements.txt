@@ -12,3 +12,4 @@ charset_normalizer==3.4.4
 urllib3==2.5.0
 idna==3.11
 certifi==2025.10.5
+numpy==1.26.4

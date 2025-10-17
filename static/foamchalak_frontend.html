@@ -92,6 +92,43 @@
 
   </div>
 
+  <!-- Realtime Plots Section -->
+  <div class="max-w-7xl mx-auto mt-6 bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Realtime Plots</h2>
+      <div class="flex gap-2">
+        <button onclick="togglePlots()" id="togglePlotsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+          Show Plots
+        </button>
+        <button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded hidden">
+          Show Aero Plots
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Plots Container -->
+    <div id="plotsContainer" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div id="pressure-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+        <div id="velocity-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+        <div id="turbulence-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+        <div id="residuals-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+      </div>
+    </div>
+
+    <!-- Aerodynamic Plots Container (optional) -->
+    <div id="aeroContainer" class="hidden mt-4">
+      <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="cp-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+        <div id="velocity-profile-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
   <!-- JS -->
   <script src="{{ url_for('static', filename='js/FOAMChalak_frontend.js') }}"></script>
 
