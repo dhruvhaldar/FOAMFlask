@@ -7,10 +7,24 @@ import docker
 import logging
 import threading
 import time
+
+# Add after other imports
+try:
+    from build_utils import run_build
+    BUILD_SYSTEM_AVAILABLE = True
+except ImportError:
+    BUILD_SYSTEM_AVAILABLE = False
+    print("Warning: Build system not available. Install python-minifier to enable minification.")
+
 from flask import Flask, request, jsonify, render_template_string, Response
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
 
 app = Flask(__name__)
+
+# Initialize build system
+if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
+    if run_build():
+        print("Build completed successfully")
 
 # --- Logging ---
 logging.basicConfig(level=logging.DEBUG)
