@@ -2,10 +2,60 @@ let caseDir = "";        // will be fetched from server on load
 let dockerImage = "";    // from server
 let openfoamVersion = ""; // from server
 
-// Plotting variables
+// Plotting variables and theme
 let plotUpdateInterval = null;
 let plotsVisible = false;
 let aeroVisible = false;
+
+// Custom color palette
+const plotlyColors = {
+  blue: '#1f77b4',
+  orange: '#ff7f0e',
+  green: '#2ca02c',
+  red: '#d62728',
+  purple: '#9467bd',
+  brown: '#8c564b',
+  pink: '#e377c2',
+  gray: '#7f7f7f',
+  yellow: '#bcbd22',
+  teal: '#17becf'
+};
+
+// Common plot layout
+const plotLayout = {
+  font: { family: 'Arial, sans-serif', size: 12 },
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(0,0,0,0.02)',
+  margin: { t: 40, r: 40, b: 40, l: 40 },
+  height: 400,
+  autosize: true,
+  showlegend: true,
+  legend: {
+    orientation: 'h',
+    y: -0.2,
+    x: 0.1,
+    xanchor: 'left',
+    bgcolor: 'rgba(255,255,255,0.8)'
+  },
+  xaxis: {
+    showgrid: false,
+    gridcolor: 'rgba(0,0,0,0.05)',
+    linecolor: 'rgba(0,0,0,0.1)',
+    linewidth: 1
+  },
+  yaxis: {
+    showgrid: false,
+    gridcolor: 'rgba(0,0,0,0.05)',
+    linecolor: 'rgba(0,0,0,0.1)',
+    linewidth: 1
+  }
+};
+
+// Common line style
+const lineStyle = {
+  width: 2,
+  opacity: 0.9
+};
 
 // --- Initialize on page load ---
 window.onload = () => {
@@ -219,17 +269,26 @@ function updatePlots() {
           type: 'scatter',
           mode: 'lines',
           name: 'Pressure',
-          line: {color: 'blue', width: 2}
+          line: {
+            color: plotlyColors.blue,
+            ...lineStyle
+          },
+          fill: 'tozeroy',
+          fillcolor: `${plotlyColors.blue}20`
         };
-        const layout = {
+        
+        Plotly.react('pressure-plot', [pressureTrace], {
+          ...plotLayout,
           title: 'Pressure vs Time',
-          xaxis: {title: 'Time (s)'},
-          yaxis: {title: 'Pressure (Pa)'},
-          height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
-          autosize: true
-        };
-        Plotly.react('pressure-plot', [pressureTrace], layout);
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: 'Time (s)'
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: 'Pressure (Pa)'
+          }
+        });
       }
       
       // Update velocity plot
@@ -241,7 +300,11 @@ function updatePlots() {
             type: 'scatter',
             mode: 'lines',
             name: '|U|',
-            line: {color: 'red', width: 2}
+            line: {
+              color: plotlyColors.red,
+              ...lineStyle,
+              width: 2.5
+            }
           }
         ];
         
@@ -252,7 +315,11 @@ function updatePlots() {
             type: 'scatter',
             mode: 'lines',
             name: 'Ux',
-            line: {color: 'orange', width: 1}
+            line: {
+              color: plotlyColors.blue,
+              ...lineStyle,
+              dash: 'dash'
+            }
           });
         }
         if (data.Uy) {
@@ -262,7 +329,11 @@ function updatePlots() {
             type: 'scatter',
             mode: 'lines',
             name: 'Uy',
-            line: {color: 'green', width: 1}
+            line: {
+              color: plotlyColors.green,
+              ...lineStyle,
+              dash: 'dot'
+            }
           });
         }
         if (data.Uz) {
@@ -272,20 +343,26 @@ function updatePlots() {
             type: 'scatter',
             mode: 'lines',
             name: 'Uz',
-            line: {color: 'purple', width: 1}
+            line: {
+              color: plotlyColors.purple,
+              ...lineStyle,
+              dash: 'dashdot'
+            }
           });
         }
         
-        const layout = {
+        Plotly.react('velocity-plot', traces, {
+          ...plotLayout,
           title: 'Velocity vs Time',
-          xaxis: {title: 'Time (s)'},
-          yaxis: {title: 'Velocity (m/s)'},
-          height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
-          autosize: true,
-          showlegend: true
-        };
-        Plotly.react('velocity-plot', traces, layout);
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: 'Time (s)'
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: 'Velocity (m/s)'
+          }
+        });
       }
       
       // Update turbulence plot
@@ -337,7 +414,7 @@ function updatePlots() {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Value'},
           height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
+          margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
           showlegend: true
         };
@@ -386,7 +463,7 @@ function updateResidualsPlot(tutorial) {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
           height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
+          margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
           showlegend: true
         };
@@ -433,7 +510,7 @@ function updateAeroPlots() {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Cp'},
           height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
+          margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
           showlegend: true
         };
@@ -460,7 +537,7 @@ function updateAeroPlots() {
             zaxis: {title: 'Uz (m/s)'}
           },
           height: 400,
-          margin: {t: 40, r: 20, b: 60, l: 80},
+          margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
           showlegend: true
         };

@@ -107,21 +107,33 @@
     </div>
 
     <!-- Main Plots Container -->
-    <div id="plotsContainer" class="hidden">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div id="pressure-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
-        <div id="velocity-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
-        <div id="turbulence-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
-        <div id="residuals-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+    <div id="plotsContainer" class="hidden w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
+        <div class="w-full overflow-hidden">
+          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
       </div>
     </div>
 
     <!-- Aerodynamic Plots Container (optional) -->
-    <div id="aeroContainer" class="hidden mt-4">
+    <div id="aeroContainer" class="hidden mt-4 w-full">
       <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div id="cp-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
-        <div id="velocity-profile-plot" class="bg-gray-50 p-4 rounded-lg shadow"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div class="w-full overflow-hidden">
+          <div id="cp-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="velocity-profile-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow"></div>
+        </div>
       </div>
     </div>
   </div>
