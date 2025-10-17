@@ -225,7 +225,9 @@ function updatePlots() {
           title: 'Pressure vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Pressure (Pa)'},
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true
         };
         Plotly.react('pressure-plot', [pressureTrace], layout);
       }
@@ -278,7 +280,10 @@ function updatePlots() {
           title: 'Velocity vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Velocity (m/s)'},
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true,
+          showlegend: true
         };
         Plotly.react('velocity-plot', traces, layout);
       }
@@ -331,7 +336,10 @@ function updatePlots() {
           title: 'Turbulence Properties vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Value'},
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true,
+          showlegend: true
         };
         Plotly.react('turbulence-plot', turbTraces, layout);
       }
@@ -377,7 +385,10 @@ function updateResidualsPlot(tutorial) {
           title: 'Residuals vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true,
+          showlegend: true
         };
         Plotly.react('residuals-plot', traces, layout);
       }
@@ -421,7 +432,10 @@ function updateAeroPlots() {
           title: 'Pressure Coefficient',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Cp'},
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true,
+          showlegend: true
         };
         Plotly.react('cp-plot', [cpTrace], layout);
       }
@@ -445,7 +459,10 @@ function updateAeroPlots() {
             yaxis: {title: 'Uy (m/s)'},
             zaxis: {title: 'Uz (m/s)'}
           },
-          margin: {t: 40, r: 20, b: 40, l: 60}
+          height: 400,
+          margin: {t: 40, r: 20, b: 60, l: 80},
+          autosize: true,
+          showlegend: true
         };
         Plotly.react('velocity-profile-plot', [velocityTrace], layout);
       }
