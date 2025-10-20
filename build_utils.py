@@ -36,7 +36,7 @@ def init_build_system(app):
                 current_app.logger.error(f"Error during build: {str(e)}")
         else:
             # In production, just check if minified files exist
-            min_js = os.path.join('static', 'js', 'foamchalak_frontend.min.js')
+            min_js = os.path.join('static', 'js', 'foamflask_frontend.min.js')
             if not os.path.exists(min_js):
                 current_app.logger.warning(
                     "Minified JavaScript not found. "

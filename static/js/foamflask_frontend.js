@@ -367,8 +367,8 @@ async function loadTutorial() {
     // Do not overwrite caseDir input — keep it as the run folder
     data.output.split('\n').forEach(line => {
       line = line.trim();
-      if(line.startsWith("INFO::[FOAMChalak] Tutorial loaded::")) {
-        appendOutput(line.replace("INFO::[FOAMChalak] Tutorial loaded::","Tutorial loaded: "), "tutorial");
+      if(line.startsWith("INFO::[FOAMFlask] Tutorial loaded::")) {
+        appendOutput(line.replace("INFO::[FOAMFlask] Tutorial loaded::","Tutorial loaded: "), "tutorial");
       } else if(line.startsWith("Source:") || line.startsWith("Copied to:")) {
         appendOutput(line, "info");
       } else {

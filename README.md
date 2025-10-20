@@ -83,7 +83,7 @@ FOAMFlask is released under the GPLv3 License.
 
 ## Realtime Plotting
 
-FOAMChalak includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
+FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
 
 ### Features
 

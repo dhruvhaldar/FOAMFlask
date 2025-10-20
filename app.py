@@ -28,7 +28,7 @@ if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
 
 # --- Logging ---
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("FOAMChalak")
+logger = logging.getLogger("FOAMFlask")
 
 # --- Config file ---
 CONFIG_FILE = "case_config.json"
@@ -69,7 +69,7 @@ OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 docker_client = docker.from_env()
 
 # --- Load HTML template ---
-TEMPLATE_FILE = os.path.join("static", "foamchalak_frontend.html")
+TEMPLATE_FILE = os.path.join("static", "foamflask_frontend.html")
 with open(TEMPLATE_FILE, "r") as f:
     TEMPLATE = f.read()
 
@@ -110,7 +110,7 @@ def get_tutorials():
         return tutorials
 
     except Exception as e:
-        logger.error(f"[FOAMPilot] Could not fetch tutorials: {e}")
+        logger.error(f"[FOAMFlask] Could not fetch tutorials: {e}")
         return []
 
 # --- Global storage for FoamRun logs ---
@@ -136,16 +136,16 @@ def monitor_foamrun_log(tutorial, case_dir):
             # Write to file
             try:
                 output_file.write_text(log_content)
-                logger.info(f"[FOAMChalak] Captured log.FoamRun for tutorial '{tutorial}' and wrote to {output_file}")
+                logger.info(f"[FOAMFlask] Captured log.FoamRun for tutorial '{tutorial}' and wrote to {output_file}")
             except Exception as e:
-                logger.error(f"[FOAMChalak] Could not write foamrun_logs to file: {e}")
+                logger.error(f"[FOAMFlask] Could not write foamrun_logs to file: {e}")
 
             return
 
         time.sleep(interval)
         elapsed += interval
 
-    logger.warning(f"[FOAMChalak] Timeout: log.FoamRun not found for '{tutorial}'")
+    logger.warning(f"[FOAMFlask] Timeout: log.FoamRun not found for '{tutorial}'")
 
 # --- Routes ---
 @app.route("/")
@@ -164,13 +164,13 @@ def set_case():
     data = request.get_json()
     case_dir = data.get("caseDir")
     if not case_dir:
-        return jsonify({"output": "[FOAMChalak] [Error] No caseDir provided"})
+        return jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"})
     case_dir = os.path.abspath(case_dir)
     os.makedirs(case_dir, exist_ok=True)
     CASE_ROOT = case_dir
     save_config({"CASE_ROOT": CASE_ROOT})
     return jsonify({
-        "output": f"INFO::[FOAMChalak] Case root set to: {CASE_ROOT}",
+        "output": f"INFO::[FOAMFlask] Case root set to: {CASE_ROOT}",
         "caseDir": CASE_ROOT
     })
 
@@ -194,7 +194,7 @@ def set_docker_config():
         "OPENFOAM_VERSION": OPENFOAM_VERSION
     })
     return jsonify({
-        "output": f"INFO::[FOAMChalak] Docker config updated",
+        "output": f"INFO::[FOAMFlask] Docker config updated",
         "dockerImage": DOCKER_IMAGE,
         "openfoamVersion": OPENFOAM_VERSION
     })
@@ -206,7 +206,7 @@ def load_tutorial():
     tutorial = data.get("tutorial")
 
     if not tutorial:
-        return jsonify({"output": "[FOAMChalak] [Error] No tutorial selected"})
+        return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
     bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
     container_run_path = f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run"
@@ -250,12 +250,12 @@ def load_tutorial():
 
         if result["StatusCode"] == 0:
             output = (
-                f"INFO::[FOAMChalak] Tutorial loaded::{tutorial}\n"
+                f"INFO::[FOAMFlask] Tutorial loaded::{tutorial}\n"
                 f"Source: $FOAM_TUTORIALS/{tutorial}\n"
                 f"Copied to: {CASE_ROOT}/{tutorial}\n"
             )
         else:
-            output = f"[FOAMChalak] [Error] Failed to load tutorial {tutorial}\n{logs}"
+            output = f"[FOAMFlask] [Error] Failed to load tutorial {tutorial}\n{logs}"
 
         return jsonify({"output": output, "caseDir": CASE_ROOT})
 

@@ -41,7 +41,7 @@ def minify_file(input_path, output_path=None):
 
 def update_html_references():
     """Update HTML to reference minified files."""
-    html_path = os.path.join('static', 'foamchalak_frontend.html')
+    html_path = os.path.join('static', 'foamflask_frontend.html')
     if not os.path.exists(html_path):
         print(f"HTML file not found: {html_path}")
         return
@@ -50,8 +50,8 @@ def update_html_references():
         html = f.read()
     
     # Update JavaScript reference
-    original_js = "{{ url_for('static', filename='js/foamchalak_frontend.js') }}"
-    min_js = "{{ url_for('static', filename='js/foamchalak_frontend.min.js') }}"
+    original_js = "{{ url_for('static', filename='js/foamflask_frontend.js') }}"
+    min_js = "{{ url_for('static', filename='js/foamflask_frontend.min.js') }}"
     
     if min_js not in html:
         html = html.replace(original_js, min_js)
@@ -61,8 +61,8 @@ def update_html_references():
 
 def main():
     # Create minified versions
-    js_path = os.path.join('static', 'js', 'foamchalak_frontend.js')
-    min_js_path = os.path.join('static', 'js', 'foamchalak_frontend.min.js')
+    js_path = os.path.join('static', 'js', 'foamflask_frontend.js')
+    min_js_path = os.path.join('static', 'js', 'foamflask_frontend.min.js')
     
     if os.path.exists(js_path):
         minify_file(js_path, min_js_path)
