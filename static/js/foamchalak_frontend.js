@@ -38,7 +38,7 @@ const plotLayout = {
   font: { family: 'Arial, sans-serif', size: 12 },
   paper_bgcolor: 'rgba(0,0,0,0)',
   plot_bgcolor: 'rgba(0,0,0,0.02)',
-  margin: { t: 40, r: 40, b: 40, l: 40 },
+  // margin: { t: 40, r: 40, b: 40, l: 40 },
   height: 400,
   autosize: true,
   showlegend: true,
@@ -51,14 +51,10 @@ const plotLayout = {
   },
   xaxis: {
     showgrid: false,
-    gridcolor: 'rgba(0,0,0,0.05)',
-    linecolor: 'rgba(0,0,0,0.1)',
     linewidth: 1
   },
   yaxis: {
     showgrid: false,
-    gridcolor: 'rgba(0,0,0,0.05)',
-    linecolor: 'rgba(0,0,0,0.1)',
     linewidth: 1
   }
 };
@@ -66,11 +62,17 @@ const plotLayout = {
 // Plotly config for performance
 const plotConfig = {
   responsive: true,
-  displayModeBar: false,
+  displayModeBar: true,
   staticPlot: false,
-  scrollZoom: false,
-  doubleClick: false,
-  showTips: false
+  scrollZoom: true,
+  doubleClick: true,
+  showTips: true,
+  modeBarButtonsToAdd: [],
+  modeBarButtonsToRemove: ['autoScale2d', 'zoomIn2d', 'zoomOut2d', 'lasso2d', 'select2d','pan2d'],
+  modeBarStyle:{
+    bgcolor: 'rgba(0, 0, 0, 0.2)'
+  },
+  displaylogo: false
 };
 
 // Common line style
@@ -444,10 +446,9 @@ async function updatePlots() {
           name: 'Pressure',
           line: {
             color: plotlyColors.blue,
-            ...lineStyle
+            ...lineStyle,
+            width: 2.5
           },
-          fill: 'tozeroy',
-          fillcolor: `${plotlyColors.blue}20`
         };
         
         Plotly.react('pressure-plot', [pressureTrace], {
@@ -491,7 +492,8 @@ async function updatePlots() {
             line: {
               color: plotlyColors.blue,
               ...lineStyle,
-              dash: 'dash'
+              dash: 'dash',
+              width: 2.5
             }
           });
         }
@@ -505,7 +507,8 @@ async function updatePlots() {
             line: {
               color: plotlyColors.green,
               ...lineStyle,
-              dash: 'dot'
+              dash: 'dot',
+              width: 2.5
             }
           });
         }
@@ -519,7 +522,8 @@ async function updatePlots() {
             line: {
               color: plotlyColors.purple,
               ...lineStyle,
-              dash: 'dashdot'
+              dash: 'dashdot',
+              width: 2.5
             }
           });
         }
@@ -547,7 +551,10 @@ async function updatePlots() {
           type: 'scatter',
           mode: 'lines',
           name: 'nut',
-          line: {color: 'teal', width: 2}
+          line: {
+            color: plotlyColors.teal,
+            ...lineStyle,
+            width: 2.5},
         });
       }
       if (data.nuTilda && data.time) {
@@ -557,7 +564,10 @@ async function updatePlots() {
           type: 'scatter',
           mode: 'lines',
           name: 'nuTilda',
-          line: {color: 'cyan', width: 2}
+          line: {
+            color: plotlyColors.cyan,
+            ...lineStyle,
+            width: 2.5},
         });
       }
       if (data.k && data.time) {
@@ -567,7 +577,10 @@ async function updatePlots() {
           type: 'scatter',
           mode: 'lines',
           name: 'k',
-          line: {color: 'magenta', width: 2}
+          line: {
+            color: plotlyColors.magenta,
+            ...lineStyle,
+            width: 2.5},
         });
       }
       if (data.omega && data.time) {
@@ -577,7 +590,10 @@ async function updatePlots() {
           type: 'scatter',
           mode: 'lines',
           name: 'omega',
-          line: {color: 'brown', width: 2}
+          line: {
+            color: plotlyColors.brown,
+            ...lineStyle,
+            width: 2.5},
         });
       }
       
@@ -587,9 +603,16 @@ async function updatePlots() {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Value'},
           height: 400,
-          margin: {t: 40, r: 40, b: 40, l: 40},
+          // margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
-          showlegend: true
+          showlegend: true,
+          legend: {
+            orientation: 'h',
+            xanchor: 'center',
+            yanchor: 'bottom',
+            y: 1.02,
+            x: 0.5
+          }
         };
         Plotly.react('turbulence-plot', turbTraces, layout, plotConfig);
       }
@@ -621,7 +644,7 @@ async function updateResidualsPlot(tutorial) {
       
       const traces = [];
       const fields = ['Ux', 'Uy', 'Uz', 'p', 'k', 'epsilon', 'omega'];
-      const colors = ['red', 'green', 'blue', 'orange', 'purple', 'brown', 'pink'];
+      const colors = [plotlyColors.red, plotlyColors.green, plotlyColors.blue, plotlyColors.orange, plotlyColors.purple, plotlyColors.brown, plotlyColors.pink];
       
       fields.forEach((field, idx) => {
         if (data[field] && data[field].length > 0) {
@@ -631,7 +654,7 @@ async function updateResidualsPlot(tutorial) {
             type: 'scatter',
             mode: 'lines',
             name: field,
-            line: {color: colors[idx], width: 2}
+            line: {color: colors[idx], width: 2.5}
           });
         }
       });
@@ -642,9 +665,16 @@ async function updateResidualsPlot(tutorial) {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
           height: 400,
-          margin: {t: 40, r: 40, b: 40, l: 40},
+          // margin: {t: 40, r: 80, b: 40, l: 40},
           autosize: true,
-          showlegend: true
+          showlegend: true,
+          legend: {
+            orientation: 'h',
+            xanchor: 'center',
+            yanchor: 'bottom',
+            y: 1.02,
+            x: 0.5
+          }
         };
         Plotly.react('residuals-plot', traces, layout, plotConfig);
       }
@@ -689,7 +719,7 @@ async function updateAeroPlots() {
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Cp'},
           height: 400,
-          margin: {t: 40, r: 40, b: 40, l: 40},
+          // margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
           showlegend: true
         };
@@ -716,9 +746,16 @@ async function updateAeroPlots() {
             zaxis: {title: 'Uz (m/s)'}
           },
           height: 400,
-          margin: {t: 40, r: 40, b: 40, l: 40},
+          // margin: {t: 40, r: 40, b: 40, l: 40},
           autosize: true,
-          showlegend: true
+          showlegend: true,
+          legend: {
+            orientation: 'h',
+            y: -0.2,
+            x: 0.1,
+            xanchor: 'left',
+            bgcolor: 'rgba(255,255,255,0.8)'
+          }
         };
         Plotly.react('velocity-profile-plot', [velocityTrace], layout, plotConfig);
       }
