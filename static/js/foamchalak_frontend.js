@@ -36,9 +36,11 @@ const plotlyColors = {
 // Common plot layout
 const plotLayout = {
   font: { family: 'Arial, sans-serif', size: 12 },
-  paper_bgcolor: 'rgba(0,0,0,0)',
-  plot_bgcolor: 'rgba(0,0,0,0.02)',
-  // margin: { t: 40, r: 40, b: 40, l: 40 },
+  plot_bgcolor: 'white',      // Inside of plotting area
+  paper_bgcolor: 'white',     // Outer area
+  // paper_bgcolor: 'rgba(0,0,0,0)',
+  // plot_bgcolor: 'rgba(0,0,0,0.02)',
+  margin: { l: 50, r: 20, t: 30, b: 40 },
   height: 400,
   autosize: true,
   showlegend: true,
@@ -68,10 +70,7 @@ const plotConfig = {
   doubleClick: true,
   showTips: true,
   modeBarButtonsToAdd: [],
-  modeBarButtonsToRemove: ['autoScale2d', 'zoomIn2d', 'zoomOut2d', 'lasso2d', 'select2d','pan2d'],
-  modeBarStyle:{
-    bgcolor: 'rgba(0, 0, 0, 0.2)'
-  },
+  modeBarButtonsToRemove: ['autoScale2d', 'zoomIn2d', 'zoomOut2d', 'lasso2d', 'select2d','pan2d','sendDataToCloud'],
   displaylogo: false
 };
 
@@ -84,6 +83,15 @@ const lineStyle = {
 // --- Initialize on page load ---
 window.onload = async () => {
   try {
+    // Load saved tutorial selection if exists
+    const tutorialSelect = document.getElementById("tutorialSelect");
+    if (tutorialSelect) {
+      const savedTutorial = localStorage.getItem('lastSelectedTutorial');
+      if (savedTutorial) {
+        tutorialSelect.value = savedTutorial;
+      }
+    }
+
     // Parallel fetch for better performance
     const [caseRootData, dockerConfigData] = await Promise.all([
       fetchWithCache("/get_case_root"),
@@ -249,8 +257,14 @@ async function setDockerConfig(image, version) {
 // --- Load a tutorial ---
 async function loadTutorial() {
   try {
-    const selected = document.getElementById("tutorialSelect").value;
+    const tutorialSelect = document.getElementById("tutorialSelect");
+    const selected = tutorialSelect.value;
     
+    // Save the selected tutorial to localStorage
+    if (selected) {
+      localStorage.setItem('lastSelectedTutorial', selected);
+    }
+
     const response = await fetch("/load_tutorial", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -461,7 +475,7 @@ async function updatePlots() {
           yaxis: {
             ...plotLayout.yaxis,
             title: 'Pressure (Pa)'
-          }
+          },
         }, plotConfig);
       }
       
@@ -598,23 +612,18 @@ async function updatePlots() {
       }
       
       if (turbTraces.length > 0) {
-        const layout = {
+        Plotly.react('turbulence-plot', turbTraces, {
+          ...plotLayout,
           title: 'Turbulence Properties vs Time',
-          xaxis: {title: 'Time (s)'},
-          yaxis: {title: 'Value'},
-          height: 400,
-          // margin: {t: 40, r: 40, b: 40, l: 40},
-          autosize: true,
-          showlegend: true,
-          legend: {
-            orientation: 'h',
-            xanchor: 'center',
-            yanchor: 'bottom',
-            y: 1.02,
-            x: 0.5
-          }
-        };
-        Plotly.react('turbulence-plot', turbTraces, layout, plotConfig);
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: 'Time (s)'
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: 'Value'
+          },
+        }, plotConfig);
       }
       
       // Update residuals and aero plots in parallel
@@ -660,23 +669,12 @@ async function updateResidualsPlot(tutorial) {
       });
       
       if (traces.length > 0) {
-        const layout = {
+        Plotly.react('residuals-plot', traces, {
+          ...plotLayout,
           title: 'Residuals vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
-          height: 400,
-          // margin: {t: 40, r: 80, b: 40, l: 40},
-          autosize: true,
-          showlegend: true,
-          legend: {
-            orientation: 'h',
-            xanchor: 'center',
-            yanchor: 'bottom',
-            y: 1.02,
-            x: 0.5
-          }
-        };
-        Plotly.react('residuals-plot', traces, layout, plotConfig);
+        }, plotConfig);
       }
   } catch (err) {
     console.error('Error updating residuals:', err);
@@ -711,19 +709,15 @@ async function updateAeroPlots() {
           type: 'scatter',
           mode: 'markers',
           name: 'Cp',
-          marker: {color: 'red', size: 10}
+          marker: {color: plotlyColors.red, size: 10}
         };
         
-        const layout = {
+        Plotly.react('cp-plot', [cpTrace], {
+          ...plotLayout,
           title: 'Pressure Coefficient',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Cp'},
-          height: 400,
-          // margin: {t: 40, r: 40, b: 40, l: 40},
-          autosize: true,
-          showlegend: true
-        };
-        Plotly.react('cp-plot', [cpTrace], layout, plotConfig);
+        }, plotConfig);
       }
       
       // Plot velocity profile
@@ -735,29 +729,18 @@ async function updateAeroPlots() {
           type: 'scatter3d',
           mode: 'markers',
           name: 'Velocity',
-          marker: {color: 'blue', size: 5}
+          marker: {color: plotlyColors.blue, size: 5}
         };
         
-        const layout = {
+        Plotly.react('velocity-profile-plot', [velocityTrace], {
+          ...plotLayout,
           title: 'Velocity Profile',
           scene: {
             xaxis: {title: 'Ux (m/s)'},
             yaxis: {title: 'Uy (m/s)'},
             zaxis: {title: 'Uz (m/s)'}
           },
-          height: 400,
-          // margin: {t: 40, r: 40, b: 40, l: 40},
-          autosize: true,
-          showlegend: true,
-          legend: {
-            orientation: 'h',
-            y: -0.2,
-            x: 0.1,
-            xanchor: 'left',
-            bgcolor: 'rgba(255,255,255,0.8)'
-          }
-        };
-        Plotly.react('velocity-profile-plot', [velocityTrace], layout, plotConfig);
+        }, plotConfig);
       }
   } catch (err) {
     console.error('Error updating aero plots:', err);

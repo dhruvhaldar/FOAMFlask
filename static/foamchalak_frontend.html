@@ -57,7 +57,38 @@
     .grid {
       contain: layout style;
     }
+    
   </style>
+
+  
+  <!-- Plotly modebar styles -->
+  <!-- --- Smooth Fade + Minimal Modebar --- -->
+  <style>
+  .modebar {
+    background-color: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none; /* prevent accidental blocking */
+  }
+
+  .js-plotly-plot:hover .modebar {
+  opacity: 1;
+  pointer-events: auto;
+  }
+
+  .modebar-btn {
+    background-color: transparent;
+    border-radius: 6px !important;
+    transition: background-color 0.2s ease;
+  }
+
+  .modebar-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  </style>
+
+
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen p-4 sm:p-6">
 
@@ -180,6 +211,22 @@
 
   <!-- Plotly.js - async loading for better performance -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" async></script>
+
+  <script> 
+  document.addEventListener("DOMContentLoaded", function() {
+    // Wait until all plots are loaded
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.modebar').forEach(bar => {
+      bar.style.backgroundColor = 'transparent';
+      bar.style.boxShadow = 'none';
+    });
+  });
+
+  // Observe the document for Plotly plot creation
+  observer.observe(document.body, { childList: true, subtree: true });
+  });
+  </script>
+
 
   <!-- JS - defer loading -->
   <script src="{{ url_for('static', filename='js/FOAMChalak_frontend.js') }}" defer></script>
