@@ -37,7 +37,7 @@ const plotlyColors = {
 
 // Common plot layout
 const plotLayout = {
-  font: { family: 'Arial, sans-serif', size: 12 },
+  font: { family: '"Computer Modern Serif", serif', size: 12 },
   plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
   paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
   margin: { l: 50, r: 20, t: 30, b: 40 },
