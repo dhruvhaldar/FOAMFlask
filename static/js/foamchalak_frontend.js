@@ -30,16 +30,16 @@ const plotlyColors = {
   pink: '#e377c2',
   gray: '#7f7f7f',
   yellow: '#bcbd22',
-  teal: '#17becf'
+  teal: '#17becf',
+  cyan: '#17becf',
+  magenta: '#e377c2',
 };
 
 // Common plot layout
 const plotLayout = {
   font: { family: 'Arial, sans-serif', size: 12 },
-  plot_bgcolor: 'white',      // Inside of plotting area
-  paper_bgcolor: 'white',     // Outer area
-  // paper_bgcolor: 'rgba(0,0,0,0)',
-  // plot_bgcolor: 'rgba(0,0,0,0.02)',
+  plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
+  paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
   margin: { l: 50, r: 20, t: 30, b: 40 },
   height: 400,
   autosize: true,
@@ -49,7 +49,7 @@ const plotLayout = {
     y: -0.2,
     x: 0.1,
     xanchor: 'left',
-    bgcolor: 'rgba(255,255,255,0.8)'
+    bgcolor: 'rgba(0,0,0,0)'
   },
   xaxis: {
     showgrid: false,
@@ -79,6 +79,60 @@ const lineStyle = {
   width: 2,
   opacity: 0.9
 };
+
+// --- Helper: Download plot as PNG with white background ---
+function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
+  if (!plotDiv) return;
+
+  const downloadLayout = {
+    ...plotDiv.layout,
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white'
+  };
+
+  Plotly.toImage(plotDiv, {
+    format: 'png',
+    width: plotDiv.offsetWidth,
+    height: plotDiv.offsetHeight,
+    scale: 2,
+    layout: downloadLayout
+  }).then((dataUrl) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
+
+// --- Helper: Attach white-bg download button to a plot ---
+function attachWhiteBGDownloadButton(plotDiv) {
+  plotDiv.layout.paper_bgcolor = 'white';
+  plotDiv.layout.plot_bgcolor = 'white';
+
+  if (!plotDiv || plotDiv.dataset.whiteButtonAdded === 'true') return;
+
+  // Copy existing config or default
+  const configWithWhiteBG = Object.assign({}, plotDiv._fullLayout?.config || plotConfig || {});
+
+  // Override toImageButtonOptions for white background PNG
+  configWithWhiteBG.toImageButtonOptions = {
+    format: 'png',
+    filename: `${plotDiv.id}_whitebg`,
+    height: plotDiv.clientHeight,
+    width: plotDiv.clientWidth,
+    scale: 2,
+    // Ensure background is white
+    // Note: Plotly respects paper_bgcolor/layout.bgcolor when saving
+  };
+
+  // Add default mode bar with download button (Plotly will now use our options)
+  Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
+    plotDiv.dataset.whiteButtonAdded = 'true';
+  });
+}
+
 
 // --- Initialize on page load ---
 window.onload = async () => {
@@ -450,7 +504,7 @@ async function updatePlots() {
         return;
       }
       
-      // Update pressure plot
+      // --- Pressure plot ---
       if (data.p && data.time) {
         const pressureTrace = {
           x: data.time,
@@ -476,10 +530,10 @@ async function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Pressure (Pa)'
           },
-        }, plotConfig);
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('pressure-plot')));
       }
       
-      // Update velocity plot
+      // --- Velocity plot ---
       if (data.U_mag && data.time) {
         const traces = [
           {
@@ -553,10 +607,10 @@ async function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Velocity (m/s)'
           }
-        }, plotConfig);
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('velocity-plot')));
       }
       
-      // Update turbulence plot
+      // --- Turbulence plot ---
       const turbTraces = [];
       if (data.nut && data.time) {
         turbTraces.push({
@@ -623,7 +677,7 @@ async function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Value'
           },
-        }, plotConfig);
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('turbulence-plot')));
       }
       
       // Update residuals and aero plots in parallel
@@ -674,7 +728,7 @@ async function updateResidualsPlot(tutorial) {
           title: 'Residuals vs Time',
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
-        }, plotConfig);
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
       }
   } catch (err) {
     console.error('Error updating residuals:', err);
@@ -696,30 +750,40 @@ async function updateAeroPlots() {
       }
       
       // Calculate and plot pressure coefficient
-      if (data.p) {
-        const p_inf = 101325; // Standard atmospheric pressure
-        const rho = 1.225; // Air density at sea level
-        const u_inf = data.U_mag || 1.0;
-        const q_inf = 0.5 * rho * u_inf * u_inf;
-        const cp = (data.p - p_inf) / q_inf;
-        
+      if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
+        const p_inf = 101325;
+        const rho = 1.225;
+        const u_inf = Array.isArray(data.U_mag) ? data.U_mag[0] : data.U_mag || 1.0;
+        const q_inf = 0.5 * rho * u_inf * u_inf || 1.0;
+
+        const cp = data.p.map(p_val => (p_val - p_inf) / q_inf);
+
+        console.log('Cp plot data:', {x: data.time, y: cp, q_inf}); // debug
+
         const cpTrace = {
-          x: [data.time],
-          y: [cp],
+          x: data.time,
+          y: cp,
           type: 'scatter',
-          mode: 'markers',
+          mode: 'lines+markers',
           name: 'Cp',
-          marker: {color: plotlyColors.red, size: 10}
+          line: {color: plotlyColors.red, width: 2.5}
         };
-        
-        Plotly.react('cp-plot', [cpTrace], {
-          ...plotLayout,
-          title: 'Pressure Coefficient',
-          xaxis: {title: 'Time (s)'},
-          yaxis: {title: 'Cp'},
-        }, plotConfig);
+
+        const cpDiv = document.getElementById('cp-plot');
+        if (cpDiv) {
+          Plotly.react('cp-plot', [cpTrace], {
+            ...plotLayout,
+            title: 'Pressure Coefficient',
+            xaxis: {title: 'Time (s)'},
+            yaxis: {title: 'Cp'}
+          }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('cp-plot')));
+        } else {
+          console.warn('cp-plot div not found!');
+        }
+      } else {
+        console.warn('Cp data invalid or length mismatch:', data.p, data.time);
       }
-      
+          
       // Plot velocity profile
       if (data.Ux && data.Uy && data.Uz) {
         const velocityTrace = {
@@ -741,6 +805,8 @@ async function updateAeroPlots() {
             zaxis: {title: 'Uz (m/s)'}
           },
         }, plotConfig);
+        
+        attachWhiteBGDownloadButton(document.getElementById('velocity-profile-plot'));
       }
   } catch (err) {
     console.error('Error updating aero plots:', err);
