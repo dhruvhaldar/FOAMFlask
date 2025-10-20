@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FOAMFlask</title>
 
+  <!-- Resource hints for better performance -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.plot.ly">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+  <link rel="dns-prefetch" href="https://cdn.plot.ly">
+
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -25,6 +31,7 @@
     #plotsContainer, #aeroContainer {
       contain: layout style paint;
       will-change: auto;
+      content-visibility: auto;
     }
     
     #pressure-plot, #velocity-plot, #turbulence-plot, #residuals-plot,
@@ -32,11 +39,23 @@
       contain: layout style paint;
       transform: translateZ(0);
       backface-visibility: hidden;
+      content-visibility: auto;
     }
     
     /* Reduce repaints during scroll */
     .js-plotly-plot {
       will-change: auto;
+    }
+    
+    /* Optimize output container */
+    #output {
+      contain: strict;
+      content-visibility: auto;
+    }
+    
+    /* Reduce layout thrashing */
+    .grid {
+      contain: layout style;
     }
   </style>
 </head>
@@ -159,11 +178,11 @@
     </div>
   </div>
 
-  <!-- Plotly.js -->
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <!-- Plotly.js - async loading for better performance -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" async></script>
 
-  <!-- JS -->
-  <script src="{{ url_for('static', filename='js/FOAMChalak_frontend.js') }}"></script>
+  <!-- JS - defer loading -->
+  <script src="{{ url_for('static', filename='js/FOAMChalak_frontend.js') }}" defer></script>
 
 </body>
 </html>

@@ -10,6 +10,15 @@ let isUpdatingPlots = false;
 let pendingPlotUpdate = false;
 let plotsInViewport = true;
 
+// Request management
+let abortControllers = new Map();
+let requestCache = new Map();
+const CACHE_DURATION = 1000; // 1 second cache
+
+// Performance optimization
+const outputBuffer = [];
+let outputFlushTimer = null;
+
 // Custom color palette
 const plotlyColors = {
   blue: '#1f77b4',
@@ -71,51 +80,120 @@ const lineStyle = {
 };
 
 // --- Initialize on page load ---
-window.onload = () => {
-  // Fetch CASE_ROOT
-  fetch("/get_case_root")
-    .then(r => r.json())
-    .then(data => {
-      caseDir = data.caseDir || "";
-      document.getElementById("caseDir").value = caseDir;
-    });
-
-  // Fetch Docker config (instead of OPENFOAM_ROOT)
-  fetch("/get_docker_config")
-    .then(r => r.json())
-    .then(data => {
-      dockerImage = data.dockerImage || "";
-      openfoamVersion = data.openfoamVersion || "";
-      document.getElementById("openfoamRoot").value =
-        `${dockerImage} (OpenFOAM ${openfoamVersion})`;
-    });
+window.onload = async () => {
+  try {
+    // Parallel fetch for better performance
+    const [caseRootData, dockerConfigData] = await Promise.all([
+      fetchWithCache("/get_case_root"),
+      fetchWithCache("/get_docker_config")
+    ]);
+    
+    // Update case directory
+    caseDir = caseRootData.caseDir || "";
+    const caseDirInput = document.getElementById("caseDir");
+    if (caseDirInput) caseDirInput.value = caseDir;
+    
+    // Update Docker config
+    dockerImage = dockerConfigData.dockerImage || "";
+    openfoamVersion = dockerConfigData.openfoamVersion || "";
+    const openfoamRootInput = document.getElementById("openfoamRoot");
+    if (openfoamRootInput) {
+      openfoamRootInput.value = `${dockerImage} (OpenFOAM ${openfoamVersion})`;
+    }
+  } catch (error) {
+    console.error('Initialization error:', error);
+    appendOutput('Failed to initialize application', 'stderr');
+  }
 };
 
-// --- Append output helper ---
+// --- Fetch with caching and abort control ---
+async function fetchWithCache(url, options = {}) {
+  const cacheKey = `${url}_${JSON.stringify(options)}`;
+  const cached = requestCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  // Cancel previous request to same endpoint
+  if (abortControllers.has(url)) {
+    abortControllers.get(url).abort();
+  }
+  
+  const controller = new AbortController();
+  abortControllers.set(url, controller);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    requestCache.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
+  } finally {
+    abortControllers.delete(url);
+  }
+}
+
+// --- Append output helper with buffering ---
 function appendOutput(message, type="stdout") {
+  outputBuffer.push({ message, type });
+  
+  // Debounce DOM updates for better performance
+  if (outputFlushTimer) {
+    clearTimeout(outputFlushTimer);
+  }
+  
+  outputFlushTimer = setTimeout(flushOutputBuffer, 16); // ~60fps
+}
+
+function flushOutputBuffer() {
+  if (outputBuffer.length === 0) return;
+  
   const container = document.getElementById("output");
-  const line = document.createElement("div");
-
-  if(type === "stderr") line.className = "text-red-600";
-  else if(type === "tutorial") line.className = "text-blue-600 font-semibold";
-  else if(type === "info") line.className = "text-yellow-600 italic";
-  else line.className = "text-green-700";
-
-  line.textContent = message;
-  container.appendChild(line);
+  if (!container) return;
+  
+  const fragment = document.createDocumentFragment();
+  
+  outputBuffer.forEach(({ message, type }) => {
+    const line = document.createElement("div");
+    
+    if(type === "stderr") line.className = "text-red-600";
+    else if(type === "tutorial") line.className = "text-blue-600 font-semibold";
+    else if(type === "info") line.className = "text-yellow-600 italic";
+    else line.className = "text-green-700";
+    
+    line.textContent = message;
+    fragment.appendChild(line);
+  });
+  
+  container.appendChild(fragment);
   container.scrollTop = container.scrollHeight;
+  outputBuffer.length = 0;
 }
 
 // --- Set case directory manually ---
-function setCase() {
-  caseDir = document.getElementById("caseDir").value;
-  fetch("/set_case", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({caseDir: caseDir})
-  })
-  .then(r => r.json())
-  .then(data => {
+async function setCase() {
+  try {
+    caseDir = document.getElementById("caseDir").value;
+    
+    const response = await fetch("/set_case", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({caseDir: caseDir})
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
     caseDir = data.caseDir;
     document.getElementById("caseDir").value = caseDir;
 
@@ -125,42 +203,64 @@ function setCase() {
       else if(line.startsWith("[Error]")) appendOutput(line, "stderr");
       else appendOutput(line, "stdout");
     });
-  });
+  } catch (error) {
+    console.error('Error setting case:', error);
+    appendOutput(`Failed to set case directory: ${error.message}`, "stderr");
+  }
 }
 
 // --- Update Docker config (instead of OpenFOAM root) ---
-function setDockerConfig(image, version) {
-  dockerImage = image;
-  openfoamVersion = version;
-  fetch("/set_docker_config", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      dockerImage: dockerImage,
-      openfoamVersion: openfoamVersion
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
+async function setDockerConfig(image, version) {
+  try {
+    dockerImage = image;
+    openfoamVersion = version;
+    
+    const response = await fetch("/set_docker_config", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        dockerImage: dockerImage,
+        openfoamVersion: openfoamVersion
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
     dockerImage = data.dockerImage;
     openfoamVersion = data.openfoamVersion;
-    document.getElementById("openfoamRoot").value =
-      `${dockerImage} (OpenFOAM ${openfoamVersion})`;
+    
+    const openfoamRootInput = document.getElementById("openfoamRoot");
+    if (openfoamRootInput) {
+      openfoamRootInput.value = `${dockerImage} (OpenFOAM ${openfoamVersion})`;
+    }
 
     appendOutput(`Docker config set to: ${dockerImage} (OpenFOAM ${openfoamVersion})`, "info");
-  });
+  } catch (error) {
+    console.error('Error setting Docker config:', error);
+    appendOutput(`Failed to set Docker config: ${error.message}`, "stderr");
+  }
 }
 
 // --- Load a tutorial ---
-function loadTutorial() {
-  const selected = document.getElementById("tutorialSelect").value;
-  fetch("/load_tutorial", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({tutorial: selected})
-  })
-  .then(r => r.json())
-  .then(data => {
+async function loadTutorial() {
+  try {
+    const selected = document.getElementById("tutorialSelect").value;
+    
+    const response = await fetch("/load_tutorial", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({tutorial: selected})
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
     // Do not overwrite caseDir input — keep it as the run folder
     data.output.split('\n').forEach(line => {
       line = line.trim();
@@ -173,44 +273,71 @@ function loadTutorial() {
         appendOutput(line, type);
       }
     });
-  });
+  } catch (error) {
+    console.error('Error loading tutorial:', error);
+    appendOutput(`Failed to load tutorial: ${error.message}`, "stderr");
+  }
 }
 
 // --- Run OpenFOAM commands ---
-function runCommand(cmd) {
+async function runCommand(cmd) {
   if (!cmd) {
     appendOutput("Error: No command specified!", "stderr");
     return;
   }
-  const selectedTutorial = document.getElementById("tutorialSelect").value;
-  const outputDiv = document.getElementById("output");
-  outputDiv.innerHTML = ""; // clear previous output
+  
+  try {
+    const selectedTutorial = document.getElementById("tutorialSelect").value;
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = ""; // clear previous output
+    outputBuffer.length = 0; // clear buffer
 
-  fetch("/run", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      caseDir: caseDir,
-      tutorial: selectedTutorial,
-      command: cmd
-    })
-  }).then(response => {
+    const response = await fetch("/run", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        caseDir: caseDir,
+        tutorial: selectedTutorial,
+        command: cmd
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    function read() {
-      reader.read().then(({done, value}) => {
-        if (done) return;
+    
+    async function read() {
+      try {
+        const {done, value} = await reader.read();
+        if (done) {
+          flushOutputBuffer(); // Ensure all output is flushed
+          return;
+        }
+        
         const text = decoder.decode(value);
         text.split("\n").forEach(line => {
           if (!line.trim()) return;
           const type = /error/i.test(line) ? "stderr" : "stdout";
           appendOutput(line, type);
         });
-        read();
-      });
+        
+        await read();
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Stream reading error:', error);
+          appendOutput(`Stream error: ${error.message}`, "stderr");
+        }
+      }
     }
-    read();
-  });
+    
+    await read();
+  } catch (error) {
+    console.error('Error running command:', error);
+    appendOutput(`Failed to run command: ${error.message}`, "stderr");
+  }
 }
 
 // --- Realtime Plotting Functions ---
@@ -292,7 +419,7 @@ function stopPlotUpdates() {
   }
 }
 
-function updatePlots() {
+async function updatePlots() {
   const selectedTutorial = document.getElementById("tutorialSelect").value;
   if (!selectedTutorial || isUpdatingPlots) {
     return;
@@ -300,9 +427,8 @@ function updatePlots() {
   
   isUpdatingPlots = true;
   
-  fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`)
-    .then(r => r.json())
-    .then(data => {
+  try {
+    const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
       if (data.error) {
         console.error('Error fetching plot data:', data.error);
         return;
@@ -468,28 +594,27 @@ function updatePlots() {
         Plotly.react('turbulence-plot', turbTraces, layout, plotConfig);
       }
       
-      // Update residuals plot
-      updateResidualsPlot(selectedTutorial);
-      
-      // Update aero plots if visible
+      // Update residuals and aero plots in parallel
+      const updatePromises = [updateResidualsPlot(selectedTutorial)];
       if (aeroVisible) {
-        updateAeroPlots();
+        updatePromises.push(updateAeroPlots());
       }
-    })
-    .catch(err => console.error('Error updating plots:', err))
-    .finally(() => {
-      isUpdatingPlots = false;
-      if (pendingPlotUpdate) {
-        pendingPlotUpdate = false;
-        requestAnimationFrame(updatePlots);
-      }
-    });
+      
+      await Promise.allSettled(updatePromises);
+  } catch (err) {
+    console.error('Error updating plots:', err);
+  } finally {
+    isUpdatingPlots = false;
+    if (pendingPlotUpdate) {
+      pendingPlotUpdate = false;
+      requestAnimationFrame(updatePlots);
+    }
+  }
 }
 
-function updateResidualsPlot(tutorial) {
-  fetch(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`)
-    .then(r => r.json())
-    .then(data => {
+async function updateResidualsPlot(tutorial) {
+  try {
+    const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
       if (data.error || !data.time || data.time.length === 0) {
         return;
       }
@@ -523,20 +648,20 @@ function updateResidualsPlot(tutorial) {
         };
         Plotly.react('residuals-plot', traces, layout, plotConfig);
       }
-    })
-    .catch(err => console.error('Error updating residuals:', err));
+  } catch (err) {
+    console.error('Error updating residuals:', err);
+  }
 }
 
-function updateAeroPlots() {
+async function updateAeroPlots() {
   const selectedTutorial = document.getElementById("tutorialSelect").value;
   if (!selectedTutorial) {
     return;
   }
   
-  // Fetch latest data for aerodynamic calculations
-  fetch(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`)
-    .then(r => r.json())
-    .then(data => {
+  try {
+    // Fetch latest data for aerodynamic calculations
+    const data = await fetchWithCache(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
       if (data.error) {
         console.error('Error fetching aero data:', data.error);
         return;
@@ -597,11 +722,22 @@ function updateAeroPlots() {
         };
         Plotly.react('velocity-profile-plot', [velocityTrace], layout, plotConfig);
       }
-    })
-    .catch(err => console.error('Error updating aero plots:', err));
+  } catch (err) {
+    console.error('Error updating aero plots:', err);
+  }
 }
 
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
   stopPlotUpdates();
+  
+  // Cancel all pending requests
+  abortControllers.forEach(controller => controller.abort());
+  abortControllers.clear();
+  
+  // Clear cache
+  requestCache.clear();
+  
+  // Flush any remaining output
+  flushOutputBuffer();
 });
