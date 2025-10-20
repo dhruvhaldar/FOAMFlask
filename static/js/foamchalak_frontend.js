@@ -40,7 +40,7 @@ const plotLayout = {
   font: { family: '"Computer Modern Serif", serif', size: 12 },
   plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
   paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
-  margin: { l: 50, r: 20, t: 40 },
+  margin: { l: 50, r: 20, t: 40, pad: 10 },
   height: 400,
   autosize: true,
   showlegend: true,
@@ -51,7 +51,8 @@ const plotLayout = {
     // x: 0.1,
     // xanchor: 'left',
     // yanchor: 'middle',
-    bgcolor: 'rgba(0,0,0,0)'
+    bgcolor: 'rgba(0,0,0,0)',
+    // borderwidth: 0.5
   },
   xaxis: {
     showgrid: false,
@@ -87,7 +88,7 @@ const createBoldTitle = (text) => ({
   text: `<b>${text}</b>`, // use HTML bold tag
   font: {
     ...plotLayout?.font,
-    size: 20
+    size: 22
   }
 });
 
@@ -712,35 +713,69 @@ async function updatePlots() {
 async function updateResidualsPlot(tutorial) {
   try {
     const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
-      if (data.error || !data.time || data.time.length === 0) {
-        return;
+    if (data.error || !data.time || data.time.length === 0) {
+      return;
+    }
+    
+    const traces = [];
+    const fields = ['Ux', 'Uy', 'Uz', 'p'];
+    const colors = [
+      plotlyColors.blue,
+      plotlyColors.red,
+      plotlyColors.green,
+      plotlyColors.magenta,
+      plotlyColors.cyan,
+      plotlyColors.orange
+    ];
+    
+    fields.forEach((field, idx) => {
+      if (data[field] && data[field].length > 0) {
+        traces.push({
+          x: Array.from({length: data[field].length}, (_, i) => i + 1), // Iteration number
+          y: data[field],
+          type: 'scatter',
+          mode: 'lines',
+          name: field,
+          line: {
+            color: colors[idx],
+            width: 2.5,
+            shape: 'linear'
+          }
+        });
       }
-      
-      const traces = [];
-      const fields = ['Ux', 'Uy', 'Uz', 'p', 'k', 'epsilon', 'omega'];
-      const colors = [plotlyColors.red, plotlyColors.green, plotlyColors.blue, plotlyColors.orange, plotlyColors.purple, plotlyColors.brown, plotlyColors.pink];
-      
-      fields.forEach((field, idx) => {
-        if (data[field] && data[field].length > 0) {
-          traces.push({
-            x: data.time.slice(0, data[field].length),
-            y: data[field],
-            type: 'scatter',
-            mode: 'lines',
-            name: field,
-            line: {color: colors[idx], width: 2.5}
-          });
-        }
-      });
-      
-      if (traces.length > 0) {
-        Plotly.react('residuals-plot', traces, {
-          ...plotLayout,
-          title: createBoldTitle('Residuals vs Time'),
-          xaxis: {title: 'Time (s)'},
-          yaxis: {title: 'Residual', type: 'log'},
-        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
-      }
+    });
+    
+    if (traces.length > 0) {
+      const layout = {
+        ...plotLayout,
+        title: createBoldTitle('Residuals'),
+        xaxis: {
+          title: {
+            text: 'Iteration',
+          },
+          showline: true,
+          mirror: 'all',  // This will mirror the line on all sides
+          showgrid: false
+        },
+        yaxis: {
+          title: {
+            text: 'Residual',
+          },
+          type: 'log',
+          showline: true,
+          mirror: 'all',
+          showgrid: true,
+          // gridwidth: 1,
+          // gridcolor: 'rgba(0,0,0,0.1)'
+        },
+      };
+
+      Plotly.react('residuals-plot', traces, layout, {
+        ...plotConfig,
+        displayModeBar: true,
+        scrollZoom: false
+      }).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
+    }
   } catch (err) {
     console.error('Error updating residuals:', err);
   }
