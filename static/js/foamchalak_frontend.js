@@ -40,15 +40,17 @@ const plotLayout = {
   font: { family: '"Computer Modern Serif", serif', size: 12 },
   plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
   paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
-  margin: { l: 50, r: 20, t: 30, b: 40 },
+  margin: { l: 50, r: 20, t: 40 },
   height: 400,
   autosize: true,
   showlegend: true,
   legend: {
-    orientation: 'h',
-    y: -0.2,
-    x: 0.1,
-    xanchor: 'left',
+    // For changing plot legend location
+    // orientation: 'h',
+    // y: -0.2,
+    // x: 0.1,
+    // xanchor: 'left',
+    // yanchor: 'middle',
     bgcolor: 'rgba(0,0,0,0)'
   },
   xaxis: {
@@ -61,7 +63,7 @@ const plotLayout = {
   }
 };
 
-// Plotly config for performance
+// --- Plotly config ---
 const plotConfig = {
   responsive: true,
   displayModeBar: true,
@@ -74,11 +76,20 @@ const plotConfig = {
   displaylogo: false
 };
 
-// Common line style
+// --- Helper: Common line style ---
 const lineStyle = {
   width: 2,
   opacity: 0.9
 };
+
+// --- Helper: Create bold title ---
+const createBoldTitle = (text) => ({
+  text: `<b>${text}</b>`, // use HTML bold tag
+  font: {
+    ...plotLayout?.font,
+    size: 20
+  }
+});
 
 // --- Helper: Download plot as PNG with white background ---
 function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
@@ -521,7 +532,7 @@ async function updatePlots() {
         
         Plotly.react('pressure-plot', [pressureTrace], {
           ...plotLayout,
-          title: 'Pressure vs Time',
+          title: createBoldTitle('Pressure vs Time'),
           xaxis: {
             ...plotLayout.xaxis,
             title: 'Time (s)'
@@ -598,7 +609,7 @@ async function updatePlots() {
         
         Plotly.react('velocity-plot', traces, {
           ...plotLayout,
-          title: 'Velocity vs Time',
+          title: createBoldTitle('Velocity vs Time'),
           xaxis: {
             ...plotLayout.xaxis,
             title: 'Time (s)'
@@ -668,7 +679,7 @@ async function updatePlots() {
       if (turbTraces.length > 0) {
         Plotly.react('turbulence-plot', turbTraces, {
           ...plotLayout,
-          title: 'Turbulence Properties vs Time',
+          title: createBoldTitle('Turbulence Properties vs Time'),
           xaxis: {
             ...plotLayout.xaxis,
             title: 'Time (s)'
@@ -725,7 +736,7 @@ async function updateResidualsPlot(tutorial) {
       if (traces.length > 0) {
         Plotly.react('residuals-plot', traces, {
           ...plotLayout,
-          title: 'Residuals vs Time',
+          title: createBoldTitle('Residuals vs Time'),
           xaxis: {title: 'Time (s)'},
           yaxis: {title: 'Residual', type: 'log'},
         }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
@@ -773,7 +784,7 @@ async function updateAeroPlots() {
         if (cpDiv) {
           Plotly.react('cp-plot', [cpTrace], {
             ...plotLayout,
-            title: 'Pressure Coefficient',
+            title: createBoldTitle('Pressure Coefficient'),
             xaxis: {title: 'Time (s)'},
             yaxis: {title: 'Cp'}
           }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('cp-plot')));
@@ -798,7 +809,7 @@ async function updateAeroPlots() {
         
         Plotly.react('velocity-profile-plot', [velocityTrace], {
           ...plotLayout,
-          title: 'Velocity Profile',
+          title: createBoldTitle('Velocity Profile'),
           scene: {
             xaxis: {title: 'Ux (m/s)'},
             yaxis: {title: 'Uy (m/s)'},
