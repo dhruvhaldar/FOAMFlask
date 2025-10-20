@@ -118,6 +118,27 @@ function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
   });
 }
 
+// --- Helper: Save current legend visibility ---
+function getLegendVisibility(plotDiv) {
+  if (!plotDiv || !plotDiv.data) return {};
+  const visibility = {};
+  plotDiv.data.forEach(trace => {
+    visibility[trace.name] = trace.visible !== undefined ? trace.visible : true;
+  });
+  return visibility;
+}
+
+// --- Helper: Apply saved legend visibility to new traces ---
+function applyLegendVisibility(plotDiv, visibility) {
+  if (!plotDiv || !plotDiv.data || !visibility) return;
+  plotDiv.data.forEach(trace => {
+    if (visibility.hasOwnProperty(trace.name)) {
+      trace.visible = visibility[trace.name];
+    }
+  });
+}
+
+
 // --- Helper: Attach white-bg download button to a plot ---
 function attachWhiteBGDownloadButton(plotDiv) {
   plotDiv.layout.paper_bgcolor = 'white';
@@ -518,6 +539,12 @@ async function updatePlots() {
       
       // --- Pressure plot ---
       if (data.p && data.time) {
+
+        const pressureDiv = document.getElementById('pressure-plot');
+
+        // Save old legend visibility
+        const legendVisibility = getLegendVisibility(pressureDiv);
+
         const pressureTrace = {
           x: data.time,
           y: data.p,
@@ -530,8 +557,13 @@ async function updatePlots() {
             width: 2.5
           },
         };
+
+        // Apply saved visibility to the new trace
+        if (legendVisibility.hasOwnProperty(pressureTrace.name)) {
+            pressureTrace.visible = legendVisibility[pressureTrace.name];
+          }
         
-        Plotly.react('pressure-plot', [pressureTrace], {
+        Plotly.react(pressureDiv, [pressureTrace], {
           ...plotLayout,
           title: createBoldTitle('Pressure vs Time'),
           xaxis: {
@@ -542,11 +574,17 @@ async function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Pressure (Pa)'
           },
-        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('pressure-plot')));
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(pressureDiv));
       }
       
       // --- Velocity plot ---
       if (data.U_mag && data.time) {
+
+        const velocityDiv = document.getElementById('velocity-plot');
+
+        // Save old legend visibility
+        const legendVisibility = getLegendVisibility(velocityDiv);
+
         const traces = [
           {
             x: data.time,
@@ -607,8 +645,13 @@ async function updatePlots() {
             }
           });
         }
-        
-        Plotly.react('velocity-plot', traces, {
+
+        // Apply saved visibility to the new trace
+        if (legendVisibility.hasOwnProperty(traces[0].name)) {
+          traces[0].visible = legendVisibility[traces[0].name];
+        }
+                
+        Plotly.react(velocityDiv, traces, {
           ...plotLayout,
           title: createBoldTitle('Velocity vs Time'),
           xaxis: {
@@ -619,7 +662,7 @@ async function updatePlots() {
             ...plotLayout.yaxis,
             title: 'Velocity (m/s)'
           }
-        }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('velocity-plot')));
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(velocityDiv));
       }
       
       // --- Turbulence plot ---
@@ -783,77 +826,48 @@ async function updateResidualsPlot(tutorial) {
 
 async function updateAeroPlots() {
   const selectedTutorial = document.getElementById("tutorialSelect").value;
-  if (!selectedTutorial) {
-    return;
-  }
-  
+  if (!selectedTutorial) return;
+
   try {
-    // Fetch latest data for aerodynamic calculations
-    const data = await fetchWithCache(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
-      if (data.error) {
-        console.error('Error fetching aero data:', data.error);
-        return;
+    const response = await fetch(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+    const data = await response.json();
+    if (data.error) return;
+
+    // --- Cp plot ---
+    if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
+      const p_inf = 101325;
+      const rho = 1.225;
+      const u_inf = Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
+      const q_inf = 0.5 * rho * u_inf * u_inf;
+
+      const cp = data.p.map(p_val => (p_val - p_inf) / q_inf);
+
+      const cpDiv = document.getElementById('cp-plot');
+      if (cpDiv) {
+        const cpTrace = { x: data.time, y: cp, type: 'scatter', mode: 'lines+markers', name: 'Cp', line: {color: plotlyColors.red, width: 2.5} };
+        Plotly.react(cpDiv, [cpTrace], {
+          ...plotLayout,
+          title: createBoldTitle('Pressure Coefficient'),
+          xaxis: {title: 'Time (s)'},
+          yaxis: {title: 'Cp'}
+        }, plotConfig).then(() => attachWhiteBGDownloadButton(cpDiv));
       }
-      
-      // Calculate and plot pressure coefficient
-      if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
-        const p_inf = 101325;
-        const rho = 1.225;
-        const u_inf = Array.isArray(data.U_mag) ? data.U_mag[0] : data.U_mag || 1.0;
-        const q_inf = 0.5 * rho * u_inf * u_inf || 1.0;
+    }
 
-        const cp = data.p.map(p_val => (p_val - p_inf) / q_inf);
-
-        console.log('Cp plot data:', {x: data.time, y: cp, q_inf}); // debug
-
-        const cpTrace = {
-          x: data.time,
-          y: cp,
-          type: 'scatter',
-          mode: 'lines+markers',
-          name: 'Cp',
-          line: {color: plotlyColors.red, width: 2.5}
-        };
-
-        const cpDiv = document.getElementById('cp-plot');
-        if (cpDiv) {
-          Plotly.react('cp-plot', [cpTrace], {
-            ...plotLayout,
-            title: createBoldTitle('Pressure Coefficient'),
-            xaxis: {title: 'Time (s)'},
-            yaxis: {title: 'Cp'}
-          }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('cp-plot')));
-        } else {
-          console.warn('cp-plot div not found!');
-        }
-      } else {
-        console.warn('Cp data invalid or length mismatch:', data.p, data.time);
-      }
-          
-      // Plot velocity profile
-      if (data.Ux && data.Uy && data.Uz) {
-        const velocityTrace = {
-          x: [data.Ux],
-          y: [data.Uy],
-          z: [data.Uz],
-          type: 'scatter3d',
-          mode: 'markers',
-          name: 'Velocity',
-          marker: {color: plotlyColors.blue, size: 5}
-        };
-        
-        Plotly.react('velocity-profile-plot', [velocityTrace], {
+    // --- Velocity profile 3D plot ---
+    if (Array.isArray(data.Ux) && Array.isArray(data.Uy) && Array.isArray(data.Uz)) {
+      const velocityDiv = document.getElementById('velocity-profile-plot');
+      if (velocityDiv) {
+        const velocityTrace = { x: data.Ux, y: data.Uy, z: data.Uz, type: 'scatter3d', mode: 'markers', name: 'Velocity', marker: {color: plotlyColors.blue, size: 5} };
+        Plotly.react(velocityDiv, [velocityTrace], {
           ...plotLayout,
           title: createBoldTitle('Velocity Profile'),
-          scene: {
-            xaxis: {title: 'Ux (m/s)'},
-            yaxis: {title: 'Uy (m/s)'},
-            zaxis: {title: 'Uz (m/s)'}
-          },
+          scene: { xaxis: {title: 'Ux'}, yaxis: {title: 'Uy'}, zaxis: {title: 'Uz'} }
         }, plotConfig);
-        
-        attachWhiteBGDownloadButton(document.getElementById('velocity-profile-plot'));
+        attachWhiteBGDownloadButton(velocityDiv);
       }
+    }
+
   } catch (err) {
     console.error('Error updating aero plots:', err);
   }

@@ -212,12 +212,24 @@ def load_tutorial():
     container_run_path = f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run"
     container_case_path = posixpath.join(container_run_path, tutorial)
 
+    # Convert Windows paths to POSIX style for Docker
+    host_path = pathlib.Path(CASE_ROOT).resolve()
+    is_windows = platform.system() == "Windows"
+    if is_windows:
+        host_path = host_path.as_posix()  # Docker expects POSIX paths on Windows
+
+    # Base docker command: create directory and copy tutorial
     docker_cmd = (
-    f"bash -c 'source {bashrc} && "
-    f"mkdir -p {container_case_path} && "
-    f"cp -r $FOAM_TUTORIALS/{tutorial}/* {container_case_path} && "
-    f"chmod +x {container_case_path}/Allrun'"
+        f"bash -c 'source {bashrc} && "
+        f"mkdir -p {container_case_path} && "
+        f"cp -r $FOAM_TUTORIALS/{tutorial}/* {container_case_path}"
     )
+
+    # On Linux/macOS, add chmod; on Windows skip it
+    if not is_windows:
+        docker_cmd += f" && chmod +x {container_case_path}/Allrun"
+
+    docker_cmd += "'"
 
     container = None
     try:
