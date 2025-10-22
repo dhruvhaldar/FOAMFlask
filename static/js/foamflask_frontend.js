@@ -224,7 +224,7 @@ function showNotification(message, type = 'info', duration = 3000) {
   const id = notificationId++;
   const notification = document.createElement('div');
   notification.id = `notification-${id}`;
-  notification.className = `notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm`;
+  notification.className = `notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden`;
   
   // Set color based on type
   const colors = {
@@ -243,35 +243,67 @@ function showNotification(message, type = 'info', duration = 3000) {
     'warning': '⚠',
     'info': 'ℹ'
   };
+
+  // Create progress bar
+  const progressBar = document.createElement('div');
+  progressBar.className = 'h-1 bg-white bg-opacity-50 absolute bottom-0 left-0';
+  progressBar.style.width = '100%';
+  progressBar.style.transition = 'width linear';
+  progressBar.style.transitionDuration = `${duration}ms`;
   
   notification.innerHTML = `
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <span class="text-lg font-bold">${icons[type] || icons.info}</span>
-        <span class="text-sm">${message}</span>
+    <div class="relative">
+      <div class="flex items-center justify-between gap-3 relative z-10">
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-bold">${icons[type] || icons.info}</span>
+          <span class="text-sm">${message}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="countdown-${id}" class="text-xs opacity-75">${(duration/1000).toFixed(1)}s</span>
+          <button onclick="event.stopPropagation(); removeNotification(${id})" class="text-white hover:text-gray-200 font-bold text-lg leading-none">
+            ×
+          </button>
+        </div>
       </div>
-      <button onclick="removeNotification(${id})" class="text-white hover:text-gray-200 font-bold text-lg leading-none">
-        ×
-      </button>
     </div>
   `;
   
+  notification.style.position = 'relative';
+  notification.appendChild(progressBar);
   container.appendChild(notification);
   
-  // Auto-remove after duration
+  // Start countdown
+  let timeLeft = duration;
+  const countdownInterval = setInterval(() => {
+    timeLeft -= 100;
+    if (timeLeft <= 0) {
+      clearInterval(countdownInterval);
+      removeNotification(id);
+      return;
+    }
+    document.getElementById(`countdown-${id}`).textContent = `${(timeLeft/1000).toFixed(1)}s`;
+  }, 100);
+  
+  // Animate progress bar
   setTimeout(() => {
-    removeNotification(id);
-  }, duration);
+    progressBar.style.width = '0%';
+  }, 10);
+  
+  // Store the interval ID for cleanup
+  notification.dataset.intervalId = countdownInterval;
 }
 
 function removeNotification(id) {
   const notification = document.getElementById(`notification-${id}`);
   if (notification) {
-    notification.style.animation = 'fadeOut 0.3s ease-out';
+    // Clear the countdown interval
+    if (notification.dataset.intervalId) {
+      clearInterval(notification.dataset.intervalId);
+    }
+    notification.style.opacity = '0';
+    notification.style.transition = 'opacity 0.3s ease';
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
+      notification.remove();
     }, 300);
   }
 }
@@ -410,7 +442,7 @@ async function setCase() {
       else appendOutput(line, "stdout");
     });
     
-    showNotification('Case directory set successfully', 'success');
+    showNotification('Case directory set', 'info');
   } catch (error) {
     console.error('[FOAMFlask] Error setting case:', error);
     appendOutput(`[FOAMFlask] Failed to set case directory: ${error.message}`, "stderr");
@@ -493,7 +525,7 @@ async function loadTutorial() {
     }
   });
     
-    showNotification('Tutorial loaded successfully', 'success');
+    showNotification('Tutorial loaded', 'info');
   } catch (error) {
     console.error('[FOAMFlask] Error loading tutorial:', error);
     appendOutput(`[FOAMFlask] Failed to load tutorial: ${error.message}`, "stderr");
