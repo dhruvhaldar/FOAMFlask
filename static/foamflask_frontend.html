@@ -183,17 +183,65 @@
     <!-- Main Plots Container -->
     <div id="plotsContainer" class="hidden w-full">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
-        <div class="w-full overflow-hidden">
-          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        
+        <!-- Pressure Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button 
+            onclick="downloadPlotData('pressure-plot', 'pressure_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
         </div>
-        <div class="w-full overflow-hidden">
-          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        
+        <!-- Velocity Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button 
+            onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
         </div>
-        <div class="w-full overflow-hidden">
-          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+
+        <!-- Turbulence Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button 
+            onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
         </div>
-        <div class="w-full overflow-hidden">
-          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+
+        <!-- Residuals Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button 
+            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
         </div>
       </div>
     </div>

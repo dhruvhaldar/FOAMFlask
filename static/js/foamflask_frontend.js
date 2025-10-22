@@ -873,6 +873,49 @@ async function updateAeroPlots() {
   }
 }
 
+function downloadPlotData(plotId, filename) {
+  const plotDiv = document.getElementById(plotId);
+  
+  // Get the current plot data from Plotly
+  const plotData = plotDiv.data || [];
+  
+  if (plotData.length === 0) {
+    console.error('No plot data available');
+    return;
+  }
+
+  // Create CSV content
+  let csvContent = "x,y\n";
+  
+  // Get the first trace data
+  const trace = plotData[0];
+  if (trace && trace.x && trace.y) {
+    // Add data points
+    for (let i = 0; i < trace.x.length; i++) {
+      const x = trace.x[i] !== undefined ? trace.x[i] : '';
+      const y = trace.y[i] !== undefined ? trace.y[i] : '';
+      csvContent += `${x},${y}\n`;
+    }
+  }
+
+  // Create and trigger download
+  try {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  } catch (error) {
+    console.error('Error creating download:', error);
+  }
+}
+
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
   stopPlotUpdates();
