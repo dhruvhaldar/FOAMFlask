@@ -39,7 +39,7 @@ const plotlyColors = {
 const plotLayout = {
   font: { family: '"Computer Modern Serif", serif', size: 12 },
   plot_bgcolor: 'white',      // Inside of plotting area
-  paper_bgcolor: '#f3f4f6',     // Outer area
+  paper_bgcolor: '#f9fafb',     // Outer area
   margin: { l: 50, r: 20, t: 40, pad: 0 },
   height: 400,
   autosize: true,
