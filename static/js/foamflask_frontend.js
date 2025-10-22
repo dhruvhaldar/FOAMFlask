@@ -180,7 +180,7 @@ function attachWhiteBGDownloadButton(plotDiv) {
 // --- Page Switching ---
 function switchPage(pageName) {
   // Hide all pages
-  const pages = ['setup', 'run', 'plots'];
+  const pages = ['setup', 'run', 'mesh', 'plots'];
   pages.forEach(page => {
     const pageElement = document.getElementById(`page-${page}`);
     const navButton = document.getElementById(`nav-${page}`);
@@ -210,28 +210,49 @@ function switchPage(pageName) {
   
   currentPage = pageName;
   
-  // Initialize plots when switching to plots page
-  if (pageName === 'plots') {
-    // Ensure plots container is visible
-    const plotsContainer = document.getElementById('plotsContainer');
-    if (plotsContainer) {
-      plotsContainer.classList.remove('hidden');
-      
-      // Initialize plots if they haven't been initialized yet
-      if (!plotsContainer.hasAttribute('data-initialized')) {
-        plotsContainer.setAttribute('data-initialized', 'true');
-        // Start plot updates if not already running
-        if (!plotUpdateInterval) {
-          startPlotUpdates();
+  // Page-specific initializations
+  switch(pageName) {
+    case 'plots':
+      // Ensure plots container is visible
+      const plotsContainer = document.getElementById('plotsContainer');
+      if (plotsContainer) {
+        plotsContainer.classList.remove('hidden');
+        
+        // Initialize plots if they haven't been initialized yet
+        if (!plotsContainer.hasAttribute('data-initialized')) {
+          plotsContainer.setAttribute('data-initialized', 'true');
+          // Start plot updates if not already running
+          if (!plotUpdateInterval) {
+            startPlotUpdates();
+          }
         }
       }
-    }
-    
-    // Update the aero plots button state
-    const aeroBtn = document.getElementById('toggleAeroBtn');
-    if (aeroBtn) {
-      aeroBtn.classList.toggle('hidden', aeroVisible);
-    }
+      
+      // Update the aero plots button state
+      const aeroBtn = document.getElementById('toggleAeroBtn');
+      if (aeroBtn) {
+        aeroBtn.classList.toggle('hidden', aeroVisible);
+      }
+      break;
+      
+    case 'mesh':
+      // Initialize mesh visualization if needed
+      const meshContainer = document.getElementById('page-mesh');
+      if (meshContainer && !meshContainer.hasAttribute('data-initialized')) {
+        meshContainer.setAttribute('data-initialized', 'true');
+        // Add any mesh-specific initialization here
+        console.log('Mesh page initialized');
+        
+        // Add click handler for the Load Mesh button
+        const loadMeshBtn = meshContainer.querySelector('button');
+        if (loadMeshBtn) {
+          loadMeshBtn.addEventListener('click', function() {
+            showNotification('Loading mesh visualization...', 'info');
+            // Add your mesh loading logic here
+          });
+        }
+      }
+      break;
   }
 }
 
