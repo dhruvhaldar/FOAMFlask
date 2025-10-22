@@ -64,11 +64,35 @@
   </style>
 
   <style>
-    .modebar-container{
-      transform: scale(1.5) !important;
-      transform-origin: bottom right !important;
-      top: 320px !important;
-      right: 450px !important;
+    /* Modebar container styles */
+    .modebar-container {
+      position: absolute;
+      top: 355px !important;
+      right: 550px !important;
+      z-index: 1001;
+    }
+    
+    /* Modebar styles */
+    .modebar {
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      transform: scale(1.5);
+      transform-origin: bottom left;
+      pointer-events: none;
+      border: none;
+      position: relative;
+    }
+    
+    /* Show modebar on plot hover */
+    .plot-container:hover .modebar,
+    .js-plotly-plot:hover .modebar,
+    .plotly-graph-div:hover .modebar,
+    .plot-container:hover .modebar-container .modebar,
+    .js-plotly-plot:hover .modebar-container .modebar,
+    .plotly-graph-div:hover .modebar-container .modebar {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 1000;
     }
     
     /* Notification styles */
