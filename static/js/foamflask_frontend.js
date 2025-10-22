@@ -2,6 +2,12 @@ let caseDir = "";        // will be fetched from server on load
 let dockerImage = "";    // from server
 let openfoamVersion = ""; // from server
 
+// Page management
+let currentPage = 'setup';
+
+// Notification management
+let notificationId = 0;
+
 // Plotting variables and theme
 let plotUpdateInterval = null;
 let plotsVisible = false;
@@ -171,6 +177,105 @@ function attachWhiteBGDownloadButton(plotDiv) {
 }
 
 
+// --- Page Switching ---
+function switchPage(pageName) {
+  // Hide all pages
+  const pages = ['setup', 'run', 'plots'];
+  pages.forEach(page => {
+    const pageElement = document.getElementById(`page-${page}`);
+    const navButton = document.getElementById(`nav-${page}`);
+    
+    if (pageElement) {
+      pageElement.classList.add('hidden');
+    }
+    
+    if (navButton) {
+      navButton.classList.remove('bg-blue-500', 'text-white');
+      navButton.classList.add('text-gray-700', 'hover:bg-gray-100');
+    }
+  });
+  
+  // Show selected page
+  const selectedPage = document.getElementById(`page-${pageName}`);
+  const selectedNav = document.getElementById(`nav-${pageName}`);
+  
+  if (selectedPage) {
+    selectedPage.classList.remove('hidden');
+  }
+  
+  if (selectedNav) {
+    selectedNav.classList.add('bg-blue-500', 'text-white');
+    selectedNav.classList.remove('text-gray-700', 'hover:bg-gray-100');
+  }
+  
+  currentPage = pageName;
+  
+  // Auto-start plots if switching to plots page
+  if (pageName === 'plots' && !plotsVisible) {
+    // Don't auto-toggle, let user control it
+  }
+}
+
+// --- Notification System ---
+function showNotification(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('notificationContainer');
+  if (!container) return;
+  
+  const id = notificationId++;
+  const notification = document.createElement('div');
+  notification.id = `notification-${id}`;
+  notification.className = `notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm`;
+  
+  // Set color based on type
+  const colors = {
+    'success': 'bg-green-500 text-white',
+    'error': 'bg-red-500 text-white',
+    'warning': 'bg-yellow-500 text-white',
+    'info': 'bg-blue-500 text-white'
+  };
+  
+  notification.className += ` ${colors[type] || colors.info}`;
+  
+  // Add icon based on type
+  const icons = {
+    'success': '✓',
+    'error': '✕',
+    'warning': '⚠',
+    'info': 'ℹ'
+  };
+  
+  notification.innerHTML = `
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-lg font-bold">${icons[type] || icons.info}</span>
+        <span class="text-sm">${message}</span>
+      </div>
+      <button onclick="removeNotification(${id})" class="text-white hover:text-gray-200 font-bold text-lg leading-none">
+        ×
+      </button>
+    </div>
+  `;
+  
+  container.appendChild(notification);
+  
+  // Auto-remove after duration
+  setTimeout(() => {
+    removeNotification(id);
+  }, duration);
+}
+
+function removeNotification(id) {
+  const notification = document.getElementById(`notification-${id}`);
+  if (notification) {
+    notification.style.animation = 'fadeOut 0.3s ease-out';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }
+}
+
 // --- Initialize on page load ---
 window.onload = async () => {
   try {
@@ -304,9 +409,12 @@ async function setCase() {
       else if(line.startsWith("[Error]")) appendOutput(line, "stderr");
       else appendOutput(line, "stdout");
     });
+    
+    showNotification('Case directory set successfully', 'success');
   } catch (error) {
     console.error('[FOAMFlask] Error setting case:', error);
     appendOutput(`[FOAMFlask] Failed to set case directory: ${error.message}`, "stderr");
+    showNotification('Failed to set case directory', 'error');
   }
 }
 
@@ -339,9 +447,11 @@ async function setDockerConfig(image, version) {
     }
 
     appendOutput(`Docker config set to: ${dockerImage} (OpenFOAM ${openfoamVersion})`, "info");
+    showNotification('Docker config updated', 'success');
   } catch (error) {
     console.error('[FOAMFlask] Error setting Docker config:', error);
     appendOutput(`[FOAMFlask] Failed to set Docker config: ${error.message}`, "stderr");
+    showNotification('Failed to set Docker config', 'error');
   }
 }
 
@@ -382,9 +492,12 @@ async function loadTutorial() {
       appendOutput(line, type);
     }
   });
+    
+    showNotification('Tutorial loaded successfully', 'success');
   } catch (error) {
     console.error('[FOAMFlask] Error loading tutorial:', error);
     appendOutput(`[FOAMFlask] Failed to load tutorial: ${error.message}`, "stderr");
+    showNotification('Failed to load tutorial', 'error');
   }
 }
 
@@ -392,6 +505,7 @@ async function loadTutorial() {
 async function runCommand(cmd) {
   if (!cmd) {
     appendOutput("[FOAMFlask] Error: No command specified!", "stderr");
+    showNotification('No command specified', 'error');
     return;
   }
   
@@ -400,6 +514,8 @@ async function runCommand(cmd) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = ""; // clear previous output
     outputBuffer.length = 0; // clear buffer
+    
+    showNotification(`Running ${cmd}...`, 'info');
 
     const response = await fetch("/run", {
       method: "POST",
@@ -423,6 +539,7 @@ async function runCommand(cmd) {
         const {done, value} = await reader.read();
         if (done) {
           flushOutputBuffer(); // Ensure all output is flushed
+          showNotification(`Command ${cmd} completed`, 'success');
           return;
         }
         
@@ -446,6 +563,7 @@ async function runCommand(cmd) {
   } catch (error) {
     console.error('[FOAMFlask] Error running command:', error);
     appendOutput(`[FOAMFlask] Failed to run command: ${error.message}`, "stderr");
+    showNotification('Command execution failed', 'error');
   }
 }
 

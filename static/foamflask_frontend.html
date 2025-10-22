@@ -70,15 +70,84 @@
       top: 320px !important;
       right: 450px !important;
     }
+    
+    /* Notification styles */
+    .notification {
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    
+    /* Page transition */
+    .page {
+      animation: fadeInPage 0.3s ease-in;
+    }
+    
+    @keyframes fadeInPage {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen p-4 sm:p-6">
+<body class="bg-gray-50 text-gray-800 min-h-screen">
 
-  <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+  <!-- Notification Container -->
+  <div id="notificationContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+  </div>
 
-    <!-- Header -->
-    <h1 class="text-3xl sm:text-4xl font-bold text-center mb-4">FOAMFlask</h1>
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
+        </div>
+        <div class="flex space-x-1">
+          <button onclick="switchPage('setup')" id="nav-setup" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
+            Setup
+          </button>
+          <button onclick="switchPage('run')" id="nav-run" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Run
+          </button>
+          <button onclick="switchPage('plots')" id="nav-plots" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Plots
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="p-4 sm:p-6">
+
+  <!-- Setup Page -->
+  <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
 
     <!-- Case Directory -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -119,6 +188,11 @@
       </button>
     </div>
 
+  </div>
+
+  <!-- Run Page -->
+  <div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+
     <!-- Run Commands Section -->
     <div class="my-4">
       <h3 class="text-xl font-semibold mb-2">Run OpenFOAM Commands</h3>
@@ -146,8 +220,8 @@
 
   </div>
 
-  <!-- Realtime Plots Section -->
-  <div class="max-w-7xl mx-auto mt-6 bg-white shadow-lg rounded-lg p-6">
+  <!-- Plots Page -->
+  <div id="page-plots" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">Realtime Plots</h2>
       <div class="flex gap-2">
@@ -239,6 +313,9 @@
       </div>
     </div>
   </div>
+
+  </div>
+  <!-- End Main Content Area -->
 
   <!-- Plotly.js - async loading for better performance -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" async></script>
