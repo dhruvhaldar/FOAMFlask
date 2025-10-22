@@ -40,7 +40,7 @@ const plotLayout = {
   font: { family: '"Computer Modern Serif", serif', size: 12 },
   plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
   paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
-  margin: { l: 50, r: 20, t: 40, pad: 10 },
+  margin: { l: 50, r: 20, t: 40, pad: 0 },
   height: 400,
   autosize: true,
   showlegend: true,
@@ -650,7 +650,7 @@ async function updatePlots() {
         if (legendVisibility.hasOwnProperty(traces[0].name)) {
           traces[0].visible = legendVisibility[traces[0].name];
         }
-                
+        
         Plotly.react(velocityDiv, traces, {
           ...plotLayout,
           title: createBoldTitle('Velocity vs Time'),
