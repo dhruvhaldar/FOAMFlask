@@ -198,8 +198,8 @@ window.onload = async () => {
       openfoamRootInput.value = `${dockerImage} (OpenFOAM ${openfoamVersion})`;
     }
   } catch (error) {
-    console.error('Initialization error:', error);
-    appendOutput('Failed to initialize application', 'stderr');
+    console.error('[FOAMFlask] Initialization error:', error);
+    appendOutput('[FOAMFlask] Failed to initialize application', 'stderr');
   }
 };
 
@@ -301,8 +301,8 @@ async function setCase() {
       else appendOutput(line, "stdout");
     });
   } catch (error) {
-    console.error('Error setting case:', error);
-    appendOutput(`Failed to set case directory: ${error.message}`, "stderr");
+    console.error('[FOAMFlask] Error setting case:', error);
+    appendOutput(`[FOAMFlask] Failed to set case directory: ${error.message}`, "stderr");
   }
 }
 
@@ -336,8 +336,8 @@ async function setDockerConfig(image, version) {
 
     appendOutput(`Docker config set to: ${dockerImage} (OpenFOAM ${openfoamVersion})`, "info");
   } catch (error) {
-    console.error('Error setting Docker config:', error);
-    appendOutput(`Failed to set Docker config: ${error.message}`, "stderr");
+    console.error('[FOAMFlask] Error setting Docker config:', error);
+    appendOutput(`[FOAMFlask] Failed to set Docker config: ${error.message}`, "stderr");
   }
 }
 
@@ -366,26 +366,28 @@ async function loadTutorial() {
     
     // Do not overwrite caseDir input — keep it as the run folder
     data.output.split('\n').forEach(line => {
-      line = line.trim();
-      if(line.startsWith("INFO::[FOAMFlask] Tutorial loaded::")) {
-        appendOutput(line.replace("INFO::[FOAMFlask] Tutorial loaded::","Tutorial loaded: "), "tutorial");
-      } else if(line.startsWith("Source:") || line.startsWith("Copied to:")) {
-        appendOutput(line, "info");
-      } else {
-        const type = /error/i.test(line) ? "stderr" : "stdout";
-        appendOutput(line, type);
-      }
-    });
+    line = line.trim();
+    if(line.startsWith("INFO::[FOAMFlask] Tutorial loaded::")) {
+      appendOutput(line.replace("INFO::[FOAMFlask] Tutorial loaded::","[FOAMFlask] Tutorial loaded: "), "tutorial");
+    } else if(line.startsWith("Source:")) {
+      appendOutput(`[FOAMFlask] ${line}`, "info");
+    } else if(line.startsWith("Copied to:")) {
+      appendOutput(`[FOAMFlask] ${line}`, "info");
+    } else {
+      const type = /error/i.test(line) ? "stderr" : "stdout";
+      appendOutput(line, type);
+    }
+  });
   } catch (error) {
-    console.error('Error loading tutorial:', error);
-    appendOutput(`Failed to load tutorial: ${error.message}`, "stderr");
+    console.error('[FOAMFlask] Error loading tutorial:', error);
+    appendOutput(`[FOAMFlask] Failed to load tutorial: ${error.message}`, "stderr");
   }
 }
 
 // --- Run OpenFOAM commands ---
 async function runCommand(cmd) {
   if (!cmd) {
-    appendOutput("Error: No command specified!", "stderr");
+    appendOutput("[FOAMFlask] Error: No command specified!", "stderr");
     return;
   }
   
@@ -430,16 +432,16 @@ async function runCommand(cmd) {
         await read();
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Stream reading error:', error);
-          appendOutput(`Stream error: ${error.message}`, "stderr");
+          console.error('[FOAMFlask] Stream reading error:', error);
+          appendOutput(`[FOAMFlask] Stream error: ${error.message}`, "stderr");
         }
       }
     }
     
     await read();
   } catch (error) {
-    console.error('Error running command:', error);
-    appendOutput(`Failed to run command: ${error.message}`, "stderr");
+    console.error('[FOAMFlask] Error running command:', error);
+    appendOutput(`[FOAMFlask] Failed to run command: ${error.message}`, "stderr");
   }
 }
 
@@ -533,7 +535,7 @@ async function updatePlots() {
   try {
     const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
       if (data.error) {
-        console.error('Error fetching plot data:', data.error);
+        console.error('[FOAMFlask] Error fetching plot data:', data.error);
         return;
       }
       
@@ -743,7 +745,7 @@ async function updatePlots() {
       
       await Promise.allSettled(updatePromises);
   } catch (err) {
-    console.error('Error updating plots:', err);
+    console.error('[FOAMFlask] Error updating plots:', err);
   } finally {
     isUpdatingPlots = false;
     if (pendingPlotUpdate) {
@@ -820,7 +822,7 @@ async function updateResidualsPlot(tutorial) {
       }).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
     }
   } catch (err) {
-    console.error('Error updating residuals:', err);
+    console.error('[FOAMFlask] Error updating residuals:', err);
   }
 }
 
@@ -869,21 +871,21 @@ async function updateAeroPlots() {
     }
 
   } catch (err) {
-    console.error('Error updating aero plots:', err);
+    console.error('[FOAMFlask] Error updating aero plots:', err);
   }
 }
 
 function downloadPlotData(plotId, filename) {
   const plotDiv = document.getElementById(plotId);
   if (!plotDiv || !plotDiv.data) {
-    console.error('Plot data not available');
+    console.error('[FOAMFlask] Plot data not available');
     return;
   }
 
   // Get all traces from the plot
   const traces = plotDiv.data;
   if (traces.length === 0) {
-    console.error('No traces found in the plot');
+    console.error('[FOAMFlask] No traces found in the plot');
     return;
   }
 
@@ -917,7 +919,7 @@ function downloadPlotData(plotId, filename) {
         window.URL.revokeObjectURL(url);
       }, 100);
     } catch (error) {
-      console.error(`Error downloading ${traceName} data:`, error);
+      console.error(`[FOAMFlask] Error downloading ${traceName} data:`, error);
     }
   });
 }
