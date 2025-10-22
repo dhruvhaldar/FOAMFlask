@@ -63,35 +63,6 @@
     
   </style>
 
-  
-  <!-- Plotly modebar styles -->
-  <!-- --- Smooth Fade + Minimal Modebar --- -->
-  <style>
-  .modebar {
-    background-color: transparent;
-    box-shadow: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-    pointer-events: none; /* prevent accidental blocking */
-  }
-
-  .js-plotly-plot:hover .modebar {
-  opacity: 1;
-  pointer-events: auto;
-  }
-
-  .modebar-btn {
-    background-color: transparent;
-    border-radius: 6px !important;
-    transition: background-color 0.2s ease;
-  }
-
-  .modebar-btn:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-  }
-  </style>
-
-
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen p-4 sm:p-6">
 
@@ -186,7 +157,7 @@
         
         <!-- Pressure Plot -->
         <div class="w-full overflow-hidden relative group">
-          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <div id="pressure-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('pressure-plot', 'pressure_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -201,7 +172,7 @@
         
         <!-- Velocity Plot -->
         <div class="w-full overflow-hidden relative group">
-          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -216,7 +187,7 @@
 
         <!-- Turbulence Plot -->
         <div class="w-full overflow-hidden relative group">
-          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -231,7 +202,7 @@
 
         <!-- Residuals Plot -->
         <div class="w-full overflow-hidden relative group">
-          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -251,10 +222,10 @@
       <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         <div class="w-full overflow-hidden">
-          <div id="cp-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+          <div id="cp-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
         </div>
         <div class="w-full overflow-hidden">
-          <div id="velocity-profile-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+          <div id="velocity-profile-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
         </div>
       </div>
     </div>
