@@ -10,7 +10,7 @@ let notificationId = 0;
 
 // Plotting variables and theme
 let plotUpdateInterval = null;
-let plotsVisible = false;
+let plotsVisible = true; // Set to true by default to show plots
 let aeroVisible = false;
 let isUpdatingPlots = false;
 let pendingPlotUpdate = false;
@@ -210,9 +210,28 @@ function switchPage(pageName) {
   
   currentPage = pageName;
   
-  // Auto-start plots if switching to plots page
-  if (pageName === 'plots' && !plotsVisible) {
-    // Don't auto-toggle, let user control it
+  // Initialize plots when switching to plots page
+  if (pageName === 'plots') {
+    // Ensure plots container is visible
+    const plotsContainer = document.getElementById('plotsContainer');
+    if (plotsContainer) {
+      plotsContainer.classList.remove('hidden');
+      
+      // Initialize plots if they haven't been initialized yet
+      if (!plotsContainer.hasAttribute('data-initialized')) {
+        plotsContainer.setAttribute('data-initialized', 'true');
+        // Start plot updates if not already running
+        if (!plotUpdateInterval) {
+          startPlotUpdates();
+        }
+      }
+    }
+    
+    // Update the aero plots button state
+    const aeroBtn = document.getElementById('toggleAeroBtn');
+    if (aeroBtn) {
+      aeroBtn.classList.toggle('hidden', aeroVisible);
+    }
   }
 }
 

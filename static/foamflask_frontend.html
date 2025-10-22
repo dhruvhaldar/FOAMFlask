@@ -249,17 +249,14 @@
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">Realtime Plots</h2>
       <div class="flex gap-2">
-        <button onclick="togglePlots()" id="togglePlotsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-          Show Plots
-        </button>
-        <button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded hidden">
+        <button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
           Show Aero Plots
         </button>
       </div>
     </div>
 
     <!-- Main Plots Container -->
-    <div id="plotsContainer" class="hidden w-full">
+    <div id="plotsContainer" class="w-full">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
         
         <!-- Pressure Plot -->
@@ -341,21 +338,34 @@
   </div>
   <!-- End Main Content Area -->
 
-  <!-- Plotly.js - async loading for better performance -->
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" async></script>
-
-  <script> 
+  <!-- Plotly.js - Load synchronously to ensure it's available when needed -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script>
+  // Initialize after both DOM and Plotly are loaded
   document.addEventListener("DOMContentLoaded", function() {
-    // Wait until all plots are loaded
+    // Check if Plotly is loaded
+    if (typeof Plotly === 'undefined') {
+      console.error('Plotly.js not loaded!');
+      return;
+    }
+    
+    // Initialize modebar styling
     const observer = new MutationObserver(() => {
       document.querySelectorAll('.modebar').forEach(bar => {
-      bar.style.backgroundColor = 'transparent';
-      bar.style.boxShadow = 'none';
+        bar.style.backgroundColor = 'transparent';
+        bar.style.boxShadow = 'none';
+      });
     });
-  });
-
-  // Observe the document for Plotly plot creation
-  observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Observe the document for Plotly plot creation
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Initialize plots if we're on the plots page
+    if (document.getElementById('page-plots') && !document.getElementById('page-plots').classList.contains('hidden')) {
+      if (typeof startPlotUpdates === 'function') {
+        startPlotUpdates();
+      }
+    }
   });
   </script>
 
