@@ -38,8 +38,8 @@ const plotlyColors = {
 // Common plot layout
 const plotLayout = {
   font: { family: '"Computer Modern Serif", serif', size: 12 },
-  plot_bgcolor: 'rgba(0,0,0,0)',      // Inside of plotting area
-  paper_bgcolor: 'rgba(0,0,0,0)',     // Outer area
+  plot_bgcolor: 'white',      // Inside of plotting area
+  paper_bgcolor: '#f3f4f6',     // Outer area
   margin: { l: 50, r: 20, t: 40, pad: 0 },
   height: 400,
   autosize: true,
@@ -51,7 +51,7 @@ const plotLayout = {
     // x: 0.1,
     // xanchor: 'left',
     // yanchor: 'middle',
-    bgcolor: 'rgba(0,0,0,0)',
+    // bgcolor: 'white',
     // borderwidth: 0.5
   },
   xaxis: {
@@ -98,6 +98,10 @@ function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
 
   const downloadLayout = {
     ...plotDiv.layout,
+    font: {
+    ...plotLayout.font,
+    color: 'black'
+    },
     plot_bgcolor: 'white',
     paper_bgcolor: 'white'
   };
