@@ -10,6 +10,7 @@ import time
 
 from flask import Flask, request, jsonify, render_template_string, Response
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
+from pyvista_handler import mesh_visualizer
 
 app = Flask(__name__)
 
@@ -509,6 +510,93 @@ def api_residuals():
         return jsonify(residuals)
     except Exception as e:
         logger.error(f"Error getting residuals: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- PyVista Mesh Visualization Endpoints ---
+@app.route("/api/available_meshes", methods=["GET"])
+def api_available_meshes():
+    """
+    Get list of available mesh files in the case directory.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+    
+    Returns:
+        list: List of available mesh files.
+    """
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+    
+    try:
+        mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial)
+        return jsonify({"meshes": mesh_files})
+    except Exception as e:
+        logger.error(f"Error getting available meshes: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/load_mesh", methods=["POST"])
+def api_load_mesh():
+    """
+    Load a mesh file and return mesh information.
+    
+    Args:
+        file_path (str): Path to the mesh file.
+    
+    Returns:
+        dict: Mesh information.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+    
+    if not file_path:
+        return jsonify({"error": "No file path provided"}), 400
+    
+    try:
+        mesh_info = mesh_visualizer.load_mesh(file_path)
+        return jsonify(mesh_info)
+    except Exception as e:
+        logger.error(f"Error loading mesh: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/mesh_screenshot", methods=["POST"])
+def api_mesh_screenshot():
+    """
+    Generate a screenshot of the mesh.
+    
+    Args:
+        file_path (str): Path to the mesh file.
+        width (int): Screenshot width.
+        height (int): Screenshot height.
+        show_edges (bool): Whether to show edges.
+        color (str): Mesh color.
+        camera_position (str): Camera position.
+    
+    Returns:
+        dict: Base64-encoded image.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+    width = data.get("width", 800)
+    height = data.get("height", 600)
+    show_edges = data.get("show_edges", True)
+    color = data.get("color", "lightblue")
+    camera_position = data.get("camera_position", None)
+    
+    if not file_path:
+        return jsonify({"error": "No file path provided"}), 400
+    
+    try:
+        img_str = mesh_visualizer.get_mesh_screenshot(
+            file_path, width, height, show_edges, color, camera_position
+        )
+        
+        if img_str:
+            return jsonify({"success": True, "image": img_str})
+        else:
+            return jsonify({"success": False, "error": "Failed to generate screenshot"}), 500
+    except Exception as e:
+        logger.error(f"Error generating mesh screenshot: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":

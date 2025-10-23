@@ -5,6 +5,10 @@ let openfoamVersion = ""; // from server
 // Page management
 let currentPage = 'setup';
 
+// Mesh visualization state
+let currentMeshPath = null;
+let availableMeshes = [];
+
 // Notification management
 let notificationId = 0;
 
@@ -240,17 +244,9 @@ function switchPage(pageName) {
       const meshContainer = document.getElementById('page-mesh');
       if (meshContainer && !meshContainer.hasAttribute('data-initialized')) {
         meshContainer.setAttribute('data-initialized', 'true');
-        // Add any mesh-specific initialization here
         console.log('Mesh page initialized');
-        
-        // Add click handler for the Load Mesh button
-        const loadMeshBtn = meshContainer.querySelector('button');
-        if (loadMeshBtn) {
-          loadMeshBtn.addEventListener('click', function() {
-            showNotification('Loading mesh visualization...', 'info');
-            // Add your mesh loading logic here
-          });
-        }
+        // Load available meshes
+        refreshMeshList();
       }
       break;
   }
@@ -1116,6 +1112,193 @@ function downloadPlotData(plotId, filename) {
       console.error(`[FOAMFlask] Error downloading ${traceName} data:`, error);
     }
   });
+}
+
+// --- Mesh Visualization Functions ---
+async function refreshMeshList() {
+  const selectedTutorial = document.getElementById("tutorialSelect").value;
+  if (!selectedTutorial) {
+    showNotification('Please select a tutorial first', 'warning');
+    return;
+  }
+  
+  try {
+    showNotification('Searching for mesh files...', 'info', 2000);
+    
+    const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(selectedTutorial)}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      showNotification(data.error, 'error');
+      return;
+    }
+    
+    availableMeshes = data.meshes || [];
+    
+    // Update the select dropdown
+    const meshSelect = document.getElementById('meshSelect');
+    meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
+    
+    if (availableMeshes.length === 0) {
+      showNotification('No mesh files found in this case', 'warning');
+      meshSelect.innerHTML += '<option value="" disabled>No mesh files found</option>';
+      return;
+    }
+    
+    availableMeshes.forEach(mesh => {
+      const option = document.createElement('option');
+      option.value = mesh.path;
+      option.textContent = `${mesh.name} (${mesh.relative_path})`;
+      meshSelect.appendChild(option);
+    });
+    
+    showNotification(`Found ${availableMeshes.length} mesh file(s)`, 'success', 2000);
+    
+  } catch (error) {
+    console.error('[FOAMFlask] Error fetching mesh list:', error);
+    showNotification('Failed to fetch mesh list', 'error');
+  }
+}
+
+async function loadMeshVisualization() {
+  const meshSelect = document.getElementById('meshSelect');
+  const selectedPath = meshSelect.value;
+  
+  if (!selectedPath) {
+    showNotification('Please select a mesh file', 'warning');
+    return;
+  }
+  
+  try {
+    showNotification('Loading mesh...', 'info');
+    
+    // First, load mesh info
+    const infoResponse = await fetch('/api/load_mesh', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({file_path: selectedPath})
+    });
+    
+    if (!infoResponse.ok) {
+      throw new Error(`HTTP error! status: ${infoResponse.status}`);
+    }
+    
+    const meshInfo = await infoResponse.json();
+    
+    if (!meshInfo.success) {
+      showNotification(meshInfo.error || 'Failed to load mesh', 'error');
+      return;
+    }
+    
+    // Display mesh info
+    displayMeshInfo(meshInfo);
+    
+    // Now generate screenshot
+    currentMeshPath = selectedPath;
+    await updateMeshView();
+    
+    // Show controls
+    document.getElementById('meshControls').classList.remove('hidden');
+    
+    showNotification('Mesh loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('[FOAMFlask] Error loading mesh:', error);
+    showNotification('Failed to load mesh', 'error');
+  }
+}
+
+async function updateMeshView() {
+  if (!currentMeshPath) {
+    showNotification('No mesh loaded', 'warning');
+    return;
+  }
+  
+  try {
+    const showEdges = document.getElementById('showEdges').checked;
+    const color = document.getElementById('meshColor').value;
+    const cameraPosition = document.getElementById('cameraPosition').value;
+    
+    showNotification('Rendering mesh...', 'info', 2000);
+    
+    const response = await fetch('/api/mesh_screenshot', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        file_path: currentMeshPath,
+        width: 1200,
+        height: 800,
+        show_edges: showEdges,
+        color: color,
+        camera_position: cameraPosition || null
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      showNotification(data.error || 'Failed to render mesh', 'error');
+      return;
+    }
+    
+    // Display the image
+    const meshImage = document.getElementById('meshImage');
+    const meshPlaceholder = document.getElementById('meshPlaceholder');
+    
+    meshImage.src = `data:image/png;base64,${data.image}`;
+    meshImage.classList.remove('hidden');
+    meshPlaceholder.classList.add('hidden');
+    
+    showNotification('Mesh rendered successfully', 'success', 2000);
+    
+  } catch (error) {
+    console.error('[FOAMFlask] Error rendering mesh:', error);
+    showNotification('Failed to render mesh', 'error');
+  }
+}
+
+function displayMeshInfo(meshInfo) {
+  const meshInfoDiv = document.getElementById('meshInfo');
+  const meshInfoContent = document.getElementById('meshInfoContent');
+  
+  if (!meshInfo || !meshInfo.success) {
+    meshInfoDiv.classList.add('hidden');
+    return;
+  }
+  
+  // Format the mesh information
+  const infoItems = [
+    { label: 'Points', value: meshInfo.n_points?.toLocaleString() || 'N/A' },
+    { label: 'Cells', value: meshInfo.n_cells?.toLocaleString() || 'N/A' },
+    { label: 'Length', value: meshInfo.length ? meshInfo.length.toFixed(3) : 'N/A' },
+    { label: 'Volume', value: meshInfo.volume ? meshInfo.volume.toFixed(3) : 'N/A' },
+  ];
+  
+  meshInfoContent.innerHTML = infoItems.map(item => 
+    `<div><strong>${item.label}:</strong> ${item.value}</div>`
+  ).join('');
+  
+  // Add bounds if available
+  if (meshInfo.bounds && Array.isArray(meshInfo.bounds)) {
+    const boundsStr = `[${meshInfo.bounds.map(b => b.toFixed(2)).join(', ')}]`;
+    meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> ${boundsStr}</div>`;
+  }
+  
+  // Add center if available
+  if (meshInfo.center && Array.isArray(meshInfo.center)) {
+    const centerStr = `(${meshInfo.center.map(c => c.toFixed(2)).join(', ')})`;
+    meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> ${centerStr}</div>`;
+  }
+  
+  meshInfoDiv.classList.remove('hidden');
 }
 
 // Clean up on page unload
