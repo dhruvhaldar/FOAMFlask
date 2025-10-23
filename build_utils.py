@@ -3,7 +3,11 @@ import subprocess
 from flask import current_app
 
 def init_build_system(app):
-    """Initialize the build system with the Flask app."""
+    """Initialize the build system with the Flask app.
+    
+    Args:
+        app (Flask): The Flask app.
+    """
     @app.before_first_request
     def run_build():
         if app.config.get('ENV') == 'development':

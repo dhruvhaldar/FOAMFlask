@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>FOAMFlask Frontend Documentation</title>
+<meta name="description" content="Documentation for FOAMFlask frontend interface">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>
+:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}
+</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">FOAMFlask Frontend</h1>
+</header>
+<section id="section-intro">
+<p>Interactive web interface for the FOAMFlask application, providing real-time visualization and control of OpenFOAM simulations.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;FOAMFlask&lt;/title&gt;
+  
+  &lt;!-- Resource hints for better performance --&gt;
+  &lt;link rel="preconnect" href="https://cdn.tailwindcss.com"&gt;
+  &lt;link rel="preconnect" href="https://cdn.plot.ly"&gt;
+  &lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;
+  &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;
+  &lt;link href="https://fonts.googleapis.com/css2?family=Computer+Modern+Serif&display=swap" rel="stylesheet"&gt;
+  
+  &lt;!-- Tailwind CSS --&gt;
+  &lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+  
+  &lt;!-- Plotly for interactive visualizations --&gt;
+  &lt;script src="https://cdn.plot.ly/plotly-2.24.1.min.js"&gt;&lt;/script&gt;
+  
+  &lt;!-- Custom JavaScript --&gt;
+  &lt;script src="js/foamflask_frontend.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body class="bg-gray-50 text-gray-800 min-h-screen"&gt;
+  &lt;!-- Application content --&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</details>
+</section>
+
+<section>
+<h2 class="section-title" id="header-pages">Pages</h2>
+<dl>
+<dt id="setup-page"><code class="name flex">
+<span><span class="ident">Setup Page</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Initial configuration page for setting up the simulation case and Docker environment.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!-- Setup Page --&gt;
+&lt;div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6"&gt;
+  &lt;!-- Case Directory --&gt;
+  &lt;div class="flex flex-col sm:flex-row sm:items-center gap-2"&gt;
+    &lt;input type="text" id="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" placeholder="Case directory path" /&gt;
+    &lt;button onclick="setCase()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"&gt;
+      Set Case Dir
+    &lt;/button&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Docker Configuration --&gt;
+  &lt;div class="border border-gray-200 rounded p-4"&gt;
+    &lt;h3 class="font-semibold mb-2"&gt;Docker Configuration&lt;/h3&gt;
+    &lt;div class="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
+      &lt;div&gt;
+        &lt;label class="block text-sm font-medium text-gray-700 mb-1"&gt;Docker Image&lt;/label&gt;
+        &lt;input type="text" id="dockerImage" class="w-full border rounded px-3 py-2" 
+               placeholder="e.g., haldardhruv/ubuntu_noble_openfoam:v12" /&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label class="block text-sm font-medium text-gray-700 mb-1"&gt;OpenFOAM Version&lt;/label&gt;
+        &lt;input type="text" id="openfoamVersion" class="w-full border rounded px-3 py-2" 
+               placeholder="e.g., 12" /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;button onclick="setDockerConfig()" class="mt-3 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"&gt;
+      Save Docker Config
+    &lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Key Features</h3>
+<ul>
+<li>Case directory selection</li>
+<li>Docker configuration</li>
+<li>Tutorial selection</li>
+<li>Simulation parameters</li>
+</ul>
+</div>
+</dd>
+
+<dt id="run-page"><code class="name flex">
+<span><span class="ident">Run Page</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Control panel for running and monitoring simulations.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!-- Run Page --&gt;
+&lt;div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6"&gt;
+  &lt;!-- Simulation Controls --&gt;
+  &lt;div class="flex justify-between items-center mb-4"&gt;
+    &lt;h2 class="text-2xl font-bold"&gt;Simulation Controls&lt;/h2&gt;
+    &lt;div class="flex gap-2"&gt;
+      &lt;button onclick="startSimulation()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"&gt;
+        Start Simulation
+      &lt;/button&gt;
+      &lt;button onclick="stopSimulation()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"&gt;
+        Stop Simulation
+      &lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Real-time Output --&gt;
+  &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+    &lt;h3 class="text-lg font-semibold mb-2"&gt;Real-time Output&lt;/h3&gt;
+    &lt;div id="output-log" class="w-full h-64 overflow-y-scroll"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Progress Tracking --&gt;
+  &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+    &lt;h3 class="text-lg font-semibold mb-2"&gt;Progress Tracking&lt;/h3&gt;
+    &lt;div id="progress-bar" class="w-full h-4 bg-gray-200 rounded"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Key Features</h3>
+<ul>
+<li>Simulation controls (start/stop)</li>
+<li>Real-time output display</li>
+<li>Progress tracking</li>
+</ul>
+</div>
+</dd>
+
+<dt id="mesh-page"><code class="name flex">
+<span><span class="ident">Mesh Page</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Visualization and inspection of the simulation mesh.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!-- Mesh Page --&gt;
+&lt;div id="page-mesh" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6"&gt;
+  &lt;!-- 3D Mesh Visualization --&gt;
+  &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+    &lt;h3 class="text-lg font-semibold mb-2"&gt;3D Mesh Visualization&lt;/h3&gt;
+    &lt;div id="mesh-visualization" class="w-full h-64"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Mesh Quality Metrics --&gt;
+  &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+    &lt;h3 class="text-lg font-semibold mb-2"&gt;Mesh Quality Metrics&lt;/h3&gt;
+    &lt;div id="mesh-metrics" class="w-full h-64 overflow-y-scroll"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Interactive Inspection --&gt;
+  &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+    &lt;h3 class="text-lg font-semibold mb-2"&gt;Interactive Inspection&lt;/h3&gt;
+    &lt;div id="mesh-inspection" class="w-full h-64"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Key Features</h3>
+<ul>
+<li>3D mesh visualization</li>
+<li>Mesh quality metrics</li>
+<li>Interactive inspection</li>
+</ul>
+</div>
+</dd>
+
+<dt id="plots-page"><code class="name flex">
+<span><span class="ident">Plots Page</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Real-time visualization of simulation data.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!-- Plots Page --&gt;
+&lt;div id="page-plots" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6"&gt;
+  &lt;div class="flex justify-between items-center mb-4"&gt;
+    &lt;h2 class="text-2xl font-bold"&gt;Realtime Plots&lt;/h2&gt;
+    &lt;div class="flex gap-2"&gt;
+      &lt;button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"&gt;
+        Toggle Aerodynamic Plots
+      &lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;div id="plotsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
+    &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+      &lt;h3 class="text-lg font-semibold mb-2"&gt;Pressure Field&lt;/h3&gt;
+      &lt;div id="pressure-plot" class="w-full h-64"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+      &lt;h3 class="text-lg font-semibold mb-2"&gt;Velocity Field&lt;/h3&gt;
+      &lt;div id="velocity-plot" class="w-full h-64"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+      &lt;h3 class="text-lg font-semibold mb-2"&gt;Turbulence&lt;/h3&gt;
+      &lt;div id="turbulence-plot" class="w-full h-64"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+      &lt;h3 class="text-lg font-semibold mb-2"&gt;Residuals&lt;/h3&gt;
+      &lt;div id="residuals-plot" class="w-full h-64"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  
+  &lt;div id="aeroContainer" class="hidden mt-6"&gt;
+    &lt;h3 class="text-xl font-semibold mb-4"&gt;Aerodynamic Analysis&lt;/h3&gt;
+    &lt;div class="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
+      &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+        &lt;h4 class="font-semibold mb-2"&gt;Pressure Coefficient&lt;/h4&gt;
+        &lt;div id="cp-plot" class="w-full h-64"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class="bg-gray-50 p-4 rounded-lg shadow border-2 border-gray-300"&gt;
+        &lt;h4 class="font-semibold mb-2"&gt;Velocity Profile&lt;/h4&gt;
+        &lt;div id="velocity-profile-plot" class="w-full h-64"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Key Features</h3>
+<ul>
+<li>Pressure field visualization</li>
+<li>Velocity field visualization</li>
+<li>Turbulence metrics</li>
+<li>Residuals monitoring</li>
+<li>Aerodynamic analysis (Cp, velocity profiles)</li>
+</ul>
+</div>
+</dd>
+</dl>
+</section>
+
+<section>
+<h2 class="section-title" id="header-components">UI Components</h2>
+<dl>
+<dt id="notification-system"><code class="name flex">
+<span><span class="ident">Notification System</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Displays temporary status messages and alerts to the user.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="css">/* Notification styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  z-index: 1000;
+  max-width: 320px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Notification types */
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.notification.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+.notification.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.notification.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border-left: 4px solid #17a2b8;
+}
+
+/* Stacking notifications */
+.notification:not(:last-child) {
+  margin-bottom: 10px;
+}</code></pre>
+</details>
+<h3>Features</h3>
+<ul>
+<li>Animated slide-in and fade-out effects</li>
+<li>Stacked notifications</li>
+<li>Color-coded message types (success, error, warning, info)</li>
+<li>Responsive design</li>
+</ul>
+</div>
+</dd>
+
+<dt id="plotly-charts"><code class="name flex">
+<span><span class="ident">Interactive Charts</span></span>
+</code></dt>
+<dd>
+<div class="desc">
+<p>Powered by Plotly.js for high-performance data visualization.</p>
+<details class="source">
+<summary><span>View Source</span></summary>
+<pre><code class="html">&lt;!-- Include Plotly.js --&gt;
+&lt;script src="https://cdn.plot.ly/plotly-2.24.1.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- Chart Container --&gt;
+&lt;div id="chart" class="w-full h-96"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+// Initialize chart
+const data = [{
+  x: [1, 2, 3, 4, 5],
+  y: [1, 4, 9, 16, 25],
+  type: 'scatter',
+  mode: 'lines+markers',
+  line: { color: '#3b82f6' },
+  marker: { color: '#2563eb' }
+}];
+
+const layout = {
+  title: 'Interactive Chart',
+  xaxis: { title: 'X Axis' },
+  yaxis: { title: 'Y Axis' },
+  showlegend: false,
+  responsive: true,
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  font: { color: '#1f2937' },
+  margin: { t: 30, l: 50, r: 30, b: 50 },
+  hovermode: 'closest'
+};
+
+// Render chart
+Plotly.newPlot('chart', data, layout, { responsive: true });
+
+// Update chart with new data
+function updateChart(newData) {
+  Plotly.react('chart', newData, layout);
+}
+&lt;/script&gt;</code></pre>
+</details>
+<h3>Features</h3>
+<ul>
+<li>Interactive zoom and pan</li>
+<li>Data point inspection on hover</li>
+<li>Responsive layout</li>
+<li>Performance optimized rendering</li>
+<li>Customizable appearance</li>
+</ul>
+</div>
+</dd>
+</dl>
+</section>
+
+</article>
+</main>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import vtk
+import time
 import os
 import tempfile
 import base64
@@ -128,6 +129,8 @@ def save_uploaded_file(file_dict, temp_dir):
 # VTK pipeline
 # -----------------------------------------------------------------------------
 def create_vtk_pipeline(geometry_file=None):
+    import time
+    start_time = time.time()
     # K_RANGE = [0.0, 15.6]
     # resolution = 50
 
@@ -145,7 +148,12 @@ def create_vtk_pipeline(geometry_file=None):
     # flow_file_path = flow_file if flow_file and os.path.exists(flow_file) else TUNNEL.path
 
     # Create readers
+    read_start = time.time()
     bikeReader = create_reader(geom_file)
+    bikeReader.Update()
+    read_time = time.time() - read_start
+    print(f"[PERF] Geometry file read time: {read_time:.3f} seconds")
+    
     # tunnelReader = create_reader(flow_file_path)
     # tunnelReader.Update()
 
@@ -205,7 +213,15 @@ def create_vtk_pipeline(geometry_file=None):
     # stream_mapper.SetArrayName("k")
     # stream_mapper.SetScalarRange(K_RANGE)
 
+    # Measure render time
+    render_start = time.time()
     renderWindow.Render()
+    render_time = time.time() - render_start
+    
+    total_time = time.time() - start_time
+    print(f"[PERF] Total geometry loading and rendering time: {total_time:.3f} seconds")
+    print(f"[PERF] Breakdown - Read: {read_time:.3f}s, Render: {render_time:.3f}s")
+
     renderer.ResetCamera()
     renderer.SetBackground(0.4, 0.4, 0.4)
 
@@ -281,6 +297,9 @@ class App(TrameApp):
 
     def reload_pipeline(self, geometry_file=None):
         """Reload VTK pipeline with new files"""
+        import time
+        start_time = time.time()
+        
         try:
             # Clean up old pipeline
             # self.widget.Off()
@@ -290,8 +309,13 @@ class App(TrameApp):
             geom_file = geometry_file if geometry_file and os.path.exists(geometry_file) else BIKE.path
             # flow_file_path = flow_file if flow_file and os.path.exists(flow_file) else TUNNEL.path
 
-            # Create readers
+            # Create and time reader
+            read_start = time.time()
             bikeReader = create_reader(geom_file)
+            bikeReader.Update()
+            read_time = time.time() - read_start
+            print(f"[PERF] Geometry file read time: {read_time:.3f} seconds")
+            
             # tunnelReader = create_reader(flow_file_path)
             # tunnelReader.Update()
 
@@ -308,10 +332,18 @@ class App(TrameApp):
             # Reset widget
             # self.widget.On()
             
-            # Render and reset camera
+            # Render and reset camera with timing
+            render_start = time.time()
             self.rw.Render()
+            render_time = time.time() - render_start
+            
             self.renderer.ResetCamera()
             self.ctrl.view_update()
+            
+            # Calculate and log total time
+            total_time = time.time() - start_time
+            print(f"[PERF] Total pipeline reload time: {total_time:.3f} seconds")
+            print(f"[PERF] Breakdown - Read: {read_time:.3f}s, Render: {render_time:.3f}s")
             
             geom_name = Path(geom_file).name
             # flow_name = Path(flow_file_path).name

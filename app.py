@@ -8,23 +8,22 @@ import logging
 import threading
 import time
 
-# Add after other imports
-try:
-    from build_utils import run_build
-    BUILD_SYSTEM_AVAILABLE = True
-except ImportError:
-    BUILD_SYSTEM_AVAILABLE = False
-    print("Warning: Build system not available. Install python-minifier to enable minification.")
+# try:
+#     from build_utils import run_build
+#     BUILD_SYSTEM_AVAILABLE = True
+# except ImportError:
+#     BUILD_SYSTEM_AVAILABLE = False
+#     print("Warning: Build system not available. Install python-minifier to enable minification.")
 
 from flask import Flask, request, jsonify, render_template_string, Response
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
 
 app = Flask(__name__)
 
-# Initialize build system
-if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
-    if run_build():
-        print("Build completed successfully")
+# # Initialize build system
+# if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
+#     if run_build():
+#         print("Build completed successfully")
 
 # --- Logging ---
 logging.basicConfig(level=logging.DEBUG)
@@ -34,7 +33,12 @@ logger = logging.getLogger("FOAMFlask")
 CONFIG_FILE = "case_config.json"
 
 def load_config():
-    """Load configuration from case_config.json with sensible defaults."""
+    """
+    Load configuration from case_config.json with sensible defaults.
+    
+    Returns:
+        dict: Configuration dictionary.
+    """
     defaults = {
         "CASE_ROOT": os.path.abspath("tutorial_cases"),
         "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
@@ -50,7 +54,12 @@ def load_config():
     return defaults
 
 def save_config(updates: dict):
-    """Save configuration back to case_config.json."""
+    """
+    Save configuration back to case_config.json.
+    
+    Args:
+        updates (dict): Dictionary of updates to the configuration.
+    """
     config = load_config()
     config.update(updates)
     try:
@@ -75,7 +84,12 @@ with open(TEMPLATE_FILE, "r") as f:
 
 # --- Helpers ---
 def get_tutorials():
-    """Return a list of available OpenFOAM tutorial cases (category/case)."""
+    """
+    Return a list of available OpenFOAM tutorial cases (category/case).
+    
+    Returns:
+        list: List of available OpenFOAM tutorial cases.
+    """
     try:
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
         docker_cmd = f"bash -c 'source {bashrc} && echo $FOAM_TUTORIALS'"
@@ -117,7 +131,13 @@ def get_tutorials():
 foamrun_logs = {}  # { "<tutorial_name>": "<log content>" }
 
 def monitor_foamrun_log(tutorial, case_dir):
-    """Watch for log.FoamRun, capture it in foamrun_logs and write it to a file."""
+    """
+    Watch for log.FoamRun, capture it in foamrun_logs and write it to a file.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        caseDir (str): The path to the case directory.
+    """
     import pathlib
     import time
 
@@ -150,16 +170,37 @@ def monitor_foamrun_log(tutorial, case_dir):
 # --- Routes ---
 @app.route("/")
 def index():
+    """
+    Get the index page.
+    
+    Returns:
+        str: The index page.
+    """
     tutorials = get_tutorials()
     options_html = "\n".join([f"<option value='{t}'>{t}</option>" for t in tutorials])
     return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
 
 @app.route("/get_case_root", methods=["GET"])
 def get_case_root():
+    """
+    Get the case root directory.
+    
+    Returns:
+        dict: The case root directory.
+    """
     return jsonify({"caseDir": CASE_ROOT})
 
 @app.route("/set_case", methods=["POST"])
 def set_case():
+    """
+    Set the case root directory.
+    
+    Args:
+        caseDir (str): The case root directory.
+    
+    Returns:
+        dict: The output of the command.
+    """
     global CASE_ROOT
     data = request.get_json()
     case_dir = data.get("caseDir")
@@ -176,6 +217,12 @@ def set_case():
 
 @app.route("/get_docker_config", methods=["GET"])
 def get_docker_config():
+    """
+    Get the Docker configuration.
+    
+    Returns:
+        dict: The Docker configuration.
+    """
     return jsonify({
         "dockerImage": DOCKER_IMAGE,
         "openfoamVersion": OPENFOAM_VERSION
@@ -183,6 +230,16 @@ def get_docker_config():
 
 @app.route("/set_docker_config", methods=["POST"])
 def set_docker_config():
+    """
+    Set the Docker configuration.
+    
+    Args:
+        dockerImage (str): The Docker image to use.
+        openfoamVersion (str): The OpenFOAM version to use.
+    
+    Returns:
+        dict: The output of the command.
+    """
     global DOCKER_IMAGE, OPENFOAM_VERSION
     data = request.get_json()
     if "dockerImage" in data:
@@ -201,6 +258,15 @@ def set_docker_config():
 
 @app.route("/load_tutorial", methods=["POST"])
 def load_tutorial():
+    """
+    Load a tutorial in the Docker container.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+    
+    Returns:
+        dict: The output of the command.
+    """
     global CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
     data = request.get_json()
     tutorial = data.get("tutorial")
@@ -275,6 +341,17 @@ def load_tutorial():
 
 @app.route("/run", methods=["POST"])
 def run_case():
+    """
+    Run a case in the Docker container.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        command (str): The command to run.
+        caseDir (str): The path to the case directory.
+    
+    Returns:
+        dict: The output of the command.
+    """
     data = request.json
     tutorial = data.get("tutorial")
     command = data.get("command")
@@ -342,7 +419,16 @@ def run_case():
 # --- Realtime Plotting Endpoints ---
 @app.route("/api/available_fields", methods=["GET"])
 def api_available_fields():
-    """Get list of available fields in the current case."""
+    """
+    Get list of available fields in the current case.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        caseDir (str): The path to the case directory.
+    
+    Returns:
+        list: List of available fields.
+    """
     tutorial = request.args.get("tutorial")
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
@@ -359,7 +445,16 @@ def api_available_fields():
 
 @app.route("/api/plot_data", methods=["GET"])
 def api_plot_data():
-    """Get realtime plot data for the current case."""
+    """
+    Get realtime plot data for the current case.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        caseDir (str): The path to the case directory.
+    
+    Returns:
+        dict: Realtime plot data.
+    """
     tutorial = request.args.get("tutorial")
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
@@ -378,7 +473,16 @@ def api_plot_data():
 
 @app.route("/api/latest_data", methods=["GET"])
 def api_latest_data():
-    """Get the latest time step data."""
+    """
+    Get the latest time step data.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        caseDir (str): The path to the case directory.
+    
+    Returns:
+        dict: Latest time step data.
+    """
     tutorial = request.args.get("tutorial")
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
@@ -397,7 +501,16 @@ def api_latest_data():
 
 @app.route("/api/residuals", methods=["GET"])
 def api_residuals():
-    """Get residuals from log file."""
+    """
+    Get residuals from log file.
+    
+    Args:
+        tutorial (str): The name of the tutorial.
+        caseDir (str): The path to the case directory.
+    
+    Returns:
+        dict: Residuals from log file.
+    """
     tutorial = request.args.get("tutorial")
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
