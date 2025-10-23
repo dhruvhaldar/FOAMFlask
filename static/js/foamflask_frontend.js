@@ -1205,7 +1205,7 @@ async function loadMeshVisualization() {
     // Show controls
     document.getElementById('meshControls').classList.remove('hidden');
     
-    showNotification('Mesh loaded successfully', 'success');
+    // showNotification('Mesh loaded successfully', 'success');
     
   } catch (error) {
     console.error('[FOAMFlask] Error loading mesh:', error);
@@ -1384,6 +1384,41 @@ async function toggleInteractiveMode() {
     updateBtn.classList.remove('hidden');
     
     showNotification('Switched to static mode', 'info', 2000);
+  }
+}
+
+// Set camera view for interactive mode
+function setCameraView(view) {
+  const iframe = document.getElementById('meshInteractive');
+  if (!iframe || !iframe.contentWindow) return;
+  
+  try {
+    // Send message to iframe to set camera view
+    iframe.contentWindow.postMessage({
+      type: 'setCameraView',
+      view: view
+    }, '*');
+    
+    showNotification(`Set view to ${view.toUpperCase()}`, 'info', 1500);
+  } catch (error) {
+    console.error('Error setting camera view:', error);
+  }
+}
+
+// Reset camera to default view
+function resetCamera() {
+  const iframe = document.getElementById('meshInteractive');
+  if (!iframe || !iframe.contentWindow) return;
+  
+  try {
+    // Send message to iframe to reset camera
+    iframe.contentWindow.postMessage({
+      type: 'resetCamera'
+    }, '*');
+    
+    showNotification('Camera view reset', 'info', 1500);
+  } catch (error) {
+    console.error('Error resetting camera:', error);
   }
 }
 
