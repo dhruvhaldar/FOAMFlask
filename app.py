@@ -7,70 +7,26 @@ import docker
 import logging
 import threading
 import time
-# Trame imports
-from trame.app import get_server
-from trame.ui.vuetify3 import SinglePageWithDrawerLayout
-from trame.widgets import trame as tw, vuetify3 as v3
-from trame.widgets.vtklocal import LocalView as VtkLocalView
-from trame.decorators import change
 import nest_asyncio
 
 # Allow nested event loops (needed for running TRAME in a thread)
 nest_asyncio.apply()
 
 # VTK imports
-import vtk
+# import vtk
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 
-# try:
-#     from build_utils import run_build
-#     BUILD_SYSTEM_AVAILABLE = True
-# except ImportError:
-#     BUILD_SYSTEM_AVAILABLE = False
-#     print("Warning: Build system not available. Install python-minifier to enable minification.")
+# Local imports
+from trame_visualization import create_trame_app
 
 from flask import Flask, request, jsonify, render_template_string, Response, send_from_directory, redirect
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Initialize trame server
-trame_server = get_server()
-trame_server.client_type = "vue3"
-trame_server.client_connected = None  # Clear any existing callbacks
-
-# Create a simple VTK scene
-layout = SinglePageWithDrawerLayout(trame_server, title="Mesh Viewer")
-layout.footer.hide()
-layout.toolbar.hide()
-
-with layout.content:
-    from trame.widgets import vtk as vtk_widgets
-    from vtkmodules.vtkFiltersSources import vtkSphereSource
-
-    # Create sample geometry
-    sphere = vtkSphereSource()
-    sphere.Update()
-
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputData(sphere.GetOutput())
-
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-
-    renderer = vtk.vtkRenderer()
-    renderer.AddActor(actor)
-    renderer.ResetCamera()
-
-    render_window = vtk.vtkRenderWindow()
-    render_window.AddRenderer(renderer)
-    view = vtk_widgets.VtkLocalView(render_window)
-
-
-# # Initialize build system
-# if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
-#     if run_build():
-#         print("Build completed successfully")
+# Initialize Trame server
+trame_server, trame_layout = create_trame_app()
 
 # --- Logging ---
 logging.basicConfig(level=logging.DEBUG)
@@ -431,10 +387,6 @@ def run_case():
 
         docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
 
-        # # For OpenFOAM commands, use the full path to the binary
-        # openfoam_bin_path = f"/opt/openfoam{OPENFOAM_VERSION}/platforms/linux64GccDPInt32Opt/bin"
-        # docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && {openfoam_bin_path}/{command}'"
-
         container = docker_client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
@@ -589,7 +541,7 @@ def serve_mesh_file(filename):
 @app.route("/trame")
 def trame_viewer():
     """Trame-powered mesh viewer. Redirect iframe to active Trame instance"""
-    time.sleep(1)  # wait 1 second
+    time.sleep(1) 
     return redirect("http://localhost:12345/index.html")
 
 def start_trame():
@@ -604,7 +556,7 @@ def start_trame():
         # Run the server in the new event loop
         trame_server.start(port=12345, open_browser=False, thread=True)
     except Exception as e:
-        print(f"Error starting TRAME server: {e}")
+        logger.error(f"[TRAME] Error starting server: {e}")
     finally:
         loop.close()
 

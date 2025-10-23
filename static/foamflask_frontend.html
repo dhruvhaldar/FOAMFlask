@@ -373,7 +373,7 @@
   </div>
   <!-- End Main Content Area -->
 
-  <!-- Plotly.js - Load synchronously to ensure it's available when needed -->
+  <!-- Plotly.js -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script>
   // Initialize after both DOM and Plotly are loaded
@@ -403,7 +403,6 @@
     }
   });
   </script>
-
 
   <!-- JS - defer loading -->
   <script src="{{ url_for('static', filename='js/foamflask_frontend.js') }}" defer></script>
