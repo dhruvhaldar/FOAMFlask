@@ -626,10 +626,6 @@ def run_case():
 
         docker_cmd = f&#34;bash -c &#39;source {bashrc} &amp;&amp; cd {container_case_path} &amp;&amp; chmod +x {command} &amp;&amp; ./{command}&#39;&#34;
 
-        # # For OpenFOAM commands, use the full path to the binary
-        # openfoam_bin_path = f&#34;/opt/openfoam{OPENFOAM_VERSION}/platforms/linux64GccDPInt32Opt/bin&#34;
-        # docker_cmd = f&#34;bash -c &#39;source {bashrc} &amp;&amp; cd {container_case_path} &amp;&amp; {openfoam_bin_path}/{command}&#39;&#34;
-
         container = docker_client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
@@ -703,6 +699,26 @@ def run_case():
 <dt><strong><code>updates</code></strong> :&ensp;<code>dict</code></dt>
 <dd>Dictionary of updates to the configuration.</dd>
 </dl></div>
+</dd>
+<dt id="app.serve_mesh_file"><code class="name flex">
+<span>def <span class="ident">serve_mesh_file</span></span>(<span>filename)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.route(&#34;/mesh/&lt;path:filename&gt;&#34;)
+def serve_mesh_file(filename):
+    &#34;&#34;&#34;Serve mesh files from the case directory.&#34;&#34;&#34;
+    tutorial = request.args.get(&#39;tutorial&#39;)
+    if not tutorial:
+        return &#34;Tutorial not specified&#34;, 400
+        
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    return send_from_directory(case_dir, filename)</code></pre>
+</details>
+<div class="desc"><p>Serve mesh files from the case directory.</p></div>
 </dd>
 <dt id="app.set_case"><code class="name flex">
 <span>def <span class="ident">set_case</span></span>(<span>)</span>
@@ -799,6 +815,48 @@ def set_docker_config():
 <dd>The output of the command.</dd>
 </dl></div>
 </dd>
+<dt id="app.start_trame"><code class="name flex">
+<span>def <span class="ident">start_trame</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_trame():
+    &#34;&#34;&#34;Start Trame server in background with its own event loop&#34;&#34;&#34;
+    import asyncio
+    
+    # Create a new event loop for this thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    try:
+        # Run the server in the new event loop
+        trame_server.start(port=12345, open_browser=False, thread=True)
+    except Exception as e:
+        logger.error(f&#34;[TRAME] Error starting server: {e}&#34;)
+    finally:
+        loop.close()</code></pre>
+</details>
+<div class="desc"><p>Start Trame server in background with its own event loop</p></div>
+</dd>
+<dt id="app.trame_viewer"><code class="name flex">
+<span>def <span class="ident">trame_viewer</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.route(&#34;/trame&#34;)
+def trame_viewer():
+    &#34;&#34;&#34;Trame-powered mesh viewer. Redirect iframe to active Trame instance&#34;&#34;&#34;
+    time.sleep(1) 
+    return redirect(&#34;http://localhost:12345/index.html&#34;)</code></pre>
+</details>
+<div class="desc"><p>Trame-powered mesh viewer. Redirect iframe to active Trame instance</p></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -824,8 +882,11 @@ def set_docker_config():
 <li><code><a title="app.monitor_foamrun_log" href="#app.monitor_foamrun_log">monitor_foamrun_log</a></code></li>
 <li><code><a title="app.run_case" href="#app.run_case">run_case</a></code></li>
 <li><code><a title="app.save_config" href="#app.save_config">save_config</a></code></li>
+<li><code><a title="app.serve_mesh_file" href="#app.serve_mesh_file">serve_mesh_file</a></code></li>
 <li><code><a title="app.set_case" href="#app.set_case">set_case</a></code></li>
 <li><code><a title="app.set_docker_config" href="#app.set_docker_config">set_docker_config</a></code></li>
+<li><code><a title="app.start_trame" href="#app.start_trame">start_trame</a></code></li>
+<li><code><a title="app.trame_viewer" href="#app.trame_viewer">trame_viewer</a></code></li>
 </ul>
 </li>
 </ul>

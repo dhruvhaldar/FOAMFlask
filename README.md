@@ -125,3 +125,7 @@ The plotting system uses:
 ```powershell
 .\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
 ```
+### API Documentation
+```powershell
+.\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs app.py
+```
