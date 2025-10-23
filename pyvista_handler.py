@@ -6,6 +6,7 @@ Provides functionality to load and visualize VTK/VTP mesh files using PyVista.
 import os
 import logging
 import base64
+import tempfile
 from io import BytesIO
 import pyvista as pv
 
@@ -159,6 +160,81 @@ class MeshVisualizer:
             
         except Exception as e:
             logger.error(f"Error generating HTML viewer: {e}")
+            return None
+    
+    def get_interactive_viewer_html(self, file_path, show_edges=True, color="lightblue"):
+        """
+        Generate a fully interactive HTML viewer with better controls.
+        Uses PyVista's export_html with enhanced settings.
+        
+        Args:
+            file_path (str): Path to the VTK/VTP file.
+            show_edges (bool): Whether to show mesh edges.
+            color (str): Mesh color.
+            
+        Returns:
+            str: HTML content for interactive viewer with controls.
+        """
+        try:
+            # Load mesh if not already loaded
+            if self.mesh is None:
+                mesh_info = self.load_mesh(file_path)
+                if not mesh_info.get("success"):
+                    return None
+            
+            # Create plotter with better settings for web
+            plotter = pv.Plotter(notebook=False, window_size=[1200, 800])
+            
+            # Add mesh with better rendering options
+            plotter.add_mesh(
+                self.mesh, 
+                color=color, 
+                show_edges=show_edges,
+                opacity=1.0,
+                smooth_shading=True
+            )
+            
+            # Add axes with labels
+            plotter.add_axes(
+                xlabel='X',
+                ylabel='Y',
+                zlabel='Z',
+                line_width=2,
+                labels_off=False
+            )
+            
+            # Set better camera position
+            plotter.camera_position = 'iso'
+            
+            # Export to HTML using temporary file
+            try:
+                # Create a temporary file for HTML export
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as tmp_file:
+                    tmp_path = tmp_file.name
+                
+                # Export to the temporary file
+                plotter.export_html(tmp_path)
+                plotter.close()
+                
+                # Read the HTML content
+                with open(tmp_path, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                
+                # Clean up temporary file
+                try:
+                    os.unlink(tmp_path)
+                except:
+                    pass
+                
+                return html_content
+                
+            except Exception as e:
+                logger.error(f"Failed to export HTML: {e}")
+                plotter.close()
+                raise
+                
+        except Exception as e:
+            logger.error(f"Error generating interactive viewer: {e}")
             return None
     
     def get_available_meshes(self, case_dir, tutorial):

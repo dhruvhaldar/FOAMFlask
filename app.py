@@ -599,5 +599,39 @@ def api_mesh_screenshot():
         logger.error(f"Error generating mesh screenshot: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/mesh_interactive", methods=["POST"])
+def api_mesh_interactive():
+    """
+    Generate an interactive HTML viewer for the mesh.
+    
+    Args:
+        file_path (str): Path to the mesh file.
+        show_edges (bool): Whether to show edges.
+        color (str): Mesh color.
+    
+    Returns:
+        HTML: Interactive mesh viewer page.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+    show_edges = data.get("show_edges", True)
+    color = data.get("color", "lightblue")
+    
+    if not file_path:
+        return jsonify({"error": "No file path provided"}), 400
+    
+    try:
+        html_content = mesh_visualizer.get_interactive_viewer_html(
+            file_path, show_edges, color
+        )
+        
+        if html_content:
+            return Response(html_content, mimetype='text/html')
+        else:
+            return jsonify({"success": False, "error": "Failed to generate interactive viewer"}), 500
+    except Exception as e:
+        logger.error(f"Error generating interactive viewer: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

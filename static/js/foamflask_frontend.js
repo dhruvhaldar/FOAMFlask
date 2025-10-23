@@ -8,6 +8,7 @@ let currentPage = 'setup';
 // Mesh visualization state
 let currentMeshPath = null;
 let availableMeshes = [];
+let isInteractiveMode = false;
 
 // Notification management
 let notificationId = 0;
@@ -1299,6 +1300,91 @@ function displayMeshInfo(meshInfo) {
   }
   
   meshInfoDiv.classList.remove('hidden');
+}
+
+async function toggleInteractiveMode() {
+  if (!currentMeshPath) {
+    showNotification('Please load a mesh first', 'warning');
+    return;
+  }
+  
+  const meshImage = document.getElementById('meshImage');
+  const meshInteractive = document.getElementById('meshInteractive');
+  const meshPlaceholder = document.getElementById('meshPlaceholder');
+  const toggleBtn = document.getElementById('toggleInteractiveBtn');
+  const cameraControl = document.getElementById('cameraPositionControl');
+  const updateBtn = document.getElementById('updateViewBtn');
+  
+  isInteractiveMode = !isInteractiveMode;
+  
+  if (isInteractiveMode) {
+    // Switch to interactive mode
+    showNotification('Loading interactive viewer...', 'info');
+    
+    try {
+      const showEdges = document.getElementById('showEdges').checked;
+      const color = document.getElementById('meshColor').value;
+      
+      // Fetch interactive viewer HTML
+      const response = await fetch('/api/mesh_interactive', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          file_path: currentMeshPath,
+          show_edges: showEdges,
+          color: color
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const html = await response.text();
+      
+      // Hide static image, show iframe
+      meshImage.classList.add('hidden');
+      meshPlaceholder.classList.add('hidden');
+      meshInteractive.classList.remove('hidden');
+      
+      // Load HTML into iframe using srcdoc
+      meshInteractive.srcdoc = html;
+      
+      // Update button text
+      toggleBtn.textContent = '📷 Static Mode';
+      toggleBtn.classList.remove('bg-purple-500', 'hover:bg-purple-600');
+      toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+      
+      // Hide camera position control (not needed in interactive mode)
+      cameraControl.classList.add('hidden');
+      updateBtn.classList.add('hidden');
+      
+      showNotification('Interactive mode enabled - Use mouse to rotate, zoom, and pan', 'success', 4000);
+      
+    } catch (error) {
+      console.error('[FOAMFlask] Error loading interactive viewer:', error);
+      showNotification('Failed to load interactive viewer: ' + error.message, 'error');
+      isInteractiveMode = false;
+    }
+    
+  } else {
+    // Switch back to static mode
+    meshInteractive.classList.add('hidden');
+    meshImage.classList.remove('hidden');
+    
+    // Update button text
+    toggleBtn.textContent = '🎮 Interactive Mode';
+    toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+    toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+    
+    // Show camera position control again
+    cameraControl.classList.remove('hidden');
+    updateBtn.classList.remove('hidden');
+    
+    showNotification('Switched to static mode', 'info', 2000);
+  }
 }
 
 // Clean up on page unload
