@@ -7,6 +7,20 @@ import docker
 import logging
 import threading
 import time
+# Trame imports
+from trame.app import get_server
+from trame.ui.vuetify3 import SinglePageWithDrawerLayout
+from trame.widgets import trame as tw, vuetify3 as v3
+from trame.widgets.vtklocal import LocalView as VtkLocalView
+from trame.decorators import change
+import nest_asyncio
+
+# Allow nested event loops (needed for running TRAME in a thread)
+nest_asyncio.apply()
+
+# VTK imports
+import vtk
+from vtkmodules.vtkFiltersCore import vtkContourFilter
 
 # try:
 #     from build_utils import run_build
@@ -15,10 +29,43 @@ import time
 #     BUILD_SYSTEM_AVAILABLE = False
 #     print("Warning: Build system not available. Install python-minifier to enable minification.")
 
-from flask import Flask, request, jsonify, render_template_string, Response
+from flask import Flask, request, jsonify, render_template_string, Response, send_from_directory, redirect
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
 
 app = Flask(__name__)
+
+# Initialize trame server
+trame_server = get_server()
+trame_server.client_type = "vue3"
+trame_server.client_connected = None  # Clear any existing callbacks
+
+# Create a simple VTK scene
+layout = SinglePageWithDrawerLayout(trame_server, title="Mesh Viewer")
+layout.footer.hide()
+layout.toolbar.hide()
+
+with layout.content:
+    from trame.widgets import vtk as vtk_widgets
+    from vtkmodules.vtkFiltersSources import vtkSphereSource
+
+    # Create sample geometry
+    sphere = vtkSphereSource()
+    sphere.Update()
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(sphere.GetOutput())
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.ResetCamera()
+
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    view = vtk_widgets.VtkLocalView(render_window)
+
 
 # # Initialize build system
 # if BUILD_SYSTEM_AVAILABLE and app.config.get('ENV') == 'development':
@@ -527,5 +574,44 @@ def api_residuals():
         logger.error(f"Error getting residuals: {e}")
         return jsonify({"error": str(e)}), 500
 
+# Mesh visualization endpoints
+@app.route("/mesh/<path:filename>")
+def serve_mesh_file(filename):
+    """Serve mesh files from the case directory."""
+    tutorial = request.args.get('tutorial')
+    if not tutorial:
+        return "Tutorial not specified", 400
+        
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    return send_from_directory(case_dir, filename)
+
+# Trame visualization endpoint
+@app.route("/trame")
+def trame_viewer():
+    """Trame-powered mesh viewer. Redirect iframe to active Trame instance"""
+    time.sleep(1)  # wait 1 second
+    return redirect("http://localhost:12345/index.html")
+
+def start_trame():
+    """Start Trame server in background with its own event loop"""
+    import asyncio
+    
+    # Create a new event loop for this thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    try:
+        # Run the server in the new event loop
+        trame_server.start(port=12345, open_browser=False, thread=True)
+    except Exception as e:
+        print(f"Error starting TRAME server: {e}")
+    finally:
+        loop.close()
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    # Start TRAME in background first
+    threading.Thread(target=start_trame, daemon=True, name="TrameServer").start()
+    
+    # Then start Flask
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)

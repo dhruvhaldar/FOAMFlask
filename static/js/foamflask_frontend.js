@@ -1118,6 +1118,125 @@ function downloadPlotData(plotId, filename) {
   });
 }
 
+// --- Mesh Viewer Functions ---
+
+// Initialize mesh viewer when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Add event listeners for mesh viewer buttons
+  const loadMeshBtn = document.getElementById('loadMeshBtn');
+  const resetCameraBtn = document.getElementById('resetCameraBtn');
+  const isometricViewBtn = document.getElementById('isometricViewBtn');
+  
+  if (loadMeshBtn) {
+    loadMeshBtn.addEventListener('click', loadMeshViewer);
+  }
+  
+  // These will be connected to the iframe's trame viewer after it loads
+  if (resetCameraBtn) {
+    resetCameraBtn.addEventListener('click', () => {
+      const iframe = document.getElementById('trame-iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ action: 'resetCamera' }, '*');
+      }
+    });
+  }
+  
+  if (isometricViewBtn) {
+    isometricViewBtn.addEventListener('click', () => {
+      const iframe = document.getElementById('trame-iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ action: 'isometricView' }, '*');
+      }
+    });
+  }
+  
+  // Listen for messages from the iframe
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'trame:ready') {
+      // Iframe is ready, we can now communicate with it
+      console.log('[FOAMFlask] Trame viewer is ready');
+    }
+  });
+});
+
+// Load the mesh viewer for the current case
+async function loadMeshViewer() {
+  const tutorial = document.getElementById('tutorialSelect').value;
+  if (!tutorial) {
+    showNotification('Please select a tutorial first', 'warning');
+    return;
+  }
+  
+  const iframe = document.getElementById('trame-iframe');
+  const placeholder = document.getElementById('mesh-placeholder');
+  
+  if (!iframe || !placeholder) return;
+  
+  try {
+    // Show loading state
+    placeholder.innerHTML = `
+      <div class="flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+        <p class="text-gray-600">Loading mesh viewer...</p>
+      </div>
+    `;
+    
+    // Set the iframe source to the trame viewer endpoint
+    iframe.src = `/trame?tutorial=${encodeURIComponent(tutorial)}`;
+    
+    // When iframe loads, show it and hide the placeholder
+    iframe.onload = () => {
+      iframe.style.display = 'block';
+      placeholder.style.display = 'none';
+    };
+    
+    // Handle any errors
+    iframe.onerror = () => {
+      showNotification('Failed to load mesh viewer', 'error');
+      placeholder.innerHTML = `
+        <div class="text-center">
+          <div class="text-red-500 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">Failed to Load Mesh</h3>
+          <p class="text-gray-500 mb-4">Could not load the mesh viewer. Please try again.</p>
+          <button onclick="loadMeshViewer()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Retry
+          </button>
+        </div>
+      `;
+      placeholder.style.display = 'flex';
+    };
+    
+  } catch (err) {
+    console.error('[FOAMFlask] Error loading mesh viewer:', err);
+    showNotification('Error loading mesh viewer', 'error');
+    
+    // Reset to default placeholder
+    placeholder.innerHTML = `
+      <div class="text-gray-500 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-700 mb-2">No Mesh Loaded</h3>
+      <p class="text-gray-500 mb-4">Select a tutorial case to view the mesh</p>
+      <button id="loadMeshBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+        Load Mesh from Current Case
+      </button>
+    `;
+    placeholder.style.display = 'flex';
+    
+    // Re-attach the event listener
+    const loadBtn = document.getElementById('loadMeshBtn');
+    if (loadBtn) {
+      loadBtn.addEventListener('click', loadMeshViewer);
+    }
+  }
+}
+
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
   stopPlotUpdates();
