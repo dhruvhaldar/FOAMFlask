@@ -165,6 +165,9 @@
           <button onclick="switchPage('plots')" id="nav-plots" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
             Plots
           </button>
+          <button onclick="switchPage('post')" id="nav-post" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Post
+          </button>
         </div>
       </div>
     </div>
@@ -452,6 +455,16 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Post Processing Page -->
+  <div id="page-post" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
+  </div>
+  <div id="post-processing-content" class="bg-gray-50 p-4 rounded-lg">
+    <!-- Content will be loaded here by refreshPostList() -->
+  </div>
   </div>
 
   </div>

@@ -185,7 +185,7 @@ function attachWhiteBGDownloadButton(plotDiv) {
 // --- Page Switching ---
 function switchPage(pageName) {
   // Hide all pages
-  const pages = ['setup', 'run', 'mesh', 'plots'];
+  const pages = ['setup', 'run', 'mesh', 'plots', 'post'];
   pages.forEach(page => {
     const pageElement = document.getElementById(`page-${page}`);
     const navButton = document.getElementById(`nav-${page}`);
@@ -248,6 +248,16 @@ function switchPage(pageName) {
         console.log('Mesh page initialized');
         // Load available meshes
         refreshMeshList();
+      }
+      break;
+    case 'post':
+      // Initialize post processing if needed
+      const postContainer = document.getElementById('page-post');
+      if (postContainer && !postContainer.hasAttribute('data-initialized')) {
+        postContainer.setAttribute('data-initialized', 'true');
+        console.log('Post processing page initialized');
+        // Load available post processing functions
+        refreshPostList();
       }
       break;
   }
@@ -1266,7 +1276,7 @@ async function updateMeshView() {
     
   } catch (error) {
     console.error('[FOAMFlask] Error rendering mesh:', error);
-    showNotification('Failed to render mesh', 'error');
+    showNotification('[FOAMFlask] [updateMeshView] Failed to render mesh image', 'error');
   }
 }
 
@@ -1369,9 +1379,22 @@ async function toggleInteractiveMode() {
       
     } catch (error) {
       console.error('[FOAMFlask] Error loading interactive viewer:', error);
-      showNotification('Failed to load interactive viewer: ' + error.message, 'error');
-      isInteractiveMode = false;
-    }
+      const errorMessage = error.name === 'AbortError' 
+    ? 'Loading was cancelled or timed out'
+    : error.message || 'Failed to load interactive viewer';
+  
+    showNotification(`Failed to load interactive viewer: ${errorMessage}`, 'error');
+  
+    // Reset to static mode
+    isInteractiveMode = false;
+    toggleBtn.textContent = '🎮 Interactive Mode';
+    toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+    toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+    cameraControl.classList.remove('hidden');
+    updateBtn.classList.remove('hidden');
+    meshInteractive.classList.add('hidden');
+    meshImage.classList.remove('hidden');
+  }
     
   } else {
     // Switch back to static mode
@@ -1423,6 +1446,86 @@ function resetCamera() {
     showNotification('Camera view reset', 'info', 1500);
   } catch (error) {
     console.error('Error resetting camera:', error);
+  }
+}
+
+// --- Post Processing Functions ---
+async function refreshPostList() {
+  try {
+    const postContainer = document.getElementById('post-processing-content');
+    if (!postContainer) return;
+
+    // Show loading state
+    postContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
+
+    // Here you can add actual API calls to fetch post-processing options
+    // For now, we'll just add some placeholder content
+    setTimeout(() => {
+      postContainer.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-medium text-gray-900">Available Operations</h3>
+            <div class="mt-2 space-y-2">
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('create_slice')">
+                Create Slice
+              </button>
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('generate_streamlines')">
+                Generate Streamlines
+              </button>
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('create_contour')">
+                Create Contour
+              </button>
+            </div>
+          </div>
+          <div id="post-results" class="mt-4"></div>
+        </div>
+      `;
+    }, 500);
+
+  } catch (error) {
+    console.error('Error loading post-processing options:', error);
+    const postContainer = document.getElementById('post-processing-content');
+    if (postContainer) {
+      postContainer.innerHTML = `
+        <div class="p-4 text-red-600">
+          Failed to load post-processing options. Please try again.
+        </div>
+      `;
+    }
+  }
+}
+
+// Helper function for post-processing operations
+async function runPostOperation(operation) {
+  const resultsDiv = document.getElementById('post-results') || document.body;
+  resultsDiv.innerHTML = `<div class="p-4 text-blue-600">Running ${operation}...</div>`;
+  
+  try {
+    // Here you would make an API call to your backend
+    // const response = await fetch('/api/post_operation', {
+    //   method: 'POST',
+    //   body: JSON.stringify({ operation }),
+    //   headers: { 'Content-Type': 'application/json' }
+    // });
+    // const result = await response.json();
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    resultsDiv.innerHTML = `
+      <div class="p-4 bg-green-50 text-green-700 rounded">
+        ${operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} completed successfully!
+      </div>
+    `;
+  } catch (error) {
+    resultsDiv.innerHTML = `
+      <div class="p-4 bg-red-50 text-red-700 rounded">
+        Error running ${operation}: ${error.message}
+      </div>
+    `;
   }
 }
 

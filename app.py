@@ -633,5 +633,14 @@ def api_mesh_interactive():
         logger.error(f"Error generating interactive viewer: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/post_process', methods=['POST'])
+def post_process():
+    try:
+        # Add your post-processing logic here
+        return jsonify({"status": "success", "message": "Post processing completed"})
+    except Exception as e:
+        logger.error(f"Error during post-processing: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
