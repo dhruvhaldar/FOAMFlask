@@ -114,19 +114,41 @@ The plotting system uses:
 - **Flask API endpoints** for serving plot data
 - **Automatic field parsing** for both uniform and nonuniform fields
 
-## For Developers
+## Installation
+### Create a Python virtual environment
+```bash
+python3 -m venv my-python313-venv-linux
+```
+```powershell
+python -m venv my-python313-venv-win
+```
+
+### Activate the virtual environment
+```bash
+source my-python313-venv-linux/bin/activate
+```
+```powershell
+my-python313-venv-win\Scripts\activate
+```
+
+### Install dependencies
+```bash
+./my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
+```
+```powershell
+.\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
+```
 
 ### Quick Start
+```bash
+./my-python313-venv-linux/bin/python3.13 app.py
+```
 ```powershell
 .\my-python313-venv-win\Scripts\python.exe app.py
 ```
 
-### Installing Dependencies
-```powershell
-.\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
-```
 ### Generate API Documentation
-```powershell
+``
 python -m pdoc --html --force --output-dir docs app.py
 python -m pdoc --html --force --output-dir docs build_utils.py
 ```
