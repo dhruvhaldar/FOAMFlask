@@ -621,18 +621,22 @@ async function runCommand(cmd) {
         
         await read();
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('[FOAMFlask] Stream reading error:', error);
-          appendOutput(`[FOAMFlask] Stream error: ${error.message}`, "stderr");
-        }
+        appendOutput(`[FOAMFlask] Error reading response: ${error.message}`, "stderr");
+        const errorMsg = cmd === 'foamToVTK' 
+          ? 'Failed to generate VTK files. Make sure the simulation has completed successfully.' 
+          : `Error running ${cmd}`;
+        showNotification(errorMsg, 'error');
       }
     }
     
     await read();
   } catch (error) {
-    console.error('[FOAMFlask] Error running command:', error);
-    appendOutput(`[FOAMFlask] Failed to run command: ${error.message}`, "stderr");
-    showNotification('Command execution failed', 'error');
+    console.error(`[FOAMFlask] Error running command ${cmd}:`, error);
+    appendOutput(`[FOAMFlask] Error: ${error.message}`, "stderr");
+    const errorMsg = cmd === 'foamToVTK'
+      ? 'Failed to generate VTK files. Make sure the simulation has completed successfully.'
+      : `Error running ${cmd}: ${error.message}`;
+    showNotification(errorMsg, 'error');
   }
 }
 

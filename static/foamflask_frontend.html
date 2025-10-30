@@ -252,6 +252,9 @@
     <div class="flex flex-col gap-4">
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold">Mesh Visualization</h2>
+        <button onclick="runCommand('foamToVTK')" class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm">
+          Generate VTK files (foamToVTK)
+        </button>
         <button onclick="refreshMeshList()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">
           Refresh List
         </button>
@@ -372,7 +375,7 @@
     </div>
 
     <!-- Main Plots Container -->
-    <div id="plotsContainer" class="w-full">
+    <div id="plotsContainer" class="w-full bg-white">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
         
         <!-- Pressure Plot -->
