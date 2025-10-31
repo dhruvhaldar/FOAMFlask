@@ -589,7 +589,7 @@ def api_mesh_screenshot():
     try:
         # Add delay for first call
         if not hasattr(api_mesh_screenshot, '_has_been_called'):
-            time.sleep(2)  # 2 second delay for first call
+            time.sleep(4)  # 4 second delay for first call
             api_mesh_screenshot._has_been_called = True
 
         img_str = mesh_visualizer.get_mesh_screenshot(
