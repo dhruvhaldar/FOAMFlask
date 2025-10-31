@@ -587,6 +587,11 @@ def api_mesh_screenshot():
         return jsonify({"error": "No file path provided"}), 400
     
     try:
+        # Add delay for first call
+        if not hasattr(api_mesh_screenshot, '_has_been_called'):
+            time.sleep(2)  # 2 second delay for first call
+            api_mesh_screenshot._has_been_called = True
+
         img_str = mesh_visualizer.get_mesh_screenshot(
             file_path, width, height, show_edges, color, camera_position
         )
@@ -621,6 +626,9 @@ def api_mesh_interactive():
         return jsonify({"error": "No file path provided"}), 400
     
     try:
+        # Add a small delay to prevent race conditions
+        time.sleep(2)  # 2 second delay
+
         html_content = mesh_visualizer.get_interactive_viewer_html(
             file_path, show_edges, color
         )

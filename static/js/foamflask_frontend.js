@@ -12,6 +12,8 @@ let isInteractiveMode = false;
 
 // Notification management
 let notificationId = 0;
+let lastErrorNotificationTime = 0;
+const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Plotting variables and theme
 let plotUpdateInterval = null;
@@ -20,6 +22,7 @@ let aeroVisible = false;
 let isUpdatingPlots = false;
 let pendingPlotUpdate = false;
 let plotsInViewport = true;
+let isFirstPlotLoad = true;
 
 // Request management
 let abortControllers = new Map();
@@ -264,14 +267,14 @@ function switchPage(pageName) {
 }
 
 // --- Notification System ---
-function showNotification(message, type = 'info', duration = 3000) {
+function showNotification(message, type = 'info', duration = 5000) {
   const container = document.getElementById('notificationContainer');
-  if (!container) return;
+  if (!container) return null;
   
   const id = notificationId++;
   const notification = document.createElement('div');
   notification.id = `notification-${id}`;
-  notification.className = `notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden`;
+  notification.className = `notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative`;
   
   // Set color based on type
   const colors = {
@@ -281,8 +284,6 @@ function showNotification(message, type = 'info', duration = 3000) {
     'info': 'bg-blue-500 text-white'
   };
   
-  notification.className += ` ${colors[type] || colors.info}`;
-  
   // Add icon based on type
   const icons = {
     'success': '✓',
@@ -291,53 +292,75 @@ function showNotification(message, type = 'info', duration = 3000) {
     'info': 'ℹ'
   };
 
-  // Create progress bar
-  const progressBar = document.createElement('div');
-  progressBar.className = 'h-1 bg-white bg-opacity-50 absolute bottom-0 left-0';
-  progressBar.style.width = '100%';
-  progressBar.style.transition = 'width linear';
-  progressBar.style.transitionDuration = `${duration}ms`;
-  
-  notification.innerHTML = `
-    <div class="relative">
-      <div class="flex items-center justify-between gap-3 relative z-10">
-        <div class="flex items-center gap-2">
-          <span class="text-lg font-bold">${icons[type] || icons.info}</span>
-          <span class="text-sm">${message}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="countdown-${id}" class="text-xs opacity-75">${(duration/1000).toFixed(1)}s</span>
-          <button onclick="event.stopPropagation(); removeNotification(${id})" class="text-white hover:text-gray-200 font-bold text-lg leading-none">
-            ×
-          </button>
-        </div>
+  // Create the main content
+  const content = document.createElement('div');
+  content.className = 'relative z-10';
+  content.innerHTML = `
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl font-bold">${icons[type] || icons.info}</span>
+        <span class="text-lg font-medium">${message}</span>
       </div>
     </div>
   `;
-  
-  notification.style.position = 'relative';
-  notification.appendChild(progressBar);
-  container.appendChild(notification);
-  
-  // Start countdown
-  let timeLeft = duration;
-  const countdownInterval = setInterval(() => {
-    timeLeft -= 100;
-    if (timeLeft <= 0) {
-      clearInterval(countdownInterval);
+  notification.appendChild(content);
+
+  // Only add progress bar and countdown for non-persistent notifications
+  if (duration > 0) {
+    const progressBar = document.createElement('div');
+    progressBar.className = 'h-1 bg-white bg-opacity-50 absolute bottom-0 left-0';
+    progressBar.style.width = '100%';
+    progressBar.style.transition = 'width linear';
+    progressBar.style.transitionDuration = `${duration}ms`;
+    notification.appendChild(progressBar);
+
+    // Add countdown element
+    const countdown = document.createElement('div');
+    countdown.className = 'flex items-center justify-end gap-2 mt-1';
+    countdown.innerHTML = `<span id="countdown-${id}" class="text-xs opacity-75">${(duration/1000).toFixed(1)}s</span>`;
+    content.appendChild(countdown);
+
+    // Start countdown only for non-persistent notifications
+    const countdownInterval = setInterval(() => {
+      duration -= 100;
+      if (duration <= 0) {
+        clearInterval(countdownInterval);
+        removeNotification(id);
+        return;
+      }
+      const countdownEl = document.getElementById(`countdown-${id}`);
+      if (countdownEl) {
+        countdownEl.textContent = `${(duration/1000).toFixed(1)}s`;
+      }
+    }, 100);
+
+    // Store the interval ID for cleanup
+    notification.dataset.intervalId = countdownInterval;
+
+    // Animate progress bar
+    setTimeout(() => {
+      progressBar.style.width = '0%';
+    }, 10);
+  } else {
+    // For persistent notifications, add a close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.className = 'text-white hover:text-gray-200 font-bold text-lg leading-none';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
       removeNotification(id);
-      return;
-    }
-    document.getElementById(`countdown-${id}`).textContent = `${(timeLeft/1000).toFixed(1)}s`;
-  }, 100);
+    };
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '0.5rem';
+    closeBtn.style.right = '0.5rem';
+    notification.appendChild(closeBtn);
+  }
+
+  // Add color class last to ensure it overrides other styles
+  notification.className += ` ${colors[type] || colors.info}`;
   
-  // Animate progress bar
-  setTimeout(() => {
-    progressBar.style.width = '0%';
-  }, 10);
-  
-  // Store the interval ID for cleanup
-  notification.dataset.intervalId = countdownInterval;
+  container.appendChild(notification);
+  return notification;
 }
 
 function removeNotification(id) {
@@ -741,6 +764,7 @@ async function updatePlots() {
     const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
       if (data.error) {
         console.error('[FOAMFlask] Error fetching plot data:', data.error);
+        showNotification('Error fetching plot data:', 'error');
         return;
       }
       
@@ -949,8 +973,20 @@ async function updatePlots() {
       }
       
       await Promise.allSettled(updatePromises);
+
+      // After all plots are updated
+      if (isFirstPlotLoad) {
+        showNotification('Plots loaded successfully', 'success', 3000);
+        isFirstPlotLoad = false;
+      }
+
   } catch (err) {
     console.error('[FOAMFlask] Error updating plots:', err);
+    const currentTime = Date.now();
+    if (currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN) {
+      showNotification('Error updating plots: ' + (err.message || 'Unknown error'), 'error');
+      lastErrorNotificationTime = currentTime;
+    }
   } finally {
     isUpdatingPlots = false;
     if (pendingPlotUpdate) {
@@ -1233,12 +1269,15 @@ async function updateMeshView() {
     return;
   }
   
+  let loadingNotification = null;
+  
   try {
     const showEdges = document.getElementById('showEdges').checked;
     const color = document.getElementById('meshColor').value;
     const cameraPosition = document.getElementById('cameraPosition').value;
-    
-    showNotification('Rendering mesh...', 'info', 2000);
+
+    // Show persistent loading notification
+    loadingNotification = showNotification('Rendering mesh...', 'info', 0);
     
     const response = await fetch('/api/mesh_screenshot', {
       method: 'POST',
@@ -1260,23 +1299,31 @@ async function updateMeshView() {
     const data = await response.json();
     
     if (!data.success) {
-      showNotification(data.error || 'Failed to render mesh', 'error');
-      return;
+      throw new Error(data.error || 'Failed to render mesh');
     }
     
     // Display the image
     const meshImage = document.getElementById('meshImage');
     const meshPlaceholder = document.getElementById('meshPlaceholder');
     
+    meshImage.onload = function() {
+      // Only remove loading notification after image is fully loaded
+      if (loadingNotification) {
+        removeNotification(loadingNotification.id.replace('notification-', ''));
+      }
+      showNotification('Mesh rendered successfully', 'success', 2000);
+    };
+    
     meshImage.src = `data:image/png;base64,${data.image}`;
     meshImage.classList.remove('hidden');
     meshPlaceholder.classList.add('hidden');
     
-    showNotification('Mesh rendered successfully', 'success', 2000);
-    
   } catch (error) {
     console.error('[FOAMFlask] Error rendering mesh:', error);
-    showNotification('[FOAMFlask] [updateMeshView] Failed to render mesh image', 'error');
+    if (loadingNotification) {
+      removeNotification(loadingNotification.id.replace('notification-', ''));
+    }
+    showNotification(`Error: ${error.message}`, 'error', 3000);
   }
 }
 
@@ -1367,7 +1414,7 @@ async function toggleInteractiveMode() {
       meshInteractive.srcdoc = html;
       
       // Update button text
-      toggleBtn.textContent = '📷 Static Mode';
+      toggleBtn.textContent = 'Static Mode';
       toggleBtn.classList.remove('bg-purple-500', 'hover:bg-purple-600');
       toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
       
@@ -1387,7 +1434,7 @@ async function toggleInteractiveMode() {
   
     // Reset to static mode
     isInteractiveMode = false;
-    toggleBtn.textContent = '🎮 Interactive Mode';
+    toggleBtn.textContent = 'Interactive Mode';
     toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
     toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
     cameraControl.classList.remove('hidden');
@@ -1402,7 +1449,7 @@ async function toggleInteractiveMode() {
     meshImage.classList.remove('hidden');
     
     // Update button text
-    toggleBtn.textContent = '🎮 Interactive Mode';
+    toggleBtn.textContent = 'Interactive Mode';
     toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
     toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
     

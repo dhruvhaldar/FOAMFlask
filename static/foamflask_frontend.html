@@ -310,7 +310,7 @@
         <div class="border-l border-gray-400 h-6 mx-2"></div>
         
         <button onclick="toggleInteractiveMode()" id="toggleInteractiveBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm">
-          🎮 Interactive Mode
+          Interactive Mode
         </button>
       </div>
 
@@ -504,6 +504,40 @@
 
   <!-- JS - defer loading -->
   <script src="{{ url_for('static', filename='js/foamflask_frontend.js') }}" defer></script>
+
+<footer class="py-4 bg-white border-t border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 space-y-2 md:space-y-0">
+      <div class="text-center md:text-left">
+        <div>FOAMFlask &copy; 2025</div>
+        <div class="text-xs mt-1">
+          Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html" 
+          target="_blank" rel="noopener noreferrer" 
+          class="text-blue-600 hover:text-blue-800">GNU GPLv3</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+  <span>Powered by:</span>
+
+<a href="https://pyvista.org/" target="_blank" rel="noopener noreferrer" 
+   class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+  <img src="{{ url_for('static', filename='icons/PyVista-logo.avif') }}"
+       alt="PyVista" 
+       class="h-8 w-auto">
+</a>
+  <span class="text-gray-400">|</span>
+
+  <a href="https://plotly.com/" target="_blank" rel="noopener noreferrer" 
+     class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+   <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}" 
+     alt="Plotly" 
+     class="h-8 w-auto">
+  </a>
+</div>
+
+    </div>
+  </div>
+</footer>
 
 </body>
 </html>

@@ -49,13 +49,13 @@ New dependencies added:
 - **Update View**: Apply changes and re-render
 
 #### Interactive Mode
-- Click the **🎮 Interactive Mode** button
+- Click the **Interactive Mode** button
 - Wait for the interactive viewer to load
 - Use mouse to interact with the 3D mesh:
   - **Rotate**: Left-click and drag
   - **Pan**: Right-click and drag
   - **Zoom**: Scroll wheel
-- Click **📷 Static Mode** to return to static view
+- Click **Static Mode** to return to static view
 
 ## Technical Implementation
 
@@ -245,7 +245,7 @@ Generate static screenshot.
 // 2. Refresh mesh list
 // 3. Select "bike.vtp"
 // 4. Click "Load Mesh"
-// 5. Click "🎮 Interactive Mode"
+// 5. Click "Interactive Mode"
 // 6. Rotate and inspect the bike geometry
 ```
 
