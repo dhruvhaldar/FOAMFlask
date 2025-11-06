@@ -470,12 +470,100 @@
 
   <!-- Post Processing Page -->
   <div id="page-post" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
-  </div>
-  <div id="post-processing-content" class="bg-gray-50 p-4 rounded-lg">
-    <!-- Content will be loaded here by refreshPostList() -->
-  </div>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
+    </div>
+    
+    <!-- Contour Visualization Section -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4">Contour Visualization</h3>
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Left Sidebar: Controls -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Number of Isosurfaces</label>
+            <input type="number" id="numIsosurfaces" value="5" min="1" max="20" class="border border-gray-300 rounded px-3 py-2">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Scalar Field</label>
+            <select id="scalarField" class="border border-gray-300 rounded px-3 py-2">
+              <option value="U_Magnitude">Velocity Magnitude</option>
+              <option value="p">Pressure</option>
+              <option value="U">Velocity</option>
+            </select>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Color Map</label>
+            <select id="colorMap" class="border border-gray-300 rounded px-3 py-2">
+              <option value="viridis">Viridis</option>
+              <option value="plasma">Plasma</option>
+              <option value="inferno">Inferno</option>
+              <option value="magma">Magma</option>
+              <option value="cividis">Cividis</option>
+            </select>
+          </div>
+          
+          <button onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
+            Generate Contours
+          </button>
+          
+          <div id="contourInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+            <h3 class="font-semibold text-blue-900 mb-2">Contour Information</h3>
+            <div id="contourInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Contour Viewer -->
+        <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 600px;">
+          <!-- Camera Controls -->
+          <div id="contourCameraControls" class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+            <button onclick="setContourCameraView('xy')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Top View (XY)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button onclick="setContourCameraView('xz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Front View (XZ)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+            </button>
+            <button onclick="setContourCameraView('yz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Side View (YZ)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button onclick="setContourCameraView('iso')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Isometric View">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button onclick="resetContourCamera()" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Reset Camera">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Viewer -->
+          <div id="contourPlaceholder" class="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div class="text-gray-500 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-700 mb-2">No Contour Loaded</h3>
+            <p class="text-gray-500">Click "Generate Contours" to visualize the data</p>
+          </div>
+          <div id="contourViewer" class="hidden w-full h-full"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="post-processing-content" class="bg-gray-50 p-4 rounded-lg">
+      <!-- Other post-processing content will be loaded here by refreshPostList() -->
+    </div>
   </div>
 
   </div>

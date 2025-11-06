@@ -10,7 +10,7 @@ import time
 
 from flask import Flask, request, jsonify, render_template_string, Response
 from realtime_plots import OpenFOAMFieldParser, get_available_fields
-from pyvista_handler import mesh_visualizer
+from pyvista_handler import mesh_visualizer, isosurface_visualizer
 
 app = Flask(__name__)
 
@@ -639,16 +639,88 @@ def api_mesh_interactive():
             return jsonify({"success": False, "error": "Failed to generate interactive viewer"}), 500
     except Exception as e:
         logger.error(f"Error generating interactive viewer: {e}")
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/post_process', methods=['POST'])
 def post_process():
     try:
         # Add your post-processing logic here
-        return jsonify({"status": "success", "message": "Post processing completed"})
+        return jsonify({"status": "success", "message": "Post processing endpoint"})
     except Exception as e:
         logger.error(f"Error during post-processing: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/create_contour', methods=['POST'])
+def create_contour():
+    """
+    Create isosurfaces for the current mesh.
+    
+    Returns:
+        dict: Result of the isosurface generation.
+    """
+    try:
+        # Get the current tutorial and case directory
+        tutorial = request.args.get('tutorial')
+        case_dir = request.args.get('caseDir')
+        
+        if not tutorial or not case_dir:
+            return jsonify({
+                "success": False,
+                "error": "Tutorial or case directory not specified. Please load a tutorial first."
+            }), 400
+        
+        # Find the latest VTK file in the case directory
+        vtk_files = []
+        for root, _, files in os.walk(case_dir):
+            for file in files:
+                if file.endswith(('.vtk', '.vtp', '.vtu')):
+                    vtk_files.append(os.path.join(root, file))
+        
+        if not vtk_files:
+            return jsonify({
+                "success": False,
+                "error": "No VTK files found in the case directory."
+            }), 404
+            
+        # Use the most recent VTK file
+        latest_vtk = max(vtk_files, key=os.path.getmtime)
+        
+        # Load the mesh
+        mesh_info = isosurface_visualizer.load_mesh(latest_vtk)
+        if not mesh_info.get('success'):
+            return jsonify({
+                "success": False,
+                "error": f"Failed to load mesh: {mesh_info.get('error')}"
+            }), 500
+        
+        # Generate isosurfaces
+        isosurface_info = isosurface_visualizer.generate_isosurfaces(
+            scalar_field="U_Magnitude",
+            num_isosurfaces=5
+        )
+        
+        if not isosurface_info.get('success'):
+            return jsonify({
+                "success": False,
+                "error": f"Failed to generate isosurfaces: {isosurface_info.get('error')}"
+            }), 500
+        
+        # Get interactive HTML viewer
+        html_content = isosurface_visualizer.get_interactive_html()
+        
+        return jsonify({
+            "success": True,
+            "message": "Isosurfaces generated successfully",
+            "mesh_info": mesh_info,
+            "isosurface_info": isosurface_info,
+            "html_content": html_content
+        })
+        
+    except Exception as e:
+        logger.error(f"Error creating contour: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": f"Failed to create contour: {str(e)}"
+        }), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

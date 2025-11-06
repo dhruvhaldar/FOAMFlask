@@ -1548,31 +1548,31 @@ async function refreshPostList() {
 // Helper function for post-processing operations
 async function runPostOperation(operation) {
   const resultsDiv = document.getElementById('post-results') || document.body;
-  resultsDiv.innerHTML = `<div class="p-4 text-blue-600">Running ${operation}...</div>`;
   
   try {
-    // Here you would make an API call to your backend
-    // const response = await fetch('/api/post_operation', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ operation }),
-    //   headers: { 'Content-Type': 'application/json' }
-    // });
-    // const result = await response.json();
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    resultsDiv.innerHTML = `
-      <div class="p-4 bg-green-50 text-green-700 rounded">
-        ${operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} completed successfully!
-      </div>
-    `;
+    if (operation === 'create_contour') {
+      // Delegate to the generateContours function which has the new UI logic
+      await generateContours();
+    } else {
+      // Handle other operations
+      resultsDiv.innerHTML = `<div class="p-4 text-blue-600">Running ${operation}...</div>`;
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      resultsDiv.innerHTML = `
+        <div class="p-4 bg-green-50 text-green-700 rounded">
+          ${operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} completed successfully!
+        </div>
+      `;
+    }
   } catch (error) {
+    const errorMessage = error.message || 'An unknown error occurred';
     resultsDiv.innerHTML = `
       <div class="p-4 bg-red-50 text-red-700 rounded">
-        Error running ${operation}: ${error.message}
+        Error running ${operation}: ${errorMessage}
       </div>
     `;
+    console.error(`Error in ${operation}:`, error);
   }
 }
 
