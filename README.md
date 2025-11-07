@@ -164,7 +164,10 @@ my-python313-venv-win\Scripts\activate
 ```
 
 ### Generate API Documentation
-``
+Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+
+To generate Python-related API documentation, run the following command:
+```
 python -m pdoc --html --force --output-dir docs app.py
 python -m pdoc --html --force --output-dir docs build_utils.py
 ```
