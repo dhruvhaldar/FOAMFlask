@@ -24,7 +24,7 @@ async function generateContours(options = {}) {
         tutorial = null,
         caseDir = null,
         scalarField = 'U_Magnitude',
-        numIsosurfaces = 5
+        numIsosurfaces = 10
     } = options;
     
     try {

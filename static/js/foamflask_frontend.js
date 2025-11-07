@@ -262,13 +262,11 @@ function switchPage(pageName) {
       }
       break;
     case 'post':
-      // Initialize post processing if needed
       const postContainer = document.getElementById('page-post');
       if (postContainer && !postContainer.hasAttribute('data-initialized')) {
         postContainer.setAttribute('data-initialized', 'true');
         console.log('[FOAMFlask] Post processing page initialized');
-        // Load available post processing functions
-        refreshPostList();
+        refreshPostList();  // ← CHANGE: Refresh VTK list instead of refreshPostList()
       }
       break;
   }
@@ -1589,7 +1587,7 @@ async function runPostOperation(operation) {
         tutorial: tutorial,
         caseDir: caseDirValue, // Pass the string value, not the object
         scalarField: 'U_Magnitude',
-        numIsosurfaces: 5
+        numIsosurfaces: 10
       });
       
     } else {
@@ -1629,3 +1627,76 @@ window.addEventListener('beforeunload', () => {
   // Flush any remaining output
   flushOutputBuffer();
 });
+
+/**
+ * Refresh VTK file list on Post page
+ */
+async function refreshPostList() {
+  const tutorial = document.getElementById('tutorialSelect').value;
+  
+  if (!tutorial) {
+    showNotification('Please select a tutorial first', 'warning');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    const vtkFiles = data.meshes || [];
+    
+    const vtkSelect = document.getElementById('vtkFileSelect');
+    vtkSelect.innerHTML = '<option value="">-- Select a VTK file --</option>';
+    
+    vtkFiles.forEach(file => {
+      const option = document.createElement('option');
+      option.value = file.path;
+      option.textContent = file.name || file.path.split('/').pop();
+      vtkSelect.appendChild(option);
+    });
+    
+  } catch (error) {
+    console.error('[FOAMFlask] Error fetching VTK files:', error);
+  }
+}
+
+/**
+ * Load selected VTK file
+ */
+async function loadSelectedVTK() {
+  const vtkSelect = document.getElementById('vtkFileSelect');
+  const selectedFile = vtkSelect.value;
+  
+  if (!selectedFile) {
+    showNotification('Please select a VTK file', 'warning');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/load_mesh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_path: selectedFile })
+    });
+    
+    const meshInfo = await response.json();
+    
+    if (meshInfo.success) {
+      // Update scalar field options
+      const scalarFieldSelect = document.getElementById('scalarField');
+      scalarFieldSelect.innerHTML = '';
+      (meshInfo.point_arrays || []).forEach(field => {
+        const option = document.createElement('option');
+        option.value = field;
+        option.textContent = field;
+        scalarFieldSelect.appendChild(option);
+      });
+      
+      showNotification('VTK file loaded successfully!', 'success');
+    }
+  } catch (error) {
+    console.error('[FOAMFlask] Error loading VTK file:', error);
+    showNotification('Error loading VTK file', 'error');
+  }
+}

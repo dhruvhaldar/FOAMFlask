@@ -481,6 +481,62 @@
         <!-- Left Sidebar: Controls -->
         <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
           
+          <!-- VTK File Selection -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Select VTK File</label>
+            <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+              <option value="">-- Select a VTK file --</option>
+            </select>
+          </div>
+
+          <!-- File Browser (Optional) -->
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <button 
+              type="button" 
+              onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')"
+              class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none"
+            >
+              <span>Load custom VTK file</span>
+              <svg class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div class="p-4 bg-white hidden">
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-col sm:flex-row gap-2 w-full">
+                  <div class="flex-1 min-w-0">
+                    <input 
+                      type="file" 
+                      id="vtkFileBrowser" 
+                      accept=".vtk,.vtp,.vtu,.vtm,.pvtu"
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate"
+                    >
+                  </div>
+                  <button 
+                    onclick="loadCustomVTKFile()" 
+                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap w-full sm:w-auto">
+                    Load File
+                  </button>
+                </div>
+                <small class="text-gray-500 text-xs">Supported: .vtk, .vtp, .vtu, .vtm, .pvtu</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Load Selected VTK Button -->
+          <button 
+            onclick="loadSelectedVTK()" 
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full font-medium">
+            Load Selected VTK
+          </button>
+          
+          <!-- VTK File Info -->
+          <div id="vtkFileInfo" class="hidden bg-green-50 border border-green-200 rounded p-3">
+            <h3 class="font-semibold text-green-900 mb-2">VTK File Information</h3>
+            <div id="vtkFileInfoContent" class="text-sm text-green-800 space-y-1"></div>
+          </div>
+
+          <!-- Scalar Field Selection -->
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Scalar Field</label>
             <select id="scalarField" class="border border-gray-300 rounded px-3 py-2">
@@ -490,6 +546,7 @@
             </select>
           </div>
           
+          <!-- Color Map Selection -->
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Color Map</label>
             <select id="colorMap" class="border border-gray-300 rounded px-3 py-2">
@@ -501,6 +558,7 @@
             </select>
           </div>
           
+          <!-- Range Selection -->
           <div class="mt-2 w-full">
             <div class="grid grid-cols-2 gap-2 w-full">
               <div class="w-full">
@@ -515,22 +573,25 @@
             </button>
           </div>
 
+          <!-- Number of Isosurfaces -->
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Number of Isosurfaces <span class="text-gray-500">(Optional)</span></label>
             <input 
               type="number" 
               id="numIsosurfaces" 
-              placeholder="Leave empty for default (5)" 
+              placeholder="Leave empty for default (10)" 
               min="1" 
-              max="20" 
+              max="40" 
               class="border border-gray-300 rounded px-3 py-2"
             >
           </div>
           
+          <!-- Generate Contours Button -->
           <button onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
             Generate Contours
           </button>
           
+          <!-- Contour Info -->
           <div id="contourInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
             <h3 class="font-semibold text-blue-900 mb-2">Contour Information</h3>
             <div id="contourInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
