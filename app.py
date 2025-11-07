@@ -758,11 +758,18 @@ def create_contour():
         
         logger.info(f"[FOAMFlask] [create_contour] Scalar field '{scalar_field}' found")
         
+        # Get range from request if provided
+        custom_range = None
+        if 'range' in request_data and isinstance(request_data['range'], list) and len(request_data['range']) == 2:
+            custom_range = request_data['range']
+            logger.info(f"[FOAMFlask] [create_contour] Using custom range: {custom_range}")
+        
         # Generate isosurfaces
         logger.info(f"[FOAMFlask] [create_contour] Generating {num_isosurfaces} isosurfaces...")
         isosurface_info = isosurface_visualizer.generate_isosurfaces(
             scalar_field=scalar_field,
-            num_isosurfaces=num_isosurfaces
+            num_isosurfaces=num_isosurfaces,
+            custom_range=custom_range
         )
         
         if not isosurface_info.get('success'):

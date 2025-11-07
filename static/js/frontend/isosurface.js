@@ -70,21 +70,47 @@ async function generateContours(options = {}) {
         // Log the value we're using for debugging
         console.log('[FOAMFlask] [generateContours] Using case directory:', selectedCaseDir);
         
+        // Get range from input fields if not provided in options
+        let range = options.range;
+        if (!range) {
+            const rangeMinInput = document.getElementById('rangeMin');
+            const rangeMaxInput = document.getElementById('rangeMax');
+            const rangeMin = rangeMinInput?.value ? parseFloat(rangeMinInput.value) : null;
+            const rangeMax = rangeMaxInput?.value ? parseFloat(rangeMaxInput.value) : null;
+            
+            if (rangeMin !== null && rangeMax !== null && !isNaN(rangeMin) && !isNaN(rangeMax) && rangeMin < rangeMax) {
+                range = [rangeMin, rangeMax];
+                console.log('[FOAMFlask] [generateContours] Using range from input fields:', range);
+            }
+        }
+        
         console.log('[FOAMFlask] [generateContours] Request parameters:', {
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
             scalarField,
-            numIsosurfaces
+            numIsosurfaces,
+            range
         });
+        
+        // Prepare request data with all parameters
+        const requestData = {
+            tutorial: selectedTutorial,
+            caseDir: selectedCaseDir,
+            scalarField: scalarField,
+            numIsosurfaces: numIsosurfaces
+        };
+
+        // Add range to request if available
+        if (range && Array.isArray(range) && range.length === 2) {
+            requestData.range = range;
+            console.log('[FOAMFlask] [generateContours] Using range:', range);
+        }
+        
+        console.log('[FOAMFlask] [generateContours] Request data with range:', requestData);
         
         // Make the API request directly (send data in body, not URL params)
         console.log('[FOAMFlask] [generateContours] Calling fetchContours...');
-        const response = await fetchContours({
-            tutorial: selectedTutorial,
-            caseDir: selectedCaseDir,
-            scalarField,
-            numIsosurfaces
-        });
+        const response = await fetchContours(requestData);
         
         // Handle response - IMPORTANT: await the text() call
         console.log('[FOAMFlask] [generateContours] Reading response content...');
@@ -149,12 +175,21 @@ async function fetchContours(requestData) {
     console.log('[FOAMFlask] [fetchContours] Origin:', window.location.origin);
     console.log('[FOAMFlask] [fetchContours] Request data:', requestData);
     
-    const body = JSON.stringify({
+    // Prepare the request body with all parameters
+    const requestBody = {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
         num_isosurfaces: requestData.numIsosurfaces
-    });
+    };
+    
+    // Add range to the request body if provided
+    if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
+        requestBody.range = requestData.range;
+        console.log('[FOAMFlask] [fetchContours] Including range in request:', requestData.range);
+    }
+    
+    const body = JSON.stringify(requestBody);
     
     console.log('[FOAMFlask] [fetchContours] Request body:', body);
     
@@ -338,16 +373,29 @@ function handleContourError(placeholder, viewer, error) {
  * Generate contours with custom parameters from UI controls
  */
 async function generateContoursWithParams() {
-    const scalarFieldSelect = document.getElementById('scalarField');
-    const numIsosurfacesInput = document.getElementById('numIsosurfaces');
-    
-    const scalarField = scalarFieldSelect?.value || 'U_Magnitude';
-    const numIsosurfaces = parseInt(numIsosurfacesInput?.value || '5', 10);
-    
-    await generateContours({
-        scalarField,
-        numIsosurfaces
-    });
+    try {
+        const scalarFieldSelect = document.getElementById('scalarField');
+        const numIsosurfacesInput = document.getElementById('numIsosurfaces');
+        
+        const scalarField = scalarFieldSelect?.value || 'U_Magnitude';
+        const numIsosurfaces = numIsosurfacesInput?.value ? parseInt(numIsosurfacesInput.value, 10) : 5;
+        
+        console.log('[FOAMFlask] [generateContoursWithParams] Generating contours with parameters:', {
+            scalarField,
+            numIsosurfaces
+        });
+        
+        // Let generateContours handle the range from input fields
+        await generateContours({
+            scalarField,
+            numIsosurfaces
+        });
+    } catch (error) {
+        console.error('[FOAMFlask] [generateContoursWithParams] Error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification(`Error: ${error.message}`, 'error');
+        }
+    }
 }
 
 /**
@@ -440,6 +488,45 @@ function resetContourViewer() {
     
     currentContourData = null;
 }
+
+// Add event listener for the RangeBtn when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const rangeBtn = document.getElementById('RangeBtn');
+    const rangeMinInput = document.getElementById('rangeMin');
+    const rangeMaxInput = document.getElementById('rangeMax');
+    
+    if (rangeBtn && rangeMinInput && rangeMaxInput) {
+        rangeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const rangeMin = rangeMinInput.value ? parseFloat(rangeMinInput.value) : null;
+            const rangeMax = rangeMaxInput.value ? parseFloat(rangeMaxInput.value) : null;
+            
+            if (rangeMin === null || rangeMax === null || isNaN(rangeMin) || isNaN(rangeMax)) {
+                console.log('[FOAMFlask] Invalid range values');
+                if (typeof showNotification === 'function') {
+                    showNotification('Please enter valid range values', 'warning');
+                }
+                return;
+            }
+            
+            if (rangeMin >= rangeMax) {
+                console.log('[FOAMFlask] Range min must be less than max');
+                if (typeof showNotification === 'function') {
+                    showNotification('Range min must be less than max', 'warning');
+                }
+                return;
+            }
+            
+            console.log(`[FOAMFlask] Range set to [${rangeMin}, ${rangeMax}]`);
+            if (typeof showNotification === 'function') {
+                showNotification(`Range set to [${rangeMin.toFixed(4)}, ${rangeMax.toFixed(4)}]`, 'success');
+            }
+            
+            // The range values will be used the next time Generate Contours is clicked
+        });
+    }
+});
 
 // Export functions for use in other modules (if using ES6 modules)
 if (typeof module !== 'undefined' && module.exports) {

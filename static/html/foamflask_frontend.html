@@ -480,10 +480,6 @@
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Left Sidebar: Controls -->
         <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">Number of Isosurfaces</label>
-            <input type="number" id="numIsosurfaces" value="5" min="1" max="20" class="border border-gray-300 rounded px-3 py-2">
-          </div>
           
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Scalar Field</label>
@@ -503,6 +499,32 @@
               <option value="magma">Magma</option>
               <option value="cividis">Cividis</option>
             </select>
+          </div>
+          
+          <div class="mt-2 w-full">
+            <div class="grid grid-cols-2 gap-2 w-full">
+              <div class="w-full">
+                <input type="number" id="rangeMin" placeholder="Min" class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34">
+              </div>
+              <div class="w-full">
+                <input type="number" id="rangeMax" placeholder="Max" class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177">
+              </div>
+            </div>
+            <button id="RangeBtn" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors duration-200 w-full">
+              Set Range
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Number of Isosurfaces <span class="text-gray-500">(Optional)</span></label>
+            <input 
+              type="number" 
+              id="numIsosurfaces" 
+              placeholder="Leave empty for default (5)" 
+              min="1" 
+              max="20" 
+              class="border border-gray-300 rounded px-3 py-2"
+            >
           </div>
           
           <button onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
