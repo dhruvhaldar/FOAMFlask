@@ -1,67 +1,138 @@
-# build_utils API documentation
+# Build System Utilities
 
-Module: `build_utils`
+## Overview
 
-This document contains the API documentation for the build utilities extracted from the generated HTML docs.
+The `build_utils` module provides functionality for managing the build process of the FOAMPilot application, particularly focusing on asset minification and build automation in development and production environments.
 
----
+## Table of Contents
 
-## Functions
+- [Installation](#installation)
+- [API Reference](#api-reference)
+  - [init_build_system](#init_build_systemapp)
+- [Development Workflow](#development-workflow)
+- [Troubleshooting](#troubleshooting)
+- [Build Configuration](#build-configuration)
 
-### init_build_system(app)
+## Installation
 
-Initialize the build system with the Flask app.
-
-```python
-def init_build_system(app):
-    """Initialize the build system with the Flask app.
-    
-    Args:
-        app (Flask): The Flask app.
-    """
-    @app.before_first_request
-    def run_build():
-        if app.config.get('ENV') == 'development':
-            # In development, we'll run the build process
-            try:
-                # Check if python-minifier is installed
-                import python_minifier  # noqa
-                
-                # Run the build script
-                result = subprocess.run(
-                    [sys.executable, 'build.py'],
-                    cwd=os.path.dirname(os.path.abspath(__file__)),
-                    capture_output=True,
-                    text=True
-                )
-                
-                if result.returncode == 0:
-                    current_app.logger.info("Build completed successfully")
-                    if result.stdout:
-                        current_app.logger.debug(f"Build output: {result.stdout}")
-                else:
-                    current_app.logger.error(f"Build failed: {result.stderr}")
-                    
-            except ImportError:
-                current_app.logger.warning(
-                    "python-minifier not installed. "
-                    "Run 'pip install python-minifier' to enable minification."
-                )
-            except Exception as e:
-                current_app.logger.error(f"Error during build: {str(e)}")
-        else:
-            # In production, just check if minified files exist
-            min_js = os.path.join('static', 'js', 'foamflask_frontend.min.js')
-            if not os.path.exists(min_js):
-                current_app.logger.warning(
-                    "Minified JavaScript not found. "
-                    "Run 'python build.py' to generate minified files."
-                )
+```bash
+# Install build dependencies
+pip install python-minifier
 ```
 
-Args:
-- app (Flask): The Flask app.
+## API Reference
 
----
+### `init_build_system(app)`
 
-Original HTML source: https://github.com/dhruvhaldar/FOAMFlask/blob/17a1c303767759ae3f1c56910b2a00afa66f1890/docs/build_utils.html
+Initializes the build system with the Flask application. This function sets up automatic build processes that run before the first request in development mode and performs necessary checks in production.
+
+#### Parameters
+- `app` (Flask): The Flask application instance
+
+#### Behavior
+
+**Development Mode** (`ENV='development'`):
+1. Checks for `python-minifier` installation
+2. Executes `build.py` to process and minify assets
+3. Logs build output and errors
+
+**Production Mode** (`ENV='production'`):
+1. Verifies existence of minified JavaScript files
+2. Logs warnings if minified files are missing
+
+#### Example Usage
+
+```python
+from flask import Flask
+from build_utils import init_build_system
+
+app = Flask(__name__)
+app.config['ENV'] = 'development'  # or 'production'
+init_build_system(app)
+```
+
+## Development Workflow
+
+### Building Assets
+
+1. **Automatic Build** (Development):
+   - Triggered on first request when `ENV='development'`
+   - Runs `python build.py` to process assets
+   - Minifies JavaScript and CSS files
+
+2. **Manual Build**:
+   ```bash
+   python build.py
+   ```
+
+### File Structure
+
+```
+static/
+  ├── js/
+  │   ├── foamflask_frontend.js      # Source
+  │   └── foamflask_frontend.min.js  # Minified (generated)
+  └── css/
+      ├── styles.css                 # Source
+      └── styles.min.css             # Minified (generated)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Build Failures**
+- **Symptom**: Build process fails with errors
+- **Solution**:
+  ```bash
+  # Check build output
+  python build.py
+  
+  # Ensure all dependencies are installed
+  pip install -r requirements.txt
+  pip install python-minifier
+  ```
+
+**Missing Minified Files**
+- **Symptom**: Warnings about missing minified files in production
+- **Solution**:
+  ```bash
+  # Run build manually
+  python build.py
+  
+  # Verify files exist
+  ls -l static/js/foamflask_frontend.min.js
+  ```
+
+## Build Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENV` | `'development'` | Application environment ('development' or 'production') |
+| `DEBUG` | `True` in development | Enable/disable debug mode |
+
+### Dependencies
+
+- `python-minifier`: For JavaScript and CSS minification
+- `Flask`: Web framework
+
+## Best Practices
+
+1. **Development Mode**:
+   - Keep `ENV='development'` for automatic rebuilds
+   - Monitor application logs for build output
+
+2. **Production Mode**:
+   - Run `python build.py` during deployment
+   - Verify minified files exist before starting the server
+   - Set `ENV='production'` in production
+
+3. **Version Control**:
+   - Include both source and minified files in version control
+   - Add build artifacts to `.gitignore` if using CI/CD
+
+## License
+
+This documentation is part of the FOAMPilot project. See the main [LICENSE](../LICENSE) file for details.

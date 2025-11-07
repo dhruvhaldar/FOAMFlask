@@ -531,7 +531,7 @@ class IsosurfaceVisualizer:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
             padding: 40px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             margin: 0;
@@ -561,7 +561,6 @@ class IsosurfaceVisualizer:
             padding: 20px;
             border-radius: 6px;
             margin: 20px 0;
-            font-family: 'Courier New', monospace;
             font-size: 14px;
             word-wrap: break-word;
         }}

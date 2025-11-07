@@ -1,37 +1,283 @@
-# Interactive Mesh Viewer Documentation
+# Interactive Mesh Viewer
 
 ## Overview
-The mesh viewer now supports both **static** and **interactive** modes for visualizing OpenFOAM mesh files.
+
+The Interactive Mesh Viewer is a powerful tool for visualizing OpenFOAM mesh files with both static and interactive rendering capabilities. It's designed to work seamlessly within the FOAMPilot web interface, providing fluid 3D visualization of complex meshes directly in the browser.
+
+## Table of Contents
+
+- [Features](#features)
+  - [Static Mode](#static-mode)
+  - [Interactive Mode](#interactive-mode)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [User Guide](#user-guide)
+  - [Loading a Mesh](#loading-a-mesh)
+  - [Viewing Modes](#viewing-modes)
+  - [Navigation Controls](#navigation-controls)
+- [Technical Details](#technical-details)
+  - [Architecture](#architecture)
+  - [Performance](#performance)
+  - [Browser Support](#browser-support)
+- [Troubleshooting](#troubleshooting)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
 
 ## Features
 
-### Static Mode (Default)
-- **Fast rendering** using PyVista's screenshot functionality
-- **Customizable views**: XY, XZ, YZ planes, or Isometric
-- **Adjustable settings**: Edge visibility, mesh color, camera position
-- **High-quality PNG output** at 1200x800 resolution
-- **Best for**: Quick previews and screenshots
+### Static Mode
 
-### Interactive Mode (NEW)
-- **Full 3D interaction** using PyVista's pythreejs backend
-- **Mouse controls**:
-  - **Left-click + drag**: Rotate the mesh
-  - **Right-click + drag**: Pan the view
-  - **Scroll wheel**: Zoom in/out
-- **Real-time rendering** in the browser
-- **Smooth shading** for better visualization
-- **Best for**: Detailed inspection and exploration
+Ideal for quick previews and documentation, Static Mode offers:
 
-## How to Use
+- **High-Performance Rendering**
+  - Instant loading of pre-rendered images
+  - Consistent output for documentation
+  - Fixed resolution (1200×800) for predictable results
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
+- **Visual Customization**
+  - **Color Schemes**: Choose from multiple preset colors
+  - **Edge Display**: Toggle mesh edges on/off
+  - **View Presets**: Standard orthographic (XY, XZ, YZ) and isometric views
+  - **Camera Control**: Adjust position and orientation
+
+- **Export Capabilities**
+  - Save high-quality PNG images
+  - Copy to clipboard functionality
+  - Consistent rendering across sessions
+
+### Interactive Mode
+
+Designed for in-depth analysis, Interactive Mode provides:
+
+- **Full 3D Navigation**
+  - **Rotation**: Left-click + drag
+  - **Panning**: Right-click + drag
+  - **Zoom**: Scroll wheel or pinch gesture
+  - **Reset View**: Double-click to reset camera
+
+- **Advanced Visualization**
+  - Smooth shading and lighting
+  - Real-time updates
+  - Adaptive resolution for optimal performance
+  - Fullscreen mode for detailed inspection
+
+- **Performance Optimizations**
+  - Level-of-detail (LOD) rendering
+  - Progressive loading for large meshes
+  - WebGL acceleration
+
+## Getting Started
+
+### Prerequisites
+
+Before using the Interactive Mesh Viewer, ensure you have:
+
+- Python 3.8 or higher
+- Modern web browser with WebGL 2.0 support
+- Sufficient system resources (8GB+ RAM recommended for large meshes)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/foampilot.git
+   cd foampilot
+   ```
+
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   Additional dependencies for interactive mode:
+   ```bash
+   pip install pythreejs==2.4.2 panel==1.5.4
+   ```
+
+## User Guide
+
+### Loading a Mesh
+
+1. **Access the Viewer**
+   - Launch the FOAMPilot application
+   - Navigate to the Mesh tab in the web interface
+
+2. **Select a Tutorial**
+   - Choose from available tutorials in the dropdown
+   - Or specify a custom case directory
+
+3. **Load the Mesh**
+   - Click "Refresh List" to scan for mesh files
+   - Select a mesh file from the dropdown
+   - Click "Load Mesh" to begin visualization
+
+### Viewing Modes
+
+#### Switching Between Modes
+- Use the "Interactive Mode" toggle to switch between static and interactive views
+- Static mode is recommended for quick previews
+- Interactive mode enables full 3D manipulation
+
+#### Static Mode Features
+- **View Presets**: Select from standard views (XY, XZ, YZ, Isometric)
+- **Visual Settings**:
+  - Toggle edge visibility
+  - Change mesh color
+  - Adjust lighting
+- **Export Options**:
+  - Save as PNG
+  - Copy to clipboard
+  - Generate shareable links
+
+#### Interactive Mode Features
+- **Navigation Controls**:
+  - Rotate: Left-click + drag
+  - Pan: Right-click + drag
+  - Zoom: Scroll wheel or pinch gesture
+  - Reset View: Double-click
+- **Display Options**:
+  - Toggle wireframe mode
+  - Adjust point size
+  - Change background color
+  - Enable/disable axes
+
+### Navigation Controls
+
+| Action | Mouse | Touch |
+|--------|-------|-------|
+| Rotate | Left-click + drag | One-finger drag |
+| Pan | Right-click + drag | Two-finger drag |
+| Zoom | Scroll wheel | Pinch gesture |
+| Reset View | Double-click | Double-tap |
+| Fullscreen | Click fullscreen button | N/A |
+
+## Technical Details
+
+### Architecture
+
+The Interactive Mesh Viewer is built on:
+
+1. **Frontend**:
+   - PyVista for 3D visualization
+   - pythreejs for WebGL rendering
+   - Panel for interactive widgets
+   - Custom JavaScript for UI controls
+
+2. **Backend**:
+   - Flask web server
+   - PyVista for mesh processing
+   - Asynchronous task handling
+
+### Performance
+
+- **Recommended Mesh Sizes**:
+  - Small: < 100,000 cells (optimal)
+  - Medium: 100,000 - 1,000,000 cells (good performance)
+  - Large: > 1,000,000 cells (reduced performance)
+
+- **Optimization Tips**:
+  - Use static mode for large meshes
+  - Disable edges in interactive mode
+  - Reduce mesh resolution if possible
+  - Close other memory-intensive applications
+
+### Browser Support
+
+| Browser | Version | Notes |
+|---------|---------|-------|
+| Chrome | 90+ | Recommended |
+| Firefox | 85+ | Good support |
+| Edge | 90+ | Good support |
+| Safari | 14+ | Limited testing |
+| Mobile | Varies | Basic support |
+
+## Troubleshooting
+
+### Common Issues
+
+#### Mesh Fails to Load
+- **Symptom**: Blank screen or error message
+- **Solutions**:
+  - Verify file path is correct
+  - Check file permissions
+  - Ensure mesh file is not corrupted
+
+#### Poor Performance
+- **Symptom**: Slow rendering or unresponsive UI
+- **Solutions**:
+  - Switch to static mode
+  - Reduce mesh resolution
+  - Close other applications
+  - Update graphics drivers
+
+#### WebGL Errors
+- **Symptom**: "WebGL not supported" or rendering artifacts
+- **Solutions**:
+  - Update browser to latest version
+  - Enable WebGL in browser settings
+  - Check browser console for specific errors
+
+## API Reference
+
+### Endpoints
+
+#### `GET /api/available_meshes`
+List available mesh files in the current case.
+
+**Parameters**:
+- `tutorial` (string): Name of the tutorial
+- `caseDir` (string, optional): Custom case directory
+
+**Response**:
+```json
+{
+  "meshes": ["path/to/mesh1.vtk", "path/to/mesh2.vtk"],
+  "status": "success"
+}
 ```
 
-New dependencies added:
-- `pythreejs==2.4.2` - WebGL-based 3D rendering
-- `panel==1.5.4` - Alternative backend for interactive viewer
+#### `POST /api/load_mesh`
+Load a mesh file for visualization.
+
+**Request Body**:
+```json
+{
+  "file_path": "path/to/mesh.vtk",
+  "show_edges": true,
+  "color": "lightblue"
+}
+```
+
+**Response**:
+```json
+{
+  "status": "success",
+  "mesh_info": {
+    "points": 1000,
+    "cells": 2000,
+    "bounds": [0, 10, 0, 10, 0, 5],
+    "volume": 500.0
+  }
+}
+```
+
+## Contributing
+
+We welcome contributions to improve the Interactive Mesh Viewer:
+
+1. Report bugs and feature requests
+2. Submit pull requests
+3. Improve documentation
+4. Test with different mesh types
+
+Please see our [Contributing Guidelines](CONTRIBUTING.md) for more details.
 
 ### 2. Load a Mesh
 1. Navigate to the **Mesh** page

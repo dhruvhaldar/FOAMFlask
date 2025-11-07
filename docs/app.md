@@ -1,25 +1,219 @@
-# app — API documentation (converted from docs/app.html)
+# FOAMPilot API Documentation
 
-This file is a GitHub-flavored Markdown conversion of the generated HTML documentation for the `app` module (original HTML: https://github.com/dhruvhaldar/FOAMFlask/blob/8c5a668f6566d675101e94412f7f17a1e47b5b2e/docs/app.html). It summarizes available endpoints, functions, arguments, return types, and includes source snippets where appropriate.
+This document provides comprehensive documentation for the FOAMPilot API, which serves as the backend for OpenFOAM case management and visualization.
 
-## Table of contents
+## Overview
 
-- [Functions](#functions)
-  - [api_available_fields](#api_available_fields)
-  - [api_latest_data](#api_latest_data)
-  - [api_plot_data](#api_plot_data)
-  - [api_residuals](#api_residuals)
-  - [get_case_root](#get_case_root)
-  - [get_docker_config](#get_docker_config)
-  - [get_tutorials](#get_tutorials)
-  - [index](#index)
-  - [load_config](#load_config)
-  - [load_tutorial](#load_tutorial)
-  - [monitor_foamrun_log](#monitor_foamrun_log)
-  - [run_case](#run_case)
-  - [save_config](#save_config)
-  - [set_case](#set_case)
-  - [set_docker_config](#set_docker_config)
+The FOAMPilot API is a Flask-based web service that provides endpoints for:
+- Managing OpenFOAM tutorial cases
+- Running OpenFOAM simulations in Docker containers
+- Retrieving simulation data and results
+- Real-time monitoring of simulation progress
+- Configuration management
+
+## Table of Contents
+
+- [Authentication](#authentication)
+- [Endpoints](#endpoints)
+  - [Case Management](#case-management)
+  - [Simulation Control](#simulation-control)
+  - [Data Retrieval](#data-retrieval)
+  - [Configuration](#configuration)
+- [Error Handling](#error-handling)
+- [Examples](#examples)
+- [Development](#development)
+
+## Authentication
+
+Currently, the API does not require authentication. All endpoints are publicly accessible.
+
+## Endpoints
+
+### Case Management
+
+#### `GET /`
+**Description**: Render the index page with a list of available OpenFOAM tutorials.
+
+**Response**:
+- `200 OK`: Returns HTML page with tutorial selection interface
+
+**Example**:
+```bash
+curl http://localhost:5000/
+```
+
+#### `GET /get_tutorials`
+**Description**: List all available OpenFOAM tutorial cases.
+
+**Response**:
+- `200 OK`: Returns JSON array of tutorial paths (e.g., `["incompressible/simpleFoam/airFoil2D"]`)
+
+**Example**:
+```bash
+curl http://localhost:5000/get_tutorials
+```
+
+### Simulation Control
+
+#### `POST /run_case`
+**Description**: Execute an OpenFOAM case in a Docker container.
+
+**Request Body**:
+```json
+{
+  "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "caseDir": "/path/to/case"
+}
+```
+
+**Response**:
+- `200 OK`: Returns simulation output as streamed text/event-stream
+- `400 Bad Request`: If required parameters are missing
+- `404 Not Found`: If case directory doesn't exist
+
+**Example**:
+```bash
+curl -X POST http://localhost:5000/run_case \
+  -H "Content-Type: application/json" \
+  -d '{"tutorial": "incompressible/simpleFoam/airFoil2D"}'
+```
+
+### Data Retrieval
+
+#### `GET /api/available_fields`
+**Description**: List all available fields in the current case.
+
+**Query Parameters**:
+- `tutorial` (required): Name of the tutorial
+- `caseDir`: Path to case directory (optional)
+
+**Response**:
+- `200 OK`: JSON object with array of field names
+- `400 Bad Request`: If tutorial parameter is missing
+- `404 Not Found`: If case directory doesn't exist
+- `500 Internal Server Error`: For other errors
+
+**Example**:
+```bash
+curl "http://localhost:5000/api/available_fields?tutorial=incompressible/simpleFoam/airFoil2D"
+```
+
+#### `GET /api/latest_data`
+**Description**: Get the latest time step data.
+
+**Query Parameters**:
+- `tutorial` (required): Name of the tutorial
+- `caseDir`: Path to case directory (optional)
+
+**Response**:
+- `200 OK`: JSON object with latest time step data
+- `400 Bad Request`: If tutorial parameter is missing
+- `404 Not Found`: If case directory doesn't exist
+- `500 Internal Server Error`: For other errors
+
+#### `GET /api/plot_data`
+**Description**: Get real-time plot data for the current case.
+
+**Query Parameters**:
+- `tutorial` (required): Name of the tutorial
+- `caseDir`: Path to case directory (optional)
+- `max_points`: Maximum number of data points to return (default: 100)
+
+**Response**:
+- `200 OK`: JSON object with time series data
+- `400 Bad Request`: If tutorial parameter is missing
+- `404 Not Found`: If case directory doesn't exist
+- `500 Internal Server Error`: For other errors
+
+### Configuration
+
+#### `GET /get_case_root`
+**Description**: Get the root directory for case storage.
+
+**Response**:
+- `200 OK`: JSON object with `caseDir` path
+
+**Example**:
+```bash
+curl http://localhost:5000/get_case_root
+```
+
+#### `GET /get_docker_config`
+**Description**: Get current Docker configuration.
+
+**Response**:
+```json
+{
+  "dockerImage": "haldardhruv/ubuntu_noble_openfoam:v12",
+  "openfoamVersion": "12"
+}
+```
+
+## Error Handling
+
+All error responses follow the same format:
+```json
+{
+  "error": "Error message describing the issue"
+}
+```
+
+Common HTTP status codes:
+- `200 OK`: Request successful
+- `400 Bad Request`: Invalid request parameters
+- `404 Not Found`: Requested resource not found
+- `500 Internal Server Error`: Server-side error occurred
+
+## Examples
+
+### Running a Simulation
+
+1. List available tutorials:
+   ```bash
+   curl http://localhost:5000/get_tutorials
+   ```
+
+2. Run a specific tutorial:
+   ```bash
+   curl -X POST http://localhost:5000/run_case \
+     -H "Content-Type: application/json" \
+     -d '{"tutorial": "incompressible/simpleFoam/airFoil2D"}'
+   ```
+
+3. Monitor simulation progress:
+   ```bash
+   # In a separate terminal
+   curl "http://localhost:5000/api/residuals?tutorial=incompressible/simpleFoam/airFoil2D"
+   ```
+
+## Development
+
+### Prerequisites
+- Python 3.8+
+- Docker
+- OpenFOAM (optional, for local development)
+
+### Setup
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Start the development server:
+   ```bash
+   python app.py
+   ```
+
+### Configuration
+
+Create a `case_config.json` file in the project root with the following structure:
+```json
+{
+  "CASE_ROOT": "/path/to/cases",
+  "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
+  "OPENFOAM_VERSION": "12"
+}
+```
 
 ---
 
