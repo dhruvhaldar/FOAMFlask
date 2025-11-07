@@ -75,16 +75,24 @@ FOAMFlask/
 ├── requirements.txt # Python dependencies
 └── README.md # This file
 ```
+---
+
 ## Screenshots
 ![FOAMFlask Lander](docs/images/foamflask_lander.png)
+
+---
 
 ## License
 
 FOAMFlask is released under the GPLv3 License.
 
+---
+
 ## Realtime Plotting
 
 FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
+
+---
 
 ### Features
 
@@ -100,6 +108,8 @@ FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM 
   - Pressure coefficient (Cp)
   - 3D velocity profiles
 
+---
+
 ### Usage
 
 1. Load a tutorial case
@@ -108,6 +118,8 @@ FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM 
 4. Watch the plots update in realtime
 5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
 
+---
+
 ### Technical Details
 
 The plotting system uses:
@@ -115,6 +127,8 @@ The plotting system uses:
 - **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
 - **Flask API endpoints** for serving plot data
 - **Automatic field parsing** for both uniform and nonuniform fields
+
+---
 
 ## Installation
 ### Create a Python virtual environment
