@@ -656,94 +656,154 @@ def post_process():
         logger.error(f"Error during post-processing: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/contours/create', methods=['POST'])
+@app.route('/api/contours/create', methods=['POST', 'OPTIONS'])
 def create_contour():
     """
     Create isosurfaces for the current mesh.
     
     Returns:
-        dict: Result of the isosurface generation.
+        HTML: Interactive visualization HTML.
     """
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
-        # Get the current tutorial and case directory from query params
-        tutorial = request.args.get('tutorial')
-        case_dir = request.args.get('caseDir')
+        logger.info("[FOAMFlask] [create_contour] Route handler called")
         
-        # Get additional parameters from JSON body
+        # Get JSON data from request
+        if not request.is_json:
+            logger.error("[FOAMFlask] [create_contour] Request is not JSON")
+            logger.error(f"[FOAMFlask] [create_contour] Content-Type: {request.content_type}")
+            return jsonify({
+                "success": False,
+                "error": f"Expected JSON, got {request.content_type}"
+            }), 400
+        
         request_data = request.get_json()
+        logger.info(f"[FOAMFlask] [create_contour] Request data: {request_data}")
+        
+        tutorial = request_data.get('tutorial')
+        case_dir = request_data.get('caseDir')
         scalar_field = request_data.get('scalar_field', 'U_Magnitude')
         num_isosurfaces = int(request_data.get('num_isosurfaces', 5))
         
-        if not tutorial or not case_dir:
-            return jsonify({
-                "success": False,
-                "error": "[FOAMFlask] [create_contour] Tutorial or case directory not specified. Please load a tutorial first."
-            }), 400
+        logger.info(
+            f"[FOAMFlask] [create_contour] Parsed parameters: "
+            f"tutorial={tutorial}, caseDir={case_dir}, "
+            f"scalarField={scalar_field}, numIsosurfaces={num_isosurfaces}"
+        )
         
-        # Find the latest VTK file in the case directory
+        if not tutorial:
+            error_msg = "Tutorial not specified"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 400
+        
+        if not case_dir:
+            error_msg = "Case directory not specified"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 400
+        
+        # Normalize path
+        if not os.path.isabs(case_dir):
+            case_dir = os.path.join(CASE_ROOT, case_dir)
+        
+        logger.info(f"[FOAMFlask] [create_contour] Normalized case directory: {case_dir}")
+        
+        if not os.path.exists(case_dir):
+            error_msg = f"Case directory not found: {case_dir}"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 404
+        
+        logger.info(f"[FOAMFlask] [create_contour] Case directory exists")
+        
+        # Find VTK files
+        logger.info(f"[FOAMFlask] [create_contour] Searching for VTK files in {case_dir}")
         vtk_files = []
         for root, _, files in os.walk(case_dir):
             for file in files:
                 if file.endswith(('.vtk', '.vtp', '.vtu')):
                     vtk_files.append(os.path.join(root, file))
         
+        logger.info(f"[FOAMFlask] [create_contour] Found {len(vtk_files)} VTK files")
+        
         if not vtk_files:
-            return jsonify({
-                "success": False,
-                "error": "[FOAMFlask] [create_contour] No VTK files found in the case directory."
-            }), 404
-            
-        # Use the most recent VTK file
+            error_msg = f"No VTK files found in {case_dir}"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 404
+        
+        # Get latest VTK file
         latest_vtk = max(vtk_files, key=os.path.getmtime)
+        logger.info(f"[FOAMFlask] [create_contour] Using VTK file: {latest_vtk}")
         
-        # Load the mesh
+        # Load mesh
+        logger.info(f"[FOAMFlask] [create_contour] Loading mesh...")
         mesh_info = isosurface_visualizer.load_mesh(latest_vtk)
-        if not mesh_info.get('success'):
-            return jsonify({
-                "success": False,
-                "error": f"[FOAMFlask] [create_contour] Failed to load mesh: {mesh_info.get('error')}"
-            }), 500
         
-        # Generate isosurfaces using the parameters from the request
+        if not mesh_info.get('success'):
+            error_msg = f"Failed to load mesh: {mesh_info.get('error')}"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 500
+        
+        logger.info(f"[FOAMFlask] [create_contour] Mesh loaded: {mesh_info['n_points']} points")
+        
+        # Check scalar field
+        available_fields = mesh_info.get('point_arrays', [])
+        logger.info(f"[FOAMFlask] [create_contour] Available fields: {available_fields}")
+        
+        if scalar_field not in available_fields:
+            error_msg = f"Scalar field '{scalar_field}' not found. Available: {available_fields}"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 400
+        
+        logger.info(f"[FOAMFlask] [create_contour] Scalar field '{scalar_field}' found")
+        
+        # Generate isosurfaces
+        logger.info(f"[FOAMFlask] [create_contour] Generating {num_isosurfaces} isosurfaces...")
         isosurface_info = isosurface_visualizer.generate_isosurfaces(
             scalar_field=scalar_field,
             num_isosurfaces=num_isosurfaces
         )
         
         if not isosurface_info.get('success'):
-            return jsonify({
-                "success": False,
-                "error": f"[FOAMFlask] [create_contour] Failed to generate isosurfaces: {isosurface_info.get('error')}"
-            }), 500
+            error_msg = f"Failed to generate isosurfaces: {isosurface_info.get('error')}"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 500
         
-        try:
-            # Get the HTML content
-            html_content = isosurface_visualizer.get_interactive_html()
-            
-            if not html_content:
-                raise Exception("Failed to generate interactive HTML viewer - empty content")
-                
-            logger.info(f"[FOAMFlask] [create_contour] Generated HTML content length: {len(html_content)}")
-            
-            # Return the HTML content directly
-            return html_content, 200, {'Content-Type': 'text/html'}
-            
-        except Exception as e:
-            logger.error(f"[FOAMFlask] [create_contour] Error in get_interactive_html: {str(e)}")
-            error_html = f"""
-            <div style="padding: 20px; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb;">
-                <h3>Error generating 3D viewer</h3>
-                <p>{str(e)}</p>
-                <p>Please check the server logs for more details.</p>
-            </div>
-            """
-            return error_html, 200, {'Content-Type': 'text/html'}
+        logger.info(f"[FOAMFlask] [create_contour] Isosurfaces generated: {isosurface_info['n_points']} points")
+        
+        # Generate HTML
+        logger.info(f"[FOAMFlask] [create_contour] Generating interactive HTML...")
+        html_content = isosurface_visualizer.get_interactive_html(
+            scalar_field=scalar_field,
+            show_base_mesh=True,
+            base_mesh_opacity=0.25,
+            contour_opacity=0.8,
+            contour_color='red',
+            colormap='viridis',
+            show_isovalue_slider=True
+        )
+        
+        if not html_content:
+            error_msg = "Empty HTML content generated"
+            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 500
+        
+        logger.info(f"[FOAMFlask] [create_contour] HTML generated: {len(html_content)} bytes")
+        
+        # Return HTML
+        logger.info(f"[FOAMFlask] [create_contour] Returning HTML response")
+        return Response(html_content, mimetype='text/html')
         
     except Exception as e:
-        logger.error(f"[FOAMFlask] [create_contour] Error creating contour: {str(e)}")
+        logger.error(f"[FOAMFlask] [create_contour] Exception: {str(e)}")
+        logger.error(f"[FOAMFlask] [create_contour] Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"[FOAMFlask] [create_contour] Traceback:\n{traceback.format_exc()}")
+        
         return jsonify({
             "success": False,
-            "error": f"[FOAMFlask] [create_contour] Failed to create contour: {str(e)}"
+            "error": f"Server error: {str(e)}"
         }), 500
 
 if __name__ == "__main__":
