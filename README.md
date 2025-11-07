@@ -75,6 +75,8 @@ FOAMFlask/
 ├── requirements.txt # Python dependencies
 └── README.md # This file
 ```
+## Screenshots
+![FOAMFlask Lander](docs/images/foamflask_lander.png)
 
 ## License
 
