@@ -1,16 +1,23 @@
-import os
-import posixpath
-import platform
-import pathlib
+# Standard library imports
 import json
-import docker
 import logging
+import os
+import pathlib
+import platform
+import posixpath
 import threading
 import time
 
-from flask import Flask, request, jsonify, render_template_string, Response
-from realtime_plots import OpenFOAMFieldParser, get_available_fields
-from pyvista_handler import mesh_visualizer, isosurface_visualizer
+# Third-party imports
+import docker
+from flask import Flask, Response, jsonify, render_template_string, request
+
+# Local application imports
+from backend.mesh.mesher import mesh_visualizer
+from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
+
+# Backend API handlers
+from backend.post.isosurface import isosurface_visualizer
 
 app = Flask(__name__)
 
@@ -67,7 +74,7 @@ OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 docker_client = docker.from_env()
 
 # --- Load HTML template ---
-TEMPLATE_FILE = os.path.join("static", "foamflask_frontend.html")
+TEMPLATE_FILE = os.path.join("static", "html", "foamflask_frontend.html")
 with open(TEMPLATE_FILE, "r") as f:
     TEMPLATE = f.read()
 
@@ -649,7 +656,7 @@ def post_process():
         logger.error(f"Error during post-processing: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/create_contour', methods=['POST'])
+@app.route('/api/contours/create', methods=['POST'])
 def create_contour():
     """
     Create isosurfaces for the current mesh.
@@ -658,14 +665,19 @@ def create_contour():
         dict: Result of the isosurface generation.
     """
     try:
-        # Get the current tutorial and case directory
+        # Get the current tutorial and case directory from query params
         tutorial = request.args.get('tutorial')
         case_dir = request.args.get('caseDir')
+        
+        # Get additional parameters from JSON body
+        request_data = request.get_json()
+        scalar_field = request_data.get('scalar_field', 'U_Magnitude')
+        num_isosurfaces = int(request_data.get('num_isosurfaces', 5))
         
         if not tutorial or not case_dir:
             return jsonify({
                 "success": False,
-                "error": "Tutorial or case directory not specified. Please load a tutorial first."
+                "error": "[FOAMFlask] [create_contour] Tutorial or case directory not specified. Please load a tutorial first."
             }), 400
         
         # Find the latest VTK file in the case directory
@@ -678,7 +690,7 @@ def create_contour():
         if not vtk_files:
             return jsonify({
                 "success": False,
-                "error": "No VTK files found in the case directory."
+                "error": "[FOAMFlask] [create_contour] No VTK files found in the case directory."
             }), 404
             
         # Use the most recent VTK file
@@ -689,37 +701,49 @@ def create_contour():
         if not mesh_info.get('success'):
             return jsonify({
                 "success": False,
-                "error": f"Failed to load mesh: {mesh_info.get('error')}"
+                "error": f"[FOAMFlask] [create_contour] Failed to load mesh: {mesh_info.get('error')}"
             }), 500
         
-        # Generate isosurfaces
+        # Generate isosurfaces using the parameters from the request
         isosurface_info = isosurface_visualizer.generate_isosurfaces(
-            scalar_field="U_Magnitude",
-            num_isosurfaces=5
+            scalar_field=scalar_field,
+            num_isosurfaces=num_isosurfaces
         )
         
         if not isosurface_info.get('success'):
             return jsonify({
                 "success": False,
-                "error": f"Failed to generate isosurfaces: {isosurface_info.get('error')}"
+                "error": f"[FOAMFlask] [create_contour] Failed to generate isosurfaces: {isosurface_info.get('error')}"
             }), 500
         
-        # Get interactive HTML viewer
-        html_content = isosurface_visualizer.get_interactive_html()
-        
-        return jsonify({
-            "success": True,
-            "message": "Isosurfaces generated successfully",
-            "mesh_info": mesh_info,
-            "isosurface_info": isosurface_info,
-            "html_content": html_content
-        })
+        try:
+            # Get the HTML content
+            html_content = isosurface_visualizer.get_interactive_html()
+            
+            if not html_content:
+                raise Exception("Failed to generate interactive HTML viewer - empty content")
+                
+            logger.info(f"[FOAMFlask] [create_contour] Generated HTML content length: {len(html_content)}")
+            
+            # Return the HTML content directly
+            return html_content, 200, {'Content-Type': 'text/html'}
+            
+        except Exception as e:
+            logger.error(f"[FOAMFlask] [create_contour] Error in get_interactive_html: {str(e)}")
+            error_html = f"""
+            <div style="padding: 20px; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb;">
+                <h3>Error generating 3D viewer</h3>
+                <p>{str(e)}</p>
+                <p>Please check the server logs for more details.</p>
+            </div>
+            """
+            return error_html, 200, {'Content-Type': 'text/html'}
         
     except Exception as e:
-        logger.error(f"Error creating contour: {str(e)}")
+        logger.error(f"[FOAMFlask] [create_contour] Error creating contour: {str(e)}")
         return jsonify({
             "success": False,
-            "error": f"Failed to create contour: {str(e)}"
+            "error": f"[FOAMFlask] [create_contour] Failed to create contour: {str(e)}"
         }), 500
 
 if __name__ == "__main__":

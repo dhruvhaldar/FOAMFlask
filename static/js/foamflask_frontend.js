@@ -258,7 +258,7 @@ function switchPage(pageName) {
       const postContainer = document.getElementById('page-post');
       if (postContainer && !postContainer.hasAttribute('data-initialized')) {
         postContainer.setAttribute('data-initialized', 'true');
-        console.log('Post processing page initialized');
+        console.log('[FOAMFlask] Post processing page initialized');
         // Load available post processing functions
         refreshPostList();
       }
@@ -1496,6 +1496,141 @@ function resetCamera() {
   }
 }
 
+// Simple path join function for browser
+function joinPath(...parts) {
+    // Filter out empty parts and join with forward slashes
+    return parts.filter(part => part).join('/').replace(/\/+/g, '/');
+}
+
+// --- Contour Generation ---
+async function generateContours() {
+    const contourPlaceholder = document.getElementById('contourPlaceholder');
+    const contourViewer = document.getElementById('contourViewer');
+    const resultsDiv = document.getElementById('post-results');
+    
+    try {
+        // Show loading state
+        contourPlaceholder.classList.add('hidden');
+        contourViewer.classList.remove('hidden');
+        contourViewer.innerHTML = '<div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div><span class="ml-4 text-gray-600">Generating contours...</span></div>';
+        
+        // Get the current tutorial and case directory
+        const tutorialSelect = document.getElementById('tutorialSelect');
+        const tutorial = tutorialSelect ? tutorialSelect.value : null;
+        if (!tutorial) {
+            throw new Error('Please select a tutorial first');
+        }
+        
+        // Get the full case directory path
+        const response = await fetch('/get_case_root');
+        if (!response.ok) {
+            throw new Error('Failed to get case root directory');
+        }
+        const { case_root: caseRoot } = await response.json();
+        
+        // Get the current case directory from the UI or use the tutorial name as fallback
+        const currentCaseDir = document.getElementById('caseDir')?.value || tutorial.split('/').pop() || '';
+        const fullCaseDir = joinPath(caseRoot, currentCaseDir);
+        
+        console.log('[FOAMFlask] [generateContours] Using case directory:', fullCaseDir);
+        
+        // Call the backend to generate contours
+        const url = new URL('/api/contours/create', window.location.origin);
+        url.searchParams.append('tutorial', tutorial);
+        url.searchParams.append('caseDir', fullCaseDir);
+        
+        console.log('[FOAMFlask] [generateContours] Sending request to:', url.toString());
+        console.log('[FOAMFlask] [generateContours] Request body:', JSON.stringify({
+            scalar_field: 'U_Magnitude',
+            num_isosurfaces: 5
+        }));
+        
+        const contourResponse = await fetch(url.toString(), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                scalar_field: 'U_Magnitude',
+                num_isosurfaces: 5
+            })
+        }).catch(error => {
+            console.error('[FOAMFlask] [generateContours] Fetch error:', error);
+            throw new Error(`Failed to connect to server: ${error.message}`);
+        });
+        
+        console.log('[FOAMFlask] [generateContours] Response status:', contourResponse.status);
+        
+        // Read the response text once
+        const responseText = await contourResponse.text();
+        console.log('[FOAMFlask] [generateContours] Response text length:', responseText.length);
+        console.log('[FOAMFlask] [generateContours] First 200 chars of response:', responseText.substring(0, 200));
+        
+        if (!contourResponse.ok) {
+            console.error('[FOAMFlask] [generateContours] Server error response:', responseText);
+            throw new Error(`Server error: ${contourResponse.status} - ${responseText}`);
+        }
+        
+        // Create a container with explicit dimensions
+        const container = document.createElement('div');
+        container.style.width = '100%';
+        container.style.height = '600px';
+        container.style.position = 'relative';
+        container.style.border = '1px solid #e2e8f0';
+        container.style.borderRadius = '0.5rem';
+        container.style.overflow = 'hidden';
+        
+        // Create a temporary div to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = responseText;
+        
+        // Append all child nodes to our container
+        while (tempDiv.firstChild) {
+            container.appendChild(tempDiv.firstChild);
+        }
+        
+        // Clear and append the container
+        contourViewer.innerHTML = '';
+        contourViewer.appendChild(container);
+        
+        console.log('[FOAMFlask] [generateContours] Container HTML after insertion:', contourViewer.innerHTML.length, 'chars');
+        
+        // Force a resize event to ensure the viewer is properly sized
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+        
+        // Show success message
+        showNotification('[FOAMFlask] [generateContours] Contours generated successfully!', 'success');
+        
+        // Store the contour data for downloading
+        window.currentContourData = {
+            imageUrl: null,  // Will be set if available
+            viewerUrl: null  // Will be set if available
+        };
+    } catch (error) {
+        console.error('[FOAMFlask] [generateContours] Error generating contours:', error);
+        contourPlaceholder.classList.remove('hidden');
+        contourViewer.classList.add('hidden');
+        showNotification(`[FOAMFlask] [generateContours] Error generating contours: ${error.message}`, 'error');
+    }
+}
+
+// Helper function to download the contour image
+function downloadContourImage() {
+    if (!window.currentContourData?.imageUrl) {
+        showNotification('[FOAMFlask] [downloadContourImage] No contour image available to download', 'error');
+        return;
+    }
+    
+    const link = document.createElement('a');
+    link.href = window.currentContourData.imageUrl;
+    link.download = 'contour_visualization.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 // --- Post Processing Functions ---
 async function refreshPostList() {
   try {
@@ -1533,7 +1668,7 @@ async function refreshPostList() {
     }, 500);
 
   } catch (error) {
-    console.error('Error loading post-processing options:', error);
+    console.error('[FOAMFlask] [refreshPostList] Error loading post-processing options:', error);
     const postContainer = document.getElementById('post-processing-content');
     if (postContainer) {
       postContainer.innerHTML = `
@@ -1572,7 +1707,7 @@ async function runPostOperation(operation) {
         Error running ${operation}: ${errorMessage}
       </div>
     `;
-    console.error(`Error in ${operation}:`, error);
+    console.error(`[FOAMFlask] [runPostOperation] Error running ${operation}:`, error);
   }
 }
 
