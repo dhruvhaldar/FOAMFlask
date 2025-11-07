@@ -78,6 +78,7 @@ async function generateContours(options = {}) {
         });
         
         // Make the API request directly (send data in body, not URL params)
+        console.log('[FOAMFlask] [generateContours] Calling fetchContours...');
         const response = await fetchContours({
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
@@ -85,11 +86,13 @@ async function generateContours(options = {}) {
             numIsosurfaces
         });
         
-        // Handle response
+        // Handle response - IMPORTANT: await the text() call
+        console.log('[FOAMFlask] [generateContours] Reading response content...');
         const htmlContent = await response.text();
         console.log('[FOAMFlask] [generateContours] Received HTML length:', htmlContent.length);
         
         // Display the visualization
+        console.log('[FOAMFlask] [generateContours] Displaying visualization...');
         displayContourVisualization(contourViewer, htmlContent);
         
         // Store current data for export
@@ -100,6 +103,8 @@ async function generateContours(options = {}) {
             numIsosurfaces,
             timestamp: new Date().toISOString()
         };
+        
+        console.log('[FOAMFlask] [generateContours] Contours generated successfully!');
         
         if (typeof showNotification === 'function') {
             showNotification('Contours generated successfully!', 'success');
@@ -135,7 +140,6 @@ function getTutorialFromSelect() {
 
 /**
  * Fetch contours from the server
- * 
  * Send all data in the request body to avoid URL encoding issues with Windows paths
  */
 async function fetchContours(requestData) {
@@ -179,7 +183,7 @@ async function fetchContours(requestData) {
             throw new Error(`Server returned ${response.status}: ${errorText}`);
         }
         
-        console.log('[FOAMFlask] [fetchContours] Response OK, reading content...');
+        console.log('[FOAMFlask] [fetchContours] Response OK, returning response object');
         return response;
         
     } catch (error) {
@@ -201,14 +205,21 @@ async function fetchContours(requestData) {
  * Display the contour visualization in the viewer
  */
 function displayContourVisualization(container, htmlContent) {
-    if (!container) return;
+    if (!container) {
+        console.error('[FOAMFlask] [displayContourVisualization] Container not found');
+        return;
+    }
     
     try {
+        console.log('[FOAMFlask] [displayContourVisualization] Displaying content...');
+        console.log('[FOAMFlask] [displayContourVisualization] HTML content length:', htmlContent.length);
+        
         // Clear the container first
         container.innerHTML = '';
         
         // Create an iframe to contain the visualization
         const iframe = document.createElement('iframe');
+        iframe.id = 'contourVisualizationFrame';
         iframe.style.cssText = `
             width: 100%;
             height: 600px;
@@ -220,66 +231,56 @@ function displayContourVisualization(container, htmlContent) {
         
         // Add the iframe to the container
         container.appendChild(iframe);
+        console.log('[FOAMFlask] [displayContourVisualization] iframe created and added');
         
         // Write the content to the iframe
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
+        console.log('[FOAMFlask] [displayContourVisualization] Content written to iframe');
         
-        // Add some styles to the iframe content
-        const style = document.createElement('style');
-        style.textContent = `
-            body {
-                margin: 0;
-                padding: 0;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                background: #f8f9fa;
-            }
-            .plot-container {
-                width: 100% !important;
-                height: 600px !important;
-            }
-            .modebar {
-                background: rgba(255, 255, 255, 0.8) !important;
-                border-radius: 4px !important;
-                padding: 4px !important;
-            }
-        `;
-        
-        // Wait for iframe to load before adding styles
+        // Wait for iframe to stabilize
         iframe.onload = function() {
+            console.log('[FOAMFlask] [displayContourVisualization] iframe loaded');
+            
             try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc.head) {
-                    iframeDoc.head.appendChild(style);
+                // Trigger resize event to ensure proper rendering
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.dispatchEvent(new Event('resize'));
+                    console.log('[FOAMFlask] [displayContourVisualization] Resize event triggered in iframe');
                 }
-                
-                // Dispatch resize event to ensure proper rendering
+            } catch (e) {
+                console.error('[FOAMFlask] [displayContourVisualization] Error triggering resize:', e);
+            }
+        };
+        
+        // Also trigger resize after a delay to ensure content is ready
+        setTimeout(() => {
+            console.log('[FOAMFlask] [displayContourVisualization] Delayed resize trigger');
+            window.dispatchEvent(new Event('resize'));
+            try {
                 if (iframe.contentWindow) {
                     iframe.contentWindow.dispatchEvent(new Event('resize'));
                 }
             } catch (e) {
-                console.error('Error styling iframe:', e);
+                console.warn('[FOAMFlask] [displayContourVisualization] Could not trigger iframe resize:', e);
             }
-        };
+        }, 500);
         
-        // Force resize after a short delay to ensure everything is loaded
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-            if (iframe.contentWindow) {
-                iframe.contentWindow.dispatchEvent(new Event('resize'));
-            }
-        }, 300);
+        console.log('[FOAMFlask] [displayContourVisualization] Display setup complete');
         
     } catch (error) {
-        console.error('Error displaying contour visualization:', error);
-        container.innerHTML = `
-            <div class="p-4 text-red-600 bg-red-50 rounded-lg">
-                <h3 class="font-semibold">Error displaying visualization</h3>
-                <p class="text-sm mt-1">${error.message || 'Unknown error occurred'}</p>
-            </div>
-        `;
+        console.error('[FOAMFlask] [displayContourVisualization] Error:', error);
+        if (container) {
+            container.innerHTML = `
+                <div class="p-4 text-red-600 bg-red-50 rounded-lg">
+                    <h3 class="font-semibold">Error displaying visualization</h3>
+                    <p class="text-sm mt-1">${error.message || 'Unknown error occurred'}</p>
+                    <p class="text-xs mt-2 text-gray-600">Check browser console for details</p>
+                </div>
+            `;
+        }
     }
 }
 
