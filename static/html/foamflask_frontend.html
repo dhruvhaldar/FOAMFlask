@@ -398,11 +398,11 @@
 
     <!-- Main Plots Container -->
     <div id="plotsContainer" class="w-full bg-white">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
+      <div class="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2 mb-2 w-full auto-rows-min">
         
         <!-- Pressure Plot -->
-        <div class="w-full overflow-hidden relative group">
-          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative">
+          <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -416,8 +416,8 @@
         </div>
         
         <!-- Velocity Plot -->
-        <div class="w-full overflow-hidden relative group">
-          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative">
+          <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -431,8 +431,8 @@
         </div>
 
         <!-- Turbulence Plot -->
-        <div class="w-full overflow-hidden relative group">
-          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative">
+          <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
           <button 
             onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -446,8 +446,19 @@
         </div>
 
         <!-- Residuals Plot -->
-        <div class="w-full overflow-hidden relative group">
-          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative">
+          <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button 
+            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Residuals Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
+        </div>
           <button 
             onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -467,10 +478,10 @@
       <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         <div class="w-full overflow-hidden">
-          <div id="cp-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+          <div id="cp-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
         </div>
         <div class="w-full overflow-hidden">
-          <div id="velocity-profile-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+          <div id="velocity-profile-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
         </div>
       </div>
     </div>
