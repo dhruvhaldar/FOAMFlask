@@ -1,174 +1,73 @@
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-f5d7e3)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
-[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-blue.svg)](https://pdoc3.readthedocs.io/)
+# React + TypeScript + Vite
 
-# FOAMFlask
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-**FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser.
+Currently, two official plugins are available:
 
----
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Features
+## React Compiler
 
-- Web interface for OpenFOAM case management.
-- Persistently store the **CASE_ROOT** across sessions.
-- Load and copy tutorials from the OpenFOAM tutorials directory.
-- Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output.
-- Color-coded console output for stdout, stderr, info, and tutorial messages.
-- Fully compatible with OpenFOAM 2506 (adjustable for other versions).
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
----
+## Expanding the ESLint configuration
 
-## Installation
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-1. **Clone the repository**:
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-```bash
-git clone https://github.com/dhruvhaldar/FOAMFlask
-cd FOAMFlask
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-2. **Install dependencies**:
-```bash
-pip install -r requirements.txt
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## Usage
-1. **Run the server**:
-```bash
-python app.py
-```
-2. **Access the web interface**:
-Open your browser and navigate to `http://localhost:5000`.
-
-3. **Set a case directory**:
-Enter a path for your simulation cases.
-Click `Set Case Dir`.
-
-4. **Set OpenFOAM root directory**:
-Enter a path for your OpenFOAM root directory.
-Click `Set OpenFOAM Root`.
-
-5. **Load a tutorial**:
-Select a tutorial from the dropdown.
-Click `Load Tutorial`.
-The tutorial will be copied to your selected case directory.
-
-6. **Run OpenFOAM commands**:
-Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
-Live output is shown in the console panel.
-
----
-
-## Project Structure
-```
-FOAMFlask/
-├── app.py # Main Flask application
-├── case_config.json # Stores the last used CASE_ROOT
-├── static/
-│ ├── FOAMFlask_frontend.html # HTML template
-│ └── js/FOAMFlask_frontend.js # JavaScript logic
-├── my-py-env/ # Optional: local Python virtual environment
-├── requirements.txt # Python dependencies
-└── README.md # This file
-```
----
-
-## Screenshots
-![FOAMFlask Lander](docs/images/foamflask_lander.png)
-
----
-
-## License
-
-FOAMFlask is released under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html) License.
-
----
-
-## Realtime Plotting
-
-FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
-
----
-
-### Features
-
-- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
-- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
-- **Realtime Updates**: Plots update every 2 seconds during simulation
-- **Multiple Plot Types**:
-  - Pressure vs Time
-  - Velocity components (Ux, Uy, Uz) and magnitude
-  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
-  - Residuals (logarithmic scale)
-- **Aerodynamic Analysis** (optional):
-  - Pressure coefficient (Cp)
-  - 3D velocity profiles
-
----
-
-### Usage
-
-1. Load a tutorial case
-2. Click "Show Plots" to enable realtime plotting
-3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
-4. Watch the plots update in realtime
-5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
-
----
-
-### Technical Details
-
-The plotting system uses:
-- **Plotly.js** for interactive browser-based plots (no external software needed)
-- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
-- **Flask API endpoints** for serving plot data
-- **Automatic field parsing** for both uniform and nonuniform fields
-
----
-
-## Installation
-### Create a Python virtual environment
-```bash
-python3 -m venv my-python313-venv-linux
-```
-```powershell
-python -m venv my-python313-venv-win
-```
-
-### Activate the virtual environment
-```bash
-source my-python313-venv-linux/bin/activate
-```
-```powershell
-my-python313-venv-win\Scripts\activate
-```
-
-### Install dependencies
-```bash
-./my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
-```
-```powershell
-.\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-### Quick Start
-```bash
-./my-python313-venv-linux/bin/python3.13 app.py
-```
-```powershell
-.\my-python313-venv-win\Scripts\python.exe app.py
-```
-
-### Generate API Documentation
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
-
-To generate Python-related API documentation, run the following command:
-```
-python -m pdoc --html --force --output-dir docs app.py
-python -m pdoc --html --force --output-dir docs build_utils.py
-```
-Stored under `docs` directory as `app.html` and `build_utils.html`

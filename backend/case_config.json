@@ -1,0 +1,6 @@
+{
+  "CASE_ROOT": "E:\\Misc\\FOAMFast\\CascadeProjects\\windsurf-project\\backend\\tutorial_cases",
+  "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
+  "OPENFOAM_VERSION": "12",
+  "CURRENT_CASE_DIR": ""
+}
