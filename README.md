@@ -131,38 +131,29 @@ The plotting system uses:
 ---
 
 ## Installation
+
+<details>
+<summary><strong>Bash (Linux/macOS)</strong></summary>
+
 ### Step 1: Create a Python virtual environment
 ```bash
 mkdir -p environments
 python3 -m venv environments/my-python313-venv-linux
-```
-```powershell
-mkdir environments
-python3 -m venv environments\my-python313-venv-win
 ```
 
 ### Step 2: Activate the virtual environment
 ```bash
 source environments/my-python313-venv-linux/bin/activate
 ```
-```powershell
-environments\my-python313-venv-win\Scripts\activate
-```
 
 ### Step 3: Install dependencies
 ```bash
 ./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r ../requirements.txt
 ```
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r ..\requirements.txt
-```
 
 ### Step 4: Run the application
 ```bash
 ./environments/my-python313-venv-linux/bin/python3.13 app.py
-```
-```powershell
- .\environments\my-python313-venv-win\Scripts\python.exe -m app.py > .\app.log
 ```
 
 ### Generate API Documentation
@@ -175,8 +166,43 @@ To generate Python-related API documentation, run the following command:
 ./environments/my-python313-venv-linux/bin/python3.13 -m pdoc --html --force --output-dir docs build_utils.py
 ```
 
+Stored under `docs` directory as `app.html` and `build_utils.html`
+
+</details>
+
+<details>
+<summary><strong>PowerShell (Windows)</strong></summary>
+
+### Step 1: Create a Python virtual environment
+```powershell
+mkdir environments
+python3 -m venv environments\my-python313-venv-win
+```
+
+### Step 2: Activate the virtual environment
+```powershell
+environments\my-python313-venv-win\Scripts\activate
+```
+
+### Step 3: Install dependencies
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r ..\requirements.txt
+```
+
+### Step 4: Run the application
+```powershell
+ .\environments\my-python313-venv-win\Scripts\python.exe -m app.py > .\app.log
+```
+
+### Generate API Documentation
+Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+
+To generate Python-related API documentation, run the following command:
+
 ```powershell
  .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs app.py
  .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs build_utils.py
 ```
 Stored under `docs` directory as `app.html` and `build_utils.html`
+
+</details>
