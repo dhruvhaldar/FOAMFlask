@@ -181,7 +181,7 @@ python3 -m venv environments\my-python313-venv-win
 
 ### Step 2: Activate the virtual environment
 ```powershell
-environments\my-python313-venv-win\Scripts\activate
+.\environments\my-python313-venv-win\Scripts\activate.ps1
 ```
 
 ### Step 3: Install dependencies
