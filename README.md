@@ -131,44 +131,52 @@ The plotting system uses:
 ---
 
 ## Installation
-### Create a Python virtual environment
+### Step 1: Create a Python virtual environment
 ```bash
-python3 -m venv my-python313-venv-linux
+mkdir -p environments
+python3 -m venv environments/my-python313-venv-linux
 ```
 ```powershell
-python -m venv my-python313-venv-win
+mkdir environments
+python3 -m venv environments\my-python313-venv-win
 ```
 
-### Activate the virtual environment
+### Step 2: Activate the virtual environment
 ```bash
-source my-python313-venv-linux/bin/activate
+source environments/my-python313-venv-linux/bin/activate
 ```
 ```powershell
-my-python313-venv-win\Scripts\activate
+environments\my-python313-venv-win\Scripts\activate
 ```
 
-### Install dependencies
+### Step 3: Install dependencies
 ```bash
-./my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
+./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r ../requirements.txt
 ```
 ```powershell
-.\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
+.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r ..\requirements.txt
 ```
 
-### Quick Start
+### Step 4: Run the application
 ```bash
-./my-python313-venv-linux/bin/python3.13 app.py
+./environments/my-python313-venv-linux/bin/python3.13 app.py
 ```
 ```powershell
-.\my-python313-venv-win\Scripts\python.exe app.py
+ .\environments\my-python313-venv-win\Scripts\python.exe -m app.py > .\app.log
 ```
 
 ### Generate API Documentation
 Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
 
 To generate Python-related API documentation, run the following command:
+
+```bash
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc --html --force --output-dir docs app.py
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc --html --force --output-dir docs build_utils.py
 ```
-python -m pdoc --html --force --output-dir docs app.py
-python -m pdoc --html --force --output-dir docs build_utils.py
+
+```powershell
+ .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs app.py
+ .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs build_utils.py
 ```
 Stored under `docs` directory as `app.html` and `build_utils.html`

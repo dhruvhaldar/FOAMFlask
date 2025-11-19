@@ -3,3 +3,6 @@ app.log
 __pycache__/*
 __pycache__/*.pyc
 node_modules
+environments/*
+backend/mesh/__pycache__/*.pyc
+backend/mesh/__pycache__/*
