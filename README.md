@@ -138,12 +138,12 @@ The plotting system uses:
 ### Step 1: Create a Python virtual environment
 ```bash
 mkdir -p environments
-python3 -m venv environments/my-python313-venv-linux
+python3 -m venv ./environments/my-python313-venv-linux
 ```
 
 ### Step 2: Activate the virtual environment
 ```bash
-source environments/my-python313-venv-linux/bin/activate
+source ./environments/my-python313-venv-linux/bin/activate
 ```
 
 ### Step 3: Install dependencies
@@ -176,7 +176,7 @@ Stored under `docs` directory as `app.html` and `build_utils.html`
 ### Step 1: Create a Python virtual environment
 ```powershell
 mkdir environments
-python3 -m venv environments\my-python313-venv-win
+python3 -m venv .\environments\my-python313-venv-win
 ```
 
 ### Step 2: Activate the virtual environment
