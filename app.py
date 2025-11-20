@@ -109,7 +109,7 @@ def docker_unavailable_response():
 
 # --- Load HTML template ---
 TEMPLATE_FILE = os.path.join("static", "html", "foamflask_frontend.html")
-with open(TEMPLATE_FILE, "r") as f:
+with open(TEMPLATE_FILE, "r", encoding='utf-8') as f:
     TEMPLATE = f.read()
 
 # --- Helpers ---
@@ -699,6 +699,73 @@ def api_mesh_interactive():
     except Exception as e:
         logger.error(f"Error generating interactive viewer: {e}")
 
+@app.route("/run_foamtovtk", methods=["POST"])
+def run_foamtovtk():
+    """
+    Run foamToVTK command in the Docker container.
+    """
+    data = request.json
+    tutorial = data.get("tutorial")
+    case_dir = data.get("caseDir")
+
+    if not tutorial or not case_dir:
+        return {"error": "Missing tutorial or caseDir"}, 400
+
+    def stream_foamtovtk_logs():
+        client = get_docker_client()
+        if client is None:
+            yield "[FOAMFlask] [Error] Docker daemon not available. Please start Docker Desktop and try again.<br>"
+            return
+
+        container_case_path = posixpath.join(
+            f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run", tutorial
+        )
+        bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
+
+        # Convert Windows path to POSIX for Docker volumes
+        host_path = pathlib.Path(case_dir).resolve().as_posix()
+        volumes = {
+            host_path: {"bind": f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run", "mode": "rw"}
+        }
+
+        docker_cmd = (
+            f"bash -c '"
+            f"source {bashrc} && "
+            f"cd {container_case_path} && "
+            f"source {bashrc} && "  # Source bashrc again in case we need it
+            f"foamToVTK -case {container_case_path}"
+            f"'"
+        )
+
+        container = client.containers.run(
+            DOCKER_IMAGE,
+            docker_cmd,
+            detach=True,
+            tty=False,
+            volumes=volumes,
+            working_dir=container_case_path
+        )
+
+        try:
+            # Stream logs line by line
+            for line in container.logs(stream=True):
+                decoded = line.decode(errors="ignore")
+                for subline in decoded.splitlines():
+                    yield subline + "<br>"
+
+        finally:
+            try:
+                container.kill()
+            except:
+                pass
+            try:
+                container.remove()
+            except:
+                logger.error("[FOAMFlask] Could not remove container")
+
+    return Response(stream_foamtovtk_logs(), mimetype="text/html")
+
+# --- PyVista Post Processing Visualization Endpoints ---
 @app.route('/api/post_process', methods=['POST'])
 def post_process():
     try:

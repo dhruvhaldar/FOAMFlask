@@ -1223,6 +1223,52 @@ async function refreshMeshList() {
   }
 }
 
+async function runFoamToVTK() {
+    const selectedTutorial = document.getElementById("tutorialSelect").value;
+    if (!selectedTutorial) {
+        showNotification('Please select a tutorial first', 'error');
+        return;
+    }
+
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = ""; // clear previous output
+    outputBuffer.length = 0; // clear buffer
+    
+    showNotification('Running foamToVTK...', 'info');
+    showNotification('Check <strong>Run/Log > Console Log</strong> for more details', 'info', 10000);
+
+    try {
+        const response = await fetch("/run_foamtovtk", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                caseDir: caseDir,
+                tutorial: selectedTutorial
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+            const {done, value} = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value);
+            appendOutput(text, "stdout");
+        }
+        
+        showNotification('foamToVTK completed', 'success');
+    } catch (error) {
+        console.error('Error running foamToVTK:', error);
+        appendOutput(`Error: ${error.message}`, "stderr");
+        showNotification('Failed to run foamToVTK', 'error');
+    }
+}
+
 async function loadMeshVisualization() {
   const meshSelect = document.getElementById('meshSelect');
   const selectedPath = meshSelect.value;
