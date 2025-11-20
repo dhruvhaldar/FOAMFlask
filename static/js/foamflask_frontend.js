@@ -1175,52 +1175,65 @@ function downloadPlotData(plotId, filename) {
 
 // --- Mesh Visualization Functions ---
 async function refreshMeshList() {
-  const selectedTutorial = document.getElementById("tutorialSelect").value;
-  if (!selectedTutorial) {
-    showNotification('Please select a tutorial first', 'warning');
-    return;
-  }
-  
-  try {
-    showNotification('Searching for mesh files...', 'info', 2000);
-    
-    const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(selectedTutorial)}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+        const tutorial = document.getElementById('tutorialSelect').value;
+        if (!tutorial) {
+            showNotification('Please select a tutorial first', 'error');
+            return;
+        }
+
+        const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch mesh files');
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showNotification(data.error, 'error');
+            return;
+        }
+        
+        availableMeshes = data.meshes || [];
+        const meshSelect = document.getElementById('meshSelect');
+        const meshActionButtons = document.getElementById('meshActionButtons');
+        
+        // Update the select dropdown
+        meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
+        
+        if (availableMeshes.length === 0) {
+            showNotification('No mesh files found in this case', 'warning');
+            meshSelect.innerHTML += '<option value="" disabled>No mesh files found</option>';
+            // Show buttons if no meshes found
+            if (meshActionButtons) {
+                meshActionButtons.classList.remove('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
+                meshActionButtons.classList.add('opacity-100', 'h-auto', 'mb-2');
+            }
+            return;
+        }
+        
+        // Add mesh files to select
+        availableMeshes.forEach(mesh => {
+            const option = document.createElement('option');
+            option.value = mesh.path;
+            option.textContent = mesh.name;
+            meshSelect.appendChild(option);
+        });
+        
+        // Show success message and collapse buttons
+        showNotification(`Found ${availableMeshes.length} mesh file(s)`, 'success');
+        
+        // Collapse and fade buttons
+        if (meshActionButtons) {
+            meshActionButtons.classList.add('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
+            meshActionButtons.classList.remove('opacity-100', 'h-auto', 'mb-2');
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing mesh list:', error);
+        showNotification(`Error loading mesh files: ${error.message}`, 'error');
     }
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      showNotification(data.error, 'error');
-      return;
-    }
-    
-    availableMeshes = data.meshes || [];
-    
-    // Update the select dropdown
-    const meshSelect = document.getElementById('meshSelect');
-    meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
-    
-    if (availableMeshes.length === 0) {
-      showNotification('No mesh files found in this case', 'warning');
-      meshSelect.innerHTML += '<option value="" disabled>No mesh files found</option>';
-      return;
-    }
-    
-    availableMeshes.forEach(mesh => {
-      const option = document.createElement('option');
-      option.value = mesh.path;
-      option.textContent = `${mesh.name} (${mesh.relative_path})`;
-      meshSelect.appendChild(option);
-    });
-    
-    showNotification(`Found ${availableMeshes.length} mesh file(s)`, 'success', 2000);
-    
-  } catch (error) {
-    console.error('[FOAMFlask] Error fetching mesh list:', error);
-    showNotification('Failed to fetch mesh list', 'error');
-  }
 }
 
 async function runFoamToVTK() {
