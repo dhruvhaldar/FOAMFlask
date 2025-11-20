@@ -989,7 +989,9 @@ async function updatePlots() {
   } catch (err) {
     console.error('[FOAMFlask] Error updating plots:', err);
     const currentTime = Date.now();
-    if (currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN) {
+    // Only show error if a tutorial is selected
+    const selectedTutorial = document.getElementById('tutorialSelect').value;
+    if (selectedTutorial && currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN) {
       showNotification('Error updating plots: ' + (err.message || 'Unknown error'), 'error');
       lastErrorNotificationTime = currentTime;
     }
