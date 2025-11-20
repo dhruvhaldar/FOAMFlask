@@ -220,9 +220,12 @@ Stored under `docs` directory as `app.html` and `build_utils.html`
 1. Install Docker Desktop (if not already installed):
    - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
    - Follow the installation instructions for your operating system
+   - This build was tested on 4.45.0 (203075)
 
 2. Start Docker Desktop
    - Launch Docker Desktop before running the FOAMFlask application
    - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
 
 3. Restart FOAMFlask after Docker is running
+
+4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
