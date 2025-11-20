@@ -70,8 +70,42 @@ CASE_ROOT = CONFIG["CASE_ROOT"]
 DOCKER_IMAGE = CONFIG["DOCKER_IMAGE"]
 OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 
+from docker.errors import DockerException  # add with other imports
+
 # --- Docker client ---
-docker_client = docker.from_env()
+docker_client = None
+
+def get_docker_client():
+    """
+    Lazily create a Docker client and handle the case
+    where Docker Desktop / daemon is not running.
+    """
+    global docker_client
+    if docker_client is not None:
+        return docker_client
+
+    try:
+        client = docker.from_env()
+        # Cheap liveness check: will fail fast if daemon is down
+        client.ping()
+        logger.info("[FOAMFlask] Connected to Docker daemon")
+        docker_client = client
+        return docker_client
+    except DockerException as e:
+        logger.error(
+            "[FOAMFlask] Docker daemon not available. "
+            "Make sure Docker Desktop is running. "
+            f"Details: {e}"
+        )
+        return None
+
+def docker_unavailable_response():
+    return jsonify({
+        "output": (
+            "[FOAMFlask] [Error] Docker daemon not available. "
+            "Please start Docker Desktop and reload the page."
+        )
+    }), 503
 
 # --- Load HTML template ---
 TEMPLATE_FILE = os.path.join("static", "html", "foamflask_frontend.html")
@@ -87,10 +121,15 @@ def get_tutorials():
         list: List of available OpenFOAM tutorial cases.
     """
     try:
+        client = get_docker_client()
+        if client is None:
+            logger.warning("[FOAMFlask] get_tutorials called but Docker Desktop is not running")
+            return []
+
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
         docker_cmd = f"bash -c 'source {bashrc} && echo $FOAM_TUTORIALS'"
 
-        container = docker_client.containers.run(
+        container = client.containers.run(
             DOCKER_IMAGE, docker_cmd, remove=True,
             stdout=True, stderr=True, tty=True
         )
@@ -104,7 +143,7 @@ def get_tutorials():
             " -mindepth 2 -maxdepth 2 -type d "
             "-exec test -d {}/system -a -d {}/constant \\; -print'"
         )
-        container = docker_client.containers.run(
+        container = client.containers.run(
             DOCKER_IMAGE, docker_cmd, remove=True,
             stdout=True, stderr=True, tty=True
         )
@@ -270,6 +309,10 @@ def load_tutorial():
     if not tutorial:
         return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
+    client = get_docker_client()
+    if client is None:
+        return docker_unavailable_response()
+
     bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
     container_run_path = f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run"
     container_case_path = posixpath.join(container_run_path, tutorial)
@@ -295,7 +338,7 @@ def load_tutorial():
 
     container = None
     try:
-        container = docker_client.containers.run(
+        container = client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
             detach=True,
@@ -359,6 +402,15 @@ def run_case():
         return {"error": "Missing tutorial or caseDir"}, 400
 
     def stream_container_logs():
+        client = get_docker_client()
+        if client is None:
+            # Return a short HTML stream explaining the issue
+            yield (
+                "[FOAMFlask] [Error] Docker daemon not available. "
+                "Please start Docker Desktop and re-run the case.<br>"
+            )
+            return
+
         container_case_path = posixpath.join(
             f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run", tutorial
         )
@@ -380,7 +432,7 @@ def run_case():
 
         docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
 
-        container = docker_client.containers.run(
+        container = client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
             detach=True,
