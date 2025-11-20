@@ -286,7 +286,8 @@
         <div class="flex flex-col gap-2">
            <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
            
-          <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
+           <!-- Buttons are Hidden when Mesh files have been found/loaded-->
+           <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
             <button onclick="runFoamToVTK()" class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
               Generate VTK files (foamToVTK)
             </button>
@@ -350,8 +351,8 @@
         </div>
       </div>
 
-      <!-- Right Column: Geometry Viewer -->
-      <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 600px;">
+      <!-- Right Column: Interactive Geometry Viewer -->
+      <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 400px;">
         <!-- Camera Controls -->
         <div id="cameraControls" class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
           <button onclick="setCameraView('xy')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Top View (XY)">
