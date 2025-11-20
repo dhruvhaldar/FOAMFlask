@@ -211,18 +211,18 @@ Stored under `docs` directory as `app.html` and `build_utils.html`
 
 ### Docker Desktop Warning (Windows)
 
-Issue Description: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
+**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
 
-Explaination: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
+**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
 
-Resolution: Here's how to resolve this:
+**Resolution**: Here's how to resolve this:
 
-1. **Install Docker Desktop** (if not already installed):
+1. Install Docker Desktop (if not already installed):
    - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
    - Follow the installation instructions for your operating system
 
-2. **Start Docker Desktop**
+2. Start Docker Desktop
    - Launch Docker Desktop before running the FOAMFlask application
    - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
 
-3. **Restart FOAMFlask** after Docker is running
+3. Restart FOAMFlask after Docker is running
