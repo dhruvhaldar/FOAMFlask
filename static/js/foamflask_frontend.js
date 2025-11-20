@@ -1427,7 +1427,7 @@ async function toggleInteractiveMode() {
   const meshInteractive = document.getElementById('meshInteractive');
   const meshPlaceholder = document.getElementById('meshPlaceholder');
   const toggleBtn = document.getElementById('toggleInteractiveBtn');
-  const cameraControl = document.getElementById('cameraPositionControl');
+  const cameraControl = document.getElementById('cameraPosition');
   const updateBtn = document.getElementById('updateViewBtn');
   
   isInteractiveMode = !isInteractiveMode;
@@ -1476,7 +1476,7 @@ async function toggleInteractiveMode() {
       cameraControl.classList.add('hidden');
       updateBtn.classList.add('hidden');
       
-      showNotification('Interactive mode enabled - Use mouse to rotate, zoom, and pan', 'success', 4000);
+      showNotification('Interactive mode enabled - Use mouse to rotate, zoom, and pan', 'success', 8000);
       
     } catch (error) {
       console.error('[FOAMFlask] Error loading interactive viewer:', error);
@@ -1488,13 +1488,18 @@ async function toggleInteractiveMode() {
   
     // Reset to static mode
     isInteractiveMode = false;
-    toggleBtn.textContent = 'Interactive Mode';
-    toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-    toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
-    cameraControl.classList.remove('hidden');
-    updateBtn.classList.remove('hidden');
-    meshInteractive.classList.add('hidden');
-    meshImage.classList.remove('hidden');
+    
+    // Safely update UI elements if they exist
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Interactive Mode';
+      toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+      toggleBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+    }
+    
+    if (cameraControl) cameraControl.classList.remove('hidden');
+    if (updateBtn) updateBtn.classList.remove('hidden');
+    if (meshInteractive) meshInteractive.classList.add('hidden');
+    if (meshImage) meshImage.classList.remove('hidden');
   }
     
   } else {
