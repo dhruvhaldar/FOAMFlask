@@ -608,21 +608,23 @@ const updatePlots = async (): Promise<void> => {
     }
 
     // Pressure plot
-if (data.p && data.time) {
-  const pressureDiv = getElement<HTMLElement>('pressure-plot');
-  if (!pressureDiv) {
-    console.error('Pressure plot element not found');
-    return;
-  }
+    if (data.p && data.time) {
+      const pressureDiv = getElement<HTMLElement>('pressure-plot');
 
-  const legendVisibility = getLegendVisibility(pressureDiv);
+      if (!pressureDiv) {
+        console.error("Pressure plot element not found");
+        return;
+      }
 
-  const pressureTrace: PlotTrace = {
-    x: data.time,
-    y: data.p,
-    type: 'scatter',
-    mode: 'lines',
-    name: 'Pressure',
+      const plotData = (window as any).Plotly.d3.select(`#${pressureDiv.id}`).data()[0];
+      const legendVisibility = getLegendVisibility({ data: plotData });
+
+      const pressureTrace: PlotTrace = {
+        x: data.time,
+        y: data.p,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Pressure',
     line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 }
   };
 
