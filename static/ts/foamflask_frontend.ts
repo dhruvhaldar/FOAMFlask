@@ -145,7 +145,7 @@ interface PlotTrace {
   mode: string;
   name: string;
   line: { width: number; opacity: number; color: string; dash?: string };
-  visible?: boolean;
+  visible?: boolean | "legendonly";
 }
 
 const getLegendVisibility = (plotDiv: any): Record<string, boolean> => {
@@ -584,36 +584,135 @@ const updatePlots = async (): Promise<void> => {
     }
 
     // Pressure plot
-    if (data.p && data.time) {
-      const pressureDiv = document.getElementById('pressure-plot');
-      const legendVisibility = getLegendVisibility(pressureDiv);
-      
-      const pressureTrace: PlotTrace = {
-        x: data.time,
-        y: data.p,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Pressure',
-        line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
-      };
-      
-      if (legendVisibility.hasOwnProperty(pressureTrace.name)) pressureTrace.visible = legendVisibility[pressureTrace.name];
-      Plotly.react(pressureDiv, [pressureTrace], { ...plotLayout, title: createBoldTitle('Pressure vs Time'), xaxis: { ...plotLayout.xaxis, title: 'Time (s)' }, yaxis: { ...plotLayout.yaxis, title: 'Pressure (Pa)' } }, plotConfig).then(() => attachWhiteBGDownloadButton(pressureDiv));
-    }
+if (data.p && data.time) {
+  const pressureDiv = getElement<HTMLElement>('pressure-plot');
+  if (!pressureDiv) {
+    console.error('Pressure plot element not found');
+    return;
+  }
 
-    // Velocity plot
-    if (data.Umag && data.time) {
-      const velocityDiv = document.getElementById('velocity-plot');
-      const legendVisibility = getLegendVisibility(velocityDiv);
-      const traces = [
-        { x: data.time, y: data.Umag, type: 'scatter', mode: 'lines', name: 'U', line: { color: plotlyColors.red, ...lineStyle, width: 2.5 } },
-      ];
-      if (data.Ux) traces.push({ x: data.time, y: data.Ux, type: 'scatter', mode: 'lines', name: 'Ux', line: { color: plotlyColors.blue, ...lineStyle, dash: 'dash', width: 2.5 } });
-      if (data.Uy) traces.push({ x: data.time, y: data.Uy, type: 'scatter', mode: 'lines', name: 'Uy', line: { color: plotlyColors.green, ...lineStyle, dash: 'dot', width: 2.5 } });
-      if (data.Uz) traces.push({ x: data.time, y: data.Uz, type: 'scatter', mode: 'lines', name: 'Uz', line: { color: plotlyColors.purple, ...lineStyle, dash: 'dashdot', width: 2.5 } });
-      if (legendVisibility.hasOwnProperty(traces[0].name)) traces[0].visible = legendVisibility[traces[0].name];
-      Plotly.react(velocityDiv, traces, { ...plotLayout, title: createBoldTitle('Velocity vs Time'), xaxis: { ...plotLayout.xaxis, title: 'Time (s)' }, yaxis: { ...plotLayout.yaxis, title: 'Velocity (m/s)' } }, plotConfig).then(() => attachWhiteBGDownloadButton(velocityDiv));
+  const legendVisibility = getLegendVisibility(pressureDiv);
+
+  const pressureTrace: PlotTrace = {
+    x: data.time,
+    y: data.p,
+    type: 'scatter',
+    mode: 'lines',
+    name: 'Pressure',
+    line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 }
+  };
+
+  if (Object.prototype.hasOwnProperty.call(legendVisibility, pressureTrace.name)) {
+    // Plotly expects boolean | "legendonly"
+    pressureTrace.visible = legendVisibility[pressureTrace.name] as boolean | 'legendonly';
+  }
+
+  void Plotly.react(
+    pressureDiv,
+    [pressureTrace],
+    {
+      ...plotLayout,
+      title: createBoldTitle('Pressure vs Time'),
+      xaxis: {
+        ...plotLayout.xaxis,
+        title: 'Time (s)'
+      },
+      yaxis: {
+        ...plotLayout.yaxis,
+        title: 'Pressure (Pa)'
+      }
+    },
+    plotConfig
+  )
+    .then(() => {
+      attachWhiteBGDownloadButton(pressureDiv);
+    })
+    .catch((err: unknown) => {
+      console.error('Plotly update failed:', err);
+    });
+}
+
+// Velocity plot
+if (data.Umag && data.time) {
+  const velocityDiv = getElement<HTMLElement>('velocity-plot');
+  if (!velocityDiv) {
+    console.error('Velocity plot element not found');
+    return;
+  }
+
+  const legendVisibility = getLegendVisibility(velocityDiv);
+
+  const traces: PlotTrace[] = [
+    {
+      x: data.time,
+      y: data.Umag,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'U',
+      line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
     }
+  ];
+
+  if (data.Ux) {
+    traces.push({
+      x: data.time,
+      y: data.Ux,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Ux',
+      line: { color: plotlyColors.blue, ...lineStyle, dash: 'dash', width: 2.5 }
+    });
+  }
+
+  if (data.Uy) {
+    traces.push({
+      x: data.time,
+      y: data.Uy,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Uy',
+      line: { color: plotlyColors.green, ...lineStyle, dash: 'dot', width: 2.5 }
+    });
+  }
+
+  if (data.Uz) {
+    traces.push({
+      x: data.time,
+      y: data.Uz,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Uz',
+      line: { color: plotlyColors.purple, ...lineStyle, dash: 'dashdot', width: 2.5 }
+    });
+  }
+
+  // Apply saved visibility safely
+  traces.forEach((tr) => {
+    if (Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
+      tr.visible = legendVisibility[tr.name] as boolean | 'legendonly';
+    }
+  });
+
+  void Plotly.react(
+    velocityDiv,
+    traces,
+    {
+      ...plotLayout,
+      title: createBoldTitle('Velocity vs Time'),
+      xaxis: {
+        ...plotLayout.xaxis,
+        title: 'Time (s)'
+      },
+      yaxis: {
+        ...plotLayout.yaxis,
+        title: 'Velocity (m/s)'
+      }
+    },
+    plotConfig
+  ).then(() => {
+    attachWhiteBGDownloadButton(velocityDiv);
+  });
+}
 
     // Turbulence plot
     const turbTraces = [];
