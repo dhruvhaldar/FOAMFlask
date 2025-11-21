@@ -2,5 +2,4 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(946,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(1744,1): error TS1005: '}' expected.
+static/ts/foamflask_frontend.ts(1746,1): error TS1005: '}' expected.

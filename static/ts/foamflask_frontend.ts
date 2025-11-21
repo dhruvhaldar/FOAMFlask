@@ -933,16 +933,17 @@ if (data.Umag && data.time) {
         attachWhiteBGDownloadButton(turbPlotDiv);
     })
 
-    // Update residuals and aero plots in parallel
-    const updatePromises = [updateResidualsPlot(selectedTutorial)];
-    if (aeroVisible) updatePromises.push(updateAeroPlots());
-    await Promise.allSettled(updatePromises);
+    try {
+      // Update residuals and aero plots in parallel
+      const updatePromises = [updateResidualsPlot(selectedTutorial)];
+      if (aeroVisible) updatePromises.push(updateAeroPlots());
+      await Promise.allSettled(updatePromises);
 
-    // After all plots are updated
-    if (isFirstPlotLoad) {
-      showNotification('Plots loaded successfully', 'success', 3000);
-      isFirstPlotLoad = false;
-    }
+      // After all plots are updated
+      if (isFirstPlotLoad) {
+        showNotification('Plots loaded successfully', 'success', 3000);
+        isFirstPlotLoad = false;
+      }
   } catch (err) {
     console.error('FOAMFlask Error updating plots', err);
     const currentTime = Date.now();
