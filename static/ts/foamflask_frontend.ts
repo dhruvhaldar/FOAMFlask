@@ -635,7 +635,7 @@ const updatePlots = async (): Promise<void> => {
 
   void Plotly.react(
     pressureDiv,
-    [pressureTrace],
+    [pressureTrace as any],
     {
       ...plotLayout,
       title: createBoldTitle('Pressure vs Time'),
@@ -666,7 +666,7 @@ if (data.Umag && data.time) {
     return;
   }
 
-  const legendVisibility = getLegendVisibility(velocityDiv);
+  const legendVisibility = getLegendVisibility(velocityDiv as any);
 
   const traces: PlotTrace[] = [
     {
@@ -721,7 +721,7 @@ if (data.Umag && data.time) {
 
   void Plotly.react(
     velocityDiv,
-    traces,
+    traces as any[],
     {
       ...plotLayout,
       title: createBoldTitle('Velocity vs Time'),
@@ -747,7 +747,24 @@ if (data.Umag && data.time) {
     if (data.k && data.time) turbTraces.push({ x: data.time, y: data.k, type: 'scatter', mode: 'lines', name: 'k', line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 } });
     if (data.omega && data.time) turbTraces.push({ x: data.time, y: data.omega, type: 'scatter', mode: 'lines', name: 'omega', line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 } });
     if (turbTraces.length > 0) {
-      Plotly.react(document.getElementById('turbulence-plot'), turbTraces, { ...plotLayout, title: createBoldTitle('Turbulence Properties vs Time'), xaxis: { ...plotLayout.xaxis, title: 'Time (s)' }, yaxis: { ...plotLayout.yaxis, title: 'Value' } }, plotConfig).then(() => attachWhiteBGDownloadButton(document.getElementById('turbulence-plot')));
+      const turbPlotDiv = document.getElementById('turbulence-plot');
+      if (turbPlotDiv) { // Add null check     
+      Plotly.react(turbPlotDiv,
+        turbTraces as any[],
+        {
+          ...plotLayout,
+          title: createBoldTitle('Turbulence Properties vs Time'),
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: 'Time (s)'
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: 'Value'
+          }
+        },
+        plotConfig
+      ).then(() => attachWhiteBGDownloadButton(turbPlotDiv));
     }
 
     // Update residuals and aero plots in parallel
@@ -781,7 +798,7 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
   try {
     const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
     if (data.error || !data.time || data.time.length === 0) return;
-    const traces = [];
+    const traces: any[] = [];
     const fields = ['Ux', 'Uy', 'Uz', 'p'];
     const colors = [plotlyColors.blue, plotlyColors.red, plotlyColors.green, plotlyColors.magenta, plotlyColors.cyan, plotlyColors.orange];
     fields.forEach((field, idx) => {
@@ -797,13 +814,15 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
       }
     });
     if (traces.length > 0) {
+      const residualsPlotDiv = document.getElementById('residuals-plot');
+      if (!residualsPlotDiv) {  
       const layout = {
         ...plotLayout,
         title: createBoldTitle('Residuals'),
         xaxis: { title: { text: 'Iteration' }, showline: true, mirror: 'all', showgrid: false },
         yaxis: { title: { text: 'Residual' }, type: 'log', showline: true, mirror: 'all', showgrid: true, gridwidth: 1, gridcolor: 'rgba(0,0,0,0.1)' },
       };
-      Plotly.react(document.getElementById('residuals-plot'), traces, layout, { ...plotConfig, displayModeBar: true, scrollZoom: false }).then(() => attachWhiteBGDownloadButton(document.getElementById('residuals-plot')));
+      Plotly.react(residualsPlotDiv, traces, layout, { ...plotConfig, displayModeBar: true, scrollZoom: false }).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
     }
   } catch (err) {
     console.error('FOAMFlask Error updating residuals', err);
@@ -827,7 +846,14 @@ const updateAeroPlots = async (): Promise<void> => {
       const cp = data.p.map((pval: number) => (pval - pinf) / qinf);
       const cpDiv = document.getElementById('cp-plot');
       if (cpDiv) {
-        const cpTrace = { x: data.time, y: cp, type: 'scatter', mode: 'lines+markers', name: 'Cp', line: { color: plotlyColors.red, width: 2.5 } };
+        const cpTrace: any = { 
+          x: data.time, 
+          y: cp, 
+          type: 'scatter', 
+          mode: 'lines+markers', 
+          name: 'Cp', 
+          line: { color: plotlyColors.red, width: 2.5 } 
+        };
         Plotly.react(cpDiv, [cpTrace], { ...plotLayout, title: createBoldTitle('Pressure Coefficient'), xaxis: { title: 'Time (s)' }, yaxis: { title: 'Cp' } }, plotConfig).then(() => attachWhiteBGDownloadButton(cpDiv));
       }
     }
@@ -836,7 +862,15 @@ const updateAeroPlots = async (): Promise<void> => {
     if (Array.isArray(data.Ux) && Array.isArray(data.Uy) && Array.isArray(data.Uz)) {
       const velocityDiv = document.getElementById('velocity-profile-plot');
       if (velocityDiv) {
-        const velocityTrace = { x: data.Ux, y: data.Uy, z: data.Uz, type: 'scatter3d', mode: 'markers', name: 'Velocity', marker: { color: plotlyColors.blue, size: 5 } };
+        const velocityTrace: any = { 
+          x: data.Ux, 
+          y: data.Uy, 
+          z: data.Uz, 
+          type: 'scatter3d', 
+          mode: 'markers', 
+          name: 'Velocity', 
+          marker: { color: plotlyColors.blue, size: 5 } 
+        };
         Plotly.react(velocityDiv, [velocityTrace], { ...plotLayout, title: createBoldTitle('Velocity Profile'), scene: { xaxis: { title: 'Ux' }, yaxis: { title: 'Uy' }, zaxis: { title: 'Uz' } } }, plotConfig);
         attachWhiteBGDownloadButton(velocityDiv);
       }
@@ -847,7 +881,7 @@ const updateAeroPlots = async (): Promise<void> => {
 };
 
 const downloadPlotData = (plotId: string, filename: string): void => {
-  const plotDiv = document.getElementById(plotId);
+  const plotDiv = document.getElementById(plotId) as any; // Cast to any for plotly data access
   if (!plotDiv || !plotDiv.data) {
     console.error('FOAMFlask Plot data not available');
     return;
@@ -857,7 +891,7 @@ const downloadPlotData = (plotId: string, filename: string): void => {
     console.error('FOAMFlask No traces found in the plot');
     return;
   }
-  traces.forEach((trace, index) => {
+  traces.forEach((trace: any, index: number) => { // Explicit types
     if (!trace.x || !trace.y) return;
     let csvContent = 'x,y\n';
     for (let i = 0; i < trace.x.length; i++) {
@@ -989,7 +1023,7 @@ const loadMeshVisualization = async (): Promise<void> => {
       return;
     }
     displayMeshInfo(meshInfo);
-    currentMeshPath = selectedPath;
+    currentMeshPath = selectedPath || null; // Convert undefined to null
     await updateMeshView();
     document.getElementById('meshControls')?.classList.remove('hidden');
     showNotification('Mesh loaded successfully', 'success');
@@ -1524,7 +1558,7 @@ async function loadContourVTK(): Promise<void> {
       showNotification('No scalar fields found in the mesh', 'warning');
     }
 
-    const generateBtn = document.getElementById('generateContoursBtn');
+    const generateBtn = document.getElementById('generateContoursBtn') as HTMLButtonElement | null;
     if (generateBtn) {
       generateBtn.disabled = false;
     } else {
