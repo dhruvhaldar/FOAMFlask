@@ -1,45 +1,75 @@
-"""
-PyVista handler module for mesh visualization in FOAMFlask.
-Provides functionality to load and visualize VTK/VTP mesh files using PyVista.
-"""
+"""PyVista handler module for mesh visualization in FOAMFlask.
 
-import os
+This module provides functionality to load and visualize VTK/VTP mesh files using PyVista.
+It includes features for generating screenshots, interactive HTML viewers, and managing
+mesh data for visualization purposes.
+"""
+# Standard library imports
 import logging
-import base64
+import os
 import tempfile
-import numpy as np
 from io import BytesIO
+from typing import Dict, List, Optional, Tuple, Union, Any, BinaryIO
+
+# Third-party imports
+import numpy as np
 import pyvista as pv
+from pyvista import DataSet, Plotter
 
-logger = logging.getLogger("FOAMFlask.PyVista")
-
+# Configure logger
+logger = logging.getLogger("FOAMFlask")
 
 class MeshVisualizer:
-    """
-    Handles mesh visualization using PyVista.
+    """Handles mesh visualization using PyVista.
+    
+    This class provides functionality to load, visualize, and interact with
+    3D mesh data. It supports various output formats including screenshots
+    and interactive HTML viewers.
+    
+    Attributes:
+        mesh: The currently loaded mesh data.
+        plotter: The active PyVista plotter instance.
     """
     
-    def __init__(self):
-        """Initialize the mesh visualizer."""
-        self.mesh = None
-        self.plotter = None
+    def __init__(self) -> None:
+        """Initialize the mesh visualizer with empty attributes."""
+        self.mesh: Optional[DataSet] = None
+        self.plotter: Optional[Plotter] = None
         
-    def __del__(self):
-        """Clean up resources."""
+    def __del__(self) -> None:
+        """Clean up resources by closing the plotter if it exists."""
         if self.plotter is not None:
             self.plotter.close()
 
-    def load_mesh(self, file_path, for_contour=False, **kwargs):
-        """
-        Load a mesh from a VTK/VTP file.
+    def load_mesh(
+        self,
+        file_path: str,
+        for_contour: bool = False,
+        **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Load a mesh from a VTK/VTP file.
         
         Args:
-            file_path (str): Path to the VTK/VTP file.
-            for_contour (bool): Whether the mesh is being loaded for contour generation.
-            **kwargs: Additional arguments.
+            file_path: Path to the VTK/VTP file.
+            for_contour: Whether the mesh is being loaded for contour generation.
+            **kwargs: Additional arguments for future extension.
             
         Returns:
-            dict: Mesh information including bounds, number of points, cells, etc.
+            Dictionary containing mesh information with keys:
+                - n_points: Number of points in the mesh
+                - n_cells: Number of cells in the mesh
+                - bounds: Bounding box of the mesh
+                - center: Center point of the mesh
+                - length: Length of the mesh diagonal
+                - volume: Volume of the mesh (if available)
+                - array_names: List of all array names
+                - point_arrays: List of point data arrays
+                - cell_arrays: List of cell data arrays
+                - success: Boolean indicating operation success
+                - error: Error message if operation failed
+                
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
         """
         try:
             if not os.path.exists(file_path):
@@ -74,20 +104,31 @@ class MeshVisualizer:
                 "error": str(e)
             }
     
-    def get_mesh_screenshot(self, file_path, width=800, height=600, show_edges=True, color="lightblue", camera_position=None):
-        """
-        Generate a screenshot of the mesh.
+    def get_mesh_screenshot(
+        self,
+        file_path: str,
+        width: int = 800,
+        height: int = 600,
+        show_edges: bool = True,
+        color: str = "lightblue",
+        camera_position: Optional[str] = None
+    ) -> Optional[str]:
+        """Generate a screenshot of the mesh.
         
         Args:
-            file_path (str): Path to the VTK/VTP file.
-            width (int): Screenshot width in pixels.
-            height (int): Screenshot height in pixels.
-            show_edges (bool): Whether to show mesh edges.
-            color (str): Mesh color.
-            camera_position (str): Camera position ('xy', 'xz', 'yz', 'iso', or None for auto).
+            file_path: Path to the VTK/VTP file.
+            width: Screenshot width in pixels (default: 800).
+            height: Screenshot height in pixels (default: 600).
+            show_edges: Whether to show mesh edges (default: True).
+            color: Mesh color as a string or RGB tuple (default: "lightblue").
+            camera_position: Camera position ('xy', 'xz', 'yz', 'iso', or None for auto).
             
         Returns:
-            str: Base64-encoded PNG image.
+            Base64-encoded PNG image as a string, or None if an error occurs.
+            
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
+            ValueError: If the camera position is invalid.
         """
         try:
             # Load mesh if not already loaded
@@ -134,17 +175,28 @@ class MeshVisualizer:
             logger.error(f"Error generating screenshot: {e}")
             return None
     
-    def get_mesh_html(self, file_path, show_edges=True, color="lightblue"):
-        """
-        Generate an interactive HTML viewer for the mesh using PyVista's HTML export.
+    def get_mesh_html(
+        self,
+        file_path: str,
+        show_edges: bool = True,
+        color: str = "lightblue"
+    ) -> Optional[str]:
+        """Generate an interactive HTML viewer for the mesh.
+        
+        This method creates an interactive 3D viewer using PyVista's HTML export
+        functionality, which can be embedded in a web page.
         
         Args:
-            file_path (str): Path to the VTK/VTP file.
-            show_edges (bool): Whether to show mesh edges.
-            color (str): Mesh color.
+            file_path: Path to the VTK/VTP file.
+            show_edges: Whether to show mesh edges (default: True).
+            color: Mesh color as a string or RGB tuple (default: "lightblue").
             
         Returns:
-            str: HTML content for interactive viewer.
+            HTML content as a string for the interactive viewer, or None if an
+            error occurs.
+            
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
         """
         try:
             # Load mesh if not already loaded
@@ -172,18 +224,29 @@ class MeshVisualizer:
             logger.error(f"Error generating HTML viewer: {e}")
             return None
     
-    def get_interactive_viewer_html(self, file_path, show_edges=True, color="lightblue"):
-        """
-        Generate a fully interactive HTML viewer with better controls.
-        Uses PyVista's export_html with enhanced settings.
+    def get_interactive_viewer_html(
+        self,
+        file_path: str,
+        show_edges: bool = True,
+        color: str = "lightblue"
+    ) -> Optional[str]:
+        """Generate a fully interactive HTML viewer with enhanced controls.
+        
+        This method creates a more feature-rich interactive 3D viewer compared to
+        get_mesh_html(), with better controls and visualization options.
         
         Args:
-            file_path (str): Path to the VTK/VTP file.
-            show_edges (bool): Whether to show mesh edges.
-            color (str): Mesh color.
+            file_path: Path to the VTK/VTP file.
+            show_edges: Whether to show mesh edges (default: True).
+            color: Mesh color as a string or RGB tuple (default: "lightblue").
             
         Returns:
-            str: HTML content for interactive viewer with controls.
+            HTML content as a string for the interactive viewer with controls,
+            or None if an error occurs.
+            
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
+            RuntimeError: If there's an error generating the HTML content.
         """
         try:
             # Load mesh if not already loaded
@@ -247,16 +310,29 @@ class MeshVisualizer:
             logger.error(f"Error generating interactive viewer: {e}")
             return None
     
-    def get_available_meshes(self, case_dir, tutorial):
-        """
-        Get list of available mesh files in the case directory.
+    def get_available_meshes(
+        self,
+        case_dir: str,
+        tutorial: str
+    ) -> List[Dict[str, Union[str, int]]]:
+        """Get list of available mesh files in the case directory.
+        
+        This method searches for VTK/VTP files in common OpenFOAM case
+        directories and returns information about each found mesh file.
         
         Args:
-            case_dir (str): Base case directory.
-            tutorial (str): Tutorial name.
+            case_dir: Base case directory path.
+            tutorial: Name of the tutorial/case to search within.
             
         Returns:
-            list: List of available mesh files with their paths.
+            List of dictionaries, where each dictionary contains:
+                - name: Filename of the mesh
+                - path: Full path to the mesh file
+                - relative_path: Path relative to the tutorial directory
+                - size: File size in bytes
+                
+        Note:
+            Returns an empty list if no mesh files are found or if an error occurs.
         """
         try:
             tutorial_path = os.path.join(case_dir, tutorial)
@@ -310,5 +386,5 @@ class MeshVisualizer:
             self.plotter.close()
 
 
-# Global instances
+# Global instance for use as a singleton
 mesh_visualizer = MeshVisualizer()

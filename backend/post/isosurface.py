@@ -1,17 +1,26 @@
+"""Isosurface visualization module for FOAMFlask.
+
+This module provides functionality for generating and visualizing isosurfaces
+from VTK mesh data using PyVista. It supports both static and interactive
+visualizations with various customization options.
+"""
+# Standard library imports
 import logging
 import os
 import tempfile
+from typing import Dict, List, Optional, Tuple, Union
+
+# Third-party imports
 import numpy as np
 import pyvista as pv
-
+from pyvista import DataSet, PolyData, Plotter
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
 
 
 class IsosurfaceVisualizer:
-    """
-    Handles isosurface visualization from VTK mesh data using PyVista.
+    """Handles isosurface visualization from VTK mesh data using PyVista.
 
     This class provides functionality to:
     - Load VTK mesh files with scalar fields
@@ -20,38 +29,39 @@ class IsosurfaceVisualizer:
     - Export visualization data and metadata
 
     Attributes:
-        mesh (pyvista.DataSet): The loaded mesh with scalar data
-        contours (pyvista.PolyData): Generated isosurface contours
-        plotter (pyvista.Plotter): Active plotter instance (if any)
+        mesh: The loaded mesh with scalar data.
+        contours: Generated isosurface contours.
+        plotter: Active plotter instance (if any).
     """
 
-    def __init__(self):
-        """Initialize the isosurface visualizer."""
-        self.mesh = None
-        self.contours = None
-        self.plotter = None
-        logger.info("[FOAMFlask] [IsosurfaceVisualizer] Initialized")
+    def __init__(self) -> None:
+        """Initialize the isosurface visualizer with empty attributes."""
+        self.mesh: Optional[DataSet] = None
+        self.contours: Optional[PolyData] = None
+        self.plotter: Optional[Plotter] = None
+        logger.info(
+            "[FOAMFlask] [IsosurfaceVisualizer] Initialized"
+        )
 
-    def load_mesh(self, file_path):
-        """
-        Load a mesh from a VTK file and compute derived scalar fields.
+    def load_mesh(self, file_path: str) -> Dict[str, Union[bool, int, List[str], str, Dict]]:
+        """Load a mesh from a VTK file and compute derived scalar fields.
 
         Automatically computes velocity magnitude (U_Magnitude) if a velocity
         vector field (U) exists in the point data.
 
         Args:
-            file_path (str): Path to the VTK/VTP/VTU file.
+            file_path: Path to the VTK/VTP/VTU file.
 
         Returns:
-            dict: Mesh information including:
-                - success (bool): Whether loading succeeded
-                - n_points (int): Number of mesh points
-                - n_cells (int): Number of mesh cells
-                - bounds (tuple): Mesh spatial bounds
-                - point_arrays (list): Available point data arrays
-                - cell_arrays (list): Available cell data arrays
-                - u_magnitude (dict): Statistics for velocity magnitude
-                - error (str): Error message (if success is False)
+            Dictionary containing mesh information with keys:
+                - success: Whether loading succeeded
+                - n_points: Number of mesh points
+                - n_cells: Number of mesh cells
+                - bounds: Mesh spatial bounds
+                - point_arrays: Available point data arrays
+                - cell_arrays: Available cell data arrays
+                - u_magnitude: Statistics for velocity magnitude
+                - error: Error message (if success is False)
         """
         try:
             if not os.path.exists(file_path):
@@ -126,26 +136,22 @@ class IsosurfaceVisualizer:
 
     def generate_isosurfaces(
         self,
-        scalar_field="U_Magnitude",
-        num_isosurfaces=5,
-        custom_range=None,
-        isovalues=None
-    ):
-        """
-        Generate isosurfaces for the specified scalar field.
+        scalar_field: str = "U_Magnitude",
+        num_isosurfaces: int = 5,
+        custom_range: Optional[List[float]] = None,
+        isovalues: Optional[List[float]] = None
+    ) -> Dict[str, Union[bool, int, List[float], str]]:
+        """Generate isosurfaces for the specified scalar field.
 
         Args:
-            scalar_field (str): Name of the scalar field to create
-                isosurfaces for.
-            num_isosurfaces (int): Number of evenly-spaced isosurfaces
-                (ignored if custom_range or isovalues is provided).
-            custom_range (list): Custom [min, max] range for
-                evenly-spaced isosurfaces.
-            isovalues (list): Explicit list of isovalues to generate
-                contours at.
+            scalar_field: Name of the scalar field to create isosurfaces for.
+            num_isosurfaces: Number of evenly-spaced isosurfaces (ignored if
+                custom_range or isovalues is provided).
+            custom_range: Custom [min, max] range for evenly-spaced isosurfaces.
+            isovalues: Explicit list of isovalues to generate contours at.
 
         Returns:
-            dict: Information about the generated isosurfaces.
+            Dictionary containing information about the generated isosurfaces.
         """
         try:
             if self.mesh is None:
@@ -238,16 +244,17 @@ class IsosurfaceVisualizer:
                 "error": str(e)
             }
 
-    def get_scalar_field_info(self, scalar_field=None):
-        """
-        Get statistical information about scalar fields in the mesh.
+    def get_scalar_field_info(
+        self, scalar_field: Optional[str] = None
+    ) -> Dict[str, Dict[str, Union[str, float, Dict[str, float]]]]:
+        """Get statistical information about scalar fields in the mesh.
 
         Args:
-            scalar_field (str, optional): Specific field to get info for.
-                If None, returns info for all fields.
+            scalar_field: Specific field to get info for. If None, returns
+                info for all fields.
 
         Returns:
-            dict: Dictionary with scalar field statistics.
+            Dictionary with scalar field statistics.
         """
         try:
             if self.mesh is None:
@@ -312,36 +319,38 @@ class IsosurfaceVisualizer:
 
     def get_interactive_html(
         self,
-        scalar_field="U_Magnitude",
-        show_base_mesh=True,
-        base_mesh_opacity=0.25,
-        contour_opacity=0.8,
-        contour_color='red',
-        colormap='viridis',
-        show_isovalue_slider=True,
-        custom_range=None,
-        num_isosurfaces=5,
-        isovalues=None,
-        window_size=(1200, 800)
-    ):
-        """
-        Generate an interactive HTML visualization of mesh and isosurfaces.
+        scalar_field: str = "U_Magnitude",
+        show_base_mesh: bool = True,
+        base_mesh_opacity: float = 0.25,
+        contour_opacity: float = 0.8,
+        contour_color: str = 'red',
+        colormap: str = 'viridis',
+        show_isovalue_slider: bool = True,
+        custom_range: Optional[Tuple[float, float]] = None,
+        num_isosurfaces: int = 5,
+        isovalues: Optional[List[float]] = None,
+        window_size: Tuple[int, int] = (1200, 800)
+    ) -> str:
+        """Generate an interactive HTML visualization of mesh and isosurfaces.
 
         Args:
-            scalar_field (str): The scalar field to visualize.
-            show_base_mesh (bool): Whether to show the base mesh.
-            base_mesh_opacity (float): Opacity of the base mesh.
-            contour_opacity (float): Opacity of the isosurfaces.
-            contour_color (str): Color of the isosurfaces.
-            colormap (str): Colormap to use.
-            show_isovalue_slider (bool): Whether to show interactive slider.
-            custom_range (tuple): Custom range for the isosurfaces.
-            num_isosurfaces (int): Number of isosurfaces to generate.
-            isovalues (list): List of specific isovalues to use.
-            window_size (tuple): Size of the plotter window.
+            scalar_field: The scalar field to visualize.
+            show_base_mesh: Whether to show the base mesh.
+            base_mesh_opacity: Opacity of the base mesh (0-1).
+            contour_opacity: Opacity of the isosurfaces (0-1).
+            contour_color: Color of the isosurfaces.
+            colormap: Name of the colormap to use.
+            show_isovalue_slider: Whether to show interactive slider.
+            custom_range: Custom range for the isosurfaces [min, max].
+            num_isosurfaces: Number of isosurfaces to generate.
+            isovalues: List of specific isovalues to use.
+            window_size: Width and height of the plotter window in pixels.
 
         Returns:
-            str: HTML content for the interactive visualization.
+            HTML content for the interactive visualization.
+
+        Raises:
+            ValueError: If no mesh is loaded or if the scalar field is invalid.
         """
         try:
             # Validate that mesh is loaded
@@ -629,5 +638,5 @@ class IsosurfaceVisualizer:
                 pass
 
 
-# Global instance - THIS MUST BE AT MODULE LEVEL (NOT INDENTED)
+# Global instance for use as a singleton
 isosurface_visualizer = IsosurfaceVisualizer()
