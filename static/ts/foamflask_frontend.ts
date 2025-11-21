@@ -1521,7 +1521,7 @@ async function refreshPostListVTK(): Promise<void> {
     vtkFiles.forEach((file) => {
       const option = document.createElement('option');
       option.value = file.path;
-      option.textContent = file.name || file.path.split('/').pop();
+      option.textContent = file.name || file.path.split('/').pop() || null;
       vtkSelect.appendChild(option);
     });
   } catch (error) {
