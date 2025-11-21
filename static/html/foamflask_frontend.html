@@ -572,11 +572,7 @@
           <!-- Scalar Field Selection -->
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">Scalar Field</label>
-            <select id="scalarField" class="border border-gray-300 rounded px-3 py-2">
-              <option value="U_Magnitude">Velocity Magnitude</option>
-              <option value="p">Pressure</option>
-              <option value="U">Velocity</option>
-            </select>
+            <select id="scalarField" class="form-select mt-2"></select>
           </div>
           
           <!-- Color Map Selection -->
@@ -620,7 +616,7 @@
           </div>
           
           <!-- Generate Contours Button -->
-          <button onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
+          <button id="generateContoursBtn" onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
             Generate Contours
           </button>
           

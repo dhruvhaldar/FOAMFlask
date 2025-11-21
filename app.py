@@ -607,6 +607,7 @@ def api_load_mesh():
     """
     data = request.get_json()
     file_path = data.get("file_path")
+    for_contour = data.get("for_contour", False)  # Get the for_contour flag, default to False
     
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400

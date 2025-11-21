@@ -29,12 +29,14 @@ class MeshVisualizer:
         if self.plotter is not None:
             self.plotter.close()
 
-    def load_mesh(self, file_path):
+    def load_mesh(self, file_path, for_contour=False, **kwargs):
         """
         Load a mesh from a VTK/VTP file.
         
         Args:
             file_path (str): Path to the VTK/VTP file.
+            for_contour (bool): Whether the mesh is being loaded for contour generation.
+            **kwargs: Additional arguments.
             
         Returns:
             dict: Mesh information including bounds, number of points, cells, etc.
@@ -57,6 +59,7 @@ class MeshVisualizer:
                 "length": self.mesh.length,
                 "volume": self.mesh.volume if hasattr(self.mesh, 'volume') else None,
                 "array_names": self.mesh.array_names,
+                "point_arrays": self.mesh.array_names,  # Add this line for backward compatibility
                 "success": True
             }
             
@@ -69,9 +72,7 @@ class MeshVisualizer:
                 "error": str(e)
             }
     
-    def get_mesh_screenshot(self, file_path, width=800, height=600, 
-                           show_edges=True, color="lightblue", 
-                           camera_position=None):
+    def get_mesh_screenshot(self, file_path, width=800, height=600, show_edges=True, color="lightblue", camera_position=None):
         """
         Generate a screenshot of the mesh.
         
@@ -89,7 +90,7 @@ class MeshVisualizer:
         try:
             # Load mesh if not already loaded
             if self.mesh is None or not os.path.exists(file_path):
-                mesh_info = self.load_mesh(file_path)
+                mesh_info = self.load_mesh(file_path, for_contour=for_contour)
                 if not mesh_info.get("success"):
                     return None
             

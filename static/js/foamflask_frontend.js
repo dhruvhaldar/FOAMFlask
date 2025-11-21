@@ -1781,34 +1781,65 @@ async function loadContourVTK() {
   }
   
   try {
+    showNotification('Loading VTK file for contour generation...', 'info');
+    console.log('[FOAMFlask] Loading VTK file for contour:', selectedFile);
+    
     const response = await fetch('/api/load_mesh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         file_path: selectedFile,
-        for_contour: true  // Add this flag to indicate it's for contour
+        for_contour: true
       })
     });
     
-    const meshInfo = await response.json();
-    
-    if (meshInfo.success) {
-      // Update scalar field options for contour
-      const scalarFieldSelect = document.getElementById('scalarField');
-      scalarFieldSelect.innerHTML = '';
-      (meshInfo.point_arrays || []).forEach(field => {
-        const option = document.createElement('option');
-        option.value = field;
-        option.textContent = field;
-        scalarFieldSelect.appendChild(option);
-      });
-      
-      // Enable contour generation UI
-      document.getElementById('generateContoursBtn').disabled = false;
-      showNotification('VTK file loaded for contour generation!', 'success');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
+    
+    const meshInfo = await response.json();
+    console.log('[FOAMFlask] Received mesh info:', meshInfo);
+    
+    if (!meshInfo.success) {
+      throw new Error(meshInfo.error || 'Failed to load mesh');
+    }
+    
+    // Update scalar field options for contour
+    const scalarFieldSelect = document.getElementById('scalarField');
+    if (!scalarFieldSelect) {
+      throw new Error('Could not find scalar field select element');
+    }
+    
+    scalarFieldSelect.innerHTML = '';
+    const pointArrays = meshInfo.point_arrays || meshInfo.array_names || [];
+    
+    if (pointArrays.length === 0) {
+      console.warn('[FOAMFlask] No point arrays found in mesh data');
+      showNotification('No scalar fields found in the mesh', 'warning');
+      return;
+    }
+    
+    pointArrays.forEach(field => {
+      const option = document.createElement('option');
+      option.value = field;
+      option.textContent = field;
+      scalarFieldSelect.appendChild(option);
+    });
+    
+    // Enable contour generation UI
+    const generateBtn = document.getElementById('generateContoursBtn');
+    if (generateBtn) {
+      generateBtn.disabled = false;
+    } else {
+      console.warn('[FOAMFlask] Could not find generateContoursBtn');
+    }
+    
+    showNotification('VTK file loaded for contour generation!', 'success');
+    console.log('[FOAMFlask] Successfully loaded mesh for contour generation');
+    
   } catch (error) {
     console.error('[FOAMFlask] Error loading VTK file for contour:', error);
-    showNotification('Error loading VTK file for contour generation', 'error');
+    showNotification(`Error: ${error.message || 'Failed to load VTK file for contour generation'}`, 'error');
   }
 }
