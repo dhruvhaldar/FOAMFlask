@@ -1,0 +1,12 @@
+{
+  "name": "foamflask-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "postbuild": "node copy-built-js.mjs",
+    "build:watch": "tsc -w"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
