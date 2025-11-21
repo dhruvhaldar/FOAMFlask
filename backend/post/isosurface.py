@@ -4,6 +4,7 @@ This module provides functionality for generating and visualizing isosurfaces
 from VTK mesh data using PyVista. It supports both static and interactive
 visualizations with various customization options.
 """
+
 # Standard library imports
 import logging
 import os
@@ -39,11 +40,11 @@ class IsosurfaceVisualizer:
         self.mesh: Optional[DataSet] = None
         self.contours: Optional[PolyData] = None
         self.plotter: Optional[Plotter] = None
-        logger.info(
-            "[FOAMFlask] [IsosurfaceVisualizer] Initialized"
-        )
+        logger.info("[FOAMFlask] [IsosurfaceVisualizer] Initialized")
 
-    def load_mesh(self, file_path: str) -> Dict[str, Union[bool, int, List[str], str, Dict]]:
+    def load_mesh(
+        self, file_path: str
+    ) -> Dict[str, Union[bool, int, List[str], str, Dict]]:
         """Load a mesh from a VTK file and compute derived scalar fields.
 
         Automatically computes velocity magnitude (U_Magnitude) if a velocity
@@ -68,8 +69,7 @@ class IsosurfaceVisualizer:
                 raise FileNotFoundError(f"Mesh file not found: {file_path}")
 
             logger.info(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Loading mesh from: {file_path}"
+                f"[FOAMFlask] [IsosurfaceVisualizer] " f"Loading mesh from: {file_path}"
             )
 
             # Read the mesh with progress bar using PyVista
@@ -81,7 +81,7 @@ class IsosurfaceVisualizer:
             )
 
             # Compute velocity magnitude if U vector field exists
-            if 'U' in self.mesh.point_data:
+            if "U" in self.mesh.point_data:
                 self.mesh.point_data["U_Magnitude"] = np.linalg.norm(
                     self.mesh.point_data["U"], axis=1
                 )
@@ -101,7 +101,7 @@ class IsosurfaceVisualizer:
             }
 
             # Add velocity magnitude statistics if available
-            if 'U_Magnitude' in self.mesh.point_data:
+            if "U_Magnitude" in self.mesh.point_data:
                 u_mag = self.mesh.point_data["U_Magnitude"]
                 mesh_info["u_magnitude"] = {
                     "min": float(np.min(u_mag)),
@@ -113,8 +113,8 @@ class IsosurfaceVisualizer:
                         "25": float(np.percentile(u_mag, 25)),
                         "50": float(np.percentile(u_mag, 50)),
                         "75": float(np.percentile(u_mag, 75)),
-                        "100": float(np.percentile(u_mag, 100))
-                    }
+                        "100": float(np.percentile(u_mag, 100)),
+                    },
                 }
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] U_Magnitude range: "
@@ -126,20 +126,16 @@ class IsosurfaceVisualizer:
 
         except Exception as e:
             logger.error(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Error loading mesh: {e}"
+                f"[FOAMFlask] [IsosurfaceVisualizer] " f"Error loading mesh: {e}"
             )
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def generate_isosurfaces(
         self,
         scalar_field: str = "U_Magnitude",
         num_isosurfaces: int = 5,
         custom_range: Optional[List[float]] = None,
-        isovalues: Optional[List[float]] = None
+        isovalues: Optional[List[float]] = None,
     ) -> Dict[str, Union[bool, int, List[float], str]]:
         """Generate isosurfaces for the specified scalar field.
 
@@ -155,9 +151,7 @@ class IsosurfaceVisualizer:
         """
         try:
             if self.mesh is None:
-                raise ValueError(
-                    "No mesh loaded. Call load_mesh() first."
-                )
+                raise ValueError("No mesh loaded. Call load_mesh() first.")
 
             if scalar_field not in self.mesh.point_data:
                 raise ValueError(
@@ -187,22 +181,14 @@ class IsosurfaceVisualizer:
                     raise ValueError(
                         "custom_range must be a list of [min, max] values."
                     )
-                values = np.linspace(
-                    custom_range[0],
-                    custom_range[1],
-                    num_isosurfaces
-                )
+                values = np.linspace(custom_range[0], custom_range[1], num_isosurfaces)
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
                     f"Using custom range: {custom_range} "
                     f"with {num_isosurfaces} isosurfaces"
                 )
             else:
-                values = np.linspace(
-                    min_val,
-                    max_val,
-                    num_isosurfaces + 2
-                )[1:-1]
+                values = np.linspace(min_val, max_val, num_isosurfaces + 2)[1:-1]
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
                     f"Using {num_isosurfaces} evenly-spaced isosurfaces "
@@ -211,8 +197,7 @@ class IsosurfaceVisualizer:
 
             # Generate isosurfaces using contour filter
             self.contours = self.mesh.contour(
-                isosurfaces=values.tolist(),
-                scalars=scalar_field
+                isosurfaces=values.tolist(), scalars=scalar_field
             )
 
             result = {
@@ -223,7 +208,7 @@ class IsosurfaceVisualizer:
                 "range": [min_val, max_val],
                 "n_points": int(self.contours.n_points),
                 "n_cells": int(self.contours.n_cells),
-                "bounds": tuple(float(b) for b in self.contours.bounds)
+                "bounds": tuple(float(b) for b in self.contours.bounds),
             }
 
             logger.info(
@@ -239,10 +224,7 @@ class IsosurfaceVisualizer:
                 f"[FOAMFlask] [IsosurfaceVisualizer] "
                 f"Error generating isosurfaces: {e}"
             )
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_scalar_field_info(
         self, scalar_field: Optional[str] = None
@@ -258,9 +240,7 @@ class IsosurfaceVisualizer:
         """
         try:
             if self.mesh is None:
-                raise ValueError(
-                    "No mesh loaded. Call load_mesh() first."
-                )
+                raise ValueError("No mesh loaded. Call load_mesh() first.")
 
             result = {}
 
@@ -268,8 +248,7 @@ class IsosurfaceVisualizer:
             if scalar_field:
                 if scalar_field not in self.mesh.point_data:
                     raise ValueError(
-                        f"Scalar field '{scalar_field}' "
-                        f"not found in point data."
+                        f"Scalar field '{scalar_field}' " f"not found in point data."
                     )
                 fields = [scalar_field]
             else:
@@ -289,8 +268,8 @@ class IsosurfaceVisualizer:
                             "min": float(np.min(magnitude)),
                             "max": float(np.max(magnitude)),
                             "mean": float(np.mean(magnitude)),
-                            "std": float(np.std(magnitude))
-                        }
+                            "std": float(np.std(magnitude)),
+                        },
                     }
                 else:
                     result[field] = {
@@ -304,16 +283,15 @@ class IsosurfaceVisualizer:
                             "25": float(np.percentile(data, 25)),
                             "50": float(np.percentile(data, 50)),
                             "75": float(np.percentile(data, 75)),
-                            "100": float(np.percentile(data, 100))
-                        }
+                            "100": float(np.percentile(data, 100)),
+                        },
                     }
 
             return result
 
         except Exception as e:
             logger.error(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Error getting field info: {e}"
+                f"[FOAMFlask] [IsosurfaceVisualizer] " f"Error getting field info: {e}"
             )
             return {"error": str(e)}
 
@@ -323,13 +301,13 @@ class IsosurfaceVisualizer:
         show_base_mesh: bool = True,
         base_mesh_opacity: float = 0.25,
         contour_opacity: float = 0.8,
-        contour_color: str = 'red',
-        colormap: str = 'viridis',
+        contour_color: str = "red",
+        colormap: str = "viridis",
         show_isovalue_slider: bool = True,
         custom_range: Optional[Tuple[float, float]] = None,
         num_isosurfaces: int = 5,
         isovalues: Optional[List[float]] = None,
-        window_size: Tuple[int, int] = (1200, 800)
+        window_size: Tuple[int, int] = (1200, 800),
     ) -> str:
         """Generate an interactive HTML visualization of mesh and isosurfaces.
 
@@ -355,9 +333,7 @@ class IsosurfaceVisualizer:
         try:
             # Validate that mesh is loaded
             if self.mesh is None:
-                raise ValueError(
-                    "No mesh loaded. Call load_mesh() first."
-                )
+                raise ValueError("No mesh loaded. Call load_mesh() first.")
 
             # Validate scalar field exists
             if scalar_field not in self.mesh.point_data:
@@ -372,10 +348,7 @@ class IsosurfaceVisualizer:
             )
 
             # Create plotter with specified window size
-            plotter = pv.Plotter(
-                notebook=False,
-                window_size=list(window_size)
-            )
+            plotter = pv.Plotter(notebook=False, window_size=list(window_size))
 
             # Add base mesh if requested
             if show_base_mesh:
@@ -385,17 +358,17 @@ class IsosurfaceVisualizer:
                     scalars=scalar_field,
                     show_scalar_bar=True,
                     cmap=colormap,
-                    label='Base Mesh',
+                    label="Base Mesh",
                     scalar_bar_args={
-                        'title': scalar_field,
-                        'title_font_size': 20,
-                        'label_font_size': 16,
-                        'shadow': True,
-                        'n_labels': 5,
-                        'fmt': '%.2f',
-                        'position_x': 0.85,
-                        'position_y': 0.05
-                    }
+                        "title": scalar_field,
+                        "title_font_size": 20,
+                        "label_font_size": 16,
+                        "shadow": True,
+                        "n_labels": 5,
+                        "fmt": "%.2f",
+                        "position_x": 0.85,
+                        "position_y": 0.05,
+                    },
                 )
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
@@ -413,7 +386,7 @@ class IsosurfaceVisualizer:
                     compute_scalars=True,
                     opacity=contour_opacity,
                     color=contour_color,
-                    show_scalar_bar=False
+                    show_scalar_bar=False,
                 )
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
@@ -425,13 +398,12 @@ class IsosurfaceVisualizer:
                     scalar_field=scalar_field,
                     num_isosurfaces=num_isosurfaces,
                     custom_range=custom_range,
-                    isovalues=isovalues
+                    isovalues=isovalues,
                 )
 
                 if not result.get("success"):
                     raise ValueError(
-                        f"Failed to generate isosurfaces: "
-                        f"{result.get('error')}"
+                        f"Failed to generate isosurfaces: " f"{result.get('error')}"
                     )
 
                 if self.contours is not None and self.contours.n_points > 0:
@@ -440,7 +412,7 @@ class IsosurfaceVisualizer:
                         opacity=contour_opacity,
                         show_scalar_bar=False,
                         color=contour_color,
-                        label='Isosurfaces'
+                        label="Isosurfaces",
                     )
                     logger.info(
                         f"[FOAMFlask] [IsosurfaceVisualizer] "
@@ -459,23 +431,16 @@ class IsosurfaceVisualizer:
 
             # Add axes with labels
             plotter.add_axes(
-                xlabel='X',
-                ylabel='Y',
-                zlabel='Z',
-                line_width=2,
-                labels_off=False
+                xlabel="X", ylabel="Y", zlabel="Z", line_width=2, labels_off=False
             )
 
             # Set isometric camera position
-            plotter.camera_position = 'iso'
+            plotter.camera_position = "iso"
 
             # Export to HTML using temporary file
             try:
                 with tempfile.NamedTemporaryFile(
-                    mode='w',
-                    suffix='.html',
-                    delete=False,
-                    encoding='utf-8'
+                    mode="w", suffix=".html", delete=False, encoding="utf-8"
                 ) as tmp_file:
                     tmp_path = tmp_file.name
 
@@ -490,7 +455,7 @@ class IsosurfaceVisualizer:
                 plotter.close()
 
                 # Read the HTML content
-                with open(tmp_path, 'r', encoding='utf-8') as f:
+                with open(tmp_path, "r", encoding="utf-8") as f:
                     html_content = f.read()
 
                 # Clean up temporary file
@@ -524,7 +489,7 @@ class IsosurfaceVisualizer:
             )
 
             # Clean up plotter if it exists
-            if 'plotter' in locals():
+            if "plotter" in locals():
                 plotter.close()
 
             # Return a user-friendly error message as HTML
@@ -589,16 +554,15 @@ class IsosurfaceVisualizer:
 </html>
 """
 
-    def export_contours(self, output_path, file_format='vtk'):
+    def export_contours(self, output_path, file_format="vtk"):
         """Export generated contours to a file."""
         try:
             if self.contours is None:
                 raise ValueError(
-                    "No contours generated. "
-                    "Call generate_isosurfaces() first."
+                    "No contours generated. " "Call generate_isosurfaces() first."
                 )
 
-            if not output_path.endswith(f'.{file_format}'):
+            if not output_path.endswith(f".{file_format}"):
                 output_path = f"{output_path}.{file_format}"
 
             self.contours.save(output_path)
@@ -612,27 +576,22 @@ class IsosurfaceVisualizer:
                 "success": True,
                 "output_path": output_path,
                 "file_size": os.path.getsize(output_path),
-                "format": file_format
+                "format": file_format,
             }
 
         except Exception as e:
             logger.error(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Error exporting contours: {e}"
+                f"[FOAMFlask] [IsosurfaceVisualizer] " f"Error exporting contours: {e}"
             )
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def __del__(self):
         """Clean up resources."""
-        if hasattr(self, 'plotter') and self.plotter is not None:
+        if hasattr(self, "plotter") and self.plotter is not None:
             try:
                 self.plotter.close()
                 logger.info(
-                    "[FOAMFlask] [IsosurfaceVisualizer] "
-                    "Cleaned up plotter resources"
+                    "[FOAMFlask] [IsosurfaceVisualizer] " "Cleaned up plotter resources"
                 )
             except Exception:
                 pass
