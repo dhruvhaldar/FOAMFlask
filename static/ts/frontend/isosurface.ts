@@ -1,23 +1,40 @@
-// @ts-nocheck
-
 /**
  * Contour Visualization Module
  * Handles isosurface generation and 3D visualization using PyVista
  */
 
-// Contour visualization state
-let currentContourData = null;
+// Type definitions
+interface ContourOptions {
+    tutorial?: string | null;
+    caseDir?: string | { value: string } | null;
+    scalarField?: string;
+    numIsosurfaces?: number;
+    range?: [number, number];
+}
+
+interface ContourData {
+    tutorial: string;
+    caseDir: string;
+    scalarField: string;
+    numIsosurfaces: number;
+    timestamp: string;
+}
+
+interface HTMLElement {
+    value: string;
+}
+
+declare function showNotification(message: string, type?: string, duration?: number): void;
+
+// Global state
+let currentContourData: ContourData | null = null;
 
 /**
  * Generate isosurface contours for the loaded mesh
- * @param {Object} options - Configuration options
- * @param {string} options.tutorial - Tutorial name
- * @param {string} options.caseDir - Case directory path
- * @param {string} options.scalarField - Scalar field to visualize (default: 'U_Magnitude')
- * @param {number} options.numIsosurfaces - Number of isosurfaces (default: 5)
- * @returns {Promise<void>}
+ * @param options - Configuration options
+ * @returns Promise that resolves when contours are generated
  */
-async function generateContours(options = {}) {
+async function generateContours(options: ContourOptions = {}): Promise<void> {
     const contourPlaceholder = document.getElementById('contourPlaceholder');
     const contourViewer = document.getElementById('contourViewer');
     
@@ -95,11 +112,11 @@ async function generateContours(options = {}) {
         });
         
         // Prepare request data with all parameters
-        const requestData = {
-            tutorial: selectedTutorial,
-            caseDir: selectedCaseDir,
-            scalarField: scalarField,
-            numIsosurfaces: numIsosurfaces
+        const requestData: ContourOptions = {
+        tutorial: selectedTutorial,
+        caseDir: selectedCaseDir,
+        scalarField: scalarField,
+        numIsosurfaces: numIsosurfaces
         };
 
         // Add range to request if available
@@ -138,7 +155,7 @@ async function generateContours(options = {}) {
             showNotification('Contours generated successfully!', 'success');
         }
         
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('[FOAMFlask] [generateContours] Error:', error);
         handleContourError(contourPlaceholder, contourViewer, error);
     }
@@ -147,7 +164,7 @@ async function generateContours(options = {}) {
 /**
  * Show loading state in the viewer
  */
-function showLoadingState(container, message = 'Loading...') {
+function showLoadingState(container: HTMLElement | null, message = 'Loading...') {
     if (!container) return;
     
     container.innerHTML = `
@@ -170,7 +187,7 @@ function getTutorialFromSelect() {
  * Fetch contours from the server
  * Send all data in the request body to avoid URL encoding issues with Windows paths
  */
-async function fetchContours(requestData) {
+async function fetchContours(requestData: ContourOptions) {
     const url = new URL('/api/contours/create', window.location.origin);
     
     console.log('[FOAMFlask] [fetchContours] URL:', url.toString());
@@ -178,12 +195,19 @@ async function fetchContours(requestData) {
     console.log('[FOAMFlask] [fetchContours] Request data:', requestData);
     
     // Prepare the request body with all parameters
-    const requestBody = {
-        tutorial: requestData.tutorial,
-        caseDir: requestData.caseDir,
-        scalar_field: requestData.scalarField,
-        num_isosurfaces: requestData.numIsosurfaces
+    const requestBody: {
+    tutorial: string | null | undefined;
+    caseDir: string | { value: string } | null | undefined;
+    scalar_field: string | undefined;
+    num_isosurfaces: number | undefined;
+    range?: [number, number];
+    } = {
+    tutorial: requestData.tutorial,
+    caseDir: requestData.caseDir,
+    scalar_field: requestData.scalarField,
+    num_isosurfaces: requestData.numIsosurfaces
     };
+
     
     // Add range to the request body if provided
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
@@ -223,11 +247,11 @@ async function fetchContours(requestData) {
         console.log('[FOAMFlask] [fetchContours] Response OK, returning response object');
         return response;
         
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('[FOAMFlask] [fetchContours] Fetch failed:', error);
         
         // Provide detailed error info
-        if (error.message.includes('Failed to fetch')) {
+        if (error instanceof Error && error.message.includes('Failed to fetch')) {
             console.error('[FOAMFlask] [fetchContours] Network error details:');
             console.error('  - Server URL:', url.toString());
             console.error('  - Your page origin:', window.location.origin);
@@ -241,7 +265,7 @@ async function fetchContours(requestData) {
 /**
  * Display the contour visualization in the viewer
  */
-function displayContourVisualization(container, htmlContent) {
+function displayContourVisualization(container: HTMLElement | null, htmlContent: string) {
     if (!container) {
         console.error('[FOAMFlask] [displayContourVisualization] Container not found');
         return;
@@ -271,7 +295,12 @@ function displayContourVisualization(container, htmlContent) {
         console.log('[FOAMFlask] [displayContourVisualization] iframe created and added');
         
         // Write the content to the iframe
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const iframeDoc =
+        iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+        if (!iframeDoc) {
+        console.error('[FOAMFlask] [displayContourVisualization] iframe document not available');
+        return;
+        }
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
@@ -307,13 +336,14 @@ function displayContourVisualization(container, htmlContent) {
         
         console.log('[FOAMFlask] [displayContourVisualization] Display setup complete');
         
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('[FOAMFlask] [displayContourVisualization] Error:', error);
         if (container) {
+            const message = error instanceof Error ? error.message : 'Unknown error occurred';
             container.innerHTML = `
                 <div class="p-4 text-red-600 bg-red-50 rounded-lg">
                     <h3 class="font-semibold">Error displaying visualization</h3>
-                    <p class="text-sm mt-1">${error.message || 'Unknown error occurred'}</p>
+                    <p class="text-sm mt-1">${message}</p>
                     <p class="text-xs mt-2 text-gray-600">Check browser console for details</p>
                 </div>
             `;
@@ -324,16 +354,20 @@ function displayContourVisualization(container, htmlContent) {
 /**
  * Handle errors during contour generation
  */
-function handleContourError(placeholder, viewer, error) {
+function handleContourError(
+  placeholder: HTMLElement | null,
+  viewer: HTMLElement | null,
+  error: unknown
+) {
     // Show error message
     if (placeholder) placeholder.classList.remove('hidden');
     if (viewer) viewer.classList.add('hidden');
     
-    const errorMessage = error.message || 'Unknown error occurred';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     
     console.error('[FOAMFlask] [handleContourError] Error details:', {
         message: errorMessage,
-        stack: error.stack
+        stack: error instanceof Error ? error.stack : undefined
     });
     
     // Show notification
@@ -392,10 +426,11 @@ async function generateContoursWithParams() {
             scalarField,
             numIsosurfaces
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('[FOAMFlask] [generateContoursWithParams] Error:', error);
         if (typeof showNotification === 'function') {
-            showNotification(`Error: ${error.message}`, 'error');
+            const message = error instanceof Error ? error.message : String(error);
+            showNotification(`Error: ${message}`, 'error');
         }
     }
 }
@@ -427,6 +462,17 @@ function downloadContourImage() {
     try {
         // Convert canvas to blob and download
         canvas.toBlob((blob) => {
+            if (!blob) {
+                if (typeof showNotification === 'function') {
+                showNotification('Failed to create image blob', 'error');
+                }
+                return;
+            }
+
+            if (!currentContourData) {
+                return;
+            }
+
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -440,7 +486,7 @@ function downloadContourImage() {
                 showNotification('Contour image downloaded successfully', 'success');
             }
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('[FOAMFlask] Error downloading contour image:', error);
         if (typeof showNotification === 'function') {
             showNotification('Failed to download contour image', 'error');
