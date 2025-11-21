@@ -148,12 +148,26 @@ interface PlotTrace {
   visible?: boolean | "legendonly";
 }
 
-const getLegendVisibility = (plotDiv: any): Record<string, boolean> => {
-  if (!plotDiv?.data) return {};
+const getLegendVisibility = (
+  plotDiv: { data?: PlotTrace[] } | null | undefined
+): Record<string, boolean> => {
+  if (!plotDiv || !Array.isArray(plotDiv.data)) {
+    return {};
+  }
+
   const visibility: Record<string, boolean> = {};
-  plotDiv.data.forEach((trace: PlotTrace) => {
-    visibility[trace.name] = trace.visible ?? true;
-  });
+
+  for (const trace of plotDiv.data) {
+    const name = trace.name ?? "";
+    if (!name) {
+      continue;
+    }
+
+    // trace.visible may be boolean | "legendonly" | undefined
+    const vis = trace.visible;
+    visibility[name] = vis === "legendonly" ? false : vis ?? true;
+  }
+
   return visibility;
 };
 
@@ -413,12 +427,22 @@ const setDockerConfig = async (image: string, version: string): Promise<void> =>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dockerImage, openfoamVersion }),
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    dockerImage = data.dockerImage;
-    openfoamVersion = data.openfoamVersion;
-    const openfoamRootInput = document.getElementById('openfoamRoot');
-    if (openfoamRootInput) openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+    if (!response.ok) {
+  throw new Error(`HTTP error: ${response.status}`);
+}
+
+const data: { dockerImage: string; openfoamVersion: string } =
+  await response.json();
+
+dockerImage = data.dockerImage;
+openfoamVersion = data.openfoamVersion;
+
+const openfoamRootInput = document.getElementById("openfoamRoot");
+if (openfoamRootInput instanceof HTMLInputElement) {
+  openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+}
+
+
     appendOutput(`Docker config set to ${dockerImage} OpenFOAM ${openfoamVersion}`, 'info');
     showNotification('Docker config updated', 'success');
   } catch (error) {

@@ -2,37 +2,36 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(155,5): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
-  Type 'string' is not assignable to type 'boolean'.
-static/ts/foamflask_frontend.ts(421,46): error TS2339: Property 'value' does not exist on type 'HTMLElement'.
-static/ts/foamflask_frontend.ts(612,6): error TS2322: Type 'PlotTrace' is not assignable to type 'Data'.
+static/ts/foamflask_frontend.ts(618,48): error TS2559: Type 'HTMLElement' has no properties in common with type '{ data?: PlotTrace[] | undefined; }'.
+static/ts/foamflask_frontend.ts(636,6): error TS2322: Type 'PlotTrace' is not assignable to type 'Data'.
   Type 'PlotTrace' is not assignable to type 'Partial<BoxPlotData>'.
     Types of property 'type' are incompatible.
       Type 'string' is not assignable to type '"box"'.
-static/ts/foamflask_frontend.ts(698,5): error TS2345: Argument of type 'PlotTrace[]' is not assignable to parameter of type 'Data[]'.
+static/ts/foamflask_frontend.ts(667,48): error TS2559: Type 'HTMLElement' has no properties in common with type '{ data?: PlotTrace[] | undefined; }'.
+static/ts/foamflask_frontend.ts(722,5): error TS2345: Argument of type 'PlotTrace[]' is not assignable to parameter of type 'Data[]'.
   Type 'PlotTrace' is not assignable to type 'Data'.
     Type 'PlotTrace' is not assignable to type 'Partial<BoxPlotData>'.
       Types of property 'type' are incompatible.
         Type 'string' is not assignable to type '"box"'.
-static/ts/foamflask_frontend.ts(724,20): error TS2345: Argument of type 'HTMLElement | null' is not assignable to parameter of type 'Root'.
+static/ts/foamflask_frontend.ts(748,20): error TS2345: Argument of type 'HTMLElement | null' is not assignable to parameter of type 'Root'.
   Type 'null' is not assignable to type 'Root'.
-static/ts/foamflask_frontend.ts(758,11): error TS7034: Variable 'traces' implicitly has type 'any[]' in some locations where its type cannot be determined.
-static/ts/foamflask_frontend.ts(780,20): error TS2345: Argument of type 'HTMLElement | null' is not assignable to parameter of type 'Root'.
+static/ts/foamflask_frontend.ts(782,11): error TS7034: Variable 'traces' implicitly has type 'any[]' in some locations where its type cannot be determined.
+static/ts/foamflask_frontend.ts(804,20): error TS2345: Argument of type 'HTMLElement | null' is not assignable to parameter of type 'Root'.
   Type 'null' is not assignable to type 'Root'.
-static/ts/foamflask_frontend.ts(780,63): error TS7005: Variable 'traces' implicitly has an 'any[]' type.
-static/ts/foamflask_frontend.ts(805,30): error TS2322: Type '{ x: any; y: any; type: string; mode: string; name: string; line: { color: string; width: number; }; }' is not assignable to type 'Data'.
+static/ts/foamflask_frontend.ts(804,63): error TS7005: Variable 'traces' implicitly has an 'any[]' type.
+static/ts/foamflask_frontend.ts(829,30): error TS2322: Type '{ x: any; y: any; type: string; mode: string; name: string; line: { color: string; width: number; }; }' is not assignable to type 'Data'.
   Type '{ x: any; y: any; type: string; mode: string; name: string; line: { color: string; width: number; }; }' is not assignable to type 'Partial<BoxPlotData>'.
     Types of property 'type' are incompatible.
       Type 'string' is not assignable to type '"box"'.
-static/ts/foamflask_frontend.ts(814,36): error TS2322: Type '{ x: any; y: any; z: any; type: string; mode: string; name: string; marker: { color: string; size: number; }; }' is not assignable to type 'Data'.
+static/ts/foamflask_frontend.ts(838,36): error TS2322: Type '{ x: any; y: any; z: any; type: string; mode: string; name: string; marker: { color: string; size: number; }; }' is not assignable to type 'Data'.
   Type '{ x: any; y: any; z: any; type: string; mode: string; name: string; marker: { color: string; size: number; }; }' is not assignable to type 'Partial<BoxPlotData>'.
     Types of property 'type' are incompatible.
       Type 'string' is not assignable to type '"box"'.
-static/ts/foamflask_frontend.ts(825,28): error TS2339: Property 'data' does not exist on type 'HTMLElement'.
-static/ts/foamflask_frontend.ts(829,26): error TS2339: Property 'data' does not exist on type 'HTMLElement'.
-static/ts/foamflask_frontend.ts(834,19): error TS7006: Parameter 'trace' implicitly has an 'any' type.
-static/ts/foamflask_frontend.ts(834,26): error TS7006: Parameter 'index' implicitly has an 'any' type.
-static/ts/foamflask_frontend.ts(1383,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+static/ts/foamflask_frontend.ts(849,28): error TS2339: Property 'data' does not exist on type 'HTMLElement'.
+static/ts/foamflask_frontend.ts(853,26): error TS2339: Property 'data' does not exist on type 'HTMLElement'.
+static/ts/foamflask_frontend.ts(858,19): error TS7006: Parameter 'trace' implicitly has an 'any' type.
+static/ts/foamflask_frontend.ts(858,26): error TS7006: Parameter 'index' implicitly has an 'any' type.
+static/ts/foamflask_frontend.ts(1407,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
   Type 'undefined' is not assignable to type 'string | null'.
-static/ts/foamflask_frontend.ts(1503,19): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
-static/ts/foamflask_frontend.ts(1581,21): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+static/ts/foamflask_frontend.ts(1527,19): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+static/ts/foamflask_frontend.ts(1605,21): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
