@@ -2,11 +2,5 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(792,29): error TS2448: Block-scoped variable 'updateResidualsPlot' used before its declaration.
-static/ts/foamflask_frontend.ts(792,29): error TS2454: Variable 'updateResidualsPlot' is used before being assigned.
-static/ts/foamflask_frontend.ts(793,42): error TS2448: Block-scoped variable 'updateAeroPlots' used before its declaration.
-static/ts/foamflask_frontend.ts(793,42): error TS2454: Variable 'updateAeroPlots' is used before being assigned.
-static/ts/foamflask_frontend.ts(801,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(1524,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
-  Type 'undefined' is not assignable to type 'string | null'.
+static/ts/foamflask_frontend.ts(946,5): error TS1005: 'try' expected.
 static/ts/foamflask_frontend.ts(1744,1): error TS1005: '}' expected.

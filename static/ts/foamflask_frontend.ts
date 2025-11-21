@@ -22,8 +22,6 @@ type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 // Add after the type definitions
 declare function refreshMeshList(): Promise<void>;
 declare function refreshPostList(): Promise<void>;
-declare function updateAeroPlots(): Promise<void>;
-declare function updateResidualsPlot(tutorial: string): Promise<void>;
 
 // External declarations
 declare const generateContours: (options: {
@@ -614,6 +612,153 @@ const stopPlotUpdates = (): void => {
   }
 };
 
+
+const updateResidualsPlot = async (tutorial: string): Promise<void> => {
+  try {
+    const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+    if (data.error || !data.time || data.time.length === 0) return;
+    const traces: any[] = [];
+    const fields = ['Ux', 'Uy', 'Uz', 'p'];
+    const colors = [plotlyColors.blue, plotlyColors.red, plotlyColors.green, plotlyColors.magenta, plotlyColors.cyan, plotlyColors.orange];
+    fields.forEach((field, idx) => {
+      if (data[field] && data[field].length > 0) {
+        traces.push({
+          x: Array.from({ length: data[field].length }, (_, i) => i + 1),
+          y: data[field],
+          type: 'scatter',
+          mode: 'lines',
+          name: field,
+          line: { color: colors[idx], width: 2.5, shape: 'linear' },
+        });
+      }
+    });
+    if (traces.length > 0) {
+      const residualsPlotDiv = getElement<HTMLElement>('residuals-plot');
+
+      if (residualsPlotDiv) {  
+      const layout = {
+        ...plotLayout,
+        title: { text: createBoldTitle('Residuals')},
+        xaxis: { 
+          title: { text: 'Iteration' }, 
+          showline: true, 
+          mirror: 'all', 
+          showgrid: false 
+        },
+        yaxis: { 
+          title: { text: 'Residual' }, 
+          type: 'log', 
+          showline: true, 
+          mirror: 'all', 
+          showgrid: true, 
+          gridwidth: 1, 
+          gridcolor: 'rgba(0,0,0,0.1)' 
+        },
+      };
+      void Plotly.react(
+        residualsPlotDiv, 
+        [traces as any], 
+        layout as any, 
+        { ...plotConfig, displayModeBar: true, scrollZoom: false }
+      ).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
+    }
+  }
+  } catch (err) {
+    console.error('FOAMFlask Error updating residuals', err);
+  }
+};
+
+const updateAeroPlots = async (): Promise<void> => {
+  const selectedTutorial = (document.getElementById('tutorialSelect') as HTMLSelectElement)?.value;
+  if (!selectedTutorial) return;
+  try {
+    const response = await fetch(`/api/latestdata?tutorial=${encodeURIComponent(selectedTutorial)}`);
+    const data = await response.json();
+    if (data.error) return;
+
+    // Cp plot
+    if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
+      const pinf = 101325;
+      const rho = 1.225;
+      const uinf = Array.isArray(data.Umag) && data.Umag.length ? data.Umag[0] : 1.0;
+      const qinf = 0.5 * rho * uinf * uinf;
+      const cp = data.p.map((pval: number) => (pval - pinf) / qinf);
+      const cpDiv = document.getElementById('cp-plot');
+      if (cpDiv) {
+        const cpTrace: any = { 
+          x: data.time, 
+          y: cp, 
+          type: 'scatter', 
+          mode: 'lines+markers', 
+          name: 'Cp', 
+          line: { color: plotlyColors.red, width: 2.5 } 
+        };
+        void Plotly.react(
+          cpDiv,
+          [cpTrace as any],
+          { 
+            ...plotLayout,
+            title: { text: createBoldTitle('Pressure Coefficient')}, 
+            xaxis: { 
+              ...plotLayout.xaxis,
+              title: { text: 'Time (s)' } 
+            }, 
+            yaxis: { 
+              ...plotLayout.yaxis,
+              title: { text: 'Cp' }
+            }
+          },
+          plotConfig
+        )
+        .then(() => {
+          attachWhiteBGDownloadButton(cpDiv);
+        })
+        .catch((err: unknown) => {
+          console.error('Plotly update failed:', err);
+        });
+      }
+    }
+
+    // Velocity profile 3D plot
+    if (Array.isArray(data.Ux) && Array.isArray(data.Uy) && Array.isArray(data.Uz)) {
+      const velocityDiv = document.getElementById('velocity-profile-plot');
+      if (velocityDiv) {
+        const velocityTrace: any = { 
+          x: data.Ux, 
+          y: data.Uy, 
+          z: data.Uz, 
+          type: 'scatter3d', 
+          mode: 'markers', 
+          name: 'Velocity', 
+          marker: { color: plotlyColors.blue, size: 5 } 
+        };
+        void Plotly.react(
+          velocityDiv,
+          [velocityTrace as any],
+          {
+            ...plotLayout,
+            title: { text: createBoldTitle('Velocity Profile')},
+            scene: { 
+              xaxis: { title: { text: 'Ux' } }, 
+              yaxis: { title: { text: 'Uy' } }, 
+              zaxis: { title: { text: 'Uz' } } 
+            }
+          },
+          plotConfig
+        )
+        .then(() => {
+          attachWhiteBGDownloadButton(velocityDiv);
+        })
+        .catch((err: unknown) => {
+          console.error('Plotly update failed:', err);
+        });
+      }
+    }
+  } catch (err) {
+    console.error('FOAMFlask Error updating aero plots', err);
+  }
+};
+
 const updatePlots = async (): Promise<void> => {
   const selectedTutorial = (document.getElementById('tutorialSelect') as HTMLSelectElement)?.value;
   if (!selectedTutorial || isUpdatingPlots) return;
@@ -815,151 +960,6 @@ if (data.Umag && data.time) {
   }
 };
 
-const updateResidualsPlot = async (tutorial: string): Promise<void> => {
-  try {
-    const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
-    if (data.error || !data.time || data.time.length === 0) return;
-    const traces: any[] = [];
-    const fields = ['Ux', 'Uy', 'Uz', 'p'];
-    const colors = [plotlyColors.blue, plotlyColors.red, plotlyColors.green, plotlyColors.magenta, plotlyColors.cyan, plotlyColors.orange];
-    fields.forEach((field, idx) => {
-      if (data[field] && data[field].length > 0) {
-        traces.push({
-          x: Array.from({ length: data[field].length }, (_, i) => i + 1),
-          y: data[field],
-          type: 'scatter',
-          mode: 'lines',
-          name: field,
-          line: { color: colors[idx], width: 2.5, shape: 'linear' },
-        });
-      }
-    });
-    if (traces.length > 0) {
-      const residualsPlotDiv = getElement<HTMLElement>('residuals-plot');
-
-      if (residualsPlotDiv) {  
-      const layout = {
-        ...plotLayout,
-        title: { text: createBoldTitle('Residuals')},
-        xaxis: { 
-          title: { text: 'Iteration' }, 
-          showline: true, 
-          mirror: 'all', 
-          showgrid: false 
-        },
-        yaxis: { 
-          title: { text: 'Residual' }, 
-          type: 'log', 
-          showline: true, 
-          mirror: 'all', 
-          showgrid: true, 
-          gridwidth: 1, 
-          gridcolor: 'rgba(0,0,0,0.1)' 
-        },
-      };
-      void Plotly.react(
-        residualsPlotDiv, 
-        [traces as any], 
-        layout as any, 
-        { ...plotConfig, displayModeBar: true, scrollZoom: false }
-      ).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
-    }
-  }
-  } catch (err) {
-    console.error('FOAMFlask Error updating residuals', err);
-  }
-};
-
-const updateAeroPlots = async (): Promise<void> => {
-  const selectedTutorial = (document.getElementById('tutorialSelect') as HTMLSelectElement)?.value;
-  if (!selectedTutorial) return;
-  try {
-    const response = await fetch(`/api/latestdata?tutorial=${encodeURIComponent(selectedTutorial)}`);
-    const data = await response.json();
-    if (data.error) return;
-
-    // Cp plot
-    if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
-      const pinf = 101325;
-      const rho = 1.225;
-      const uinf = Array.isArray(data.Umag) && data.Umag.length ? data.Umag[0] : 1.0;
-      const qinf = 0.5 * rho * uinf * uinf;
-      const cp = data.p.map((pval: number) => (pval - pinf) / qinf);
-      const cpDiv = document.getElementById('cp-plot');
-      if (cpDiv) {
-        const cpTrace: any = { 
-          x: data.time, 
-          y: cp, 
-          type: 'scatter', 
-          mode: 'lines+markers', 
-          name: 'Cp', 
-          line: { color: plotlyColors.red, width: 2.5 } 
-        };
-        void Plotly.react(
-          cpDiv,
-          [cpTrace as any],
-          { 
-            ...plotLayout,
-            title: { text: createBoldTitle('Pressure Coefficient')}, 
-            xaxis: { 
-              ...plotLayout.xaxis,
-              title: { text: 'Time (s)' } 
-            }, 
-            yaxis: { 
-              ...plotLayout.yaxis,
-              title: { text: 'Cp' }
-            }
-          },
-          plotConfig
-        )
-        .then(() => {
-          attachWhiteBGDownloadButton(cpDiv);
-        })
-        .catch((err: unknown) => {
-          console.error('Plotly update failed:', err);
-        });
-      }
-    }
-
-    // Velocity profile 3D plot
-    if (Array.isArray(data.Ux) && Array.isArray(data.Uy) && Array.isArray(data.Uz)) {
-      const velocityDiv = document.getElementById('velocity-profile-plot');
-      if (velocityDiv) {
-        const velocityTrace: any = { 
-          x: data.Ux, 
-          y: data.Uy, 
-          z: data.Uz, 
-          type: 'scatter3d', 
-          mode: 'markers', 
-          name: 'Velocity', 
-          marker: { color: plotlyColors.blue, size: 5 } 
-        };
-        void Plotly.react(
-          velocityDiv,
-          [velocityTrace as any],
-          {
-            ...plotLayout,
-            title: { text: createBoldTitle('Velocity Profile')},
-            scene: { 
-              xaxis: { title: { text: 'Ux' } }, 
-              yaxis: { title: { text: 'Uy' } }, 
-              zaxis: { title: { text: 'Uz' } } 
-            }
-          },
-          plotConfig
-        )
-        .then(() => {
-          attachWhiteBGDownloadButton(velocityDiv);
-        })
-        .catch((err: unknown) => {
-          console.error('Plotly update failed:', err);
-        });
-      }
-    }
-  } catch (err) {
-    console.error('FOAMFlask Error updating aero plots', err);
-  }
-};
 
 const downloadPlotData = (plotId: string, filename: string): void => {
   const plotDiv = document.getElementById(plotId) as any; // Cast to any for plotly data access
