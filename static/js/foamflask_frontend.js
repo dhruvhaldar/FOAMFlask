@@ -1766,3 +1766,49 @@ async function loadSelectedVTK() {
     showNotification('Error loading VTK file', 'error');
   }
 }
+
+// Contour Visualization
+/**
+ * Load selected VTK file for contour visualization
+ */
+async function loadContourVTK() {
+  const vtkSelect = document.getElementById('vtkFileSelect');
+  const selectedFile = vtkSelect.value;
+  
+  if (!selectedFile) {
+    showNotification('Please select a VTK file', 'warning');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/load_mesh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        file_path: selectedFile,
+        for_contour: true  // Add this flag to indicate it's for contour
+      })
+    });
+    
+    const meshInfo = await response.json();
+    
+    if (meshInfo.success) {
+      // Update scalar field options for contour
+      const scalarFieldSelect = document.getElementById('scalarField');
+      scalarFieldSelect.innerHTML = '';
+      (meshInfo.point_arrays || []).forEach(field => {
+        const option = document.createElement('option');
+        option.value = field;
+        option.textContent = field;
+        scalarFieldSelect.appendChild(option);
+      });
+      
+      // Enable contour generation UI
+      document.getElementById('generateContoursBtn').disabled = false;
+      showNotification('VTK file loaded for contour generation!', 'success');
+    }
+  } catch (error) {
+    console.error('[FOAMFlask] Error loading VTK file for contour:', error);
+    showNotification('Error loading VTK file for contour generation', 'error');
+  }
+}

@@ -191,7 +191,7 @@ python3 -m venv .\environments\my-python313-venv-win
 
 ### Step 4: Run the application
 ```powershell
- .\environments\my-python313-venv-win\Scripts\python.exe -m app > .\app.log
+ .\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
 ```
 
 ### Generate API Documentation

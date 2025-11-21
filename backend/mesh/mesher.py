@@ -44,8 +44,9 @@ class MeshVisualizer:
                 raise FileNotFoundError(f"Mesh file not found: {file_path}")
             
             # Read the mesh
-            self.mesh = pv.read(file_path)
-            logger.info(f"Loaded mesh from {file_path}")
+            logger.info("[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh]")
+            self.mesh = pv.read(file_path, progress_bar=True)
+            logger.info(f"[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh] Loaded mesh from {file_path}")
             
             # Get mesh information
             mesh_info = {

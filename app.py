@@ -612,7 +612,19 @@ def api_load_mesh():
         return jsonify({"error": "No file path provided"}), 400
     
     try:
+        logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
         mesh_info = mesh_visualizer.load_mesh(file_path)
+        
+        if for_contour:
+            logger.info("[FOAMFlask] [api_load_mesh] [for_contour] Mesh loading for contour called")
+            
+            try:
+                # Ensure we have the required fields for contour generation
+                mesh_info.setdefault('point_arrays', mesh_info.get('array_names', []))
+                # Add any contour-specific processing here if needed
+            except
+          
+        
         return jsonify(mesh_info)
     except Exception as e:
         logger.error(f"Error loading mesh: {e}")
