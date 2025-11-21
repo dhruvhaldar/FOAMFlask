@@ -1811,21 +1811,42 @@ async function loadContourVTK() {
       throw new Error('Could not find scalar field select element');
     }
     
+    // Get the arrays from meshInfo first
+    const pointArrays = meshInfo.point_arrays || [];
+    const cellArrays = meshInfo.cell_arrays || [];
+
+    // Clear existing options
     scalarFieldSelect.innerHTML = '';
-    const pointArrays = meshInfo.point_arrays || meshInfo.array_names || [];
-    
-    if (pointArrays.length === 0) {
-      console.warn('[FOAMFlask] No point arrays found in mesh data');
-      showNotification('No scalar fields found in the mesh', 'warning');
-      return;
-    }
-    
+
+    // Add point data fields
     pointArrays.forEach(field => {
-      const option = document.createElement('option');
-      option.value = field;
-      option.textContent = field;
-      scalarFieldSelect.appendChild(option);
+        const option = document.createElement('option');
+        option.value = `${field}@point`;  // Add @point suffix to value
+        option.textContent = `🔵 ${field} (Point Data)`;
+        option.className = 'point-data-option';
+        option.dataset.fieldType = 'point';
+        scalarFieldSelect.appendChild(option);
     });
+
+    // Add cell data fields
+    cellArrays.forEach(field => {
+        const option = document.createElement('option');
+        option.value = `${field}@cell`;  // Add @cell suffix to value
+        option.textContent = `🟢 ${field} (Cell Data)`;
+        option.className = 'cell-data-option';
+        option.dataset.fieldType = 'cell';
+        scalarFieldSelect.appendChild(option);
+    });
+
+    // If no fields were added, show a warning
+    if (scalarFieldSelect.options.length === 0) {
+        console.warn('[FOAMFlask] No data arrays found in mesh');
+        showNotification('No scalar fields found in the mesh', 'warning');
+    }
+
+    // DEBUG
+    // console.log('Point arrays:', pointArrays);
+    // console.log('Cell arrays:', cellArrays);
     
     // Enable contour generation UI
     const generateBtn = document.getElementById('generateContoursBtn');

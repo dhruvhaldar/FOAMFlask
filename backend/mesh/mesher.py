@@ -51,6 +51,7 @@ class MeshVisualizer:
             logger.info(f"[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh] Loaded mesh from {file_path}")
             
             # Get mesh information
+            # Get mesh information
             mesh_info = {
                 "n_points": self.mesh.n_points,
                 "n_cells": self.mesh.n_cells,
@@ -59,7 +60,8 @@ class MeshVisualizer:
                 "length": self.mesh.length,
                 "volume": self.mesh.volume if hasattr(self.mesh, 'volume') else None,
                 "array_names": self.mesh.array_names,
-                "point_arrays": self.mesh.array_names,  # Add this line for backward compatibility
+                "point_arrays": list(self.mesh.point_data.keys()),
+                "cell_arrays": list(self.mesh.cell_data.keys()),
                 "success": True
             }
             
