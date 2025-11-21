@@ -2,34 +2,22 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(236,9): error TS2304: Cannot find name 'refreshMeshList'.
-static/ts/foamflask_frontend.ts(244,9): error TS2304: Cannot find name 'refreshPostList'.
-static/ts/foamflask_frontend.ts(575,5): error TS2552: Cannot find name 'updateAeroPlots'. Did you mean 'updatePlots'?
-static/ts/foamflask_frontend.ts(641,7): error TS2559: Type 'string' has no properties in common with type 'Partial<{ text: string; font: Partial<Font>; xref: "container" | "paper"; yref: "container" | "paper"; x: number; y: number; xanchor: "left" | "right" | "auto" | "center"; yanchor: "top" | ... 2 more ... | "auto"; pad: Partial<...>; subtitle: string | Partial<...>; }>'.
-static/ts/foamflask_frontend.ts(644,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(648,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(727,7): error TS2559: Type 'string' has no properties in common with type 'Partial<{ text: string; font: Partial<Font>; xref: "container" | "paper"; yref: "container" | "paper"; x: number; y: number; xanchor: "left" | "right" | "auto" | "center"; yanchor: "top" | ... 2 more ... | "auto"; pad: Partial<...>; subtitle: string | Partial<...>; }>'.
-static/ts/foamflask_frontend.ts(730,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(734,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(756,11): error TS2559: Type 'string' has no properties in common with type 'Partial<{ text: string; font: Partial<Font>; xref: "container" | "paper"; yref: "container" | "paper"; x: number; y: number; xanchor: "left" | "right" | "auto" | "center"; yanchor: "top" | ... 2 more ... | "auto"; pad: Partial<...>; subtitle: string | Partial<...>; }>'.
-static/ts/foamflask_frontend.ts(759,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(763,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(771,29): error TS2448: Block-scoped variable 'updateResidualsPlot' used before its declaration.
-static/ts/foamflask_frontend.ts(771,29): error TS2454: Variable 'updateResidualsPlot' is used before being assigned.
-static/ts/foamflask_frontend.ts(772,42): error TS2552: Cannot find name 'updateAeroPlots'. Did you mean 'updatePlots'?
-static/ts/foamflask_frontend.ts(780,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(795,2): error TS1472: 'catch' or 'finally' expected.
-static/ts/foamflask_frontend.ts(825,20): error TS2345: Argument of type 'null' is not assignable to parameter of type 'Root'.
-static/ts/foamflask_frontend.ts(827,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(830,2): error TS1472: 'catch' or 'finally' expected.
-static/ts/foamflask_frontend.ts(857,57): error TS2559: Type 'string' has no properties in common with type 'Partial<{ text: string; font: Partial<Font>; xref: "container" | "paper"; yref: "container" | "paper"; x: number; y: number; xanchor: "left" | "right" | "auto" | "center"; yanchor: "top" | ... 2 more ... | "auto"; pad: Partial<...>; subtitle: string | Partial<...>; }>'.
-static/ts/foamflask_frontend.ts(857,114): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(857,144): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(874,69): error TS2559: Type 'string' has no properties in common with type 'Partial<{ text: string; font: Partial<Font>; xref: "container" | "paper"; yref: "container" | "paper"; x: number; y: number; xanchor: "left" | "right" | "auto" | "center"; yanchor: "top" | ... 2 more ... | "auto"; pad: Partial<...>; subtitle: string | Partial<...>; }>'.
-static/ts/foamflask_frontend.ts(874,131): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(874,155): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(874,179): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(1443,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+static/ts/foamflask_frontend.ts(743,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(747,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(772,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(776,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(784,29): error TS2448: Block-scoped variable 'updateResidualsPlot' used before its declaration.
+static/ts/foamflask_frontend.ts(784,29): error TS2454: Variable 'updateResidualsPlot' is used before being assigned.
+static/ts/foamflask_frontend.ts(793,5): error TS1005: 'try' expected.
+static/ts/foamflask_frontend.ts(808,2): error TS1472: 'catch' or 'finally' expected.
+static/ts/foamflask_frontend.ts(838,20): error TS2345: Argument of type 'null' is not assignable to parameter of type 'Root'.
+static/ts/foamflask_frontend.ts(840,5): error TS1005: 'try' expected.
+static/ts/foamflask_frontend.ts(843,2): error TS1472: 'catch' or 'finally' expected.
+static/ts/foamflask_frontend.ts(870,123): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(870,153): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(887,140): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(887,164): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(887,188): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(1456,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
   Type 'undefined' is not assignable to type 'string | null'.
-static/ts/foamflask_frontend.ts(1641,21): error TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
-static/ts/foamflask_frontend.ts(1663,1): error TS1005: '}' expected.
+static/ts/foamflask_frontend.ts(1676,1): error TS1005: '}' expected.

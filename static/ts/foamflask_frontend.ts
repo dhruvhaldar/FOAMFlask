@@ -19,6 +19,12 @@ type MeshFile = {
 
 type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 
+// Add after the type definitions
+declare function refreshMeshList(): Promise<void>;
+declare function refreshPostList(): Promise<void>;
+declare function updateAeroPlots(): Promise<void>;
+declare function updateResidualsPlot(tutorial: string): Promise<void>;
+
 // External declarations
 declare const generateContours: (options: {
   tutorial: string;
@@ -98,10 +104,18 @@ const plotLayout = {
   height: 400,
   autosize: true,
   showlegend: true,
-  legend: { orientation: 'h', y: -0.2, x: 0.1, xanchor: 'left', yanchor: 'middle', bgcolor: 'white', borderwidth: 0.5 },
+  legend: { 
+    orientation: 'h' as const, 
+    y: -0.2, 
+    x: 0.1, 
+    xanchor: 'left' as const, 
+    yanchor: 'middle' as const, 
+    bgcolor: 'white', 
+    borderwidth: 0.5 
+  },
   xaxis: { showgrid: false, linewidth: 1 },
   yaxis: { showgrid: false, linewidth: 1 },
-};
+} as const;
 
 // Plotly config
 const plotConfig = {
@@ -109,10 +123,10 @@ const plotConfig = {
   displayModeBar: true,
   staticPlot: false,
   scrollZoom: true,
-  doubleClick: true,
+  doubleClick: 'reset+autosize' as const,
   showTips: true,
   modeBarButtonsToAdd: [],
-  modeBarButtonsToRemove: ['autoScale2d', 'zoomIn2d', 'zoomOut2d', 'lasso2d', 'select2d', 'pan2d', 'sendDataToCloud'],
+  modeBarButtonsToRemove: ['autoScale2d', 'zoomIn2d', 'zoomOut2d', 'lasso2d', 'select2d', 'pan2d', 'sendDataToCloud'] as any,
   displaylogo: false,
 };
 
@@ -632,30 +646,29 @@ const updatePlots = async (): Promise<void> => {
     // Plotly expects boolean | "legendonly"
     pressureTrace.visible = legendVisibility[pressureTrace.name] as boolean | 'legendonly';
   }
-
-  void Plotly.react(
-    pressureDiv,
-    [pressureTrace as any],
-    {
-      ...plotLayout,
-      title: createBoldTitle('Pressure vs Time'),
-      xaxis: {
-        ...plotLayout.xaxis,
-        title: 'Time (s)'
-      },
-      yaxis: {
-        ...plotLayout.yaxis,
-        title: 'Pressure (Pa)'
-      }
+void Plotly.react(
+  pressureDiv,
+  [pressureTrace as any],
+  {
+    ...plotLayout,
+    title: { text: createBoldTitle('Pressure vs Time') },
+    xaxis: {
+      ...plotLayout.xaxis,
+      title: { text: 'Time (s)' }
     },
-    plotConfig
-  )
-    .then(() => {
-      attachWhiteBGDownloadButton(pressureDiv);
-    })
-    .catch((err: unknown) => {
-      console.error('Plotly update failed:', err);
-    });
+    yaxis: {
+      ...plotLayout.yaxis,
+      title: { text: 'Pressure (Pa)' }
+    }
+  },
+  plotConfig
+)
+  .then(() => {
+    attachWhiteBGDownloadButton(pressureDiv);
+  })
+  .catch((err: unknown) => {
+    console.error('Plotly update failed:', err);
+  });
 }
 
 // Velocity plot
@@ -724,7 +737,7 @@ if (data.Umag && data.time) {
     traces as any[],
     {
       ...plotLayout,
-      title: createBoldTitle('Velocity vs Time'),
+      title: { text: createBoldTitle('Velocity vs Time')},
       xaxis: {
         ...plotLayout.xaxis,
         title: 'Time (s)'
@@ -753,7 +766,7 @@ if (data.Umag && data.time) {
         turbTraces as any[],
         {
           ...plotLayout,
-          title: createBoldTitle('Turbulence Properties vs Time'),
+          title: { text: createBoldTitle('Turbulence Properties vs Time')},
           xaxis: {
             ...plotLayout.xaxis,
             title: 'Time (s)'
@@ -818,7 +831,7 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
       if (!residualsPlotDiv) {  
       const layout = {
         ...plotLayout,
-        title: createBoldTitle('Residuals'),
+        title: { text: createBoldTitle('Residuals')},
         xaxis: { title: { text: 'Iteration' }, showline: true, mirror: 'all', showgrid: false },
         yaxis: { title: { text: 'Residual' }, type: 'log', showline: true, mirror: 'all', showgrid: true, gridwidth: 1, gridcolor: 'rgba(0,0,0,0.1)' },
       };
@@ -854,7 +867,7 @@ const updateAeroPlots = async (): Promise<void> => {
           name: 'Cp', 
           line: { color: plotlyColors.red, width: 2.5 } 
         };
-        Plotly.react(cpDiv, [cpTrace], { ...plotLayout, title: createBoldTitle('Pressure Coefficient'), xaxis: { title: 'Time (s)' }, yaxis: { title: 'Cp' } }, plotConfig).then(() => attachWhiteBGDownloadButton(cpDiv));
+        Plotly.react(cpDiv, [cpTrace], { ...plotLayout, title: { text: createBoldTitle('Pressure Coefficient')}, xaxis: { title: 'Time (s)' }, yaxis: { title: 'Cp' } }, plotConfig).then(() => attachWhiteBGDownloadButton(cpDiv));
       }
     }
 
@@ -871,7 +884,7 @@ const updateAeroPlots = async (): Promise<void> => {
           name: 'Velocity', 
           marker: { color: plotlyColors.blue, size: 5 } 
         };
-        Plotly.react(velocityDiv, [velocityTrace], { ...plotLayout, title: createBoldTitle('Velocity Profile'), scene: { xaxis: { title: 'Ux' }, yaxis: { title: 'Uy' }, zaxis: { title: 'Uz' } } }, plotConfig);
+        Plotly.react(velocityDiv, [velocityTrace], { ...plotLayout, title: { text: createBoldTitle('Velocity Profile')}, scene: { xaxis: { title: 'Ux' }, yaxis: { title: 'Uy' }, zaxis: { title: 'Uz' } } }, plotConfig);
         attachWhiteBGDownloadButton(velocityDiv);
       }
     }
@@ -1023,7 +1036,7 @@ const loadMeshVisualization = async (): Promise<void> => {
       return;
     }
     displayMeshInfo(meshInfo);
-    currentMeshPath = selectedPath || null; // Convert undefined to null
+    currentMeshPath = selectedPath;
     await updateMeshView();
     document.getElementById('meshControls')?.classList.remove('hidden');
     showNotification('Mesh loaded successfully', 'success');
@@ -1636,7 +1649,7 @@ async function loadCustomVTKFile(): Promise<void> {
         scalarFieldSelect.appendChild(option);
       });
 
-      const generateBtn = document.getElementById('generateContoursBtn');
+      const generateBtn = document.getElementById('generateContoursBtn') as HTMLButtonElement | null;
       if (generateBtn) {
         generateBtn.disabled = false;
       }
