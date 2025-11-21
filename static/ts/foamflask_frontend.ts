@@ -7,7 +7,8 @@
  */
 
 // FOAMFlask Frontend TypeScript External Dependencies
-import { generateContours } from './frontend/isosurface';
+import { generateContours as generateContoursFn } from './frontend/isosurface';
+
 import * as Plotly from 'plotly.js';
 
 // Types
@@ -321,6 +322,7 @@ window.onload = async () => {
     if (caseDirInput) caseDirInput.value = caseDir;
     dockerImage = dockerConfigData.dockerImage;
     openfoamVersion = dockerConfigData.openfoamVersion;
+    
     const openfoamRootInput = document.getElementById('openfoamRoot') as HTMLInputElement;
     if (openfoamRootInput) openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
   } catch (error) {
@@ -585,7 +587,8 @@ const updatePlots = async (): Promise<void> => {
     if (data.p && data.time) {
       const pressureDiv = document.getElementById('pressure-plot');
       const legendVisibility = getLegendVisibility(pressureDiv);
-      const pressureTrace = {
+      
+      const pressureTrace: PlotTrace = {
         x: data.time,
         y: data.p,
         type: 'scatter',
@@ -593,6 +596,7 @@ const updatePlots = async (): Promise<void> => {
         name: 'Pressure',
         line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
       };
+      
       if (legendVisibility.hasOwnProperty(pressureTrace.name)) pressureTrace.visible = legendVisibility[pressureTrace.name];
       Plotly.react(pressureDiv, [pressureTrace], { ...plotLayout, title: createBoldTitle('Pressure vs Time'), xaxis: { ...plotLayout.xaxis, title: 'Time (s)' }, yaxis: { ...plotLayout.yaxis, title: 'Pressure (Pa)' } }, plotConfig).then(() => attachWhiteBGDownloadButton(pressureDiv));
     }
