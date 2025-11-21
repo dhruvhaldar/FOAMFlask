@@ -203,9 +203,14 @@ const attachWhiteBGDownloadButton = (plotDiv: any): void => {
   plotDiv.dataset.whiteButtonAdded = 'true';
   const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
   configWithWhiteBG.toImageButtonOptions = { format: 'png', filename: `${plotDiv.id}whitebg`, height: plotDiv.clientHeight, width: plotDiv.clientWidth, scale: 2 };
-  Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
-    plotDiv.dataset.whiteButtonAdded = 'true';
-  });
+  
+  void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
+    .then(() => {
+      plotDiv.dataset.whiteButtonAdded = 'true';
+    })
+    .catch((err: unknown) => {
+      console.error('Plotly update failed:', err);
+    });
 };
 
 // Page Switching
@@ -681,14 +686,16 @@ if (data.Umag && data.time) {
 
   const legendVisibility = getLegendVisibility(velocityDiv as any);
 
-  const traces: PlotTrace = {
-      x: data.time,
-      y: data.Umag,
-      type: 'scatter',
-      mode: 'lines',
-      name: 'U',
-      line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
-    };
+  const traces: PlotTrace[] = [
+  {
+    x: data.time,
+    y: data.Umag,
+    type: 'scatter',
+    mode: 'lines',
+    name: 'U',
+    line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
+  }
+];
 
   if (data.Ux) {
     traces.push({
@@ -888,7 +895,29 @@ const updateAeroPlots = async (): Promise<void> => {
           name: 'Cp', 
           line: { color: plotlyColors.red, width: 2.5 } 
         };
-        Plotly.react(cpDiv, [cpTrace], { ...plotLayout, title: { text: createBoldTitle('Pressure Coefficient')}, xaxis: { title: 'Time (s)' }, yaxis: { title: 'Cp' } }, plotConfig).then(() => attachWhiteBGDownloadButton(cpDiv));
+        void Plotly.react(
+          cpDiv,
+          [cpTrace as any],
+          { 
+            ...plotLayout,
+            title: { text: createBoldTitle('Pressure Coefficient')}, 
+            xaxis: { 
+              ...plotLayout.xaxis,
+              title: { text: 'Time (s)' } 
+            }, 
+            yaxis: { 
+              ...plotLayout.yaxis,
+              title: { text: 'Cp' }
+            }
+          },
+          plotConfig
+        )
+        .then(() => {
+          attachWhiteBGDownloadButton(cpDiv);
+        })
+        .catch((err: unknown) => {
+          console.error('Plotly update failed:', err);
+        });
       }
     }
 
@@ -905,8 +934,26 @@ const updateAeroPlots = async (): Promise<void> => {
           name: 'Velocity', 
           marker: { color: plotlyColors.blue, size: 5 } 
         };
-        Plotly.react(velocityDiv, [velocityTrace], { ...plotLayout, title: { text: createBoldTitle('Velocity Profile')}, scene: { xaxis: { title: 'Ux' }, yaxis: { title: 'Uy' }, zaxis: { title: 'Uz' } } }, plotConfig);
-        attachWhiteBGDownloadButton(velocityDiv);
+        void Plotly.react(
+          velocityDiv,
+          [velocityTrace as any],
+          {
+            ...plotLayout,
+            title: { text: createBoldTitle('Velocity Profile')},
+            scene: { 
+              xaxis: { title: { text: 'Ux' } }, 
+              yaxis: { title: { text: 'Uy' } }, 
+              zaxis: { title: { text: 'Uz' } } 
+            }
+          },
+          plotConfig
+        )
+        .then(() => {
+          attachWhiteBGDownloadButton(velocityDiv);
+        })
+        .catch((err: unknown) => {
+          console.error('Plotly update failed:', err);
+        });
       }
     }
   } catch (err) {
