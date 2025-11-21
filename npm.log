@@ -2,22 +2,21 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(743,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(747,9): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(772,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(776,13): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(784,29): error TS2448: Block-scoped variable 'updateResidualsPlot' used before its declaration.
-static/ts/foamflask_frontend.ts(784,29): error TS2454: Variable 'updateResidualsPlot' is used before being assigned.
-static/ts/foamflask_frontend.ts(793,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(808,2): error TS1472: 'catch' or 'finally' expected.
-static/ts/foamflask_frontend.ts(838,20): error TS2345: Argument of type 'null' is not assignable to parameter of type 'Root'.
-static/ts/foamflask_frontend.ts(840,5): error TS1005: 'try' expected.
-static/ts/foamflask_frontend.ts(843,2): error TS1472: 'catch' or 'finally' expected.
-static/ts/foamflask_frontend.ts(870,123): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(870,153): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(887,140): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(887,164): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(887,188): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
-static/ts/foamflask_frontend.ts(1456,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+static/ts/foamflask_frontend.ts(694,12): error TS2339: Property 'push' does not exist on type 'PlotTrace'.
+static/ts/foamflask_frontend.ts(705,12): error TS2339: Property 'push' does not exist on type 'PlotTrace'.
+static/ts/foamflask_frontend.ts(716,12): error TS2339: Property 'push' does not exist on type 'PlotTrace'.
+static/ts/foamflask_frontend.ts(727,10): error TS2339: Property 'forEach' does not exist on type 'PlotTrace'.
+static/ts/foamflask_frontend.ts(727,19): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+static/ts/foamflask_frontend.ts(785,29): error TS2448: Block-scoped variable 'updateResidualsPlot' used before its declaration.
+static/ts/foamflask_frontend.ts(785,29): error TS2454: Variable 'updateResidualsPlot' is used before being assigned.
+static/ts/foamflask_frontend.ts(786,42): error TS2448: Block-scoped variable 'updateAeroPlots' used before its declaration.
+static/ts/foamflask_frontend.ts(786,42): error TS2454: Variable 'updateAeroPlots' is used before being assigned.
+static/ts/foamflask_frontend.ts(794,5): error TS1005: 'try' expected.
+static/ts/foamflask_frontend.ts(891,123): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(891,153): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(908,140): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(908,164): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(908,188): error TS2559: Type 'string' has no properties in common with type 'Partial<DataTitle>'.
+static/ts/foamflask_frontend.ts(1477,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
   Type 'undefined' is not assignable to type 'string | null'.
-static/ts/foamflask_frontend.ts(1676,1): error TS1005: '}' expected.
+static/ts/foamflask_frontend.ts(1697,1): error TS1005: '}' expected.

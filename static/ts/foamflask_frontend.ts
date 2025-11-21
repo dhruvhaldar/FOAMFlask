@@ -681,16 +681,14 @@ if (data.Umag && data.time) {
 
   const legendVisibility = getLegendVisibility(velocityDiv as any);
 
-  const traces: PlotTrace[] = [
-    {
+  const traces: PlotTrace = {
       x: data.time,
       y: data.Umag,
       type: 'scatter',
       mode: 'lines',
       name: 'U',
       line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
-    }
-  ];
+    };
 
   if (data.Ux) {
     traces.push({
@@ -734,17 +732,17 @@ if (data.Umag && data.time) {
 
   void Plotly.react(
     velocityDiv,
-    traces as any[],
+    [traces as any],
     {
       ...plotLayout,
       title: { text: createBoldTitle('Velocity vs Time')},
       xaxis: {
         ...plotLayout.xaxis,
-        title: 'Time (s)'
+        title: {text: 'Time (s)'}
       },
       yaxis: {
         ...plotLayout.yaxis,
-        title: 'Velocity (m/s)'
+        title: {text: 'Velocity (m/s)'}
       }
     },
     plotConfig
@@ -754,31 +752,34 @@ if (data.Umag && data.time) {
 }
 
     // Turbulence plot
-    const turbTraces = [];
-    if (data.nut && data.time) turbTraces.push({ x: data.time, y: data.nut, type: 'scatter', mode: 'lines', name: 'nut', line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 } });
-    if (data.nuTilda && data.time) turbTraces.push({ x: data.time, y: data.nuTilda, type: 'scatter', mode: 'lines', name: 'nuTilda', line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 } });
-    if (data.k && data.time) turbTraces.push({ x: data.time, y: data.k, type: 'scatter', mode: 'lines', name: 'k', line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 } });
-    if (data.omega && data.time) turbTraces.push({ x: data.time, y: data.omega, type: 'scatter', mode: 'lines', name: 'omega', line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 } });
-    if (turbTraces.length > 0) {
+    const turbulenceTrace = [];
+    if (data.nut && data.time) turbulenceTrace.push({ x: data.time, y: data.nut, type: 'scatter', mode: 'lines', name: 'nut', line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 } });
+    if (data.nuTilda && data.time) turbulenceTrace.push({ x: data.time, y: data.nuTilda, type: 'scatter', mode: 'lines', name: 'nuTilda', line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 } });
+    if (data.k && data.time) turbulenceTrace.push({ x: data.time, y: data.k, type: 'scatter', mode: 'lines', name: 'k', line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 } });
+    if (data.omega && data.time) turbulenceTrace.push({ x: data.time, y: data.omega, type: 'scatter', mode: 'lines', name: 'omega', line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 } });
+    if (turbulenceTrace.length > 0) {
       const turbPlotDiv = document.getElementById('turbulence-plot');
-      if (turbPlotDiv) { // Add null check     
-      Plotly.react(turbPlotDiv,
-        turbTraces as any[],
+      if (turbPlotDiv) {     
+      void Plotly.react(
+        turbPlotDiv,
+        [turbulenceTrace as any],
         {
           ...plotLayout,
           title: { text: createBoldTitle('Turbulence Properties vs Time')},
           xaxis: {
             ...plotLayout.xaxis,
-            title: 'Time (s)'
+            title: {text: 'Time (s)'}
           },
           yaxis: {
             ...plotLayout.yaxis,
-            title: 'Value'
+            title: {text: 'Value'}
           }
         },
         plotConfig
-      ).then(() => attachWhiteBGDownloadButton(turbPlotDiv));
-    }
+      )
+      .then(() => {
+        attachWhiteBGDownloadButton(turbPlotDiv);
+    })
 
     // Update residuals and aero plots in parallel
     const updatePromises = [updateResidualsPlot(selectedTutorial)];
@@ -827,16 +828,36 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
       }
     });
     if (traces.length > 0) {
-      const residualsPlotDiv = document.getElementById('residuals-plot');
-      if (!residualsPlotDiv) {  
+      const residualsPlotDiv = getElement<HTMLElement>('residuals-plot');
+
+      if (residualsPlotDiv) {  
       const layout = {
         ...plotLayout,
         title: { text: createBoldTitle('Residuals')},
-        xaxis: { title: { text: 'Iteration' }, showline: true, mirror: 'all', showgrid: false },
-        yaxis: { title: { text: 'Residual' }, type: 'log', showline: true, mirror: 'all', showgrid: true, gridwidth: 1, gridcolor: 'rgba(0,0,0,0.1)' },
+        xaxis: { 
+          title: { text: 'Iteration' }, 
+          showline: true, 
+          mirror: 'all', 
+          showgrid: false 
+        },
+        yaxis: { 
+          title: { text: 'Residual' }, 
+          type: 'log', 
+          showline: true, 
+          mirror: 'all', 
+          showgrid: true, 
+          gridwidth: 1, 
+          gridcolor: 'rgba(0,0,0,0.1)' 
+        },
       };
-      Plotly.react(residualsPlotDiv, traces, layout, { ...plotConfig, displayModeBar: true, scrollZoom: false }).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
+      void Plotly.react(
+        residualsPlotDiv, 
+        [traces as any], 
+        layout as any, 
+        { ...plotConfig, displayModeBar: true, scrollZoom: false }
+      ).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
     }
+  }
   } catch (err) {
     console.error('FOAMFlask Error updating residuals', err);
   }
