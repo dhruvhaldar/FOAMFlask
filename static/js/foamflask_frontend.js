@@ -103,51 +103,53 @@ const createBoldTitle = (text) => ({
         size: 22
     }
 });
-// // --- Helper: Download plot as PNG with white background ---
-// function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
-//   if (!plotDiv) return;
-//   const downloadLayout = {
-//     ...plotDiv.layout,
-//     font: {
-//     ...plotLayout.font,
-//     color: 'black'
-//     },
-//     plot_bgcolor: 'white',
-//     paper_bgcolor: 'white'
-//   };
-//   Plotly.toImage(plotDiv, {
-//     format: 'png',
-//     width: plotDiv.offsetWidth,
-//     height: plotDiv.offsetHeight,
-//     scale: 2,
-//     layout: downloadLayout
-//   }).then((dataUrl) => {
-//     const link = document.createElement('a');
-//     link.href = dataUrl;
-//     link.download = filename;
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-//   });
-// }
-// // --- Helper: Save current legend visibility ---
-// function getLegendVisibility(plotDiv) {
-//   if (!plotDiv || !plotDiv.data) return {};
-//   const visibility = {};
-//   plotDiv.data.forEach(trace => {
-//     visibility[trace.name] = trace.visible !== undefined ? trace.visible : true;
-//   });
-//   return visibility;
-// }
-// // --- Helper: Apply saved legend visibility to new traces ---
-// function applyLegendVisibility(plotDiv, visibility) {
-//   if (!plotDiv || !plotDiv.data || !visibility) return;
-//   plotDiv.data.forEach(trace => {
-//     if (visibility.hasOwnProperty(trace.name)) {
-//       trace.visible = visibility[trace.name];
-//     }
-//   });
-// }
+// --- Helper: Download plot as PNG with white background ---
+function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
+    if (!plotDiv)
+        return;
+    const downloadLayout = {
+        ...plotDiv.layout,
+        font: {
+            ...plotLayout.font,
+            color: 'black'
+        },
+        plot_bgcolor: 'white',
+        paper_bgcolor: 'white'
+    };
+    Plotly.toImage(plotDiv, {
+        format: 'png',
+        width: plotDiv.offsetWidth,
+        height: plotDiv.offsetHeight,
+        scale: 2,
+        ...downloadLayout
+    }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
+function getLegendVisibility(plotDiv) {
+    if (!plotDiv?.data)
+        return {};
+    const visibility = {};
+    plotDiv.data.forEach(trace => {
+        visibility[trace.name] = trace.visible ?? true;
+    });
+    return visibility;
+}
+// --- Helper: Apply saved legend visibility to new traces ---
+function applyLegendVisibility(plotDiv, visibility) {
+    if (!plotDiv || !plotDiv.data || !visibility)
+        return;
+    plotDiv.data.forEach((trace) => {
+        if (visibility.hasOwnProperty(trace.name)) {
+            trace.visible = visibility[trace.name];
+        }
+    });
+}
 // // --- Helper: Attach white-bg download button to a plot ---
 // function attachWhiteBGDownloadButton(plotDiv) {
 //   plotDiv.layout.paper_bgcolor = 'white';

@@ -14,7 +14,7 @@
     "rootDir": "./static/ts",
     "sourceMap": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node"]
+    "types": ["node", "plotly.js"]
   },
   "include": [
     "static/ts/**/*"

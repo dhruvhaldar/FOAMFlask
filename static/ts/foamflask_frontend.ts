@@ -116,55 +116,61 @@ const createBoldTitle = (text: string) => ({
   }
 });
 
-// // --- Helper: Download plot as PNG with white background ---
-// function downloadPlotAsPNG(plotDiv, filename = 'plot.png') {
-//   if (!plotDiv) return;
+// --- Helper: Download plot as PNG with white background ---
+function downloadPlotAsPNG(plotDiv: any, filename = 'plot.png') {
+  if (!plotDiv) return;
 
-//   const downloadLayout = {
-//     ...plotDiv.layout,
-//     font: {
-//     ...plotLayout.font,
-//     color: 'black'
-//     },
-//     plot_bgcolor: 'white',
-//     paper_bgcolor: 'white'
-//   };
+  const downloadLayout = {
+    ...plotDiv.layout,
+    font: {
+    ...plotLayout.font,
+    color: 'black'
+    },
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white'
+  };
 
-//   Plotly.toImage(plotDiv, {
-//     format: 'png',
-//     width: plotDiv.offsetWidth,
-//     height: plotDiv.offsetHeight,
-//     scale: 2,
-//     layout: downloadLayout
-//   }).then((dataUrl) => {
-//     const link = document.createElement('a');
-//     link.href = dataUrl;
-//     link.download = filename;
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-//   });
-// }
+  Plotly.toImage(plotDiv, {
+    format: 'png',
+    width: plotDiv.offsetWidth,
+    height: plotDiv.offsetHeight,
+    scale: 2,
+    ...downloadLayout
+  }).then((dataUrl) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
 
-// // --- Helper: Save current legend visibility ---
-// function getLegendVisibility(plotDiv) {
-//   if (!plotDiv || !plotDiv.data) return {};
-//   const visibility = {};
-//   plotDiv.data.forEach(trace => {
-//     visibility[trace.name] = trace.visible !== undefined ? trace.visible : true;
-//   });
-//   return visibility;
-// }
+// --- Helper: Save current legend visibility ---
+interface PlotTrace {
+  name: string;
+  visible?: boolean;
+  // Add other trace properties as needed
+}
 
-// // --- Helper: Apply saved legend visibility to new traces ---
-// function applyLegendVisibility(plotDiv, visibility) {
-//   if (!plotDiv || !plotDiv.data || !visibility) return;
-//   plotDiv.data.forEach(trace => {
-//     if (visibility.hasOwnProperty(trace.name)) {
-//       trace.visible = visibility[trace.name];
-//     }
-//   });
-// }
+function getLegendVisibility(plotDiv: { data?: PlotTrace[] }): Record<string, boolean> {
+  if (!plotDiv?.data) return {};
+  const visibility: Record<string, boolean> = {};
+  plotDiv.data.forEach(trace => {
+    visibility[trace.name] = trace.visible ?? true;
+  });
+  return visibility;
+}
+
+// --- Helper: Apply saved legend visibility to new traces ---
+function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>) {
+  if (!plotDiv || !plotDiv.data || !visibility) return;
+  plotDiv.data.forEach((trace: PlotTrace) => {
+    if (visibility.hasOwnProperty(trace.name)) {
+      trace.visible = visibility[trace.name];
+    }
+  });
+}
 
 
 // // --- Helper: Attach white-bg download button to a plot ---
