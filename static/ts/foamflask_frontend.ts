@@ -8,6 +8,31 @@
 
 // import { generateContours } from "./frontend/isosurface";
 
+type MeshFile = {
+  path: string;
+  name: string;
+};
+
+type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | string;
+
+declare const generateContours: (options: {
+  tutorial: string;
+  caseDir: string;
+  scalarField: string;
+  numIsosurfaces: number;
+}) => Promise<void>;
+
+const getElement = <T extends HTMLElement>(id: string): T | null => {
+  return document.getElementById(id) as T | null;
+};
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === 'string' ? error : 'Unknown error';
+}
+
 let caseDir = "";        // will be fetched from server on load
 let dockerImage = "";    // from server
 let openfoamVersion = ""; // from server
@@ -16,8 +41,8 @@ let openfoamVersion = ""; // from server
 let currentPage = 'setup';
 
 // Mesh visualization state
-let currentMeshPath = null;
-let availableMeshes = [];
+let currentMeshPath: string | null = null;
+let availableMeshes: MeshFile[] = [];
 let isInteractiveMode = false;
 
 // Notification management
@@ -26,7 +51,7 @@ let lastErrorNotificationTime = 0;
 const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Plotting variables and theme
-let plotUpdateInterval: number | null = null;
+let plotUpdateInterval: ReturnType<typeof setInterval> | null = null;
 let plotsVisible = true; // Set to true by default to show plots
 let aeroVisible = false;
 let isUpdatingPlots = false;
@@ -40,8 +65,8 @@ let requestCache = new Map();
 const CACHE_DURATION = 1000; // 1 second cache
 
 // Performance optimization
-const outputBuffer = [];
-let outputFlushTimer = null;
+const outputBuffer: { message: string; type: string }[] = [];
+let outputFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Custom color palette
 const plotlyColors = {
