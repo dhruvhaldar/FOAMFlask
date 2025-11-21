@@ -11,10 +11,12 @@ import time
 # Third-party imports
 import docker
 from flask import Flask, Response, jsonify, render_template_string, request
+from werkzeug.utils import secure_filename
 
 # Local application imports
 from backend.mesh.mesher import mesh_visualizer
 from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
+from backend.post.isosurface import IsosurfaceVisualizer
 
 # Backend API handlers
 from backend.post.isosurface import isosurface_visualizer
@@ -946,6 +948,60 @@ def create_contour():
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
+
+@app.route('/api/upload_vtk', methods=['POST'])
+def upload_vtk():
+    logger.info("[FOAMFlask] [upload_vtk] Received file upload request")
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No selected file'}), 400
+
+    temp_dir = os.path.join('temp_uploads')
+    os.makedirs(temp_dir, exist_ok=True)
+    filepath = os.path.join(temp_dir, secure_filename(file.filename))
+    
+    try:
+        # Save the file temporarily
+        file.save(filepath)
+        
+        # Use IsosurfaceVisualizer to handle the mesh loading
+        visualizer = IsosurfaceVisualizer()
+        result = visualizer.load_mesh(filepath)
+        
+        if not result.get('success', False):
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to load mesh')
+            }), 400
+            
+        return jsonify({
+            'success': True,
+            'filename': file.filename,
+            'mesh_info': {
+                'n_points': result.get('n_points'),
+                'n_cells': result.get('n_cells'),
+                'bounds': result.get('bounds'),
+                'point_arrays': result.get('point_arrays', []),
+                'cell_arrays': result.get('cell_arrays', [])
+            }
+        })
+            
+    except Exception as e:
+        logger.error(f"Error in upload_vtk: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'Error processing file: {str(e)}'
+        }), 500
+    finally:
+        # Clean up the temporary file
+        try:
+            if 'filepath' in locals() and os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as e:
+            logger.error(f"Error cleaning up file {filepath}: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1173,6 +1173,7 @@ function downloadPlotData(plotId, filename) {
   });
 }
 
+
 // --- Mesh Visualization Functions ---
 async function refreshMeshList() {
     try {
@@ -1574,6 +1575,7 @@ function joinPath(...parts) {
     return parts.filter(part => part).join('/').replace(/\/+/g, '/');
 }
 
+
 // --- Post Processing Functions ---
 async function refreshPostList() {
   try {
@@ -1694,9 +1696,7 @@ window.addEventListener('beforeunload', () => {
   flushOutputBuffer();
 });
 
-/**
- * Refresh VTK file list on Post page
- */
+/* Refresh VTK file list on Post page */
 async function refreshPostList() {
   const tutorial = document.getElementById('tutorialSelect').value;
   
@@ -1727,9 +1727,7 @@ async function refreshPostList() {
   }
 }
 
-/**
- * Load selected VTK file
- */
+/* Load selected VTK file */
 async function loadSelectedVTK() {
   const vtkSelect = document.getElementById('vtkFileSelect');
   const selectedFile = vtkSelect.value;
@@ -1767,10 +1765,8 @@ async function loadSelectedVTK() {
   }
 }
 
+
 // Contour Visualization
-/**
- * Load selected VTK file for contour visualization
- */
 async function loadContourVTK() {
   const vtkSelect = document.getElementById('vtkFileSelect');
   const selectedFile = vtkSelect.value;
@@ -1863,4 +1859,85 @@ async function loadContourVTK() {
     console.error('[FOAMFlask] Error loading VTK file for contour:', error);
     showNotification(`Error: ${error.message || 'Failed to load VTK file for contour generation'}`, 'error');
   }
+}
+
+/* Handle custom VTK file upload */
+async function loadCustomVTKFile() {
+    const fileInput = document.getElementById('vtkFileBrowser');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('Please select a file first', 'warning');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        showNotification('Uploading and processing VTK file...', 'info');
+        
+        const response = await fetch('/api/upload_vtk', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to upload file');
+        }
+
+        // Update the file info display
+        const fileInfo = document.getElementById('vtkFileInfo');
+        const fileInfoContent = document.getElementById('vtkFileInfoContent');
+        
+        if (fileInfo && fileInfoContent) {
+            fileInfoContent.innerHTML = `
+                <div><strong>File:</strong> ${file.name}</div>
+                <div><strong>Type:</strong> ${file.type || 'VTK'}</div>
+                <div><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</div>
+                ${result.mesh_info ? `
+                <div><strong>Points:</strong> ${(result.mesh_info.n_points || 0).toLocaleString()}</div>
+                <div><strong>Cells:</strong> ${(result.mesh_info.n_cells || 0).toLocaleString()}</div>
+                ` : ''}
+            `;
+            fileInfo.classList.remove('hidden');
+        }
+
+        // Update scalar field dropdown
+        const scalarFieldSelect = document.getElementById('scalarField');
+        if (scalarFieldSelect && result.mesh_info) {
+            scalarFieldSelect.innerHTML = '';
+            
+            // Add point data fields
+            (result.mesh_info.point_arrays || []).forEach(field => {
+                const option = document.createElement('option');
+                option.value = `${field}@point`;
+                option.textContent = `🔵 ${field} (Point Data)`;
+                option.className = 'point-data-option';
+                scalarFieldSelect.appendChild(option);
+            });
+
+            // Add cell data fields
+            (result.mesh_info.cell_arrays || []).forEach(field => {
+                const option = document.createElement('option');
+                option.value = `${field}@cell`;
+                option.textContent = `🟢 ${field} (Cell Data)`;
+                option.className = 'cell-data-option';
+                scalarFieldSelect.appendChild(option);
+            });
+
+            // Enable the generate button if it exists
+            const generateBtn = document.getElementById('generateContoursBtn');
+            if (generateBtn) {
+                generateBtn.disabled = false;
+            }
+        }
+
+        showNotification('VTK file loaded successfully!', 'success');
+    } catch (error) {
+        console.error('Error loading VTK file:', error);
+        showNotification(`Error: ${error.message || 'Failed to load VTK file'}`, 'error');
+    }
 }

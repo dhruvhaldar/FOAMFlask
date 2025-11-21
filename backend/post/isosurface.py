@@ -62,7 +62,7 @@ class IsosurfaceVisualizer:
                 f"Loading mesh from: {file_path}"
             )
 
-            # Read the mesh with progress bar
+            # Read the mesh with progress bar using PyVista
             self.mesh = pv.read(file_path, progress_bar=True)
             logger.info(
                 f"[FOAMFlask] [IsosurfaceVisualizer] "
