@@ -622,7 +622,9 @@ def api_load_mesh():
                 # Ensure we have the required fields for contour generation
                 mesh_info.setdefault('point_arrays', mesh_info.get('array_names', []))
                 # Add any contour-specific processing here if needed
-            except
+            except Exception as e:
+                logger.error(f"Error loading mesh for contour: {e}")
+                return jsonify({"error": str(e)}), 500
           
         
         return jsonify(mesh_info)
