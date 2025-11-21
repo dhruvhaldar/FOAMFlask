@@ -19,10 +19,6 @@ type MeshFile = {
 
 type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 
-// Add after the type definitions
-declare function refreshMeshList(): Promise<void>;
-declare function refreshPostList(): Promise<void>;
-
 // External declarations
 declare const generateContours: (options: {
   tutorial: string;
@@ -759,10 +755,13 @@ const updateAeroPlots = async (): Promise<void> => {
   }
 };
 
+
+// UpdatePlots
 const updatePlots = async (): Promise<void> => {
   const selectedTutorial = (document.getElementById('tutorialSelect') as HTMLSelectElement)?.value;
   if (!selectedTutorial || isUpdatingPlots) return;
   isUpdatingPlots = true;
+
   try {
     const data = await fetchWithCache(`/api/plotdata?tutorial=${encodeURIComponent(selectedTutorial)}`);
     if (data.error) {
@@ -774,7 +773,6 @@ const updatePlots = async (): Promise<void> => {
     // Pressure plot
     if (data.p && data.time) {
       const pressureDiv = getElement<HTMLElement>('pressure-plot');
-
       if (!pressureDiv) {
         console.error("Pressure plot element not found");
         return;
@@ -789,161 +787,200 @@ const updatePlots = async (): Promise<void> => {
         type: 'scatter',
         mode: 'lines',
         name: 'Pressure',
-    line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 }
-  };
+        line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 }
+      };
 
-  if (Object.prototype.hasOwnProperty.call(legendVisibility, pressureTrace.name)) {
-    // Plotly expects boolean | "legendonly"
-    pressureTrace.visible = legendVisibility[pressureTrace.name] as boolean | 'legendonly';
-  }
-void Plotly.react(
-  pressureDiv,
-  [pressureTrace as any],
-  {
-    ...plotLayout,
-    title: { text: createBoldTitle('Pressure vs Time') },
-    xaxis: {
-      ...plotLayout.xaxis,
-      title: { text: 'Time (s)' }
-    },
-    yaxis: {
-      ...plotLayout.yaxis,
-      title: { text: 'Pressure (Pa)' }
-    }
-  },
-  plotConfig
-)
-  .then(() => {
-    attachWhiteBGDownloadButton(pressureDiv);
-  })
-  .catch((err: unknown) => {
-    console.error('Plotly update failed:', err);
-  });
-}
-
-// Velocity plot
-if (data.Umag && data.time) {
-  const velocityDiv = getElement<HTMLElement>('velocity-plot');
-  if (!velocityDiv) {
-    console.error('Velocity plot element not found');
-    return;
-  }
-
-  const legendVisibility = getLegendVisibility(velocityDiv as any);
-
-  const traces: PlotTrace[] = [
-  {
-    x: data.time,
-    y: data.Umag,
-    type: 'scatter',
-    mode: 'lines',
-    name: 'U',
-    line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
-  }
-];
-
-  if (data.Ux) {
-    traces.push({
-      x: data.time,
-      y: data.Ux,
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Ux',
-      line: { color: plotlyColors.blue, ...lineStyle, dash: 'dash', width: 2.5 }
-    });
-  }
-
-  if (data.Uy) {
-    traces.push({
-      x: data.time,
-      y: data.Uy,
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Uy',
-      line: { color: plotlyColors.green, ...lineStyle, dash: 'dot', width: 2.5 }
-    });
-  }
-
-  if (data.Uz) {
-    traces.push({
-      x: data.time,
-      y: data.Uz,
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Uz',
-      line: { color: plotlyColors.purple, ...lineStyle, dash: 'dashdot', width: 2.5 }
-    });
-  }
-
-  // Apply saved visibility safely
-  traces.forEach((tr) => {
-    if (Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
-      tr.visible = legendVisibility[tr.name] as boolean | 'legendonly';
-    }
-  });
-
-  void Plotly.react(
-    velocityDiv,
-    [traces as any],
-    {
-      ...plotLayout,
-      title: { text: createBoldTitle('Velocity vs Time')},
-      xaxis: {
-        ...plotLayout.xaxis,
-        title: {text: 'Time (s)'}
-      },
-      yaxis: {
-        ...plotLayout.yaxis,
-        title: {text: 'Velocity (m/s)'}
+      if (Object.prototype.hasOwnProperty.call(legendVisibility, pressureTrace.name)) {
+        pressureTrace.visible = legendVisibility[pressureTrace.name] as boolean | 'legendonly';
       }
-    },
-    plotConfig
-  ).then(() => {
-    attachWhiteBGDownloadButton(velocityDiv);
-  });
-}
 
-    // Turbulence plot
-    const turbulenceTrace = [];
-    if (data.nut && data.time) turbulenceTrace.push({ x: data.time, y: data.nut, type: 'scatter', mode: 'lines', name: 'nut', line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 } });
-    if (data.nuTilda && data.time) turbulenceTrace.push({ x: data.time, y: data.nuTilda, type: 'scatter', mode: 'lines', name: 'nuTilda', line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 } });
-    if (data.k && data.time) turbulenceTrace.push({ x: data.time, y: data.k, type: 'scatter', mode: 'lines', name: 'k', line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 } });
-    if (data.omega && data.time) turbulenceTrace.push({ x: data.time, y: data.omega, type: 'scatter', mode: 'lines', name: 'omega', line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 } });
-    if (turbulenceTrace.length > 0) {
-      const turbPlotDiv = document.getElementById('turbulence-plot');
-      if (turbPlotDiv) {     
       void Plotly.react(
-        turbPlotDiv,
-        [turbulenceTrace as any],
+        pressureDiv,
+        [pressureTrace as any],
         {
           ...plotLayout,
-          title: { text: createBoldTitle('Turbulence Properties vs Time')},
+          title: { text: createBoldTitle('Pressure vs Time') },
           xaxis: {
             ...plotLayout.xaxis,
-            title: {text: 'Time (s)'}
+            title: { text: 'Time (s)' }
           },
           yaxis: {
             ...plotLayout.yaxis,
-            title: {text: 'Value'}
+            title: { text: 'Pressure (Pa)' }
           }
         },
         plotConfig
       )
-      .then(() => {
-        attachWhiteBGDownloadButton(turbPlotDiv);
-    })
+        .then(() => {
+          attachWhiteBGDownloadButton(pressureDiv);
+        })
+        .catch((err: unknown) => {
+          console.error('Plotly update failed:', err);
+        });
+    }
 
-    try {
-      // Update residuals and aero plots in parallel
-      const updatePromises = [updateResidualsPlot(selectedTutorial)];
-      if (aeroVisible) updatePromises.push(updateAeroPlots());
-      await Promise.allSettled(updatePromises);
-
-      // After all plots are updated
-      if (isFirstPlotLoad) {
-        showNotification('Plots loaded successfully', 'success', 3000);
-        isFirstPlotLoad = false;
+    // Velocity plot
+    if (data.Umag && data.time) {
+      const velocityDiv = getElement<HTMLElement>('velocity-plot');
+      if (!velocityDiv) {
+        console.error('Velocity plot element not found');
+        return;
       }
+
+      const legendVisibility = getLegendVisibility(velocityDiv as any);
+
+      const traces: PlotTrace[] = [
+        {
+          x: data.time,
+          y: data.Umag,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'U',
+          line: { color: plotlyColors.red, ...lineStyle, width: 2.5 }
+        }
+      ];
+
+      if (data.Ux) {
+        traces.push({
+          x: data.time,
+          y: data.Ux,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Ux',
+          line: { color: plotlyColors.blue, ...lineStyle, dash: 'dash', width: 2.5 }
+        });
+      }
+
+      if (data.Uy) {
+        traces.push({
+          x: data.time,
+          y: data.Uy,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Uy',
+          line: { color: plotlyColors.green, ...lineStyle, dash: 'dot', width: 2.5 }
+        });
+      }
+
+      if (data.Uz) {
+        traces.push({
+          x: data.time,
+          y: data.Uz,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Uz',
+          line: { color: plotlyColors.purple, ...lineStyle, dash: 'dashdot', width: 2.5 }
+        });
+      }
+
+      // Apply saved visibility safely
+      traces.forEach((tr) => {
+        if (Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
+          tr.visible = legendVisibility[tr.name] as boolean | 'legendonly';
+        }
+      });
+
+      void Plotly.react(
+        velocityDiv,
+        [traces as any],
+        {
+          ...plotLayout,
+          title: { text: createBoldTitle('Velocity vs Time') },
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: { text: 'Time (s)' }
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: { text: 'Velocity (m/s)' }
+          }
+        },
+        plotConfig
+      )
+        .then(() => {
+          attachWhiteBGDownloadButton(velocityDiv);
+        });
+    }
+
+    // Turbulence plot
+    const turbulenceTrace: PlotTrace[] = [];
+    if (data.nut && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.nut,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'nut',
+        line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 }
+      });
+    }
+    if (data.nuTilda && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.nuTilda,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'nuTilda',
+        line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 }
+      });
+    }
+    if (data.k && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.k,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'k',
+        line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 }
+      });
+    }
+    if (data.omega && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.omega,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'omega',
+        line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 }
+      });
+    }
+
+    if (turbulenceTrace.length > 0) {
+      const turbPlotDiv = document.getElementById('turbulence-plot');
+      if (turbPlotDiv) {
+        void Plotly.react(
+          turbPlotDiv,
+          [turbulenceTrace as any],
+          {
+            ...plotLayout,
+            title: { text: createBoldTitle('Turbulence Properties vs Time') },
+            xaxis: {
+              ...plotLayout.xaxis,
+              title: { text: 'Time (s)' }
+            },
+            yaxis: {
+              ...plotLayout.yaxis,
+              title: { text: 'Value' }
+            }
+          },
+          plotConfig
+        )
+          .then(() => {
+            attachWhiteBGDownloadButton(turbPlotDiv);
+          });
+      }
+    }
+
+    // Update residuals and aero plots in parallel
+    const updatePromises = [updateResidualsPlot(selectedTutorial)];
+    if (aeroVisible) updatePromises.push(updateAeroPlots());
+    await Promise.allSettled(updatePromises);
+
+    // After all plots are updated
+    if (isFirstPlotLoad) {
+      showNotification('Plots loaded successfully', 'success', 3000);
+      isFirstPlotLoad = false;
+    }
   } catch (err) {
     console.error('FOAMFlask Error updating plots', err);
     const currentTime = Date.now();
@@ -960,6 +997,10 @@ if (data.Umag && data.time) {
     }
   }
 };
+
+
+
+
 
 
 const downloadPlotData = (plotId: string, filename: string): void => {

@@ -2,4 +2,9 @@
 > foamflask-frontend@1.0.0 build
 > tsc
 
-static/ts/foamflask_frontend.ts(1746,1): error TS1005: '}' expected.
+
+> foamflask-frontend@1.0.0 postbuild
+> node copy-built-js.mjs
+
+Copied /home/dhruvh/FOAMFlask/static/js-build/foamflask_frontend.js -> /home/dhruvh/FOAMFlask/static/js/foamflask_frontend.js
+Copied /home/dhruvh/FOAMFlask/static/js-build/frontend/isosurface.js -> /home/dhruvh/FOAMFlask/static/js/frontend/isosurface.js
