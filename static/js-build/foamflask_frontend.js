@@ -150,28 +150,29 @@ function applyLegendVisibility(plotDiv, visibility) {
         }
     });
 }
-// // --- Helper: Attach white-bg download button to a plot ---
-// function attachWhiteBGDownloadButton(plotDiv) {
-//   plotDiv.layout.paper_bgcolor = 'white';
-//   plotDiv.layout.plot_bgcolor = 'white';
-//   if (!plotDiv || plotDiv.dataset.whiteButtonAdded === 'true') return;
-//   // Copy existing config or default
-//   const configWithWhiteBG = Object.assign({}, plotDiv._fullLayout?.config || plotConfig || {});
-//   // Override toImageButtonOptions for white background PNG
-//   configWithWhiteBG.toImageButtonOptions = {
-//     format: 'png',
-//     filename: `${plotDiv.id}_whitebg`,
-//     height: plotDiv.clientHeight,
-//     width: plotDiv.clientWidth,
-//     scale: 2,
-//     // Ensure background is white
-//     // Note: Plotly respects paper_bgcolor/layout.bgcolor when saving
-//   };
-//   // Add default mode bar with download button (Plotly will now use our options)
-//   Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
-//     plotDiv.dataset.whiteButtonAdded = 'true';
-//   });
-// }
+// --- Helper: Attach white-bg download button to a plot ---
+function attachWhiteBGDownloadButton(plotDiv) {
+    plotDiv.layout.paper_bgcolor = 'white';
+    plotDiv.layout.plot_bgcolor = 'white';
+    if (!plotDiv || plotDiv.dataset.whiteButtonAdded === 'true')
+        return;
+    // Copy existing config or default
+    const configWithWhiteBG = Object.assign({}, plotDiv._fullLayout?.config || plotConfig || {});
+    // Override toImageButtonOptions for white background PNG
+    configWithWhiteBG.toImageButtonOptions = {
+        format: 'png',
+        filename: `${plotDiv.id}_whitebg`,
+        height: plotDiv.clientHeight,
+        width: plotDiv.clientWidth,
+        scale: 2,
+        // Ensure background is white
+        // Note: Plotly respects paper_bgcolor/layout.bgcolor when saving
+    };
+    // Add default mode bar with download button (Plotly will now use our options)
+    Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
+        plotDiv.dataset.whiteButtonAdded = 'true';
+    });
+}
 // // --- Page Switching ---
 // function switchPage(pageName) {
 //   // Hide all pages

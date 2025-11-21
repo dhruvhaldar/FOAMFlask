@@ -26,7 +26,7 @@ let lastErrorNotificationTime = 0;
 const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Plotting variables and theme
-let plotUpdateInterval = null;
+let plotUpdateInterval: number | null = null;
 let plotsVisible = true; // Set to true by default to show plots
 let aeroVisible = false;
 let isUpdatingPlots = false;
@@ -173,112 +173,112 @@ function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>
 }
 
 
-// // --- Helper: Attach white-bg download button to a plot ---
-// function attachWhiteBGDownloadButton(plotDiv) {
-//   plotDiv.layout.paper_bgcolor = 'white';
-//   plotDiv.layout.plot_bgcolor = 'white';
+// --- Helper: Attach white-bg download button to a plot ---
+function attachWhiteBGDownloadButton(plotDiv: any) {
+  plotDiv.layout.paper_bgcolor = 'white';
+  plotDiv.layout.plot_bgcolor = 'white';
 
-//   if (!plotDiv || plotDiv.dataset.whiteButtonAdded === 'true') return;
+  if (!plotDiv || plotDiv.dataset.whiteButtonAdded === 'true') return;
 
-//   // Copy existing config or default
-//   const configWithWhiteBG = Object.assign({}, plotDiv._fullLayout?.config || plotConfig || {});
+  // Copy existing config or default
+  const configWithWhiteBG = Object.assign({}, plotDiv._fullLayout?.config || plotConfig || {});
 
-//   // Override toImageButtonOptions for white background PNG
-//   configWithWhiteBG.toImageButtonOptions = {
-//     format: 'png',
-//     filename: `${plotDiv.id}_whitebg`,
-//     height: plotDiv.clientHeight,
-//     width: plotDiv.clientWidth,
-//     scale: 2,
-//     // Ensure background is white
-//     // Note: Plotly respects paper_bgcolor/layout.bgcolor when saving
-//   };
+  // Override toImageButtonOptions for white background PNG
+  configWithWhiteBG.toImageButtonOptions = {
+    format: 'png',
+    filename: `${plotDiv.id}_whitebg`,
+    height: plotDiv.clientHeight,
+    width: plotDiv.clientWidth,
+    scale: 2,
+    // Ensure background is white
+    // Note: Plotly respects paper_bgcolor/layout.bgcolor when saving
+  };
 
-//   // Add default mode bar with download button (Plotly will now use our options)
-//   Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
-//     plotDiv.dataset.whiteButtonAdded = 'true';
-//   });
-// }
+  // Add default mode bar with download button (Plotly will now use our options)
+  Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(() => {
+    plotDiv.dataset.whiteButtonAdded = 'true';
+  });
+}
 
 
-// // --- Page Switching ---
-// function switchPage(pageName) {
-//   // Hide all pages
-//   const pages = ['setup', 'run', 'mesh', 'plots', 'post'];
-//   pages.forEach(page => {
-//     const pageElement = document.getElementById(`page-${page}`);
-//     const navButton = document.getElementById(`nav-${page}`);
+// --- Page Switching ---
+function switchPage(pageName: string) {
+  // Hide all pages
+  const pages = ['setup', 'run', 'mesh', 'plots', 'post'];
+  pages.forEach(page => {
+    const pageElement = document.getElementById(`page-${page}`);
+    const navButton = document.getElementById(`nav-${page}`);
     
-//     if (pageElement) {
-//       pageElement.classList.add('hidden');
-//     }
+    if (pageElement) {
+      pageElement.classList.add('hidden');
+    }
     
-//     if (navButton) {
-//       navButton.classList.remove('bg-blue-500', 'text-white');
-//       navButton.classList.add('text-gray-700', 'hover:bg-gray-100');
-//     }
-//   });
+    if (navButton) {
+      navButton.classList.remove('bg-blue-500', 'text-white');
+      navButton.classList.add('text-gray-700', 'hover:bg-gray-100');
+    }
+  });
   
-//   // Show selected page
-//   const selectedPage = document.getElementById(`page-${pageName}`);
-//   const selectedNav = document.getElementById(`nav-${pageName}`);
+  // Show selected page
+  const selectedPage = document.getElementById(`page-${pageName}`);
+  const selectedNav = document.getElementById(`nav-${pageName}`);
   
-//   if (selectedPage) {
-//     selectedPage.classList.remove('hidden');
-//   }
+  if (selectedPage) {
+    selectedPage.classList.remove('hidden');
+  }
   
-//   if (selectedNav) {
-//     selectedNav.classList.add('bg-blue-500', 'text-white');
-//     selectedNav.classList.remove('text-gray-700', 'hover:bg-gray-100');
-//   }
+  if (selectedNav) {
+    selectedNav.classList.add('bg-blue-500', 'text-white');
+    selectedNav.classList.remove('text-gray-700', 'hover:bg-gray-100');
+  }
   
-//   currentPage = pageName;
+  currentPage = pageName;
   
-//   // Page-specific initializations
-//   switch(pageName) {
-//     case 'plots':
-//       // Ensure plots container is visible
-//       const plotsContainer = document.getElementById('plotsContainer');
-//       if (plotsContainer) {
-//         plotsContainer.classList.remove('hidden');
+  // Page-specific initializations
+  switch(pageName) {
+    case 'plots':
+      // Ensure plots container is visible
+      const plotsContainer = document.getElementById('plotsContainer');
+      if (plotsContainer) {
+        plotsContainer.classList.remove('hidden');
         
-//         // Initialize plots if they haven't been initialized yet
-//         if (!plotsContainer.hasAttribute('data-initialized')) {
-//           plotsContainer.setAttribute('data-initialized', 'true');
-//           // Start plot updates if not already running
-//           if (!plotUpdateInterval) {
-//             startPlotUpdates();
-//           }
-//         }
-//       }
+        // Initialize plots if they haven't been initialized yet
+        if (!plotsContainer.hasAttribute('data-initialized')) {
+          plotsContainer.setAttribute('data-initialized', 'true');
+          // Start plot updates if not already running
+          if (!plotUpdateInterval) {
+            startPlotUpdates();
+          }
+        }
+      }
       
-//       // Update the aero plots button state
-//       const aeroBtn = document.getElementById('toggleAeroBtn');
-//       if (aeroBtn) {
-//         aeroBtn.classList.toggle('hidden', aeroVisible);
-//       }
-//       break;
+      // Update the aero plots button state
+      const aeroBtn = document.getElementById('toggleAeroBtn');
+      if (aeroBtn) {
+        aeroBtn.classList.toggle('hidden', aeroVisible);
+      }
+      break;
       
-//     case 'mesh':
-//       // Initialize mesh visualization if needed
-//       const meshContainer = document.getElementById('page-mesh');
-//       if (meshContainer && !meshContainer.hasAttribute('data-initialized')) {
-//         meshContainer.setAttribute('data-initialized', 'true');
-//         console.log('Mesh page initialized');
-//         // Load available meshes
-//         refreshMeshList();
-//       }
-//       break;
-//     case 'post':
-//       const postContainer = document.getElementById('page-post');
-//       if (postContainer && !postContainer.hasAttribute('data-initialized')) {
-//         postContainer.setAttribute('data-initialized', 'true');
-//         console.log('[FOAMFlask] Post processing page initialized');
-//         refreshPostList();  // ← CHANGE: Refresh VTK list instead of refreshPostList()
-//       }
-//       break;
-//   }
-// }
+    case 'mesh':
+      // Initialize mesh visualization if needed
+      const meshContainer = document.getElementById('page-mesh');
+      if (meshContainer && !meshContainer.hasAttribute('data-initialized')) {
+        meshContainer.setAttribute('data-initialized', 'true');
+        console.log('Mesh page initialized');
+        // Load available meshes
+        refreshMeshList();
+      }
+      break;
+    case 'post':
+      const postContainer = document.getElementById('page-post');
+      if (postContainer && !postContainer.hasAttribute('data-initialized')) {
+        postContainer.setAttribute('data-initialized', 'true');
+        console.log('[FOAMFlask] Post processing page initialized');
+        refreshPostList();  // ← CHANGE: Refresh VTK list instead of refreshPostList()
+      }
+      break;
+  }
+}
 
 // // --- Notification System ---
 // function showNotification(message, type = 'info', duration = 5000) {
@@ -744,20 +744,20 @@ function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>
 //   }
 // }
 
-// function startPlotUpdates() {
-//   updatePlots(); // Initial update
-//   plotUpdateInterval = setInterval(() => {
-//     // Skip updates if plots are not in viewport or already updating
-//     if (!plotsInViewport) {
-//       return;
-//     }
-//     if (!isUpdatingPlots) {
-//       updatePlots();
-//     } else {
-//       pendingPlotUpdate = true;
-//     }
-//   }, 2000); // Update every 2 seconds
-// }
+function startPlotUpdates() {
+  updatePlots(); // Initial update
+  plotUpdateInterval = setInterval(() => {
+    // Skip updates if plots are not in viewport or already updating
+    if (!plotsInViewport) {
+      return;
+    }
+    if (!isUpdatingPlots) {
+      updatePlots();
+    } else {
+      pendingPlotUpdate = true;
+    }
+  }, 2000); // Update every 2 seconds
+}
 
 // function stopPlotUpdates() {
 //   if (plotUpdateInterval) {
@@ -766,11 +766,11 @@ function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>
 //   }
 // }
 
-// async function updatePlots() {
-//   const selectedTutorial = document.getElementById("tutorialSelect").value;
-//   if (!selectedTutorial || isUpdatingPlots) {
-//     return;
-//   }
+async function updatePlots() {
+  const selectedTutorial = document.getElementById("tutorialSelect").value;
+  if (!selectedTutorial || isUpdatingPlots) {
+    return;
+  }
   
 //   isUpdatingPlots = true;
   
@@ -1182,68 +1182,73 @@ function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>
 // }
 
 
-// // --- Mesh Visualization Functions ---
-// async function refreshMeshList() {
-//     try {
-//         const tutorial = document.getElementById('tutorialSelect').value;
-//         if (!tutorial) {
-//             showNotification('Please select a tutorial first', 'error');
-//             return;
-//         }
+// --- Mesh Visualization Functions ---
+async function refreshMeshList() {
+    try {
+        const tutorial = document.getElementById('tutorialSelect').value;
+        if (!tutorial) {
+            showNotification('Please select a tutorial first', 'error');
+            return;
+        }
 
-//         const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
+        const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
         
-//         if (!response.ok) {
-//             throw new Error('Failed to fetch mesh files');
-//         }
+        if (!response.ok) {
+            throw new Error('Failed to fetch mesh files');
+        }
         
-//         const data = await response.json();
+        const data = await response.json();
         
-//         if (data.error) {
-//             showNotification(data.error, 'error');
-//             return;
-//         }
+        if (data.error) {
+            showNotification(data.error, 'error');
+            return;
+        }
         
-//         availableMeshes = data.meshes || [];
-//         const meshSelect = document.getElementById('meshSelect');
-//         const meshActionButtons = document.getElementById('meshActionButtons');
+        availableMeshes = data.meshes || [];
+        const meshSelect = document.getElementById('meshSelect');
+        const meshActionButtons = document.getElementById('meshActionButtons');
         
-//         // Update the select dropdown
-//         meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
+        if (!meshSelect) {
+            console.error('meshSelect element not found');
+            return;
+        }
+
+        // Update the select dropdown
+        meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
         
-//         if (availableMeshes.length === 0) {
-//             showNotification('No mesh files found in this case', 'warning');
-//             meshSelect.innerHTML += '<option value="" disabled>No mesh files found</option>';
-//             // Show buttons if no meshes found
-//             if (meshActionButtons) {
-//                 meshActionButtons.classList.remove('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
-//                 meshActionButtons.classList.add('opacity-100', 'h-auto', 'mb-2');
-//             }
-//             return;
-//         }
+        if (availableMeshes.length === 0) {
+            showNotification('No mesh files found in this case', 'warning');
+            meshSelect.innerHTML += '<option value="" disabled>No mesh files found</option>';
+            // Show buttons if no meshes found
+            if (meshActionButtons) {
+                meshActionButtons.classList.remove('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
+                meshActionButtons.classList.add('opacity-100', 'h-auto', 'mb-2');
+            }
+            return;
+        }
         
-//         // Add mesh files to select
-//         availableMeshes.forEach(mesh => {
-//             const option = document.createElement('option');
-//             option.value = mesh.path;
-//             option.textContent = mesh.name;
-//             meshSelect.appendChild(option);
-//         });
+        // Add mesh files to select
+        availableMeshes.forEach(mesh => {
+            const option = document.createElement('option');
+            option.value = mesh.path;
+            option.textContent = mesh.name;
+            meshSelect.appendChild(option);
+        });
         
-//         // Show success message and collapse buttons
-//         showNotification(`Found ${availableMeshes.length} mesh file(s)`, 'success');
+        // Show success message and collapse buttons
+        showNotification(`Found ${availableMeshes.length} mesh file(s)`, 'success');
         
-//         // Collapse and fade buttons
-//         if (meshActionButtons) {
-//             meshActionButtons.classList.add('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
-//             meshActionButtons.classList.remove('opacity-100', 'h-auto', 'mb-2');
-//         }
+        // Collapse and fade buttons
+        if (meshActionButtons) {
+            meshActionButtons.classList.add('opacity-50', 'h-0', 'overflow-hidden', 'mb-0');
+            meshActionButtons.classList.remove('opacity-100', 'h-auto', 'mb-2');
+        }
         
-//     } catch (error) {
-//         console.error('Error refreshing mesh list:', error);
-//         showNotification(`Error loading mesh files: ${error.message}`, 'error');
-//     }
-// }
+    } catch (error) {
+        console.error('Error refreshing mesh list:', error);
+        showNotification(`Error loading mesh files: ${error.message}`, 'error');
+    }
+}
 
 // async function runFoamToVTK() {
 //     const selectedTutorial = document.getElementById("tutorialSelect").value;
@@ -1584,54 +1589,54 @@ function applyLegendVisibility(plotDiv: any, visibility: Record<string, boolean>
 // }
 
 
-// // --- Post Processing Functions ---
-// async function refreshPostList() {
-//   try {
-//     const postContainer = document.getElementById('post-processing-content');
-//     if (!postContainer) return;
+// --- Post Processing Functions ---
+async function refreshPostList() {
+  try {
+    const postContainer = document.getElementById('post-processing-content');
+    if (!postContainer) return;
 
-//     // Show loading state
-//     postContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
+    // Show loading state
+    postContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
 
-//     // Here you can add actual API calls to fetch post-processing options
-//     // For now, we'll just add some placeholder content
-//     setTimeout(() => {
-//       postContainer.innerHTML = `
-//         <div class="space-y-4">
-//           <div class="bg-white p-4 rounded-lg shadow">
-//             <h3 class="font-medium text-gray-900">Available Operations</h3>
-//             <div class="mt-2 space-y-2">
-//               <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-//                       onclick="runPostOperation('create_slice')">
-//                 Create Slice
-//               </button>
-//               <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-//                       onclick="runPostOperation('generate_streamlines')">
-//                 Generate Streamlines
-//               </button>
-//               <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-//                       onclick="runPostOperation('create_contour')">
-//                 Create Contour
-//               </button>
-//             </div>
-//           </div>
-//           <div id="post-results" class="mt-4"></div>
-//         </div>
-//       `;
-//     }, 500);
+    // Here you can add actual API calls to fetch post-processing options
+    // For now, we'll just add some placeholder content
+    setTimeout(() => {
+      postContainer.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-medium text-gray-900">Available Operations</h3>
+            <div class="mt-2 space-y-2">
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('create_slice')">
+                Create Slice
+              </button>
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('generate_streamlines')">
+                Generate Streamlines
+              </button>
+              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
+                      onclick="runPostOperation('create_contour')">
+                Create Contour
+              </button>
+            </div>
+          </div>
+          <div id="post-results" class="mt-4"></div>
+        </div>
+      `;
+    }, 500);
 
-//   } catch (error) {
-//     console.error('[FOAMFlask] [refreshPostList] Error loading post-processing options:', error);
-//     const postContainer = document.getElementById('post-processing-content');
-//     if (postContainer) {
-//       postContainer.innerHTML = `
-//         <div class="p-4 text-red-600">
-//           Failed to load post-processing options. Please try again.
-//         </div>
-//       `;
-//     }
-//   }
-// }
+  } catch (error) {
+    console.error('[FOAMFlask] [refreshPostList] Error loading post-processing options:', error);
+    const postContainer = document.getElementById('post-processing-content');
+    if (postContainer) {
+      postContainer.innerHTML = `
+        <div class="p-4 text-red-600">
+          Failed to load post-processing options. Please try again.
+        </div>
+      `;
+    }
+  }
+}
 
 // // Helper function for post-processing operations
 // async function runPostOperation(operation) {
