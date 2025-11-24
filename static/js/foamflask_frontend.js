@@ -9,6 +9,7 @@
 // Plotly is loaded globally via CDN in the HTML file
 // Utility functions
 // FOAMFlask Frontend TypeScript External Dependencies
+import { generateContours as generateContoursFn } from "./frontend/isosurface";
 // Utility functions
 const getElement = (id) => {
     return document.getElementById(id);
@@ -1710,4 +1711,22 @@ window.addEventListener("beforeunload", () => {
     requestCache.clear();
     flushOutputBuffer();
 });
+// Make functions globally available for HTML onclick handlers
+window.switchPage = switchPage;
+window.setCase = setCase;
+window.setDockerConfig = setDockerConfig;
+window.loadTutorial = loadTutorial;
+window.runCommand = runCommand;
+window.runFoamToVTK = runFoamToVTK;
+window.refreshMeshList = refreshMeshList;
+window.loadMeshVisualization = loadMeshVisualization;
+window.updateMeshView = updateMeshView;
+window.toggleInteractiveMode = toggleInteractiveMode;
+window.setCameraView = setCameraView;
+window.resetCamera = resetCamera;
+window.toggleAeroPlots = toggleAeroPlots;
+window.downloadPlotData = downloadPlotData;
+window.loadCustomVTKFile = loadCustomVTKFile;
+window.loadContourVTK = loadContourVTK;
+window.generateContours = generateContoursFn;
 //# sourceMappingURL=foamflask_frontend.js.map

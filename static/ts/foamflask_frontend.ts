@@ -2072,3 +2072,22 @@ window.addEventListener("beforeunload", () => {
 
   flushOutputBuffer();
 });
+
+// Make functions globally available for HTML onclick handlers
+(window as any).switchPage = switchPage;
+(window as any).setCase = setCase;
+(window as any).setDockerConfig = setDockerConfig;
+(window as any).loadTutorial = loadTutorial;
+(window as any).runCommand = runCommand;
+(window as any).runFoamToVTK = runFoamToVTK;
+(window as any).refreshMeshList = refreshMeshList;
+(window as any).loadMeshVisualization = loadMeshVisualization;
+(window as any).updateMeshView = updateMeshView;
+(window as any).toggleInteractiveMode = toggleInteractiveMode;
+(window as any).setCameraView = setCameraView;
+(window as any).resetCamera = resetCamera;
+(window as any).toggleAeroPlots = toggleAeroPlots;
+(window as any).downloadPlotData = downloadPlotData;
+(window as any).loadCustomVTKFile = loadCustomVTKFile;
+(window as any).loadContourVTK = loadContourVTK;
+(window as any).generateContours = generateContoursFn;
