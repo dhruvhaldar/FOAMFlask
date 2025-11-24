@@ -772,7 +772,7 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
             gridcolor: "rgba(0,0,0,0.1)",
           },
         };
-        void Plotly.react(residualsPlotDiv, [traces as any], layout as any, {
+        void Plotly.react(residualsPlotDiv, traces as any, layout as any, {
           ...plotConfig,
           displayModeBar: true,
           scrollZoom: false,
