@@ -107,7 +107,13 @@ const plotConfig = {
 // Helper: Common line style
 const lineStyle = { width: 2, opacity: 0.9 };
 // Helper: Create bold title
-const createBoldTitle = (text) => `<b>${text}</b>`;
+const createBoldTitle = (text) => ({
+    text: `<b>${text}</b>`,
+    font: {
+        ...plotLayout.font,
+        size: 22,
+    },
+});
 // Helper: Download plot as PNG with white background
 const downloadPlotAsPNG = (plotDiv, filename = "plot.png") => {
     if (!plotDiv)
@@ -220,7 +226,7 @@ const switchPage = (pageName) => {
             }
             const aeroBtn = document.getElementById("toggleAeroBtn");
             if (aeroBtn)
-                aeroBtn.classList.toggle("hidden", !aeroVisible);
+                aeroBtn.classList.remove("hidden"); // Always show the button on plots page
             break;
         case "mesh":
             const meshContainer = document.getElementById("page-mesh");
@@ -631,8 +637,11 @@ const stopPlotUpdates = () => {
 const updateResidualsPlot = async (tutorial) => {
     try {
         const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
-        if (data.error || !data.time || data.time.length === 0)
+        console.log("Residuals data received:", data);
+        if (data.error || !data.time || data.time.length === 0) {
+            console.log("Residuals plot early return:", { error: data.error, hasTime: !!data.time, timeLength: data.time?.length });
             return;
+        }
         const traces = [];
         const fields = ["Ux", "Uy", "Uz", "p"];
         const colors = [
@@ -660,7 +669,7 @@ const updateResidualsPlot = async (tutorial) => {
             if (residualsPlotDiv) {
                 const layout = {
                     ...plotLayout,
-                    title: { text: createBoldTitle("Residuals") },
+                    title: createBoldTitle("Residuals"),
                     xaxis: {
                         title: { text: "Iteration" },
                         showline: true,
@@ -705,7 +714,7 @@ const updateAeroPlots = async () => {
             data.p.length > 0) {
             const pinf = 101325;
             const rho = 1.225;
-            const uinf = Array.isArray(data.Umag) && data.Umag.length ? data.Umag[0] : 1.0;
+            const uinf = Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
             const qinf = 0.5 * rho * uinf * uinf;
             const cp = data.p.map((pval) => (pval - pinf) / qinf);
             const cpDiv = document.getElementById("cp-plot");
@@ -720,7 +729,7 @@ const updateAeroPlots = async () => {
                 };
                 void Plotly.react(cpDiv, [cpTrace], {
                     ...plotLayout,
-                    title: { text: createBoldTitle("Pressure Coefficient") },
+                    title: createBoldTitle("Pressure Coefficient"),
                     xaxis: {
                         ...plotLayout.xaxis,
                         title: { text: "Time (s)" },
@@ -755,7 +764,7 @@ const updateAeroPlots = async () => {
                 };
                 void Plotly.react(velocityDiv, [velocityTrace], {
                     ...plotLayout,
-                    title: { text: createBoldTitle("Velocity Profile") },
+                    title: createBoldTitle("Velocity Profile"),
                     scene: {
                         xaxis: { title: { text: "Ux" } },
                         yaxis: { title: { text: "Uy" } },
@@ -811,7 +820,7 @@ const updatePlots = async () => {
             }
             void Plotly.react(pressureDiv, [pressureTrace], {
                 ...plotLayout,
-                title: { text: createBoldTitle("Pressure vs Time") },
+                title: createBoldTitle("Pressure vs Time"),
                 xaxis: {
                     ...plotLayout.xaxis,
                     title: { text: "Time (s)" },
@@ -829,7 +838,7 @@ const updatePlots = async () => {
             });
         }
         // Velocity plot
-        if (data.Umag && data.time) {
+        if (data.U_mag && data.time) {
             const velocityDiv = getElement("velocity-plot");
             if (!velocityDiv) {
                 console.error("Velocity plot element not found");
@@ -839,10 +848,10 @@ const updatePlots = async () => {
             const traces = [
                 {
                     x: data.time,
-                    y: data.Umag,
+                    y: data.U_mag,
                     type: "scatter",
                     mode: "lines",
-                    name: "U",
+                    name: "|U|",
                     line: { color: plotlyColors.red, ...lineStyle, width: 2.5 },
                 },
             ];
@@ -897,9 +906,9 @@ const updatePlots = async () => {
                     tr.visible = legendVisibility[tr.name];
                 }
             });
-            void Plotly.react(velocityDiv, [traces], {
+            void Plotly.react(velocityDiv, traces, {
                 ...plotLayout,
-                title: { text: createBoldTitle("Velocity vs Time") },
+                title: createBoldTitle("Velocity vs Time"),
                 xaxis: {
                     ...plotLayout.xaxis,
                     title: { text: "Time (s)" },
@@ -957,9 +966,9 @@ const updatePlots = async () => {
         if (turbulenceTrace.length > 0) {
             const turbPlotDiv = document.getElementById("turbulence-plot");
             if (turbPlotDiv) {
-                void Plotly.react(turbPlotDiv, [turbulenceTrace], {
+                void Plotly.react(turbPlotDiv, turbulenceTrace, {
                     ...plotLayout,
-                    title: { text: createBoldTitle("Turbulence Properties vs Time") },
+                    title: createBoldTitle("Turbulence Properties vs Time"),
                     xaxis: {
                         ...plotLayout.xaxis,
                         title: { text: "Time (s)" },
