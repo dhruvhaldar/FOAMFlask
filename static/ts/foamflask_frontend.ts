@@ -551,7 +551,7 @@ const loadTutorial = async (): Promise<void> => {
     ) as HTMLSelectElement;
     const selected = tutorialSelect.value;
     if (selected) localStorage.setItem("lastSelectedTutorial", selected);
-    const response = await fetch("/loadtutorial", {
+    const response = await fetch("/load_tutorial", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tutorial: selected }),
@@ -2118,4 +2118,13 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(`Button ${id} not found`);
     }
   });
+
+  // Load Tutorial button
+  const loadTutorialBtn = document.getElementById('loadTutorialBtn');
+  if (loadTutorialBtn) {
+    console.log('Attaching listener to loadTutorialBtn');
+    loadTutorialBtn.addEventListener('click', loadTutorial);
+  } else {
+    console.error('Load Tutorial button not found');
+  }
 });
