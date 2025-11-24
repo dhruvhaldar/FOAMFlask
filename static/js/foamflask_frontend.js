@@ -694,7 +694,7 @@ const updateAeroPlots = async () => {
     if (!selectedTutorial)
         return;
     try {
-        const response = await fetch(`/api/latestdata?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        const response = await fetch(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
         const data = await response.json();
         if (data.error)
             return;
@@ -795,9 +795,8 @@ const updatePlots = async () => {
                 console.error("Pressure plot element not found");
                 return;
             }
-            const plotData = window.Plotly.d3
-                .select(`#${pressureDiv.id}`)
-                .data()[0];
+            // Create new plot data (simplified approach)
+            const plotData = [];
             const legendVisibility = getLegendVisibility({ data: plotData });
             const pressureTrace = {
                 x: data.time,
@@ -1144,10 +1143,10 @@ const loadMeshVisualization = async () => {
     }
     try {
         showNotification("Loading mesh...", "info");
-        const infoResponse = await fetch("/api/loadmesh", {
+        const infoResponse = await fetch("/api/load_mesh", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filepath: selectedPath }),
+            body: JSON.stringify({ file_path: selectedPath }),
         });
         if (!infoResponse.ok)
             throw new Error(`HTTP error! status: ${infoResponse.status}`);
@@ -1421,7 +1420,7 @@ async function refreshPostList() {
     postContainer.innerHTML =
         '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
     try {
-        // Simulate API call with setTimeout for placeholder content
+        // Simulate call with setTimeout for placeholder content
         setTimeout(() => {
             postContainer.innerHTML = `
         <div class="space-y-4">

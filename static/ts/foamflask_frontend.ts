@@ -905,9 +905,8 @@ const updatePlots = async (): Promise<void> => {
         return;
       }
 
-      const plotData = (window as any).Plotly.d3
-        .select(`#${pressureDiv.id}`)
-        .data()[0];
+      // Create new plot data (simplified approach)
+      const plotData: PlotTrace[] = [];
       const legendVisibility = getLegendVisibility({ data: plotData });
 
       const pressureTrace: PlotTrace = {
@@ -1322,7 +1321,7 @@ const loadMeshVisualization = async (): Promise<void> => {
     const infoResponse = await fetch("/api/load_mesh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filepath: selectedPath }),
+      body: JSON.stringify({ file_path: selectedPath }),
     });
     if (!infoResponse.ok)
       throw new Error(`HTTP error! status: ${infoResponse.status}`);
