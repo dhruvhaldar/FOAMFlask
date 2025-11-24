@@ -161,7 +161,7 @@ curl "http://localhost:5000/api/residuals?tutorial=incompressible/simpleFoam/air
 **Response**:
 - `200 OK`: JSON object with array of mesh file information
 - `400 Bad Request`: If tutorial parameter is missing
-- `500 Internal Server Error**: For other errors
+- `500 Internal Server Error`: For other errors
 
 **Example**:
 ```bash
@@ -244,7 +244,7 @@ curl "http://localhost:5000/api/available_meshes?tutorial=incompressible/simpleF
 **Response**:
 - `200 OK`: HTML content for interactive contour visualization
 - `400 Bad Request`: If required parameters are missing
-- `500 Internal Server Error**: For other errors
+- `500 Internal Server Error`: For other errors
 
 #### `POST /api/upload_vtk`
 **Description**: Upload a VTK file for visualization.
@@ -256,7 +256,7 @@ curl "http://localhost:5000/api/available_meshes?tutorial=incompressible/simpleF
 **Response**:
 - `200 OK`: JSON object with uploaded file information
 - `400 Bad Request`: If no file is uploaded
-- `500 Internal Server Error**: For other errors
+- `500 Internal Server Error`: For other errors
 
 ### Configuration
 
@@ -349,14 +349,14 @@ Common HTTP status codes:
    curl http://localhost:5000/get_tutorials
    ```
 
-2. Run a specific tutorial:
+2. Run a specific tutorial, e.g., `incompressible/simpleFoam/airFoil2D`, with the `blockMesh` command and specify the case directory `/path/to/case`:
    ```bash
-   curl -X POST http://localhost:5000/run_case \
+   curl -X POST http://localhost:5000/run \
      -H "Content-Type: application/json" \
-     -d '{"tutorial": "incompressible/simpleFoam/airFoil2D"}'
+     -d '{"tutorial": "incompressible/simpleFoam/airFoil2D", "command": "blockMesh", "caseDir": "/path/to/case"}'
    ```
 
-3. Monitor simulation progress:
+3. Monitor simulation progress for the `incompressible/simpleFoam/airFoil2D` tutorial:
    ```bash
    # In a separate terminal
    curl "http://localhost:5000/api/residuals?tutorial=incompressible/simpleFoam/airFoil2D"
