@@ -141,27 +141,34 @@ const downloadPlotAsPNG = (plotDiv, filename = "plot.png") => {
     });
 };
 const getLegendVisibility = (plotDiv) => {
-    if (!plotDiv || !Array.isArray(plotDiv.data)) {
+    try {
+        const plotData = plotDiv.data;
+        if (!Array.isArray(plotData)) {
+            return {};
+        }
+        const visibility = {};
+        for (const trace of plotData) {
+            const name = trace.name ?? "";
+            if (!name) {
+                continue;
+            }
+            // trace.visible may be boolean | "legendonly" | undefined
+            const vis = trace.visible;
+            visibility[name] = vis === "legendonly" ? false : vis ?? true;
+        }
+        return visibility;
+    }
+    catch (error) {
+        console.warn("Error getting legend visibility:", error);
         return {};
     }
-    const visibility = {};
-    for (const trace of plotDiv.data) {
-        const name = trace.name ?? "";
-        if (!name) {
-            continue;
-        }
-        // trace.visible may be boolean | "legendonly" | undefined
-        const vis = trace.visible;
-        visibility[name] = vis === "legendonly" ? false : vis ?? true;
-    }
-    return visibility;
 };
 // Helper: Apply saved legend visibility to new traces
 const applyLegendVisibility = (plotDiv, visibility) => {
     if (!plotDiv || !plotDiv.data || !visibility)
         return;
     plotDiv.data.forEach((trace) => {
-        if (visibility.hasOwnProperty(trace.name)) {
+        if (trace.name && visibility.hasOwnProperty(trace.name)) {
             trace.visible = visibility[trace.name];
         }
     });
@@ -806,7 +813,7 @@ const updatePlots = async () => {
             }
             // Create new plot data (simplified approach)
             const plotData = [];
-            const legendVisibility = getLegendVisibility({ data: plotData });
+            const legendVisibility = getLegendVisibility(pressureDiv);
             const pressureTrace = {
                 x: data.time,
                 y: data.p,
@@ -815,7 +822,7 @@ const updatePlots = async () => {
                 name: "Pressure",
                 line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
             };
-            if (Object.prototype.hasOwnProperty.call(legendVisibility, pressureTrace.name)) {
+            if (pressureTrace.name && legendVisibility.hasOwnProperty(pressureTrace.name)) {
                 pressureTrace.visible = legendVisibility[pressureTrace.name];
             }
             void Plotly.react(pressureDiv, [pressureTrace], {
@@ -902,7 +909,7 @@ const updatePlots = async () => {
             }
             // Apply saved visibility safely
             traces.forEach((tr) => {
-                if (Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
+                if (tr.name && Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
                     tr.visible = legendVisibility[tr.name];
                 }
             });
