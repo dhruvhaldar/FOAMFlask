@@ -13,6 +13,7 @@ import os
 import pathlib
 import platform
 import posixpath
+import re
 import threading
 import time
 from typing import Dict, List, Optional, Tuple, Union
@@ -44,6 +45,80 @@ DOCKER_IMAGE: Optional[str] = None
 OPENFOAM_VERSION: Optional[str] = None
 docker_client: Optional[DockerClient] = None
 foamrun_logs: Dict[str, str] = {}  # Maps tutorial names to their log content
+
+
+# Security validation functions
+def is_safe_command(command: str) -> bool:
+    """
+    Validate command input to prevent shell injection.
+    
+    Args:
+        command: User-provided command string
+        
+    Returns:
+        True if command is safe, False otherwise
+    """
+    if not command or not isinstance(command, str):
+        return False
+    
+    # Check for dangerous shell metacharacters
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    if any(char in command for char in dangerous_chars):
+        return False
+    
+    # Check for path traversal attempts
+    if '..' in command:
+        return False
+    
+    # Check for command substitution
+    if '$(' in command or '`' in command:
+        return False
+    
+    # Check for file descriptor redirection
+    if re.search(r'[0-9]+[<>]', command):
+        return False
+    
+    # Check for background/foreground operators
+    if '&' in command or '%' in command:
+        return False
+    
+    # Length check to prevent extremely long commands
+    if len(command) > 100:
+        return False
+    
+    return True
+
+
+def is_safe_script_name(script_name: str) -> bool:
+    """
+    Validate script name to prevent path traversal and injection.
+    
+    Args:
+        script_name: Script file name (without path)
+        
+    Returns:
+        True if script name is safe, False otherwise
+    """
+    if not script_name or not isinstance(script_name, str):
+        return False
+    
+    # Only allow alphanumeric characters, underscores, hyphens, and dots
+    if not re.match(r'^[a-zA-Z0-9_.-]+$', script_name):
+        return False
+    
+    # Prevent path traversal
+    if '..' in script_name or '/' in script_name or '\\' in script_name:
+        return False
+    
+    # Prevent hidden files starting with dot
+    if script_name.startswith('.'):
+        return False
+    
+    # Length check
+    if len(script_name) > 50:
+        return False
+    
+    return True
 
 
 def load_config() -> Dict[str, str]:
@@ -508,19 +583,51 @@ def run_case():
         )
         watcher_thread.start()
 
+        # Validate and sanitize command input to prevent injection
+        if not is_safe_command(command):
+            yield f"[FOAMFlask] [Error] Unsafe command detected: {command}<br>"
+            yield "[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.<br>"
+            return
+
         # Determine if command is an OpenFOAM command or a script file
         openfoam_commands = ["blockMesh", "simpleFoam", "pimpleFoam", "decomposePar", "reconstructPar", "foamToVTK", "paraFoam"]
         
         if command.startswith("./") or command in openfoam_commands:
             if command.startswith("./"):
-                # Script file - make executable and run
-                docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && {command}'"
+                # Script file - validate path and execute safely
+                script_name = command[2:]  # Remove "./" prefix
+                if not is_safe_script_name(script_name):
+                    yield f"[FOAMFlask] [Error] Unsafe script name: {script_name}<br>"
+                    yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.<br>"
+                    return
+                
+                # Create a secure wrapper script using string concatenation
+                wrapper_script = "#!/bin/bash\n"
+                wrapper_script += "source " + bashrc + "\n"
+                wrapper_script += "cd " + container_case_path + "\n"
+                wrapper_script += "chmod +x " + script_name + "\n"
+                wrapper_script += "./" + script_name + "\n"
+                docker_cmd = ["bash", "-c", wrapper_script]
             else:
-                # OpenFOAM command - run directly after sourcing bashrc
-                docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && {command}'"
+                # OpenFOAM command - create secure wrapper script
+                wrapper_script = "#!/bin/bash\n"
+                wrapper_script += "source " + bashrc + "\n"
+                wrapper_script += "cd " + container_case_path + "\n"
+                wrapper_script += command + "\n"
+                docker_cmd = ["bash", "-c", wrapper_script]
         else:
-            # Fallback to original behavior
-            docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
+            # Fallback - treat as script with validation
+            if not is_safe_script_name(command):
+                yield f"[FOAMFlask] [Error] Unsafe command name: {command}<br>"
+                yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.<br>"
+                return
+            
+            wrapper_script = "#!/bin/bash\n"
+            wrapper_script += "source " + bashrc + "\n"
+            wrapper_script += "cd " + container_case_path + "\n"
+            wrapper_script += "chmod +x " + command + "\n"
+            wrapper_script += "./" + command + "\n"
+            docker_cmd = ["bash", "-c", wrapper_script]
 
         container = client.containers.run(
             DOCKER_IMAGE,

@@ -22,6 +22,7 @@
 - Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output.
 - Color-coded console output for stdout, stderr, info, and tutorial messages.
 - Fully compatible with OpenFOAM 2506 (adjustable for other versions).
+- **Security-hardened command execution** with input validation and injection protection.
 
 ---
 
