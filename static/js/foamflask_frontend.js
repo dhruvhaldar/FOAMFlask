@@ -68,16 +68,16 @@ const plotLayout = {
     font: { family: "Computer Modern Serif, serif", size: 12 },
     plot_bgcolor: "white",
     paper_bgcolor: "#ffffff",
-    margin: { l: 50, r: 20, t: 40, pad: 0 },
+    margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 }, // Increased bottom margin
     height: 400,
     autosize: true,
     showlegend: true,
     legend: {
         orientation: "h",
-        y: -0.2,
-        x: 0.1,
-        xanchor: "left",
-        yanchor: "middle",
+        y: -0.3, // Moved further down
+        x: 0.5, // Centered
+        xanchor: "center",
+        yanchor: "top",
         bgcolor: "white",
         borderwidth: 0.5,
     },
