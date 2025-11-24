@@ -27,7 +27,7 @@ def run_coverage_analysis():
         print("✅ coverage.py installed successfully!")
     
     # Check if we have test files
-    test_files = list(Path(".").glob("test_*.py"))
+    test_files = list(Path(".").glob("**/test_*.py"))
     if not test_files:
         print("⚠️  No test files found (test_*.py)")
         print("Creating a basic test file...")
