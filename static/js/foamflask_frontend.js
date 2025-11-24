@@ -9,7 +9,7 @@
 // Plotly is loaded globally via CDN in the HTML file
 // Utility functions
 // FOAMFlask Frontend TypeScript External Dependencies
-import { generateContours as generateContoursFn } from "./frontend/isosurface";
+import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
 // Utility functions
 const getElement = (id) => {
     return document.getElementById(id);
@@ -185,10 +185,12 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
 };
 // Page Switching
 const switchPage = (pageName) => {
+    console.log(`switchPage called with: ${pageName}`);
     const pages = ["setup", "run", "mesh", "plots", "post"];
     pages.forEach((page) => {
-        const pageElement = document.getElementById(`${page}-page`);
+        const pageElement = document.getElementById(`page-${page}`);
         const navButton = document.getElementById(`nav-${page}`);
+        console.log(`Processing page: ${page}, element:`, pageElement, `button:`, navButton);
         if (pageElement)
             pageElement.classList.add("hidden");
         if (navButton) {
@@ -196,15 +198,15 @@ const switchPage = (pageName) => {
             navButton.classList.add("text-gray-700", "hover:bg-gray-100");
         }
     });
-    const selectedPage = document.getElementById(`${pageName}-page`);
+    const selectedPage = document.getElementById(`page-${pageName}`);
     const selectedNav = document.getElementById(`nav-${pageName}`);
+    console.log(`Selected page element:`, selectedPage, `Selected nav:`, selectedNav);
     if (selectedPage)
         selectedPage.classList.remove("hidden");
     if (selectedNav) {
-        selectedNav.classList.add("bg-blue-500", "text-white");
         selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
+        selectedNav.classList.add("bg-blue-500", "text-white");
     }
-    currentPage = pageName;
     switch (pageName) {
         case "plots":
             const plotsContainer = document.getElementById("plotsContainer");
@@ -232,14 +234,17 @@ const switchPage = (pageName) => {
             const postContainer = document.getElementById("page-post");
             if (postContainer && !postContainer.hasAttribute("data-initialized")) {
                 postContainer.setAttribute("data-initialized", "true");
-                console.log("FOAMFlask Post processing page initialized");
+                console.log("Post page initialized");
                 refreshPostList();
             }
             break;
+        default:
+            console.log(`Unknown page: ${pageName}`);
+            break;
     }
 };
-// Notification System
-const showNotification = (message, type = "info", duration = 5000) => {
+// Show notification
+const showNotification = (message, type, duration = 5000) => {
     const container = document.getElementById("notificationContainer");
     if (!container)
         return null;
@@ -1729,4 +1734,26 @@ window.downloadPlotData = downloadPlotData;
 window.loadCustomVTKFile = loadCustomVTKFile;
 window.loadContourVTK = loadContourVTK;
 window.generateContours = generateContoursFn;
+// Attach event listeners for navigation buttons
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, attaching event listeners...');
+    // Navigation buttons
+    const navButtons = [
+        { id: 'nav-setup', handler: () => switchPage('setup') },
+        { id: 'nav-run', handler: () => switchPage('run') },
+        { id: 'nav-mesh', handler: () => switchPage('mesh') },
+        { id: 'nav-plots', handler: () => switchPage('plots') },
+        { id: 'nav-post', handler: () => switchPage('post') }
+    ];
+    navButtons.forEach(({ id, handler }) => {
+        const button = document.getElementById(id);
+        if (button) {
+            console.log(`Attaching listener to ${id}`);
+            button.addEventListener('click', handler);
+        }
+        else {
+            console.error(`Button ${id} not found`);
+        }
+    });
+});
 //# sourceMappingURL=foamflask_frontend.js.map
