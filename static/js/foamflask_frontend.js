@@ -782,7 +782,7 @@ const updatePlots = async () => {
         return;
     isUpdatingPlots = true;
     try {
-        const data = await fetchWithCache(`/api/plotdata?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
         if (data.error) {
             console.error("FOAMFlask Error fetching plot data", data.error);
             showNotification("Error fetching plot data", "error");
@@ -1052,7 +1052,7 @@ const refreshMeshList = async () => {
             showNotification("Please select a tutorial first", "error");
             return;
         }
-        const response = await fetch(`/api/availablemeshes?tutorial=${encodeURIComponent(tutorial)}`);
+        const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
         if (!response.ok)
             throw new Error("Failed to fetch mesh files");
         const data = await response.json();

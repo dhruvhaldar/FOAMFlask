@@ -781,7 +781,7 @@ const updateAeroPlots = async (): Promise<void> => {
   if (!selectedTutorial) return;
   try {
     const response = await fetch(
-      `/api/latestdata?tutorial=${encodeURIComponent(selectedTutorial)}`
+      `/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`
     );
     const data = await response.json();
     if (data.error) return;
@@ -889,7 +889,7 @@ const updatePlots = async (): Promise<void> => {
 
   try {
     const data = await fetchWithCache(
-      `/api/plotdata?tutorial=${encodeURIComponent(selectedTutorial)}`
+      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
     );
     if (data.error) {
       console.error("FOAMFlask Error fetching plot data", data.error);
@@ -1209,7 +1209,7 @@ const refreshMeshList = async (): Promise<void> => {
       return;
     }
     const response = await fetch(
-      `/api/availablemeshes?tutorial=${encodeURIComponent(tutorial)}`
+      `/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`
     );
     if (!response.ok) throw new Error("Failed to fetch mesh files");
     const data = await response.json();
@@ -1319,7 +1319,7 @@ const loadMeshVisualization = async (): Promise<void> => {
   }
   try {
     showNotification("Loading mesh...", "info");
-    const infoResponse = await fetch("/api/loadmesh", {
+    const infoResponse = await fetch("/api/load_mesh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filepath: selectedPath }),
@@ -1685,7 +1685,7 @@ async function refreshPostList(): Promise<void> {
     '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
 
   try {
-    // Simulate API call with setTimeout for placeholder content
+    // Simulate call with setTimeout for placeholder content
     setTimeout(() => {
       postContainer.innerHTML = `
         <div class="space-y-4">
