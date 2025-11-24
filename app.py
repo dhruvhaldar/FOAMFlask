@@ -503,7 +503,19 @@ def run_case():
         )
         watcher_thread.start()
 
-        docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
+        # Determine if command is an OpenFOAM command or a script file
+        openfoam_commands = ["blockMesh", "simpleFoam", "pimpleFoam", "decomposePar", "reconstructPar", "foamToVTK", "paraFoam"]
+        
+        if command.startswith("./") or command in openfoam_commands:
+            if command.startswith("./"):
+                # Script file - make executable and run
+                docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && {command}'"
+            else:
+                # OpenFOAM command - run directly after sourcing bashrc
+                docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && {command}'"
+        else:
+            # Fallback to original behavior
+            docker_cmd = f"bash -c 'source {bashrc} && cd {container_case_path} && chmod +x {command} && ./{command}'"
 
         container = client.containers.run(
             DOCKER_IMAGE,
