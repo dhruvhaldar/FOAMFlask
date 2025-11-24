@@ -10,6 +10,10 @@ def init_build_system(app):
     """
     @app.before_first_request
     def run_build():
+        """Run the build process for frontend assets in development.
+        
+        This function minifies JavaScript and CSS files when in development mode.
+        """
         if app.config.get('ENV') == 'development':
             # In development, we'll run the build process
             try:

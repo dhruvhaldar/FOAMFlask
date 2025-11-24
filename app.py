@@ -474,6 +474,11 @@ def run_case():
         return {"error": "Missing tutorial or caseDir"}, 400
 
     def stream_container_logs():
+        """Stream container logs for OpenFOAM command execution.
+        
+        Yields:
+            Log lines as HTML-formatted strings.
+        """
         client = get_docker_client()
         if client is None:
             # Return a short HTML stream explaining the issue
@@ -832,6 +837,11 @@ def run_foamtovtk():
         return {"error": "Missing tutorial or caseDir"}, 400
 
     def stream_foamtovtk_logs():
+        """Stream logs for foamToVTK conversion process.
+        
+        Yields:
+            Log lines as HTML-formatted strings.
+        """
         client = get_docker_client()
         if client is None:
             yield "[FOAMFlask] [Error] Docker daemon not available. Please start Docker Desktop and try again.<br>"
@@ -892,6 +902,11 @@ def run_foamtovtk():
 # --- PyVista Post Processing Visualization Endpoints ---
 @app.route("/api/post_process", methods=["POST"])
 def post_process():
+    """Handle post-processing requests for OpenFOAM results.
+    
+    Returns:
+        JSON response with post-processing status or error.
+    """
     try:
         # Add your post-processing logic here
         return jsonify({"status": "success", "message": "Post processing endpoint"})
@@ -1089,6 +1104,11 @@ def create_contour():
 
 @app.route("/api/upload_vtk", methods=["POST"])
 def upload_vtk():
+    """Upload VTK files for visualization.
+    
+    Returns:
+        JSON response with upload status or error.
+    """
     logger.info("[FOAMFlask] [upload_vtk] Received file upload request")
     if "file" not in request.files:
         return jsonify({"success": False, "error": "No file part"}), 400
