@@ -1,13 +1,16 @@
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-f5d7e3)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
 [![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
 [![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-blue.svg)](https://pdoc3.readthedocs.io/)
 
 # FOAMFlask
 
-**FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser.
+**FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
+
+**Note**: Currently only loading and execution of OpenFOAM tutorials (`$FOAM_TUTORIALS`) is supported. Creating custom cases is planned.
 
 ---
 
@@ -31,10 +34,42 @@ git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
 ```
 
-2. **Install dependencies**:
+2. **Install Python dependencies**:
 ```bash
 pip install -r requirements.txt
 ```
+
+3. **Install Node.js dependencies** (for TypeScript compilation):
+```bash
+npm install
+```
+
+4. **Build the frontend**:
+```bash
+npm run build
+```
+
+### Frontend Build Process
+
+FOAMFlask uses TypeScript for the frontend, which provides type safety and better development experience. The build process compiles TypeScript to browser-compatible JavaScript:
+
+- **Source**: `static/ts/foamflask_frontend.ts` (TypeScript)
+- **Compiled**: `static/js/foamflask_frontend.js` (JavaScript)
+- **Process**: TypeScript compiler (`tsc`) + custom copy script
+
+#### Build Commands:
+```bash
+npm run build          # Compile TypeScript to JavaScript
+npm run build:watch    # Watch mode: auto-compile on file changes
+```
+
+The build process:
+1. Compiles TypeScript (`static/ts/*.ts`) to JavaScript (`static/js-build/*.js`)
+2. Copies compiled files to `static/js/` directory
+3. Removes Plotly import (since Plotly is loaded via CDN)
+4. Makes the frontend ready for browser deployment
+
+**Note**: You must run `npm run build` after making any TypeScript changes for them to take effect in the browser.
 
 ## Usage
 1. **Run the server**:
@@ -63,16 +98,71 @@ Live output is shown in the console panel.
 
 ---
 
+## Development
+
+### Frontend Development Workflow
+
+1. **Make changes to TypeScript files** (`static/ts/*.ts`)
+2. **Compile to JavaScript**:
+   ```bash
+   npm run build        # One-time build
+   npm run build:watch  # Auto-compile on changes (recommended for development)
+   ```
+3. **Refresh browser** to see changes
+
+### TypeScript Benefits
+
+- **Type Safety**: Catch errors at compile time instead of runtime
+- **Better IDE Support**: Autocomplete, refactoring, and error checking
+- **Modern JavaScript**: Use latest ES6+ features with backward compatibility
+- **Code Organization**: Interfaces, classes, and modules for cleaner code
+
+### File Structure
+
+```
+static/
+├── ts/                    # TypeScript source (development)
+│   └── foamflask_frontend.ts
+├── js-build/              # TypeScript compiler output (intermediate)
+│   └── foamflask_frontend.js
+└── js/                    # Browser-ready JavaScript (production)
+    └── foamflask_frontend.js
+```
+
+**Important**: Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
+
+---
+
 ## Project Structure
 ```
 FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
-├── static/
-│ ├── FOAMFlask_frontend.html # HTML template
-│ └── js/FOAMFlask_frontend.js # JavaScript logic
-├── my-py-env/ # Optional: local Python virtual environment
+├── package.json # Node.js dependencies and build scripts
+├── tsconfig.json # TypeScript configuration
+├── copy-built-js.mjs # Custom build script
 ├── requirements.txt # Python dependencies
+├── static/
+│ ├── html/
+│ │ └── foamflask_frontend.html # HTML template
+│ ├── ts/
+│ │ └── foamflask_frontend.ts # TypeScript source code
+│ ├── js/
+│ │ └── foamflask_frontend.js # Compiled JavaScript (for browser)
+│ ├── js-build/
+│ │ └── foamflask_frontend.js # TypeScript compiler output
+│ └── js/
+│   └── frontend/
+│       └── isosurface.js # PyVista integration
+├── backend/
+│   ├── mesh/
+│   │   └── mesher.py # Mesh generation utilities
+│   ├── plots/
+│   │   └── realtime_plots.py # Real-time plotting backend
+│   └── post/
+│       └── isosurface.py # Post-processing utilities
+├── docs/ # Generated documentation
+├── environments/ # Python virtual environments
 └── README.md # This file
 ```
 ---
@@ -204,6 +294,20 @@ To generate Python-related API documentation, run the following command:
  .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs build_utils.py
 ```
 Stored under `docs` directory as `app.html` and `build_utils.html`
+
+### Generate Frontend Documentation
+
+To generate TypeScript API documentation for the frontend, run the following command:
+
+```bash
+npm run docs
+```
+
+This generates comprehensive documentation for all TypeScript files in `docs/frontend/` directory, including:
+- **foamflask_frontend.ts** - Main frontend logic
+- **frontend/isosurface.ts** - PyVista integration functions
+
+The documentation includes function signatures, type definitions, and interactive HTML documentation.
 
 </details>
 

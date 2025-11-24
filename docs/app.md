@@ -18,6 +18,8 @@ The FOAMPilot API is a Flask-based web service that provides endpoints for:
   - [Case Management](#case-management)
   - [Simulation Control](#simulation-control)
   - [Data Retrieval](#data-retrieval)
+  - [Mesh Visualization](#mesh-visualization)
+  - [Post-Processing](#post-processing)
   - [Configuration](#configuration)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -55,16 +57,22 @@ curl http://localhost:5000/get_tutorials
 
 ### Simulation Control
 
-#### `POST /run_case`
+#### `POST /run`
 **Description**: Execute an OpenFOAM case in a Docker container.
 
 **Request Body**:
 ```json
 {
   "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "command": "blockMesh",
   "caseDir": "/path/to/case"
 }
 ```
+
+**Parameters**:
+- `tutorial` (required): Name of the tutorial to run
+- `command` (required): OpenFOAM command to execute (e.g., "blockMesh", "simpleFoam")
+- `caseDir` (required): Path to the case directory
 
 **Response**:
 - `200 OK`: Returns simulation output as streamed text/event-stream
@@ -73,9 +81,9 @@ curl http://localhost:5000/get_tutorials
 
 **Example**:
 ```bash
-curl -X POST http://localhost:5000/run_case \
+curl -X POST http://localhost:5000/run \
   -H "Content-Type: application/json" \
-  -d '{"tutorial": "incompressible/simpleFoam/airFoil2D"}'
+  -d '{"tutorial": "fluid/aerofoilNACA0012Steady", "command": "blockMesh", "caseDir": "/path/to/case"}'
 ```
 
 ### Data Retrieval
@@ -125,6 +133,131 @@ curl "http://localhost:5000/api/available_fields?tutorial=incompressible/simpleF
 - `404 Not Found`: If case directory doesn't exist
 - `500 Internal Server Error`: For other errors
 
+#### `GET /api/residuals`
+**Description**: Get residuals data from OpenFOAM log file.
+
+**Query Parameters**:
+- `tutorial` (required): Name of the tutorial
+
+**Response**:
+- `200 OK`: JSON object with residuals data (time, Ux, Uy, Uz, p, k, epsilon, omega)
+- `400 Bad Request`: If tutorial parameter is missing
+- `404 Not Found`: If case directory doesn't exist
+- `500 Internal Server Error`: For other errors
+
+**Example**:
+```bash
+curl "http://localhost:5000/api/residuals?tutorial=incompressible/simpleFoam/airFoil2D"
+```
+
+### Mesh Visualization
+
+#### `GET /api/available_meshes`
+**Description**: Get list of available mesh files in the case directory.
+
+**Query Parameters**:
+- `tutorial` (required): Name of the tutorial
+
+**Response**:
+- `200 OK`: JSON object with array of mesh file information
+- `400 Bad Request`: If tutorial parameter is missing
+- `500 Internal Server Error**: For other errors
+
+**Example**:
+```bash
+curl "http://localhost:5000/api/available_meshes?tutorial=incompressible/simpleFoam/airFoil2D"
+```
+
+#### `POST /api/load_mesh`
+**Description**: Load a mesh file for visualization.
+
+**Request Body**:
+```json
+{
+  "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "meshFile": "constant/polyMesh"
+}
+```
+
+**Response**:
+- `200 OK`: JSON object with mesh data and visualization information
+- `400 Bad Request`: If required parameters are missing
+- `404 Not Found`: If mesh file doesn't exist
+- `500 Internal Server Error`: For other errors
+
+#### `POST /api/mesh_screenshot`
+**Description**: Generate a screenshot of the mesh visualization.
+
+**Request Body**:
+```json
+{
+  "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "meshFile": "constant/polyMesh",
+  "camera": "front",
+  "width": 800,
+  "height": 600
+}
+```
+
+**Response**:
+- `200 OK`: JSON object with base64-encoded screenshot image
+- `400 Bad Request`: If required parameters are missing
+- `500 Internal Server Error`: For other errors
+
+#### `POST /api/mesh_interactive`
+**Description**: Generate interactive HTML mesh visualization.
+
+**Request Body**:
+```json
+{
+  "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "meshFile": "constant/polyMesh"
+}
+```
+
+**Response**:
+- `200 OK`: HTML content for interactive mesh viewer
+- `400 Bad Request`: If required parameters are missing
+- `500 Internal Server Error`: For other errors
+
+### Post-Processing
+
+#### `POST /api/contours/create`
+**Description**: Generate 3D contour visualization for a scalar field.
+
+**Request Body**:
+```json
+{
+  "tutorial": "incompressible/simpleFoam/airFoil2D",
+  "scalarField": "p",
+  "numIsosurfaces": 10,
+  "range": [0, 100]
+}
+```
+
+**Parameters**:
+- `tutorial` (required): Name of the tutorial
+- `scalarField` (required): Field name to visualize (e.g., "p", "U", "k")
+- `numIsosurfaces` (optional): Number of isosurfaces (default: 10)
+- `range` (optional): Min/max values for contour range
+
+**Response**:
+- `200 OK`: HTML content for interactive contour visualization
+- `400 Bad Request`: If required parameters are missing
+- `500 Internal Server Error**: For other errors
+
+#### `POST /api/upload_vtk`
+**Description**: Upload a VTK file for visualization.
+
+**Request Body**: `multipart/form-data`
+- `file`: VTK file to upload
+- `tutorial`: Tutorial name (optional)
+
+**Response**:
+- `200 OK`: JSON object with uploaded file information
+- `400 Bad Request`: If no file is uploaded
+- `500 Internal Server Error**: For other errors
+
 ### Configuration
 
 #### `GET /get_case_root`
@@ -138,6 +271,27 @@ curl "http://localhost:5000/api/available_fields?tutorial=incompressible/simpleF
 curl http://localhost:5000/get_case_root
 ```
 
+#### `POST /set_case`
+**Description**: Set the root directory for case storage.
+
+**Request Body**:
+```json
+{
+  "caseDir": "/path/to/case/directory"
+}
+```
+
+**Response**:
+- `200 OK`: JSON object with status and new case directory
+- `400 Bad Request`: If case directory is not provided
+
+**Example**:
+```bash
+curl -X POST http://localhost:5000/set_case \
+  -H "Content-Type: application/json" \
+  -d '{"caseDir": "/path/to/case/directory"}'
+```
+
 #### `GET /get_docker_config`
 **Description**: Get current Docker configuration.
 
@@ -147,6 +301,28 @@ curl http://localhost:5000/get_case_root
   "dockerImage": "haldardhruv/ubuntu_noble_openfoam:v12",
   "openfoamVersion": "12"
 }
+```
+
+#### `POST /set_docker_config`
+**Description**: Set Docker configuration.
+
+**Request Body**:
+```json
+{
+  "dockerImage": "haldardhruv/ubuntu_noble_openfoam:v12",
+  "openfoamVersion": "12"
+}
+```
+
+**Response**:
+- `200 OK`: JSON object with status and new configuration
+- `400 Bad Request`: If required parameters are missing
+
+**Example**:
+```bash
+curl -X POST http://localhost:5000/set_docker_config \
+  -H "Content-Type: application/json" \
+  -d '{"dockerImage": "haldardhruv/ubuntu_noble_openfoam:v12", "openfoamVersion": "12"}'
 ```
 
 ## Error Handling

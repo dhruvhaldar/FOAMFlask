@@ -4,11 +4,13 @@
   "scripts": {
     "build": "tsc",
     "postbuild": "node copy-built-js.mjs",
-    "build:watch": "tsc -w"
+    "build:watch": "tsc -w",
+    "docs": "typedoc static/ts/*.ts static/ts/**/*.ts --out docs/frontend --excludePrivate --excludeInternal --readme none"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/plotly.js": "^3.0.8",
+    "typedoc": "^0.28.14",
     "typescript": "^5.6.0"
   }
 }
