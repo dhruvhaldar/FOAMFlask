@@ -721,10 +721,10 @@
 
 <!-- JS loading (compiled from TypeScript) -->
 <!-- Load isosurface module first (required by foamflask_frontend.js) -->
-<script src="{{ url_for('static', filename='js/frontend/isosurface.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/frontend/isosurface.js') }}"></script>
 
 <!-- Main frontend script -->
-<script src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
 
 
 <footer class="py-4 bg-white border-t border-gray-200">

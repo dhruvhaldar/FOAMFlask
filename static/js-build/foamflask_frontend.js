@@ -4,7 +4,11 @@
  * External Dependencies:
  * - isosurface.js: Provides contour generation and visualization functions
  *   Required functions: generateContours, generateContoursWithParams, downloadContourImage, etc.
+ *  Plotly: Loaded via CDN in HTML, available as global object
  */
+// Plotly is loaded globally via CDN in the HTML file
+// Utility functions
+// FOAMFlask Frontend TypeScript External Dependencies
 import * as Plotly from "plotly.js";
 // Utility functions
 const getElement = (id) => {
@@ -326,8 +330,8 @@ window.onload = async () => {
                 tutorialSelect.value = savedTutorial;
         }
         const [caseRootData, dockerConfigData] = await Promise.all([
-            fetchWithCache("/getcaseroot"),
-            fetchWithCache("/getdockerconfig"),
+            fetchWithCache("/get_case_root"),
+            fetchWithCache("/get_docker_config"),
         ]);
         caseDir = caseRootData.caseDir;
         const caseDirInput = document.getElementById("caseDir");
