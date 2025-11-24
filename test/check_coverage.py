@@ -68,7 +68,7 @@ if __name__ == "__main__":
         for test_file in test_files:
             print(f"   Running: {test_file}")
             result = subprocess.run([
-                sys.executable, "-m", "coverage", "run", str(test_file)
+                sys.executable, "-m", "coverage", "run", "-a", str(test_file)
             ], capture_output=True, text=True)
             
             if result.returncode != 0:

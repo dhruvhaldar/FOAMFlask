@@ -984,6 +984,174 @@ def set_docker_config():
 
 ---
 
+### api_available_meshes
+- Route: `GET /api/available_meshes`
+- Description: Get list of available mesh files in the case directory.
+- Args:
+  - `tutorial` (str) — The name of the tutorial.
+- Returns: `list` — List of available mesh files.
+
+Source (excerpt):
+```python
+@app.route("/api/available_meshes", methods=["GET"])
+def api_available_meshes():
+    """
+    Get list of available mesh files in the case directory.
+
+    Args:
+        tutorial (str): The name of the tutorial.
+
+    Returns:
+        list: List of available mesh files.
+    """
+    tutorial = request.args.get("tutorial")
+    if not tutorial:
+        return jsonify({"error": "No tutorial specified"}), 400
+```
+
+---
+
+### api_load_mesh
+- Route: `POST /api/load_mesh`
+- Description: Load a mesh file and return mesh information.
+- Args:
+  - `file_path` (str) — Path to the mesh file.
+  - `for_contour` (bool, optional) — Whether to load for contour visualization.
+- Returns: `dict` — Mesh information.
+
+Source (excerpt):
+```python
+@app.route("/api/load_mesh", methods=["POST"])
+def api_load_mesh():
+    """
+    Load a mesh file and return mesh information.
+
+    Args:
+        file_path (str): Path to the mesh file.
+
+    Returns:
+        dict: Mesh information.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+    for_contour = data.get("for_contour", False)
+```
+
+---
+
+### api_mesh_screenshot
+- Route: `POST /api/mesh_screenshot`
+- Description: Generate a screenshot of the mesh.
+- Args:
+  - `file_path` (str) — Path to the mesh file.
+  - `width` (int) — Screenshot width.
+  - `height` (int) — Screenshot height.
+  - `show_edges` (bool) — Whether to show edges.
+  - `color` (str) — Mesh color.
+  - `camera_position` (str) — Camera position.
+- Returns: `dict` — Base64-encoded image.
+
+Source (excerpt):
+```python
+@app.route("/api/mesh_screenshot", methods=["POST"])
+def api_mesh_screenshot():
+    """
+    Generate a screenshot of the mesh.
+
+    Args:
+        file_path (str): Path to the mesh file.
+        width (int): Screenshot width.
+        height (int): Screenshot height.
+        show_edges (bool): Whether to show edges.
+        color (str): Mesh color.
+        camera_position (str): Camera position.
+
+    Returns:
+        dict: Base64-encoded image.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+```
+
+---
+
+### api_mesh_interactive
+- Route: `POST /api/mesh_interactive`
+- Description: Generate an interactive HTML viewer for the mesh.
+- Args:
+  - `file_path` (str) — Path to the mesh file.
+  - `show_edges` (bool) — Whether to show edges.
+  - `color` (str) — Mesh color.
+- Returns: `HTML` — Interactive mesh viewer page.
+
+Source (excerpt):
+```python
+@app.route("/api/mesh_interactive", methods=["POST"])
+def api_mesh_interactive():
+    """
+    Generate an interactive HTML viewer for the mesh.
+
+    Args:
+        file_path (str): Path to the mesh file.
+        show_edges (bool): Whether to show edges.
+        color (str): Mesh color.
+
+    Returns:
+        HTML: Interactive mesh viewer page.
+    """
+    data = request.get_json()
+    file_path = data.get("file_path")
+```
+
+---
+
+### create_contour
+- Route: `POST /api/contours/create`
+- Description: Create isosurfaces for the current mesh.
+- Args:
+  - Various parameters for contour generation (from request JSON)
+- Returns: `HTML` — Interactive visualization HTML.
+
+Source (excerpt):
+```python
+@app.route("/api/contours/create", methods=["POST", "OPTIONS"])
+def create_contour():
+    """
+    Create isosurfaces for the current mesh.
+
+    Returns:
+        HTML: Interactive visualization HTML.
+    """
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        return "", 204
+```
+
+---
+
+### upload_vtk
+- Route: `POST /api/upload_vtk`
+- Description: Upload VTK files for visualization.
+- Args:
+  - `file` (file) — VTK file to upload (from request.files).
+- Returns: `dict` — JSON response with upload status or error.
+
+Source (excerpt):
+```python
+@app.route("/api/upload_vtk", methods=["POST"])
+def upload_vtk():
+    """Upload VTK files for visualization.
+    
+    Returns:
+        JSON response with upload status or error.
+    """
+    logger.info("[FOAMFlask] [upload_vtk] Received file upload request")
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "No file part"}), 400
+```
+
+---
+
 ## Notes / Observations
 
 - Many endpoints expect a `tutorial` parameter and rely on a configured `CASE_ROOT`.

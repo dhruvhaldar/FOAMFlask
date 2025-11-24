@@ -28,22 +28,22 @@ def get_docstring_coverage(module_path: str) -> Tuple[int, int, float]:
         documented = 0
         total = 0
         
-        for node in ast.walk(tree):
-            # Check functions
+        for node in tree.body:
+            # Check functions at module level
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 total += 1
                 if (ast.get_docstring(node) is not None and 
                     ast.get_docstring(node).strip()):
                     documented += 1
             
-            # Check classes
+            # Check classes and their direct methods
             elif isinstance(node, ast.ClassDef):
                 total += 1
                 if (ast.get_docstring(node) is not None and 
                     ast.get_docstring(node).strip()):
                     documented += 1
                 
-                # Check methods inside classes
+                # Check only direct methods inside classes
                 for item in node.body:
                     if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         total += 1
@@ -131,13 +131,17 @@ def main():
             
             # Show missing docstrings if any
             missing = get_missing_docstrings(file_path)
-            if missing and len(missing) <= 10:  # Show first 10 missing items
-                print(f"   Missing docstrings:")
-                for item in missing[:10]:
-                    print(f"     - {item}")
-                if len(missing) > 10:
+            if missing:
+                if len(missing) <= 10:
+                    print(f"   Missing docstrings:")
+                    for item in missing:
+                        print(f"     - {item}")
+                else:
+                    print(f"   Missing docstrings:")
+                    for item in missing[:10]:
+                        print(f"     - {item}")
                     print(f"     ... and {len(missing) - 10} more")
-            elif missing:
+            elif missing is not None:
                 print(f"   Missing docstrings: {len(missing)} items")
         else:
             print(f"\n❌ {file_path} - File not found")
