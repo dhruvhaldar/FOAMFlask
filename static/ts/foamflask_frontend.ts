@@ -1683,11 +1683,20 @@ async function refreshPostList(): Promise<void> {
   postContainer.innerHTML =
     '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
 
+  // Call VTK file loading function
+  await refreshPostListVTK();
+
   try {
-    // Simulate call with setTimeout for placeholder content
-    setTimeout(() => {
-      postContainer.innerHTML = `
+    postContainer.innerHTML = `
         <div class="space-y-4">
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-medium text-gray-900">VTK File Selection</h3>
+            <div class="mt-2">
+              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+                <option value="">-- Select a VTK file --</option>
+              </select>
+            </div>
+          </div>
           <div class="bg-white p-4 rounded-lg shadow">
             <h3 class="font-medium text-gray-900">Available Operations</h3>
             <div class="mt-2 space-y-2">
@@ -1708,7 +1717,6 @@ async function refreshPostList(): Promise<void> {
           <div id="post-results" class="mt-4"></div>
         </div>
       `;
-    }, 500);
   } catch (error: unknown)  {
     console.error(
       "[FOAMFlask] [refreshPostList] Error loading post-processing options:",
