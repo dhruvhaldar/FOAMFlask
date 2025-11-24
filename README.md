@@ -252,11 +252,16 @@ Github-flavored Markdown is already generated under `docs` directory as `app.md`
 To generate Python-related API documentation, run the following command:
 
 ```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc --html --force --output-dir docs app.py
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc --html --force --output-dir docs build_utils.py
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc build_utils.py --output-dir docs
 ```
 
-Stored under `docs` directory as `app.html` and `build_utils.html`
+This generates HTML documentation in the `docs` directory as `app.html` and `build_utils.html`.
+
+**Note**: Make sure to install pdoc first if not already installed:
+```bash
+./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc
+```
 
 </details>
 
@@ -285,15 +290,22 @@ python3 -m venv .\environments\my-python313-venv-win
 ```
 
 ### Generate API Documentation
+
 Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
 
 To generate Python-related API documentation, run the following command:
 
 ```powershell
- .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs app.py
- .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc --html --force --output-dir docs build_utils.py
+.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
+.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc build_utils.py --output-dir docs
 ```
-Stored under `docs` directory as `app.html` and `build_utils.html`
+
+This generates HTML documentation in the `docs` directory as `app.html` and `build_utils.html`.
+
+**Note**: Make sure to install pdoc first if not already installed:
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc
+```
 
 ### Generate Frontend Documentation
 

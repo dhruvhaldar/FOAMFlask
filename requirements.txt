@@ -60,6 +60,7 @@ pooch==1.8.2
 prompt_toolkit==3.0.52
 propcache==0.4.1
 pure_eval==0.2.3
+pdoc==16.0.0
 Pygments==2.19.2
 pyparsing==3.2.5
 python-dateutil==2.9.0.post0
