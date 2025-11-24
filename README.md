@@ -161,6 +161,13 @@ FOAMFlask/
 │   │   └── realtime_plots.py # Real-time plotting backend
 │   └── post/
 │       └── isosurface.py # Post-processing utilities
+├── test/
+│   ├── check_coverage.py # Code coverage analysis script
+│   ├── check_docstrings.py # Docstring coverage checker
+│   ├── docker_test.py # Docker functionality tests
+│   ├── pyvista_test.py # PyVista integration tests
+│   ├── foamlib_test.py # FOAM library tests
+│   └── bike.vtp # Test VTK file
 ├── docs/ # Generated documentation
 ├── environments/ # Python virtual environments
 └── README.md # This file
@@ -320,6 +327,45 @@ This generates comprehensive documentation for all TypeScript files in `docs/fro
 - **frontend/isosurface.ts** - PyVista integration functions
 
 The documentation includes function signatures, type definitions, and interactive HTML documentation.
+
+### Check Code Coverage
+
+To check code coverage and measure test effectiveness:
+
+```bash
+# Install coverage.py (if not already installed)
+.\environments\my-python313-venv-win\Scripts\python.exe -m pip install coverage
+
+# Run coverage on your tests
+.\environments\my-python313-venv-win\Scripts\python.exe -m coverage run test/test_file.py
+
+# Generate coverage report
+.\environments\my-python313-venv-win\Scripts\python.exe -m coverage report
+
+# Generate HTML coverage report (recommended)
+.\environments\my-python313-venv-win\Scripts\python.exe -m coverage html
+```
+
+**Quick Coverage Check**:
+```bash
+python test/check_coverage.py
+```
+
+This script automatically:
+- Installs coverage.py if needed
+- Finds and runs all test files in the `test/` directory
+- Generates text and HTML coverage reports
+- Provides coverage quality ratings
+
+**Coverage Commands**:
+```bash
+python -m coverage run test/test_file.py      # Run coverage
+python -m coverage report                    # Show report
+python -m coverage html                      # HTML report
+python -m coverage report -m                 # Terminal report
+python -m coverage report --skip-covered     # Missing lines only
+python -m coverage erase                      # Clear data
+```
 
 </details>
 
