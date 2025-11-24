@@ -6,5 +6,5 @@ node_modules
 environments/*
 backend/mesh/__pycache__/*.pyc
 backend/mesh/__pycache__/*
-static/js-build/*.js
-static/js-build/*.js.map
+static/js-build/**/*.js
+static/js-build/**/*.js.map
