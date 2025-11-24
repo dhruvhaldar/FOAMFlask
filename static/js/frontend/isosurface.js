@@ -116,9 +116,14 @@ function showLoadingState(container, message = 'Loading...') {
     container.innerHTML = `
         <div class="flex items-center justify-center h-full">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <span class="ml-4 text-gray-600">${message}</span>
+            <span class="ml-4 text-gray-600"></span>
         </div>
     `;
+    // Set message text safely
+    const messageSpan = container.querySelector('span');
+    if (messageSpan) {
+        messageSpan.textContent = message;
+    }
 }
 /**
  * Get selected tutorial from dropdown
@@ -243,10 +248,15 @@ function displayContourVisualization(container, htmlContent) {
             container.innerHTML = `
                 <div class="p-4 text-red-600 bg-red-50 rounded-lg">
                     <h3 class="font-semibold">Error displaying visualization</h3>
-                    <p class="text-sm mt-1">${message}</p>
+                    <p class="text-sm mt-1"></p>
                     <p class="text-xs mt-2 text-gray-600">Check browser console for details</p>
                 </div>
             `;
+            // Set error message safely
+            const messageP = container.querySelector('p.text-sm');
+            if (messageP) {
+                messageP.textContent = message;
+            }
         }
     }
 }
@@ -268,9 +278,7 @@ function handleContourError(placeholder, viewer, error) {
                 <div class="text-red-600 text-lg font-semibold mb-4">
                     ⚠️ Error Generating Contours
                 </div>
-                <div class="text-gray-600 mb-4">
-                    ${errorMessage}
-                </div>
+                <div class="text-gray-600 mb-4"></div>
                 <div class="text-sm text-gray-500 mt-4 p-4 bg-gray-50 rounded">
                     <p><strong>Troubleshooting:</strong></p>
                     <ul class="text-left mt-2">
@@ -288,6 +296,11 @@ function handleContourError(placeholder, viewer, error) {
                 </button>
             </div>
         `;
+        // Set error message safely
+        const errorDiv = viewer.querySelector('.text-gray-600.mb-4');
+        if (errorDiv) {
+            errorDiv.textContent = errorMessage;
+        }
     }
 }
 /**
@@ -299,14 +312,33 @@ export async function generateContoursWithParams() {
         const numIsosurfacesInput = document.getElementById('numIsosurfaces');
         const scalarField = scalarFieldSelect?.value || 'U_Magnitude';
         const numIsosurfaces = numIsosurfacesInput?.value ? parseInt(numIsosurfacesInput.value, 10) : 5;
+        // Get tutorial from select (same logic as generateContours)
+        const selectedTutorial = getTutorialFromSelect() ?? '';
+        if (!selectedTutorial) {
+            if (typeof showNotification === 'function') {
+                showNotification('Please select a tutorial first', 'warning');
+            }
+            return;
+        }
+        // Get case directory from input field (same logic as generateContours)
+        const caseDirInput = document.getElementById('caseDir');
+        const selectedCaseDir = caseDirInput?.value || '';
+        if (!selectedCaseDir) {
+            if (typeof showNotification === 'function') {
+                showNotification('Case directory not set. Please set it in the Setup page.', 'warning');
+            }
+            return;
+        }
         console.log('[FOAMFlask] [generateContoursWithParams] Generating contours with parameters:', {
+            tutorial: selectedTutorial,
+            caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces
         });
-        // Pass all required properties
+        // Pass all required properties with real values
         await generateContours({
-            tutorial: 'defaultTutorial', // Replace with actual value if available
-            caseDir: 'defaultCaseDir', // Replace with actual value if available
+            tutorial: selectedTutorial,
+            caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces
         });
@@ -329,9 +361,10 @@ export function downloadContourImage() {
         return;
     }
     const contourViewer = document.getElementById('contourViewer');
-    if (!contourViewer)
+    const iframe = document.getElementById('contourVisualizationFrame');
+    if (!contourViewer || !iframe || !iframe.contentDocument)
         return;
-    const canvas = contourViewer.querySelector('canvas');
+    const canvas = iframe.contentDocument.querySelector('canvas');
     if (!canvas) {
         if (typeof showNotification === 'function') {
             showNotification('Cannot download: visualization not rendered as canvas', 'error');

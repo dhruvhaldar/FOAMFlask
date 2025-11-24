@@ -21,13 +21,6 @@ type MeshFile = {
 
 type CameraView = "front" | "back" | "left" | "right" | "top" | "bottom";
 
-// External declarations
-declare const generateContours: (options: {
-  tutorial: string;
-  caseDir: string;
-  scalarField: string;
-  numIsosurfaces: number;
-}) => Promise<void>;
 
 // Utility functions
 const getElement = <T extends HTMLElement>(id: string): T | null => {
@@ -1749,13 +1742,6 @@ async function runPostOperation(operation: string): Promise<void> {
 
   try {
     if (operation === "create_contour") {
-      // Delegate to the isosurface module's generateContours function
-      if (typeof generateContours !== "function") {
-        throw new Error(
-          "Isosurface module not loaded. Please check that isosurface.js is included."
-        );
-      }
-
       const tutorialSelect = document.getElementById(
         "tutorialSelect"
       ) as HTMLSelectElement | null;
@@ -1771,7 +1757,7 @@ async function runPostOperation(operation: string): Promise<void> {
       ) as HTMLInputElement | null;
       const caseDirValue = caseDirInput ? caseDirInput.value : "";
 
-      await generateContours({
+      await generateContoursFn({
         tutorial: tutorial,
         caseDir: caseDirValue,
         scalarField: "U_Magnitude",

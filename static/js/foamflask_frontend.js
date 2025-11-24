@@ -1485,10 +1485,6 @@ async function runPostOperation(operation) {
     const resultsDiv = document.getElementById("post-results") || document.body;
     try {
         if (operation === "create_contour") {
-            // Delegate to the isosurface module's generateContours function
-            if (typeof generateContours !== "function") {
-                throw new Error("Isosurface module not loaded. Please check that isosurface.js is included.");
-            }
             const tutorialSelect = document.getElementById("tutorialSelect");
             const tutorial = tutorialSelect ? tutorialSelect.value : null;
             if (!tutorial) {
@@ -1497,7 +1493,7 @@ async function runPostOperation(operation) {
             }
             const caseDirInput = document.getElementById("caseDir");
             const caseDirValue = caseDirInput ? caseDirInput.value : "";
-            await generateContours({
+            await generateContoursFn({
                 tutorial: tutorial,
                 caseDir: caseDirValue,
                 scalarField: "U_Magnitude",
