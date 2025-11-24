@@ -120,7 +120,7 @@ Live output is shown in the console panel.
 
 ### File Structure
 
-```
+```text
 static/
 ├── ts/                    # TypeScript source (development)
 │   └── foamflask_frontend.ts
@@ -135,7 +135,7 @@ static/
 ---
 
 ## Project Structure
-```
+```text
 FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
