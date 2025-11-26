@@ -3,6 +3,7 @@ Tests for the main FOAMFlask application endpoints.
 """
 import json
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,10 @@ from docker.errors import DockerException
 
 # Import the app module
 import app as flask_app
+
+# Mock the isosurface_visualizer module
+sys.modules['isosurface_visualizer'] = MagicMock()
+from isosurface_visualizer import load_mesh, generate_isosurfaces, get_interactive_html
 
 def test_index_route(client):
     """Test the index route returns a successful response."""
@@ -874,3 +879,190 @@ def test_run_case_container_cleanup_with_errors(client, test_case_dir):
             "Failed to stream container logs",
             "Error getting container logs"
         ]), f"Expected error message not found in response: {response_text}"
+
+# Contour-related tests
+
+def test_create_contour_options_returns_204(client):
+    response = client.options('/api/contours/create')
+    assert response.status_code == 204
+    assert response.data == b""
+
+def test_create_contour_requires_json(client):
+    response = client.post('/api/contours/create', data="notjson", content_type='text/plain')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert not data["success"]
+    assert "Expected JSON" in data["error"]
+
+def test_create_contour_missing_tutorial(client):
+    response = client.post('/api/contours/create', json={"caseDir": "/path"})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert not data["success"]
+    assert "Tutorial not specified" in data["error"]
+
+def test_create_contour_missing_caseDir(client):
+    response = client.post('/api/contours/create', json={"tutorial": "tutorial_name"})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert not data["success"]
+    assert "Case directory not specified" in data["error"]
+
+def test_create_contour_case_dir_not_found(client, tmp_path):
+    # Provide relative caseDir which does not exist under CASE_ROOT
+    rel_case_dir = "nonexistent_case"
+    
+    with patch('app.CASE_ROOT', str(tmp_path)):
+        response = client.post('/api/contours/create', json={
+            "tutorial": "tutorial_name",
+            "caseDir": rel_case_dir
+        })
+        assert response.status_code == 404
+        data = response.get_json()
+        assert not data["success"]
+        assert "Case directory not found" in data["error"]
+
+def test_create_contour_no_vtk_files(client, tmp_path):
+    tutorial_dir = tmp_path / "existing_case"
+    tutorial_dir.mkdir()
+    
+    with patch('app.CASE_ROOT', str(tmp_path)):
+        response = client.post('/api/contours/create', json={
+            "tutorial": "tutorial_name",
+            "caseDir": str(tutorial_dir)
+        })
+        assert response.status_code == 404
+        data = response.get_json()
+        assert not data["success"]
+        assert "No VTK files found" in data["error"]
+
+def test_create_contour_load_mesh_failure(client, tmp_path):
+    tutorial_dir = tmp_path / "case_with_vtk"
+    tutorial_dir.mkdir()
+    vtk_file = tutorial_dir / "mesh.vtk"
+    vtk_file.write_text("dummy data")
+    
+    # Mock the load_mesh function
+    mock_load_mesh = MagicMock(return_value={"success": False, "error": "Load failed"})
+    
+    with patch.dict('sys.modules', {'isosurface_visualizer': MagicMock(load_mesh=mock_load_mesh)}):
+        response = client.post('/api/contours/create', json={
+            "tutorial": "tutorial_name",
+            "caseDir": str(tutorial_dir)
+        })
+        assert response.status_code == 500
+        data = response.get_json()
+        assert not data["success"]
+        assert "Failed to load mesh" in data["error"]
+
+def test_create_contour_scalar_field_not_found(client, tmp_path):
+    tutorial_dir = tmp_path / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)
+    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
+
+    # Mock load_mesh returns success but missing requested scalar field 
+    mesh_info = {
+    "success": True,
+    "n_points": 1000,
+    "point_arrays": ["U", "p"]  # requested scalar field intentionally missing
+}
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info):
+
+        response = client.post('/api/contours/create', json={
+            "tutorial": "test_tutorial",
+            "caseDir": str(tutorial_dir),
+            "scalar_field": "nonexistent_field"
+        })
+        assert response.status_code == 400
+        data = response.get_json()
+        assert not data["success"]
+        assert "Scalar field" in data["error"]
+
+def test_create_contour_generate_isosurfaces_failure(client, tmp_path):
+    tutorial_dir = tmp_path / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)
+    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
+
+    mesh_info = {
+        "success": True,
+        "n_points": 1000,
+        "point_arrays": ["U", "p", "U_Magnitude"]
+    }
+    isosurface_failure = {
+        "success": False,
+        "error": "Generation failed"
+    }
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
+        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_failure):
+
+        response = client.post('/api/contours/create', json={
+            "tutorial": "test_tutorial",
+            "caseDir": str(tutorial_dir),
+        })
+        assert response.status_code == 500
+        data = response.get_json()
+        assert not data["success"]
+        assert "Failed to generate isosurfaces" in data["error"]
+
+
+def test_create_contour_empty_html_content(client, tmp_path):
+    tutorial_dir = tmp_path / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)
+    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
+
+    mesh_info = {
+        "success": True,
+        "n_points": 1000,
+        "point_arrays": ["U", "p","U_Magnitude"]
+    }
+    isosurface_success = {
+        "success": True,
+        "n_points": 1000
+    }
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
+        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_success), \
+        patch('backend.post.isosurface.isosurface_visualizer.get_interactive_html', return_value=""):  # empty HTML
+        response = client.post('/api/contours/create', json={
+            "tutorial": "test_tutorial",
+            "caseDir": str(tutorial_dir),
+        })
+        assert response.status_code == 500
+        data = response.get_json()
+        assert not data["success"]
+        assert "Empty HTML content generated" in data["error"]
+
+
+def test_create_contour_success(client, tmp_path):
+    tutorial_dir = tmp_path / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)
+    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
+
+    mesh_info = {
+    "success": True,
+    "n_points": 1000,
+    "point_arrays": ["U_Magnitude", "U", "p"]
+    }
+    isosurface_success = {
+        "success": True,
+        "n_points": 1000
+    }
+    fake_html = "<html>Isosurface viewer</html>"
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
+        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_success), \
+        patch('backend.post.isosurface.isosurface_visualizer.get_interactive_html', return_value=fake_html):
+        response = client.post('/api/contours/create', json={
+            "tutorial": "test_tutorial",
+            "caseDir": str(tutorial_dir),
+            "scalar_field": "U_Magnitude",
+            "num_isosurfaces": 7,
+            "range": [0, 10]
+        })
+        assert response.status_code == 200
+        assert response.mimetype == "text/html"
+        assert fake_html in response.get_data(as_text=True)
+
+
