@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock
 
 # Import the app module
 import app as flask_app
+from app import is_safe_command, is_safe_script_name
 
 
 def test_index_route(client):
@@ -18,6 +19,121 @@ def test_index_route(client):
     assert response.status_code == 200
     assert b'FOAMFlask' in response.data
 
+def test_is_safe_command():
+    """Test the is_safe_command function with various inputs."""
+    # Test valid commands
+    assert is_safe_command("simple-command") is True
+    assert is_safe_command("command-with-dashes") is True
+    assert is_safe_command("command_with_underscores") is True
+    assert is_safe_command("command with spaces") is True
+    assert is_safe_command("command123") is True
+
+    # Test invalid commands
+    # Empty or None
+    assert is_safe_command("") is False
+    assert is_safe_command(None) is False
+    assert is_safe_command(123) is False  # Not a string
+
+    # Test dangerous characters
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%']
+    for char in dangerous_chars:
+        assert is_safe_command(f"command{char}") is False, f"Failed for character: {char}"
+
+    # Test command combinations
+    assert is_safe_command("command; rm -rf /") is False  # Command separator
+    assert is_safe_command("command && rm -rf /") is False  # Logical AND
+    assert is_safe_command("command || rm -rf /") is False  # Logical OR
+    assert is_safe_command("command | rm -rf /") is False  # Pipe
+    assert is_safe_command("command `rm -rf /`") is False  # Backticks
+    assert is_safe_command("command $(rm -rf /)") is False  # Command substitution
+    assert is_safe_command('command "dangerous"') is False  # Double quotes
+    assert is_safe_command("command 'dangerous'") is False  # Single quotes
+    assert is_safe_command("command<dangerous") is False  # Input redirection
+    assert is_safe_command("command>dangerous") is False  # Output redirection
+    assert is_safe_command("command(dangerous)") is False  # Parentheses
+
+    # Test path traversal
+    assert is_safe_command("command ../../dangerous") is False
+    assert is_safe_command("command /etc/passwd") is True  # Allowed, handled by command validation
+    assert is_safe_command("command /etc/../etc/passwd") is False
+    assert is_safe_command("command ./../dangerous") is False
+    assert is_safe_command("command ~/dangerous") is True  # Tilde expansion is allowed
+
+    # Test file descriptor redirection
+    assert is_safe_command("command 2>error.log") is False
+    assert is_safe_command("command 1>output.log") is False
+    assert is_safe_command("command 0<input.txt") is False
+    assert is_safe_command("command 10>file") is False  # Multi-digit file descriptor
+    assert is_safe_command("command 2>&1") is False  # Redirect stderr to stdout
+    assert is_safe_command("command 3>file 4<input") is False  # Multiple redirections
+    assert is_safe_command("command >file") is False  # Default stdout redirection
+    assert is_safe_command("command <input") is False  # Default stdin redirection
+
+    # Test command substitution variations
+    assert is_safe_command("command_`inside`backticks") is False
+    assert is_safe_command("command_$(inside)parentheses") is False
+    assert is_safe_command("`only_backticks`") is False
+    assert is_safe_command("$(only_command_sub)") is False
+    assert is_safe_command("command_`echo test`_end") is False
+
+    # Test background/foreground
+    assert is_safe_command("command &") is False
+    assert is_safe_command("command %") is False
+    assert is_safe_command("command &> /dev/null &") is False  # Common background pattern
+
+    # Test length check
+    long_command = "a" * 100
+    assert is_safe_command(long_command) is True
+    assert is_safe_command(long_command + "a") is False  # 101 characters
+    assert is_safe_command("x" * 1000) is False  # Very long command
+
+    # Test mixed cases
+    assert is_safe_command("command; $(rm -rf /) && echo 'hacked'") is False
+    assert is_safe_command("command `echo test` > file") is False
+    assert is_safe_command("command $(cat /etc/passwd) | grep root") is False
+
+def test_is_safe_script_name():
+    """Test the is_safe_script_name function with various inputs."""
+    # Test valid script names
+    assert is_safe_script_name("script.sh") is True
+    assert is_safe_script_name("test_script-1.2.3.py") is True
+    assert is_safe_script_name("UPPERCASE_SCRIPT") is True
+    assert is_safe_script_name("123_script.456") is True
+    assert is_safe_script_name("a" * 50) is True  # Max length
+
+    # Test invalid script names
+    # Empty or None
+    assert is_safe_script_name("") is False
+    assert is_safe_script_name(None) is False
+    assert is_safe_script_name(123) is False  # Not a string
+
+    # Test invalid characters
+    invalid_chars = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '=', '+', 
+                    '{', '}', '[', ']', ':', ';', "'", '"', ',', '<', '>', '?', '/', '\\']
+    for char in invalid_chars:
+        assert is_safe_script_name(f"script{char}") is False, f"Failed for character: {char}"
+
+    # Test path traversal attempts
+    assert is_safe_script_name("../malicious.sh") is False
+    assert is_safe_script_name("/etc/passwd") is False
+    assert is_safe_script_name("folder/script.sh") is False
+    assert is_safe_script_name("folder\\script.sh") is False
+    assert is_safe_script_name("..\\..\\malicious.sh") is False
+
+    # Test hidden files
+    assert is_safe_script_name(".hidden") is False
+    assert is_safe_script_name("..hidden") is False  # Not actually hidden, just starts with dots
+    assert is_safe_script_name("file.") is True  # Ends with dot is allowed
+
+    # Test length limits
+    assert is_safe_script_name("a" * 50) is True  # Max length
+    assert is_safe_script_name("a" * 51) is False  # Too long
+
+    # Test edge cases
+    assert is_safe_script_name(" ") is False  # Whitespace only
+    assert is_safe_script_name("script with spaces.sh") is False  # Spaces not allowed
+    assert is_safe_script_name("script\twith\ttabs.sh") is False  # Tabs not allowed
+    assert is_safe_script_name("script\nwith\nnewlines.sh") is False  # Newlines not allowed
 
 def test_get_case_root(client):
     """Test the get_case_root endpoint."""
@@ -122,79 +238,6 @@ class TestDockerEndpoints:
         assert 'Docker' in data['output']  # Should mention Docker in the output
 
 
-class TestMeshEndpoints:
-    """Test mesh-related endpoints."""
-    
-    # def test_api_available_meshes(self, client, test_case_dir):
-    #     """Test the api_available_meshes endpoint."""
-    #     # Create the expected directory structure: CASE_ROOT/tutorial_name/constant/polyMesh
-    #     tutorial_dir = test_case_dir / "test_tutorial"
-    #     mesh_dir = tutorial_dir / "constant" / "polyMesh"
-    #     mesh_dir.mkdir(parents=True, exist_ok=True)
-        
-    #     # Create all required mesh files
-    #     required_files = ['points', 'faces', 'owner', 'neighbour', 'boundary']
-    #     for f in required_files:
-    #         (mesh_dir / f).touch()
-        
-    #     # Create a boundary file with minimal content
-    #     (mesh_dir / "boundary").write_text("""2
-    #     (
-    #         inlet
-    #         {
-    #             type            patch;
-    #             nFaces          1;
-    #             startFace       0;
-    #         }
-    #         outlet
-    #         {
-    #             type            patch;
-    #             nFaces          1;
-    #             startFace       1;
-    #         }
-    #     )""")
-        
-    #     # Mock the CASE_ROOT in the app to point to our test directory
-    #     flask_app.CASE_ROOT = str(test_case_dir)
-        
-    #     # Call the endpoint with the tutorial name
-    #     response = client.get('/api/available_meshes?tutorial=test_tutorial')
-    #     assert response.status_code == 200
-    #     data = json.loads(response.data)
-    #     assert 'meshes' in data
-    #     assert 'constant/polyMesh' in data['meshes'], f"Expected 'constant/polyMesh' in {data['meshes']}"
-        
-    # def test_api_load_mesh(self, client, test_case_dir):
-    #     """Test the api_load_mesh endpoint."""
-    #     # Set up a test case directory with a mesh file
-    #     mesh_dir = test_case_dir / "constant" / "polyMesh"
-    #     mesh_dir.mkdir(parents=True)
-    #     (mesh_dir / "points").write_text("1\n(0 0 0)")
-    #     (mesh_dir / "faces").write_text("1\n4(0 0 0 0)")
-    #     (mesh_dir / "owner").write_text("1\n0")
-    #     (mesh_dir / "neighbour").write_text("0\n")
-    #     (mesh_dir / "boundary").write_text("1\n(\n    inlet\n    {\n        type            patch;\n        nFaces          1;\n        startFace       0;\n    }\n)")
-        
-    #     # Mock the CASE_ROOT in the app
-    #     flask_app.CASE_ROOT = str(test_case_dir)
-        
-    #     # The endpoint expects a POST request with JSON data
-    #     response = client.post(
-    #         '/api/load_mesh',
-    #         data=json.dumps({
-    #             'file_path': 'constant/polyMesh',
-    #             'tutorial': 'test_tutorial'
-    #         }),
-    #         content_type='application/json'
-    #     )
-    #     assert response.status_code == 200
-    #     data = json.loads(response.data)
-    #     assert 'points' in data
-    #     assert 'cells' in data
-    #     assert 'point_data' in data
-    #     assert 'cell_data' in data
-
-
 class TestPlottingEndpoints:
     """Test plotting-related endpoints."""
     
@@ -234,28 +277,157 @@ class TestPlottingEndpoints:
             assert 'data' in data
 
 
-# def test_api_residuals(client, test_case_dir):
-#     """Test the api_residuals endpoint."""
-#     # Set up a test log file
-#     log_file = test_case_dir / "log" / "simpleFoam"
-#     log_file.parent.mkdir(parents=True, exist_ok=True)
-#     log_file.write_text("""
-#     Time = 0.1
-    
-#     smoothSolver:  Solving for Ux, Initial residual = 0.1, Final residual = 1e-6, No Iterations 3
-#     smoothSolver:  Solving for Uy, Initial residual = 0.2, Final residual = 1e-6, No Iterations 3
-#     smoothSolver:  Solving for Uz, Initial residual = 0.3, Final residual = 1e-6, No Iterations 3
-#     """)
-    
-#     # Mock the CASE_ROOT in the app
-#     flask_app.CASE_ROOT = str(test_case_dir)
-    
-#     # Add required parameters
-#     response = client.get('/api/residuals?tutorial=test_tutorial&caseDir=test_case')
-#     assert response.status_code == 200
-#     data = json.loads(response.data)
-#     assert 'time' in data
-#     assert 'residuals' in data
-#     assert 'Ux' in data['residuals']
-#     assert 'Uy' in data['residuals']
-#     assert 'Uz' in data['residuals']
+def test_api_residuals(client, test_case_dir):
+    """Test the api_residuals endpoint."""
+    # Create tutorial dir expected by the endpoint
+    tutorial_dir = test_case_dir / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)
+
+    # Set up a test log file under CASE_ROOT/test_tutorial/log/simpleFoam
+    log_file = tutorial_dir / "log" / "simpleFoam"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    log_file.write_text("""
+    Time = 0.1
+
+    smoothSolver:  Solving for Ux, Initial residual = 0.1, Final residual = 1e-6, No Iterations 3
+    smoothSolver:  Solving for Uy, Initial residual = 0.2, Final residual = 1e-6, No Iterations 3
+    smoothSolver:  Solving for Uz, Initial residual = 0.3, Final residual = 1e-6, No Iterations 3
+    """)
+
+    # Mock the CASE_ROOT in the app
+    flask_app.CASE_ROOT = str(test_case_dir)
+
+    # Test with mock
+    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+        # Setup mock parser
+        mock_parser = MagicMock()
+        mock_parser.get_residuals_from_log.return_value = {
+            'time': [0.1],
+            'residuals': {
+                'Ux': [0.1],
+                'Uy': [0.2],
+                'Uz': [0.3]
+            }
+        }
+        mock_parser_cls.return_value = mock_parser
+
+        # Make the request
+        response = client.get('/api/residuals?tutorial=test_tutorial')
+        assert response.status_code == 200
+        data = response.get_json()
+        
+        # Verify response structure
+        assert 'time' in data
+        assert 'residuals' in data
+        assert 'Ux' in data['residuals']
+        assert 'Uy' in data['residuals']
+        assert 'Uz' in data['residuals']
+
+        # Verify the mock was called with correct path
+        expected_case_dir = str(test_case_dir / "test_tutorial")
+        mock_parser_cls.assert_called_once_with(expected_case_dir)
+        mock_parser.get_residuals_from_log.assert_called_once()
+
+         # Test 2: No tutorial specified
+        response = client.get('/api/residuals')
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'error' in data
+        assert data['error'] == "No tutorial specified"
+
+        # Test 3: Case directory not found
+        response = client.get('/api/residuals?tutorial=non_existent_tutorial')
+        assert response.status_code == 404
+        data = response.get_json()
+        assert 'error' in data
+        assert data['error'] == "Case directory not found"
+
+        # Test 4: Parser raises an exception
+        with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+            mock_parser = MagicMock()
+            mock_parser.get_residuals_from_log.side_effect = Exception("Test error")
+            mock_parser_cls.return_value = mock_parser
+
+            # Create the tutorial directory for this test
+            tutorial_dir.mkdir(parents=True, exist_ok=True)
+
+            response = client.get('/api/residuals?tutorial=test_tutorial')
+            assert response.status_code == 500
+            data = response.get_json()
+            assert 'error' in data
+            assert data['error'] == "Test error"
+
+def test_api_latest_data(client, test_case_dir):
+    """Test the api_latest_data endpoint with various scenarios."""
+    # Setup common test data
+    tutorial_dir = test_case_dir / "test_tutorial"
+    tutorial_dir.mkdir(parents=True, exist_ok=True)  # Create the folder expected by the API
+    flask_app.CASE_ROOT = str(test_case_dir)
+
+    # Test 1: Test successful response
+    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+        # Setup mock parser
+        mock_parser = MagicMock()
+        mock_parser.get_latest_time_data.return_value = {
+            'time': 1.0,
+            'fields': ['U', 'p'],
+            'boundaryField': {'inlet': {'type': 'patch'}}
+        }
+        mock_parser_cls.return_value = mock_parser
+
+        # Make the request
+        response = client.get('/api/latest_data?tutorial=test_tutorial')
+        assert response.status_code == 200
+        data = response.get_json()
+        
+        # Verify response structure
+        assert 'time' in data
+        assert 'fields' in data
+        assert 'boundaryField' in data
+        assert 'inlet' in data['boundaryField']
+
+        # Verify the mock was called with correct path
+        expected_case_dir = str(test_case_dir / "test_tutorial")
+        mock_parser_cls.assert_called_once_with(expected_case_dir)
+        mock_parser.get_latest_time_data.assert_called_once()
+
+    # Test 2: No tutorial specified
+    response = client.get('/api/latest_data')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert 'error' in data
+    assert data['error'] == "No tutorial specified"
+
+    # Test 3: Case directory not found
+    response = client.get('/api/latest_data?tutorial=non_existent_tutorial')
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'error' in data
+    assert data['error'] == "Case directory not found"
+
+    # Test 4: Parser raises an exception
+    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+        mock_parser = MagicMock()
+        mock_parser.get_latest_time_data.side_effect = Exception("Test error")
+        mock_parser_cls.return_value = mock_parser
+
+        # Create the tutorial directory for this test
+        tutorial_dir.mkdir(parents=True, exist_ok=True)
+
+        response = client.get('/api/latest_data?tutorial=test_tutorial')
+        assert response.status_code == 500
+        data = response.get_json()
+        assert 'error' in data
+        assert data['error'] == "Test error"
+
+    # Test 5: Empty data returned from parser
+    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+        mock_parser = MagicMock()
+        mock_parser.get_latest_time_data.return_value = None
+        mock_parser_cls.return_value = mock_parser
+
+        response = client.get('/api/latest_data?tutorial=test_tutorial')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data == {}  # Should return empty dict when no data   
+
