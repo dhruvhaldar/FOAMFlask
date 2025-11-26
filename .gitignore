@@ -8,5 +8,5 @@ backend/mesh/__pycache__/*.pyc
 backend/mesh/__pycache__/*
 static/js-build/**/*.js
 static/js-build/**/*.js.map
-test/__pycache__/*.pyc
+tests/__pycache__/*.pyc
 .coverage
