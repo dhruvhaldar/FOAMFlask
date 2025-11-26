@@ -1280,15 +1280,17 @@ def upload_vtk():
             logger.error(f"Error cleaning up file {filepath}: {e}")
 
 
-if __name__ == "__main__":
-    # Initialize configuration
+def main():
+    global CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
     CONFIG = load_config()
     CASE_ROOT = CONFIG["CASE_ROOT"]
     DOCKER_IMAGE = CONFIG["DOCKER_IMAGE"]
     OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 
-    # Ensure case directory exists
     os.makedirs(CASE_ROOT, exist_ok=True)
 
-    # Start the Flask application
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+
+if __name__ == "__main__":
+    main()

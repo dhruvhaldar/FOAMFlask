@@ -3,6 +3,7 @@ Tests for the main FOAMFlask application endpoints.
 """
 import json
 import os
+import runpy
 import sys
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from docker.errors import DockerException
 
 # Import the app module
 import app as flask_app
+# from app import main
 
 # Mock the isosurface_visualizer module
 sys.modules['isosurface_visualizer'] = MagicMock()
@@ -1066,3 +1068,17 @@ def test_create_contour_success(client, tmp_path):
         assert fake_html in response.get_data(as_text=True)
 
 
+def test_main_startup(monkeypatch):
+    fake_config = {
+        "CASE_ROOT": "/tmp/fake_case_root",
+        "DOCKER_IMAGE": "fake/image",
+        "OPENFOAM_VERSION": "vX"
+    }
+    with patch('app.load_config', return_value=fake_config), \
+         patch('os.makedirs') as makedirs_mock, \
+         patch('app.app.run') as run_mock:
+
+        flask_app.main()
+
+        makedirs_mock.assert_called_once_with(fake_config['CASE_ROOT'], exist_ok=True)
+        run_mock.assert_called_once_with(host="0.0.0.0", port=5000, debug=True)
