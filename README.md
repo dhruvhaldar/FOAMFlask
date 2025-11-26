@@ -329,43 +329,93 @@ This generates comprehensive documentation for all TypeScript files in `docs/fro
 
 The documentation includes function signatures, type definitions, and interactive HTML documentation.
 
-### Check Code Coverage
+### Testing
 
-To check code coverage and measure test effectiveness:
+FOAMFlask includes a comprehensive test suite using pytest. The test suite includes unit tests, integration tests, and end-to-end tests for the application's core functionality.
+
+#### Running Tests
+
+1. **Install test dependencies** (if not already installed):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run all tests** with coverage:
+   ```bash
+   # Run all tests with coverage
+   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
+   ```
+
+3. **Run specific test files** or individual tests:
+   ```bash
+   # Run a specific test file
+   pytest test/test_app.py -v
+   
+   # Run a specific test function
+   pytest test/test_app.py::test_index_route -v
+   ```
+
+4. **Run tests in parallel** (faster execution):
+   ```bash
+   pytest -n auto --cov=app --cov=backend
+   ```
+
+#### Test Coverage
+
+To check test coverage and generate reports:
 
 ```bash
-# Install coverage.py (if not already installed)
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install coverage
-
-# Run coverage on your tests
-.\environments\my-python313-venv-win\Scripts\python.exe -m coverage run test/test_file.py
-
-# Generate coverage report
-.\environments\my-python313-venv-win\Scripts\python.exe -m coverage report
-
 # Generate HTML coverage report (recommended)
-.\environments\my-python313-venv-win\Scripts\python.exe -m coverage html
+pytest --cov=app --cov=backend --cov-report=html
+
+# View coverage in terminal
+pytest --cov=app --cov=backend --cov-report=term-missing
+
+# Generate XML report (for CI/CD integration)
+pytest --cov=app --cov=backend --cov-report=xml
 ```
 
-**Quick Coverage Check**:
-```bash
-python test/check_coverage.py
+**Coverage Reports**:
+- HTML report will be generated in the `htmlcov` directory
+- Open `htmlcov/index.html` in your browser to view the detailed coverage report
+- The terminal report shows which lines are missing coverage
+
+#### Test Structure
+
+```
+test/
+├── conftest.py        # Test fixtures and configuration
+├── test_app.py        # Main application tests
+└── test_security.py   # Security-related tests
 ```
 
-This script automatically:
-- Installs coverage.py if needed
-- Finds and runs all test files in the `test/` directory
-- Generates text and HTML coverage reports
-- Provides coverage quality ratings
+#### Writing New Tests
 
-**Coverage Commands**:
+1. Create a new test file following the naming convention `test_*.py`
+2. Use pytest fixtures from `conftest.py` when available
+3. Follow the existing test patterns for consistency
+4. Include docstrings explaining what each test verifies
+
+#### Test Coverage Commands Reference
+
 ```bash
-python -m coverage run test/test_file.py      # Run coverage
-python -m coverage report                    # Show report
-python -m coverage html                      # HTML report
-python -m coverage report -m                 # Terminal report
-python -m coverage report --skip-covered     # Missing lines only
-python -m coverage erase                      # Clear data
+# Run all tests with coverage
+pytest --cov=app --cov=backend
+
+# Run tests without coverage
+pytest
+
+# Run tests with detailed output
+pytest -v
+
+# Run tests and stop after first failure
+pytest -x
+
+# Run tests and show output from print statements
+pytest -s
+
+# Run tests matching a specific pattern
+pytest -k "test_name_pattern"
 ```
 
 </details>

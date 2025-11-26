@@ -1,5 +1,5 @@
 {
-  "CASE_ROOT": "E:\\Misc\\FOAMFlask\\run_folder",
-  "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
-  "OPENFOAM_VERSION": "12"
+  "CASE_ROOT": "E:\\path\\to\\test\\case",
+  "DOCKER_IMAGE": "test-image:latest",
+  "OPENFOAM_VERSION": "test-version"
 }
