@@ -591,3 +591,286 @@ def test_api_latest_data(client, test_case_dir):
         data = response.get_json()
         assert data == {}  # Should return empty dict when no data   
 
+def test_run_case(client, test_case_dir):
+    """Test the run_case endpoint with various scenarios."""
+    # Setup test data
+    tutorial = "test_tutorial"
+    case_dir = str(test_case_dir / tutorial)
+    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    
+    # Test 1: Missing command
+    response = client.post('/run', json={
+        "tutorial": tutorial,
+        "caseDir": case_dir
+    })
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert "No command provided" in data["error"]
+
+    # Test 2: Missing tutorial or caseDir
+    response = client.post('/run', json={
+        "command": "blockMesh",
+        "caseDir": case_dir
+    })
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert "Missing tutorial or caseDir" in data["error"]
+
+    # Test 3: Unsafe command
+    with patch('app.is_safe_command', return_value=False):
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "rm -rf /"
+        })
+        assert response.status_code == 200
+        assert b"Unsafe command detected" in response.data
+
+    # Test 4: OpenFOAM command (success case)
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread:
+        # Setup mock Docker client
+        mock_client = MagicMock()
+        mock_container = MagicMock()
+        mock_container.logs.return_value = [b"blockMesh output line 1\n", b"blockMesh output line 2\n"]
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "blockMesh"
+        })
+        
+        assert response.status_code == 200
+        assert b"blockMesh output line 1" in response.data
+        assert b"blockMesh output line 2" in response.data
+
+    # Test 5: Script execution
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.is_safe_script_name', return_value=True), \
+         patch('app.threading.Thread') as mock_thread:
+        # Setup mock Docker client
+        mock_client = MagicMock()
+        mock_container = MagicMock()
+        mock_container.logs.return_value = [b"Script output\n"]
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "./test_script.sh"
+        })
+        
+        assert response.status_code == 200
+        assert b"Script output" in response.data
+
+    # Test 6: Docker not available
+    with patch('app.get_docker_client', return_value=None):
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "blockMesh"
+        })
+        assert response.status_code == 200
+        assert b"Docker daemon not available" in response.data
+
+def test_run_case_fallback_script(client, test_case_dir):
+    """Test the run_case endpoint with a fallback script execution."""
+    # Setup test data
+    tutorial = "test_tutorial"
+    case_dir = str(test_case_dir / tutorial)
+    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    
+    # Test 1: Valid script name
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread:
+        # Setup mock Docker client
+        mock_client = MagicMock()
+        mock_container = MagicMock()
+        mock_container.logs.return_value = [b"Fallback script output\n"]
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "custom_script"  # No './' prefix, not an OpenFOAM command
+        })
+        
+        assert response.status_code == 200
+        assert b"Fallback script output" in response.data
+        
+        # Verify the container was created with the correct command
+        args, kwargs = mock_client.containers.run.call_args
+        assert args[0] == flask_app.DOCKER_IMAGE
+        
+        # Get the actual command that was passed to bash -c
+        bash_command = args[1]  # The command is the second positional argument
+        assert "bash" in bash_command[0]  # First part should be 'bash'
+        assert "-c" in bash_command  # Should include -c flag
+        wrapper_script = bash_command[2]  # The script is the third part after 'bash' and '-c'
+        
+        # Verify the wrapper script contains the expected commands
+        assert "custom_script" in wrapper_script
+        assert "chmod +x custom_script" in wrapper_script
+        assert "./custom_script" in wrapper_script
+
+    # Test 2: Unsafe script name
+    with patch('app.is_safe_command', return_value=True), \
+     patch('app.is_safe_script_name', return_value=False):
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "unsafe script.sh"  # safe command but invalid script name
+        })
+        assert response.status_code == 200
+        assert b"Unsafe command name" in response.data
+        assert b"must be alphanumeric" in response.data
+
+    # Test 3: Verify script execution with environment setup
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread:
+        mock_client = MagicMock()
+        mock_container = MagicMock()
+        mock_container.logs.return_value = [b"Script with env\n"]
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "setup_environment"
+        })
+        
+        # Verify the container was created with the correct command
+        args, _ = mock_client.containers.run.call_args
+        bash_command = args[1]
+        wrapper_script = bash_command[2]  # The script is the third part after 'bash' and '-c'
+        
+        # Verify the bash script includes necessary setup
+        assert "source /opt/" in wrapper_script  # Should source OpenFOAM bashrc
+        assert f"cd /home/foam/OpenFOAM/{flask_app.OPENFOAM_VERSION}/run/{tutorial}" in wrapper_script
+        assert "chmod +x setup_environment" in wrapper_script
+        assert "./setup_environment" in wrapper_script
+
+def test_run_case_unsafe_script_name(client, test_case_dir):
+    """Test the run_case endpoint with an unsafe script name."""
+    # Setup test data
+    tutorial = "test_tutorial"
+    case_dir = str(test_case_dir / tutorial)
+    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    
+    # Mock is_safe_command to return True (so we can test script name validation)
+    with patch('app.is_safe_command', return_value=True), \
+         patch('app.is_safe_script_name', return_value=False):
+        
+        # Test with a script that has an unsafe name
+        unsafe_script = "malicious_script.sh"
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": f"./{unsafe_script}"  # Script with unsafe name
+        })
+        
+        # Verify the response
+        assert response.status_code == 200
+        response_data = response.data.decode('utf-8')
+        assert f"Unsafe script name: {unsafe_script}" in response_data
+        assert "Script names must be alphanumeric with underscores/hyphens only" in response_data
+
+def test_run_case_container_cleanup(client, test_case_dir):
+    """Test that containers are properly cleaned up in case of errors."""
+    tutorial = "test_tutorial"
+    case_dir = str(test_case_dir / tutorial)
+    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread:
+        # Setup mock container that will raise an exception when reading logs
+        mock_container = MagicMock()
+        mock_container.logs.side_effect = Exception("Simulated error during execution")
+        mock_container.kill.return_value = None
+        mock_container.remove.return_value = None
+        
+        # Setup mock client
+        mock_client = MagicMock()
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        # Make the request - this should trigger the error in the log streaming
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "blockMesh"
+        })
+        
+        # Exhaust the streaming response content to ensure generator runs fully
+        response_data = b''.join(response.response)
+        response_text = response_data.decode('utf-8')
+        
+        # Verify the container was killed and removed
+        mock_container.kill.assert_called_once()
+        mock_container.remove.assert_called_once()
+        
+        # Verify the error was logged
+        mock_container.logs.assert_called_once_with(stream=True)
+        
+        # The response should be 200, streaming the error message
+        assert response.status_code == 200
+        
+        # Check for the error message in the response
+        assert "Simulated error during execution" in response_text, \
+            f"Expected error message not found in response: {response_text}"
+
+def test_run_case_container_cleanup_with_errors(client, test_case_dir):
+    """Test container cleanup when kill/remove operations fail."""
+    tutorial = "test_tutorial"
+    case_dir = str(test_case_dir / tutorial)
+    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.logger') as mock_logger:
+        # Setup mock container that raises exception on logs
+        mock_container = MagicMock()
+        mock_container.logs.side_effect = Exception("Simulated error")
+        mock_container.kill.side_effect = Exception("Kill failed")
+        mock_container.remove.side_effect = Exception("Remove failed")
+        
+        # Setup mock client returning the container
+        mock_client = MagicMock()
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        # Make the request
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "blockMesh"
+        })
+        
+        # Exhaust the streaming response content to ensure generator runs fully
+        response_data = b''.join(response.response)
+        response_text = response_data.decode('utf-8')
+        
+        # Verify kill and remove attempts (even though they raise errors)
+        mock_container.kill.assert_called_once()
+        mock_container.remove.assert_called_once()
+        
+        # Verify error logs were recorded for kill and remove failures
+        error_messages = [call[0][0] for call in mock_logger.error.call_args_list]
+        assert any("Could not kill container" in str(msg) for msg in error_messages)
+        assert any("Could not remove container" in str(msg) for msg in error_messages)
+        
+        # The response should be 200, streaming the error message from logs exception
+        assert response.status_code == 200
+        
+        # Check for either the old or new error message format
+        assert any(msg in response_text for msg in [
+            "Failed to stream container logs",
+            "Error getting container logs"
+        ]), f"Expected error message not found in response: {response_text}"

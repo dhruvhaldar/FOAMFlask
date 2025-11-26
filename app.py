@@ -639,21 +639,25 @@ def run_case():
         )
 
         try:
-            # Stream logs line by line
-            for line in container.logs(stream=True):
-                decoded = line.decode(errors="ignore")
-                for subline in decoded.splitlines():
-                    yield subline + "<br>"
-
+            try:
+                for line in container.logs(stream=True):
+                    decoded = line.decode(errors="ignore")
+                    for subline in decoded.splitlines():
+                        yield subline + "<br>"
+            except Exception as e:
+                yield f"[FOAMFlask] [Error] Failed to stream container logs: {e}<br>"
+        except GeneratorExit:
+            # Generator closed by client disconnect
+            pass
         finally:
             try:
                 container.kill()
-            except:
-                pass
+            except Exception as kill_err:
+                logger.error(f"[FOAMPilot] Could not kill container: {kill_err}")
             try:
                 container.remove()
-            except:
-                logger.error("[FOAMPilot] Could not remove container")
+            except Exception as remove_err:
+                logger.error(f"[FOAMPilot] Could not remove container: {remove_err}")
 
     return Response(stream_container_logs(), mimetype="text/html")
 
