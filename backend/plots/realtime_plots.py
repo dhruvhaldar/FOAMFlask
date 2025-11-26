@@ -34,28 +34,29 @@ class OpenFOAMFieldParser:
             with open(field_path, "r") as f:
                 content = f.read()
 
-            # Find internalField section
-            internal_match = re.search(
-                r"internalField\s+(?:uniform\s+)?([^;]+);", content, re.DOTALL
-            )
-            if not internal_match:
-                return None
-
-            field_data = internal_match.group(1).strip()
-
-            # Handle uniform field
-            if "uniform" in content:
-                try:
-                    return float(field_data)
-                except ValueError:
+            # Handle nonuniform field first (since 'nonuniform' contains 'uniform')
+            if "nonuniform" in content:
+                # Match multi-line nonuniform lists between parentheses
+                match = re.search(
+                    r"internalField\s+nonuniform\s+[^\n]*\(\s*([\s\S]*?)\s*\);",
+                    content,
+                    re.DOTALL,
+                )
+                if not match:
                     return None
 
-            # Handle nonuniform field
-            if "nonuniform" in content:
-                # Extract numbers from the list
+                field_data = match.group(1)
+                # Extract all numbers inside the parentheses
                 numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
                 values = [float(n) for n in numbers]
                 return np.mean(values) if values else None
+
+            # Handle uniform field
+            if re.search(r"internalField\s+uniform\b", content):
+                match = re.search(r"internalField\s+uniform\s+([^;]+);", content)
+                if match:
+                    return float(match.group(1).strip())
+                return None
 
             return None
 
@@ -69,21 +70,47 @@ class OpenFOAMFieldParser:
             with open(field_path, "r") as f:
                 content = f.read()
 
-            # Find internalField section
-            internal_match = re.search(
-                r"internalField\s+(?:uniform\s+)?([^;]+);", content, re.DOTALL
-            )
-            if not internal_match:
-                return None, None, None
+            # Handle nonuniform first
+            if "nonuniform" in content:
+                match = re.search(
+                    r"internalField\s+nonuniform\s+[^\n]*\(\s*([\s\S]*?)\s*\);",
+                    content,
+                    re.DOTALL,
+                )
+                if not match:
+                    return None, None, None
 
-            field_data = internal_match.group(1).strip()
+                field_data = match.group(1)
+                vectors = re.findall(
+                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
+                    field_data,
+                )
+                if not vectors:
+                    return None, None, None
+
+                x_vals = [float(v[0]) for v in vectors]
+                y_vals = [float(v[1]) for v in vectors]
+                z_vals = [float(v[2]) for v in vectors]
+                return np.mean(x_vals), np.mean(y_vals), np.mean(z_vals)
 
             # Handle uniform field
-            if "uniform" in content:
-                # Extract vector components
+            if re.search(r"internalField\s+uniform\b", content):
+                match = re.search(
+                    r"internalField\s+uniform\s+(\([^;]+\));",
+                    content,
+                    re.DOTALL,
+                )
+                if not match:
+                    return None, None, None
+
+                vec_str = match.group(1)
                 vec_match = re.search(
-                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                    field_data,
+                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
+                    vec_str,
                 )
                 if vec_match:
                     return (
@@ -93,24 +120,12 @@ class OpenFOAMFieldParser:
                     )
                 return None, None, None
 
-            # Handle nonuniform field
-            if "nonuniform" in content:
-                # Extract all vectors
-                vectors = re.findall(
-                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                    field_data,
-                )
-                if vectors:
-                    x_vals = [float(v[0]) for v in vectors]
-                    y_vals = [float(v[1]) for v in vectors]
-                    z_vals = [float(v[2]) for v in vectors]
-                    return np.mean(x_vals), np.mean(y_vals), np.mean(z_vals)
-
             return None, None, None
 
         except Exception as e:
             print(f"Error parsing vector field {field_path}: {e}")
             return None, None, None
+
 
     def get_latest_time_data(self):
         """Get data from the latest time directory."""

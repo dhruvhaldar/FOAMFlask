@@ -10,3 +10,4 @@ static/js-build/**/*.js
 static/js-build/**/*.js.map
 tests/__pycache__/*.pyc
 .coverage
+backend/plots/__pycache__/*.pyc
