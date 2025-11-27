@@ -502,5 +502,26 @@ class TestCleanup:
 
     def test_del_without_plotter(self, visualizer):
         """Test cleanup when plotter doesn't exist."""
-        del visualizer
-        # Should not raise any exceptions
+        del visualizer  # Should not raise any exceptions
+
+    def test_del_handles_exception(self, mocker, caplog):
+        """Test that __del__ method handles exceptions gracefully without error logging."""
+        # Clear any existing log records
+        caplog.clear()
+        
+        # Create a visualizer with a mock plotter that will raise an exception
+        visualizer = IsosurfaceVisualizer()
+        mock_plotter = mocker.MagicMock()
+        mock_plotter.close.side_effect = Exception("Error closing plotter")
+        visualizer.plotter = mock_plotter
+        
+        # Call __del__ which should not raise an exception
+        visualizer.__del__()
+        
+        # Verify the close method was called
+        mock_plotter.close.assert_called_once()
+        
+        # Verify only the initialization message was logged (no error logs)
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "INFO"
+        assert "Initialized" in caplog.text
