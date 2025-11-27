@@ -417,6 +417,78 @@ class TestGetInteractiveHtmlStaticIsosurfaces:
         
         assert isinstance(html, str)
         assert len(html) > 0
+        
+    def test_get_interactive_html_generate_isosurfaces_failure(self, visualizer, temp_vtk_file, mocker, caplog):
+        """Test error handling when generate_isosurfaces returns a failure."""
+        # Setup mock plotter
+        mock_plotter = mocker.MagicMock()
+        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
+        
+        # Load the test mesh
+        visualizer.load_mesh(temp_vtk_file)
+        
+        # Mock generate_isosurfaces to return a failure
+        error_message = "Failed to compute isosurfaces: invalid range"
+        mocker.patch.object(
+            visualizer,
+            'generate_isosurfaces',
+            return_value={"success": False, "error": error_message}
+        )
+        
+        # Mock the error HTML generation
+        error_html = "<html><body>Error Page</body></html>"
+        mocker.patch.object(
+            visualizer,
+            '_generate_error_html',
+            return_value=error_html
+        )
+        
+        # Call the method
+        with caplog.at_level(logging.ERROR):
+            result = visualizer.get_interactive_html(
+                scalar_field="U_Magnitude",
+                show_isovalue_slider=False,
+                num_isosurfaces=3
+            )
+        
+        # Verify the error was logged
+        assert "Failed to generate isosurfaces" in caplog.text
+        assert error_message in caplog.text
+        
+        # Verify the error HTML was returned
+        assert result == error_html
+        
+        # Verify the plotter was properly cleaned up
+        mock_plotter.close.assert_called_once()
+        
+    def test_get_interactive_html_temp_file_cleanup_failure(self, visualizer, temp_vtk_file, mocker, caplog):
+        """Test that the method continues even if temp file cleanup fails."""
+        # Setup mock plotter
+        mock_plotter = mocker.MagicMock()
+        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
+        
+        # Load the test mesh
+        visualizer.load_mesh(temp_vtk_file)
+        
+        # Mock file operations to raise an exception during cleanup
+        mock_file = mocker.mock_open(read_data="<html>test</html>")
+        mocker.patch('builtins.open', mock_file)
+        mocker.patch('os.unlink', side_effect=Exception("Failed to delete temp file"))
+        
+        # Call the method
+        with caplog.at_level(logging.ERROR):
+            html = visualizer.get_interactive_html(
+                scalar_field="U_Magnitude",
+                show_isovalue_slider=False
+            )
+        
+        # Verify the HTML was still returned successfully
+        assert isinstance(html, str)
+        assert len(html) > 0
+        
+        # The actual code silently passes on cleanup errors, so we just verify the method completes
+        # and the plotter is still properly closed
+        mock_plotter.close.assert_called_once()
 
 
 class TestCleanup:
