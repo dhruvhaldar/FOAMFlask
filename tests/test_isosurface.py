@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock, mock_open
 import pytest
 import numpy as np
 import pyvista as pv
+import logging
 
 from backend.post.isosurface import IsosurfaceVisualizer
 
@@ -295,6 +296,127 @@ class TestGenerateErrorHtml:
         assert "visualization error" in html.lower()
         assert "test error message" in html.lower()
         assert "U_Magnitude" in html
+
+
+class TestGetInteractiveHtmlStaticIsosurfaces:
+    """Test get_interactive_html method with static isosurfaces (show_isovalue_slider=False)."""
+
+    def test_get_interactive_html_static_isosurfaces(self, visualizer, temp_vtk_file, mocker):
+        """Test HTML generation with static isosurfaces."""
+        # Mock pyvista.Plotter
+        mock_plotter = mocker.MagicMock()
+        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
+        
+        # Load the test mesh
+        visualizer.load_mesh(temp_vtk_file)
+        
+        # Mock the file operations and HTML export
+        fake_html = "<html><body>Test Visualization</body></html>"
+        mocker.patch('builtins.open', mocker.mock_open(read_data=fake_html))
+        mock_plotter.export_html = mocker.MagicMock()
+        mock_plotter.close = mocker.MagicMock()
+        
+        # Mock os.unlink to avoid file deletion issues
+        mocker.patch('os.unlink')
+        
+        # Call with show_isovalue_slider=False to test static isosurfaces
+        html = visualizer.get_interactive_html(
+            scalar_field="U_Magnitude",
+            show_isovalue_slider=False,
+            num_isosurfaces=3,
+            contour_opacity=0.7,
+            contour_color="blue"
+        )
+        
+        # Verify the HTML was generated correctly
+        assert isinstance(html, str)
+        assert len(html) > 0
+        assert "test visualization" in html.lower()
+        
+        # Verify plotter methods were called
+        mock_plotter.add_mesh.assert_called()
+        mock_plotter.add_axes.assert_called_once()
+        mock_plotter.close.assert_called()
+
+    def test_get_interactive_html_no_contour_points(self, visualizer, temp_vtk_file, mocker, caplog):
+        """Test warning when no contour points are generated."""
+        # Mock pyvista.Plotter
+        mock_plotter = mocker.MagicMock()
+        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
+        
+        # Load the test mesh
+        visualizer.load_mesh(temp_vtk_file)
+        
+        # Create an empty polydata for contours (no points)
+        visualizer.contours = pv.PolyData()
+        
+        # Mock the file operations
+        fake_html = "<html><body>Test</body></html>"
+        mocker.patch('builtins.open', mocker.mock_open(read_data=fake_html))
+        mock_plotter.export_html = mocker.MagicMock()
+        mock_plotter.close = mocker.MagicMock()
+        
+        # Mock os.unlink
+        mocker.patch('os.unlink')
+        
+        # Call with show_isovalue_slider=False
+        with caplog.at_level(logging.WARNING):
+            html = visualizer.get_interactive_html(
+                scalar_field="U_Magnitude",
+                show_isovalue_slider=False,
+                num_isosurfaces=0
+            )
+        
+        # Verify warning was logged for no contour points
+        assert "No contour points generated" in caplog.text
+        
+        # Verify HTML was still generated
+        assert isinstance(html, str)
+        assert len(html) > 0
+
+    def test_get_interactive_html_export_failure(self, visualizer, temp_vtk_file, mocker):
+        """Test error handling when HTML export fails."""
+        # Mock pyvista.Plotter to raise exception during export
+        mock_plotter = mocker.MagicMock()
+        mock_plotter.export_html.side_effect = Exception("Export failed")
+        mock_plotter.close = mocker.MagicMock()
+        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
+        
+        # Load the test mesh
+        visualizer.load_mesh(temp_vtk_file)
+        
+        # Call get_interactive_html
+        html = visualizer.get_interactive_html(
+            scalar_field="U_Magnitude",
+            show_isovalue_slider=False
+        )
+        
+        # Should return error HTML
+        assert isinstance(html, str)
+        assert "error" in html.lower()
+        assert "export failed" in html.lower()
+        mock_plotter.close.assert_called()
+
+    @patch("pyvista.Plotter")
+    def test_get_interactive_html_with_custom_range_static(self, mock_plotter_class, visualizer, temp_vtk_file):
+        """Test static isosurfaces with custom range."""
+        mock_plotter = MagicMock()
+        mock_plotter_class.return_value = mock_plotter
+        mock_plotter.export_html = MagicMock()
+        
+        visualizer.load_mesh(temp_vtk_file)
+        
+        with patch("builtins.open", mock_open(read_data="<html>test</html>")):
+            with patch("os.unlink"):
+                html = visualizer.get_interactive_html(
+                    scalar_field="U_Magnitude",
+                    show_isovalue_slider=False,
+                    custom_range=[0.2, 0.8],
+                    num_isosurfaces=4
+                )
+        
+        assert isinstance(html, str)
+        assert len(html) > 0
 
 
 class TestCleanup:
