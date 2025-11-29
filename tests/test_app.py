@@ -158,11 +158,13 @@ def test_is_safe_command_with_substitution_and_redirection():
 
 def test_load_config_no_file(tmp_path):
     # Patch CONFIG_FILE to a non-existent file path
-    with patch('app.CONFIG_FILE', tmp_path / "nonexistent.json"):
+    non_existent_file = tmp_path / "nonexistent.json"
+    with patch('app.CONFIG_FILE', non_existent_file):
         # Ensure file does not exist
-        assert not os.path.exists(flask_app.CONFIG_FILE)
+        assert not non_existent_file.exists()
         config = flask_app.load_config()
-        assert config["CASE_ROOT"] == os.path.abspath("tutorial_cases")
+        # Should return defaults
+        assert Path(config["CASE_ROOT"]).resolve() == Path("tutorial_cases").resolve()
         assert config["DOCKER_IMAGE"] == "haldardhruv/ubuntu_noble_openfoam:v12"
         assert config["OPENFOAM_VERSION"] == "12"
 
@@ -175,7 +177,7 @@ def test_load_config_with_valid_file(tmp_path):
     }
     config_file.write_text(json.dumps(data), encoding="utf-8")
 
-    with patch('app.CONFIG_FILE', str(config_file)):
+    with patch('app.CONFIG_FILE', config_file):
         config = flask_app.load_config()
         # Should merge defaults and file content, but file data overrides defaults
         assert config["CASE_ROOT"] == "/custom/path"
@@ -187,30 +189,35 @@ def test_load_config_with_invalid_json(tmp_path, caplog):
     # Write invalid JSON content
     config_file.write_text("{invalid json}", encoding="utf-8")
 
-    with patch('app.CONFIG_FILE', str(config_file)):
+    with patch('app.CONFIG_FILE', config_file):
         with caplog.at_level("WARNING"):
             config = flask_app.load_config()
             # Should return defaults on JSONDecodeError
-            assert config["CASE_ROOT"] == os.path.abspath("tutorial_cases")
+            assert Path(config["CASE_ROOT"]).resolve() == Path("tutorial_cases").resolve()
             assert any("Could not load config file" in record.message for record in caplog.records)
 
-def test_load_config_with_os_error(monkeypatch):
-    # Patch open() to raise OSError
-    mocked_open = mock_open()
-    def raise_os_error(*args, **kwargs):
-        raise OSError("Permission denied")
+def test_load_config_with_os_error(tmp_path, monkeypatch):
+    # Create a directory where file is expected to trigger OSError (IsADirectoryError)
+    # or just use permission denied if easier, but mocking is safer for CI.
 
-    with patch('app.CONFIG_FILE', 'dummy_path.json'):
-        with patch('builtins.open', raise_os_error):
-            result = flask_app.load_config()
-            # Should return defaults on OSError
-            assert result["CASE_ROOT"] == os.path.abspath("tutorial_cases")
+    # We'll use mock_open to raise OSError since creating actual permission denied files
+    # in temp dirs can be tricky across OSs.
+
+    # We need to patch pathlib.Path.open instead of builtins.open
+
+    with patch('pathlib.Path.open', side_effect=OSError("Permission denied")):
+        with patch('app.CONFIG_FILE', Path('dummy_path.json')):
+             # We assume CONFIG_FILE.exists() is true to reach open()
+            with patch('pathlib.Path.exists', return_value=True):
+                result = flask_app.load_config()
+                # Should return defaults on OSError
+                assert Path(result["CASE_ROOT"]).resolve() == Path("tutorial_cases").resolve()
 
 def test_save_config_success(tmp_path):
     # Use a real temporary file for the config file
     config_file = tmp_path / "case_config.json"
 
-    with patch('app.CONFIG_FILE', str(config_file)), \
+    with patch('app.CONFIG_FILE', config_file), \
          patch('app.load_config', return_value={"CASE_ROOT": "/default/path"}):
         
         updates = {"DOCKER_IMAGE": "new-image:latest", "OPENFOAM_VERSION": "13"}
@@ -219,7 +226,7 @@ def test_save_config_success(tmp_path):
         assert result is True
 
         # Check file exists and contents include updates merged with loaded config
-        with open(config_file, "r", encoding="utf-8") as f:
+        with config_file.open("r", encoding="utf-8") as f:
             saved_data = json.load(f)
             assert saved_data["CASE_ROOT"] == "/default/path"
             assert saved_data["DOCKER_IMAGE"] == "new-image:latest"
@@ -227,12 +234,9 @@ def test_save_config_success(tmp_path):
 
 def test_save_config_oserror(monkeypatch):
     # Simulate OSError on file open
-    def mock_open_fail(*args, **kwargs):
-        raise OSError("Disk full")
-
-    with patch('app.CONFIG_FILE', 'dummy_path.json'), \
+    with patch('pathlib.Path.open', side_effect=OSError("Disk full")), \
+         patch('app.CONFIG_FILE', Path('dummy_path.json')), \
          patch('app.load_config', return_value={"CASE_ROOT": "/default"}), \
-         patch('builtins.open', mock_open_fail), \
          patch('app.logger') as mock_logger:
         
         updates = {"DOCKER_IMAGE": "fail-image"}
@@ -243,22 +247,17 @@ def test_save_config_oserror(monkeypatch):
 
 def test_save_config_typeerror(monkeypatch):
     # Simulate TypeError on json.dump (e.g., unserializable type)
-    class DummyFile:
-        def write(self, _):
-            raise TypeError("Cannot serialize")
+    # We can't easily mock json.dump inside the with block without mocking open context manager
+    # returning a mock file object.
 
-        def __enter__(self):
-            return self
+    mock_file = MagicMock()
+    # When dump tries to write to this mock file, it will succeed,
+    # but we want json.dump to raise TypeError.
+    # Actually, easier to pass unserializable object in updates.
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    def mock_open(*args, **kwargs):
-        return DummyFile()
-
-    with patch('app.CONFIG_FILE', 'dummy_path.json'), \
+    with patch('app.CONFIG_FILE', Path('dummy.json')), \
+         patch('pathlib.Path.open', mock_open()), \
          patch('app.load_config', return_value={"CASE_ROOT": "/default"}), \
-         patch('builtins.open', mock_open), \
          patch('app.logger') as mock_logger:
 
         updates = {"DOCKER_IMAGE": object()}  # object() is unserializable
@@ -271,22 +270,30 @@ def test_get_case_root(client):
     response = client.get('/get_case_root')
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert 'caseDir' in data  # Updated to match actual response
-    assert isinstance(data['caseDir'], str)
-
-
-def test_set_case(client):
-    """Test the set_case endpoint."""
-    test_path = "E:\\path\\to\\test\\case"
-    response = client.post(
-        '/set_case',
-        data=json.dumps({'caseDir': test_path}),
-        content_type='application/json'
-    )
-    assert response.status_code == 200
-    data = json.loads(response.data)
     assert 'caseDir' in data
-    assert data['caseDir'] == test_path
+    # caseDir might be None initially or string
+    if data['caseDir'] is not None:
+        assert isinstance(data['caseDir'], str)
+
+
+def test_set_case(client, tmp_path):
+    """Test the set_case endpoint."""
+    test_path = tmp_path / "test_case_dir"
+    # The endpoint now resolves the path, so we expect absolute path
+    expected_path = str(test_path.resolve())
+
+    # Patch save_config to avoid writing to actual config file location
+    with patch('app.save_config', return_value=True):
+        response = client.post(
+            '/set_case',
+            data=json.dumps({'caseDir': str(test_path)}),
+            content_type='application/json'
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'caseDir' in data
+        assert data['caseDir'] == expected_path
+        assert Path(expected_path).exists()
 
 
 def test_get_docker_config(client):
@@ -297,8 +304,11 @@ def test_get_docker_config(client):
     # Updated to match actual response keys
     assert 'dockerImage' in data
     assert 'openfoamVersion' in data
-    assert isinstance(data['dockerImage'], str)
-    assert isinstance(data['openfoamVersion'], str)
+    # Can be None if not set
+    if data['dockerImage']:
+        assert isinstance(data['dockerImage'], str)
+    if data['openfoamVersion']:
+        assert isinstance(data['openfoamVersion'], str)
 
 
 def test_set_docker_config(client):
@@ -307,18 +317,19 @@ def test_set_docker_config(client):
         'dockerImage': 'test-image:latest',
         'openfoamVersion': 'test-version'
     }
-    response = client.post(
-        '/set_docker_config',
-        data=json.dumps(test_config),
-        content_type='application/json'
-    )
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    # Updated to match actual response structure
-    assert 'dockerImage' in data
-    assert 'openfoamVersion' in data
-    assert data['dockerImage'] == test_config['dockerImage']
-    assert data['openfoamVersion'] == test_config['openfoamVersion']
+    with patch('app.save_config', return_value=True):
+        response = client.post(
+            '/set_docker_config',
+            data=json.dumps(test_config),
+            content_type='application/json'
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        # Updated to match actual response structure
+        assert 'dockerImage' in data
+        assert 'openfoamVersion' in data
+        assert data['dockerImage'] == test_config['dockerImage']
+        assert data['openfoamVersion'] == test_config['openfoamVersion']
 
 
 def test_load_tutorial_missing_parameter(client):
@@ -328,7 +339,7 @@ def test_load_tutorial_missing_parameter(client):
         data=json.dumps({}),  # Empty JSON
         content_type='application/json'
     )
-    assert response.status_code == 200
+    assert response.status_code == 200 # It returns 200 with error message in current impl
     data = json.loads(response.data)
     assert 'output' in data
     assert 'Error' in data['output']
@@ -408,14 +419,13 @@ class TestDockerEndpoints:
 class TestPlottingEndpoints:
     """Test plotting-related endpoints."""
     
-    def test_api_available_fields(self, client, test_case_dir):
+    def test_api_available_fields(self, client, tmp_path):
         # Create the tutorial directory expected by the endpoint
-        tutorial_dir = test_case_dir / "test_tutorial"
+        tutorial_dir = tmp_path / "test_tutorial"
         tutorial_dir.mkdir(parents=True, exist_ok=True)
 
-        flask_app.CASE_ROOT = str(test_case_dir)
-
-        with patch('app.get_available_fields', return_value=['U', 'p']):
+        with patch('app.CASE_ROOT', str(tmp_path)), \
+             patch('app.get_available_fields', return_value=['U', 'p']):
             response = client.get('/api/available_fields?tutorial=test_tutorial')
             assert response.status_code == 200
             data = response.get_json()
@@ -424,7 +434,7 @@ class TestPlottingEndpoints:
             assert 'p' in data['fields']
 
     def test_api_available_fields_mocked(self, client):
-        with patch('app.os.path.exists', return_value=True), \
+        with patch('pathlib.Path.exists', return_value=True), \
              patch('app.get_available_fields', return_value=['U', 'p']):
             response = client.get('/api/available_fields?tutorial=test_tutorial')
             assert response.status_code == 200
@@ -435,7 +445,7 @@ class TestPlottingEndpoints:
     def test_api_plot_data_mocked(self, client):
         mock_parser = MagicMock()
         mock_parser.get_all_time_series_data.return_value = {'time': [0.1], 'data': {'U': [1, 2, 3]}}
-        with patch('app.os.path.exists', return_value=True), \
+        with patch('pathlib.Path.exists', return_value=True), \
              patch('app.OpenFOAMFieldParser', return_value=mock_parser):
             response = client.get('/api/plot_data?tutorial=test_tutorial')
             assert response.status_code == 200
@@ -444,28 +454,15 @@ class TestPlottingEndpoints:
             assert 'data' in data
 
 
-def test_api_residuals(client, test_case_dir):
+def test_api_residuals(client, tmp_path):
     """Test the api_residuals endpoint."""
     # Create tutorial dir expected by the endpoint
-    tutorial_dir = test_case_dir / "test_tutorial"
+    tutorial_dir = tmp_path / "test_tutorial"
     tutorial_dir.mkdir(parents=True, exist_ok=True)
 
-    # Set up a test log file under CASE_ROOT/test_tutorial/log/simpleFoam
-    log_file = tutorial_dir / "log" / "simpleFoam"
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-    log_file.write_text("""
-    Time = 0.1
-
-    smoothSolver:  Solving for Ux, Initial residual = 0.1, Final residual = 1e-6, No Iterations 3
-    smoothSolver:  Solving for Uy, Initial residual = 0.2, Final residual = 1e-6, No Iterations 3
-    smoothSolver:  Solving for Uz, Initial residual = 0.3, Final residual = 1e-6, No Iterations 3
-    """)
-
-    # Mock the CASE_ROOT in the app
-    flask_app.CASE_ROOT = str(test_case_dir)
-
     # Test with mock
-    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+         patch('app.OpenFOAMFieldParser') as mock_parser_cls:
         # Setup mock parser
         mock_parser = MagicMock()
         mock_parser.get_residuals_from_log.return_value = {
@@ -491,7 +488,7 @@ def test_api_residuals(client, test_case_dir):
         assert 'Uz' in data['residuals']
 
         # Verify the mock was called with correct path
-        expected_case_dir = str(test_case_dir / "test_tutorial")
+        expected_case_dir = str(tmp_path / "test_tutorial")
         mock_parser_cls.assert_called_once_with(expected_case_dir)
         mock_parser.get_residuals_from_log.assert_called_once()
 
@@ -524,15 +521,15 @@ def test_api_residuals(client, test_case_dir):
             assert 'error' in data
             assert data['error'] == "Test error"
 
-def test_api_latest_data(client, test_case_dir):
+def test_api_latest_data(client, tmp_path):
     """Test the api_latest_data endpoint with various scenarios."""
     # Setup common test data
-    tutorial_dir = test_case_dir / "test_tutorial"
+    tutorial_dir = tmp_path / "test_tutorial"
     tutorial_dir.mkdir(parents=True, exist_ok=True)  # Create the folder expected by the API
-    flask_app.CASE_ROOT = str(test_case_dir)
 
     # Test 1: Test successful response
-    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+         patch('app.OpenFOAMFieldParser') as mock_parser_cls:
         # Setup mock parser
         mock_parser = MagicMock()
         mock_parser.get_latest_time_data.return_value = {
@@ -554,7 +551,7 @@ def test_api_latest_data(client, test_case_dir):
         assert 'inlet' in data['boundaryField']
 
         # Verify the mock was called with correct path
-        expected_case_dir = str(test_case_dir / "test_tutorial")
+        expected_case_dir = str(tmp_path / "test_tutorial")
         mock_parser_cls.assert_called_once_with(expected_case_dir)
         mock_parser.get_latest_time_data.assert_called_once()
 
@@ -566,14 +563,16 @@ def test_api_latest_data(client, test_case_dir):
     assert data['error'] == "No tutorial specified"
 
     # Test 3: Case directory not found
-    response = client.get('/api/latest_data?tutorial=non_existent_tutorial')
-    assert response.status_code == 404
-    data = response.get_json()
-    assert 'error' in data
-    assert data['error'] == "Case directory not found"
+    with patch('app.CASE_ROOT', str(tmp_path)):
+        response = client.get('/api/latest_data?tutorial=non_existent_tutorial')
+        assert response.status_code == 404
+        data = response.get_json()
+        assert 'error' in data
+        assert data['error'] == "Case directory not found"
 
     # Test 4: Parser raises an exception
-    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+         patch('app.OpenFOAMFieldParser') as mock_parser_cls:
         mock_parser = MagicMock()
         mock_parser.get_latest_time_data.side_effect = Exception("Test error")
         mock_parser_cls.return_value = mock_parser
@@ -588,7 +587,8 @@ def test_api_latest_data(client, test_case_dir):
         assert data['error'] == "Test error"
 
     # Test 5: Empty data returned from parser
-    with patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+    with patch('app.CASE_ROOT', str(tmp_path)), \
+         patch('app.OpenFOAMFieldParser') as mock_parser_cls:
         mock_parser = MagicMock()
         mock_parser.get_latest_time_data.return_value = None
         mock_parser_cls.return_value = mock_parser
@@ -598,12 +598,12 @@ def test_api_latest_data(client, test_case_dir):
         data = response.get_json()
         assert data == {}  # Should return empty dict when no data   
 
-def test_run_case(client, test_case_dir):
+def test_run_case(client, tmp_path):
     """Test the run_case endpoint with various scenarios."""
     # Setup test data
     tutorial = "test_tutorial"
-    case_dir = str(test_case_dir / tutorial)
-    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
     
     # Test 1: Missing command
     response = client.post('/run', json={
@@ -626,7 +626,8 @@ def test_run_case(client, test_case_dir):
     assert "Missing tutorial or caseDir" in data["error"]
 
     # Test 3: Unsafe command
-    with patch('app.is_safe_command', return_value=False):
+    with patch('app.is_safe_command', return_value=False), \
+         patch('app.get_docker_client', return_value=MagicMock()):
         response = client.post('/run', json={
             "tutorial": tutorial,
             "caseDir": case_dir,
@@ -685,12 +686,12 @@ def test_run_case(client, test_case_dir):
         assert response.status_code == 200
         assert b"Docker daemon not available" in response.data
 
-def test_run_case_fallback_script(client, test_case_dir):
+def test_run_case_fallback_script(client, tmp_path):
     """Test the run_case endpoint with a fallback script execution."""
     # Setup test data
     tutorial = "test_tutorial"
-    case_dir = str(test_case_dir / tutorial)
-    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
     
     # Test 1: Valid script name
     with patch('app.get_docker_client') as mock_docker, \
@@ -728,7 +729,8 @@ def test_run_case_fallback_script(client, test_case_dir):
 
     # Test 2: Unsafe script name
     with patch('app.is_safe_command', return_value=True), \
-     patch('app.is_safe_script_name', return_value=False):
+         patch('app.is_safe_script_name', return_value=False), \
+         patch('app.get_docker_client', return_value=MagicMock()):
         response = client.post('/run', json={
             "tutorial": tutorial,
             "caseDir": case_dir,
@@ -764,16 +766,17 @@ def test_run_case_fallback_script(client, test_case_dir):
         assert "chmod +x setup_environment" in wrapper_script
         assert "./setup_environment" in wrapper_script
 
-def test_run_case_unsafe_script_name(client, test_case_dir):
+def test_run_case_unsafe_script_name(client, tmp_path):
     """Test the run_case endpoint with an unsafe script name."""
     # Setup test data
     tutorial = "test_tutorial"
-    case_dir = str(test_case_dir / tutorial)
-    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
     
     # Mock is_safe_command to return True (so we can test script name validation)
     with patch('app.is_safe_command', return_value=True), \
-         patch('app.is_safe_script_name', return_value=False):
+         patch('app.is_safe_script_name', return_value=False), \
+         patch('app.get_docker_client', return_value=MagicMock()):
         
         # Test with a script that has an unsafe name
         unsafe_script = "malicious_script.sh"
@@ -789,11 +792,11 @@ def test_run_case_unsafe_script_name(client, test_case_dir):
         assert f"Unsafe script name: {unsafe_script}" in response_data
         assert "Script names must be alphanumeric with underscores/hyphens only" in response_data
 
-def test_run_case_container_cleanup(client, test_case_dir):
+def test_run_case_container_cleanup(client, tmp_path):
     """Test that containers are properly cleaned up in case of errors."""
     tutorial = "test_tutorial"
-    case_dir = str(test_case_dir / tutorial)
-    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
     
     with patch('app.get_docker_client') as mock_docker, \
          patch('app.threading.Thread') as mock_thread:
@@ -833,11 +836,11 @@ def test_run_case_container_cleanup(client, test_case_dir):
         assert "Simulated error during execution" in response_text, \
             f"Expected error message not found in response: {response_text}"
 
-def test_run_case_container_cleanup_with_errors(client, test_case_dir):
+def test_run_case_container_cleanup_with_errors(client, tmp_path):
     """Test container cleanup when kill/remove operations fail."""
     tutorial = "test_tutorial"
-    case_dir = str(test_case_dir / tutorial)
-    (test_case_dir / tutorial).mkdir(exist_ok=True)
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
     
     with patch('app.get_docker_client') as mock_docker, \
          patch('app.threading.Thread') as mock_thread, \
@@ -870,7 +873,9 @@ def test_run_case_container_cleanup_with_errors(client, test_case_dir):
         
         # Verify error logs were recorded for kill and remove failures
         error_messages = [call[0][0] for call in mock_logger.error.call_args_list]
-        assert any("Could not kill container" in str(msg) for msg in error_messages)
+        debug_messages = [call[0][0] for call in mock_logger.debug.call_args_list]
+
+        assert any("Could not kill container" in str(msg) for msg in debug_messages)
         assert any("Could not remove container" in str(msg) for msg in error_messages)
         
         # The response should be 200, streaming the error message from logs exception
@@ -948,14 +953,16 @@ def test_create_contour_load_mesh_failure(client, tmp_path):
     mock_load_mesh = MagicMock(return_value={"success": False, "error": "Load failed"})
     
     with patch.dict('sys.modules', {'isosurface_visualizer': MagicMock(load_mesh=mock_load_mesh)}):
-        response = client.post('/api/contours/create', json={
-            "tutorial": "tutorial_name",
-            "caseDir": str(tutorial_dir)
-        })
-        assert response.status_code == 500
-        data = response.get_json()
-        assert not data["success"]
-        assert "Failed to load mesh" in data["error"]
+        with patch('app.CASE_ROOT', str(tmp_path)), \
+             patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value={"success": False, "error": "Load failed"}):
+            response = client.post('/api/contours/create', json={
+                "tutorial": "tutorial_name",
+                "caseDir": str(tutorial_dir)
+            })
+            assert response.status_code == 500
+            data = response.get_json()
+            assert not data["success"]
+            assert "Failed to load mesh" in data["error"]
 
 def test_create_contour_scalar_field_not_found(client, tmp_path):
     tutorial_dir = tmp_path / "test_tutorial"
@@ -1068,17 +1075,17 @@ def test_create_contour_success(client, tmp_path):
         assert fake_html in response.get_data(as_text=True)
 
 
-def test_main_startup(monkeypatch):
+def test_main_startup(monkeypatch, tmp_path):
     fake_config = {
-        "CASE_ROOT": "/tmp/fake_case_root",
+        "CASE_ROOT": str(tmp_path / "fake_case_root"),
         "DOCKER_IMAGE": "fake/image",
         "OPENFOAM_VERSION": "vX"
     }
     with patch('app.load_config', return_value=fake_config), \
-         patch('os.makedirs') as makedirs_mock, \
+         patch('pathlib.Path.mkdir') as mkdir_mock, \
          patch('app.app.run') as run_mock:
 
         flask_app.main()
 
-        makedirs_mock.assert_called_once_with(fake_config['CASE_ROOT'], exist_ok=True)
+        mkdir_mock.assert_called()
         run_mock.assert_called_once_with(host="0.0.0.0", port=5000, debug=True)

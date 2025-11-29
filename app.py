@@ -10,13 +10,13 @@ and managing Docker containers.
 import json
 import logging
 import os
-import pathlib
+import threading
+import time
 import platform
 import posixpath
 import re
-import threading
-import time
-from typing import Dict, List, Optional, Tuple, Union
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union, Generator
 
 # Third-party imports
 import docker
@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("FOAMFlask")
 
 # Global configuration
-CONFIG_FILE = "case_config.json"
+CONFIG_FILE = Path("case_config.json")
 CONFIG: Optional[Dict] = None
 CASE_ROOT: Optional[str] = None
 DOCKER_IMAGE: Optional[str] = None
@@ -131,16 +131,16 @@ def load_config() -> Dict[str, str]:
             - OPENFOAM_VERSION: OpenFOAM version
     """
     defaults = {
-        "CASE_ROOT": os.path.abspath("tutorial_cases"),
+        "CASE_ROOT": str(Path("tutorial_cases").resolve()),
         "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
         "OPENFOAM_VERSION": "12",
     }
 
-    if not os.path.exists(CONFIG_FILE):
+    if not CONFIG_FILE.exists():
         return defaults
 
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with CONFIG_FILE.open("r", encoding="utf-8") as f:
             data = json.load(f)
             return {**defaults, **data}
     except (json.JSONDecodeError, OSError) as e:
@@ -163,7 +163,7 @@ def save_config(updates: Dict[str, str]) -> bool:
     config.update(updates)
 
     try:
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        with CONFIG_FILE.open("w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
         return True
     except (OSError, TypeError) as e:
@@ -218,9 +218,9 @@ def docker_unavailable_response() -> Tuple[Response, int]:
 
 
 # Load HTML template
-TEMPLATE_FILE = os.path.join("static", "html", "foamflask_frontend.html")
+TEMPLATE_FILE = Path("static/html/foamflask_frontend.html")
 try:
-    with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
+    with TEMPLATE_FILE.open("r", encoding="utf-8") as f:
         TEMPLATE = f.read()
 except (OSError, UnicodeDecodeError) as e:
     logger.error(
@@ -278,7 +278,8 @@ def get_tutorials() -> List[str]:
         if platform.system() == "Windows":
             tutorials = [posixpath.relpath(c, tutorial_root) for c in cases]
         else:
-            tutorials = [os.path.relpath(c, tutorial_root) for c in cases]
+            # Using posixpath.relpath because Docker paths are POSIX
+            tutorials = [posixpath.relpath(c, tutorial_root) for c in cases]
 
         return sorted(tutorials)
 
@@ -307,8 +308,8 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
         tutorial: The name of the tutorial.
         case_dir: The path to the case directory.
     """
-    host_log_path = pathlib.Path(case_dir) / tutorial / "log.FoamRun"
-    output_file = pathlib.Path(case_dir) / tutorial / "foamrun_logs.txt"
+    host_log_path = Path(case_dir) / tutorial / "log.FoamRun"
+    output_file = Path(case_dir) / tutorial / "foamrun_logs.txt"
 
     # Configuration
     timeout = 300  # seconds max wait
@@ -362,7 +363,7 @@ def get_case_root() -> Response:
 
 
 @app.route("/set_case", methods=["POST"])
-def set_case() -> Response:
+def set_case() -> Union[Response, Tuple[Response, int]]:
     """Set the case root directory.
 
     Returns:
@@ -372,12 +373,12 @@ def set_case() -> Response:
 
     data = request.get_json()
     if not data or "caseDir" not in data or not data["caseDir"]:
-        return jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"})
+        return jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"}), 400
 
     try:
-        case_dir = os.path.abspath(data["caseDir"])
-        os.makedirs(case_dir, exist_ok=True)
-        CASE_ROOT = case_dir
+        case_dir_path = Path(data["caseDir"]).resolve()
+        case_dir_path.mkdir(parents=True, exist_ok=True)
+        CASE_ROOT = str(case_dir_path)
         save_config({"CASE_ROOT": CASE_ROOT})
 
         return jsonify(
@@ -402,7 +403,7 @@ def get_docker_config() -> Response:
 
 
 @app.route("/set_docker_config", methods=["POST"])
-def set_docker_config() -> Response:
+def set_docker_config() -> Union[Response, Tuple[Response, int]]:
     """Update Docker configuration.
 
     Returns:
@@ -439,7 +440,7 @@ def set_docker_config() -> Response:
 
 
 @app.route("/load_tutorial", methods=["POST"])
-def load_tutorial():
+def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     """
     Load a tutorial in the Docker container.
 
@@ -465,10 +466,11 @@ def load_tutorial():
     container_case_path = posixpath.join(container_run_path, tutorial)
 
     # Convert Windows paths to POSIX style for Docker
-    host_path = pathlib.Path(CASE_ROOT).resolve()
+    host_path = Path(CASE_ROOT).resolve()
     is_windows = platform.system() == "Windows"
-    if is_windows:
-        host_path = host_path.as_posix()  # Docker expects POSIX paths on Windows
+    # Docker expects POSIX paths for bind mounts on Windows (e.g. /c/Users/...)
+    # We use as_posix() to ensure forward slashes.
+    host_path_str = host_path.as_posix() if is_windows else str(host_path)
 
     # Base docker command: create directory and copy tutorial
     docker_cmd = (
@@ -492,7 +494,7 @@ def load_tutorial():
             tty=True,
             stdout=True,
             stderr=True,
-            volumes={CASE_ROOT: {"bind": container_run_path, "mode": "rw"}},
+            volumes={host_path_str: {"bind": container_run_path, "mode": "rw"}},
             working_dir=container_run_path,
             remove=True,
         )
@@ -511,6 +513,10 @@ def load_tutorial():
 
         return jsonify({"output": output, "caseDir": CASE_ROOT})
 
+    except Exception as e:
+        logger.error(f"Error loading tutorial: {e}", exc_info=True)
+        return jsonify({"output": f"[FOAMFlask] [Error] {str(e)}"}), 500
+
     finally:
         if container:
             try:
@@ -526,7 +532,7 @@ def load_tutorial():
 
 
 @app.route("/run", methods=["POST"])
-def run_case():
+def run_case() -> Union[Response, Tuple[Dict, int]]:
     """
     Run a case in the Docker container.
 
@@ -548,7 +554,7 @@ def run_case():
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
 
-    def stream_container_logs():
+    def stream_container_logs() -> Generator[str, None, None]:
         """Stream container logs for OpenFOAM command execution.
         
         Yields:
@@ -569,9 +575,11 @@ def run_case():
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
         # Convert Windows path to POSIX for Docker volumes
-        host_path = pathlib.Path(case_dir).resolve().as_posix()
+        host_path = Path(case_dir).resolve()
+        host_path_str = host_path.as_posix() if platform.system() == "Windows" else str(host_path)
+
         volumes = {
-            host_path: {
+            host_path_str: {
                 "bind": f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run",
                 "mode": "rw",
             }
@@ -629,16 +637,16 @@ def run_case():
             wrapper_script += "./" + command + "\n"
             docker_cmd = ["bash", "-c", wrapper_script]
 
-        container = client.containers.run(
-            DOCKER_IMAGE,
-            docker_cmd,
-            detach=True,
-            tty=False,
-            volumes=volumes,
-            working_dir=container_case_path,
-        )
-
         try:
+            container = client.containers.run(
+                DOCKER_IMAGE,
+                docker_cmd,
+                detach=True,
+                tty=False,
+                volumes=volumes,
+                working_dir=container_case_path,
+            )
+
             try:
                 for line in container.logs(stream=True):
                     decoded = line.decode(errors="ignore")
@@ -646,25 +654,29 @@ def run_case():
                         yield subline + "<br>"
             except Exception as e:
                 yield f"[FOAMFlask] [Error] Failed to stream container logs: {e}<br>"
-        except GeneratorExit:
-            # Generator closed by client disconnect
-            pass
+
+        except Exception as e:
+            logger.error(f"Error running container: {e}", exc_info=True)
+            yield f"[FOAMFlask] [Error] Failed to start container: {e}<br>"
+            return
+
         finally:
-            try:
-                container.kill()
-            except Exception as kill_err:
-                logger.error(f"[FOAMPilot] Could not kill container: {kill_err}")
-            try:
-                container.remove()
-            except Exception as remove_err:
-                logger.error(f"[FOAMPilot] Could not remove container: {remove_err}")
+            if 'container' in locals():
+                try:
+                    container.kill()
+                except Exception as kill_err:
+                    logger.debug(f"[FOAMPilot] Could not kill container (might have stopped): {kill_err}")
+                try:
+                    container.remove()
+                except Exception as remove_err:
+                    logger.error(f"[FOAMPilot] Could not remove container: {remove_err}")
 
     return Response(stream_container_logs(), mimetype="text/html")
 
 
 # --- Realtime Plotting Endpoints ---
 @app.route("/api/available_fields", methods=["GET"])
-def api_available_fields():
+def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     """
     Get list of available fields in the current case.
 
@@ -679,19 +691,20 @@ def api_available_fields():
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = os.path.join(CASE_ROOT, tutorial)
-    if not os.path.exists(case_dir):
+    case_dir = Path(CASE_ROOT) / tutorial
+    if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
-        fields = get_available_fields(case_dir)
+        fields = get_available_fields(str(case_dir))
         return jsonify({"fields": fields})
     except Exception as e:
+        logger.error(f"Error in available_fields: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/plot_data", methods=["GET"])
-def api_plot_data():
+def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     """
     Get realtime plot data for the current case.
 
@@ -706,21 +719,21 @@ def api_plot_data():
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = os.path.join(CASE_ROOT, tutorial)
-    if not os.path.exists(case_dir):
+    case_dir = Path(CASE_ROOT) / tutorial
+    if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
-        parser = OpenFOAMFieldParser(case_dir)
+        parser = OpenFOAMFieldParser(str(case_dir))
         data = parser.get_all_time_series_data(max_points=100)
         return jsonify(data)
     except Exception as e:
-        logger.error(f"Error getting plot data: {e}")
+        logger.error(f"Error getting plot data: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/latest_data", methods=["GET"])
-def api_latest_data():
+def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     """
     Get the latest time step data.
 
@@ -735,21 +748,21 @@ def api_latest_data():
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = os.path.join(CASE_ROOT, tutorial)
-    if not os.path.exists(case_dir):
+    case_dir = Path(CASE_ROOT) / tutorial
+    if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
-        parser = OpenFOAMFieldParser(case_dir)
+        parser = OpenFOAMFieldParser(str(case_dir))
         data = parser.get_latest_time_data()
         return jsonify(data if data else {})
     except Exception as e:
-        logger.error(f"Error getting latest data: {e}")
+        logger.error(f"Error getting latest data: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/residuals", methods=["GET"])
-def api_residuals():
+def api_residuals() -> Union[Response, Tuple[Response, int]]:
     """
     Get residuals from log file.
 
@@ -764,22 +777,22 @@ def api_residuals():
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = os.path.join(CASE_ROOT, tutorial)
-    if not os.path.exists(case_dir):
+    case_dir = Path(CASE_ROOT) / tutorial
+    if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
-        parser = OpenFOAMFieldParser(case_dir)
+        parser = OpenFOAMFieldParser(str(case_dir))
         residuals = parser.get_residuals_from_log()
         return jsonify(residuals)
     except Exception as e:
-        logger.error(f"Error getting residuals: {e}")
+        logger.error(f"Error getting residuals: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 # --- PyVista Mesh Visualization Endpoints ---
 @app.route("/api/available_meshes", methods=["GET"])
-def api_available_meshes():
+def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
     """
     Get list of available mesh files in the case directory.
 
@@ -794,15 +807,16 @@ def api_available_meshes():
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
+        # mesh_visualizer expects strings for paths currently
         mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial)
         return jsonify({"meshes": mesh_files})
     except Exception as e:
-        logger.error(f"Error getting available meshes: {e}")
+        logger.error(f"Error getting available meshes: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/load_mesh", methods=["POST"])
-def api_load_mesh():
+def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     """
     Load a mesh file and return mesh information.
 
@@ -835,17 +849,17 @@ def api_load_mesh():
                 mesh_info.setdefault("point_arrays", mesh_info.get("array_names", []))
                 # Add any contour-specific processing here if needed
             except Exception as e:
-                logger.error(f"Error loading mesh for contour: {e}")
+                logger.error(f"Error loading mesh for contour: {e}", exc_info=True)
                 return jsonify({"error": str(e)}), 500
 
         return jsonify(mesh_info)
     except Exception as e:
-        logger.error(f"Error loading mesh: {e}")
+        logger.error(f"Error loading mesh: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/mesh_screenshot", methods=["POST"])
-def api_mesh_screenshot():
+def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     """
     Generate a screenshot of the mesh.
 
@@ -889,12 +903,12 @@ def api_mesh_screenshot():
                 500,
             )
     except Exception as e:
-        logger.error(f"Error generating mesh screenshot: {e}")
+        logger.error(f"Error generating mesh screenshot: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/mesh_interactive", methods=["POST"])
-def api_mesh_interactive():
+def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
     """
     Generate an interactive HTML viewer for the mesh.
 
@@ -932,11 +946,11 @@ def api_mesh_interactive():
                 500,
             )
     except Exception as e:
-        logger.error(f"Error generating interactive viewer: {e}")
+        logger.error(f"Error generating interactive viewer: {e}", exc_info=True)
 
 
 @app.route("/run_foamtovtk", methods=["POST"])
-def run_foamtovtk():
+def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
     """
     Run foamToVTK command in the Docker container.
     """
@@ -947,7 +961,7 @@ def run_foamtovtk():
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
 
-    def stream_foamtovtk_logs():
+    def stream_foamtovtk_logs() -> Generator[str, None, None]:
         """Stream logs for foamToVTK conversion process.
         
         Yields:
@@ -964,9 +978,11 @@ def run_foamtovtk():
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
         # Convert Windows path to POSIX for Docker volumes
-        host_path = pathlib.Path(case_dir).resolve().as_posix()
+        host_path = Path(case_dir).resolve()
+        host_path_str = host_path.as_posix() if platform.system() == "Windows" else str(host_path)
+
         volumes = {
-            host_path: {
+            host_path_str: {
                 "bind": f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run",
                 "mode": "rw",
             }
@@ -981,38 +997,43 @@ def run_foamtovtk():
             f"'"
         )
 
-        container = client.containers.run(
-            DOCKER_IMAGE,
-            docker_cmd,
-            detach=True,
-            tty=False,
-            volumes=volumes,
-            working_dir=container_case_path,
-        )
-
         try:
+            container = client.containers.run(
+                DOCKER_IMAGE,
+                docker_cmd,
+                detach=True,
+                tty=False,
+                volumes=volumes,
+                working_dir=container_case_path,
+            )
+
             # Stream logs line by line
             for line in container.logs(stream=True):
                 decoded = line.decode(errors="ignore")
                 for subline in decoded.splitlines():
                     yield subline + "<br>"
 
+        except Exception as e:
+            logger.error(f"Error running foamToVTK: {e}", exc_info=True)
+            yield f"[FOAMFlask] [Error] {e}<br>"
+
         finally:
-            try:
-                container.kill()
-            except:
-                pass
-            try:
-                container.remove()
-            except:
-                logger.error("[FOAMFlask] Could not remove container")
+            if 'container' in locals():
+                try:
+                    container.kill()
+                except Exception:
+                    pass
+                try:
+                    container.remove()
+                except Exception:
+                    logger.error("[FOAMFlask] Could not remove container")
 
     return Response(stream_foamtovtk_logs(), mimetype="text/html")
 
 
 # --- PyVista Post Processing Visualization Endpoints ---
 @app.route("/api/post_process", methods=["POST"])
-def post_process():
+def post_process() -> Union[Response, Tuple[Response, int]]:
     """Handle post-processing requests for OpenFOAM results.
     
     Returns:
@@ -1022,12 +1043,12 @@ def post_process():
         # Add your post-processing logic here
         return jsonify({"status": "success", "message": "Post processing endpoint"})
     except Exception as e:
-        logger.error(f"Error during post-processing: {e}")
+        logger.error(f"Error during post-processing: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/contours/create", methods=["POST", "OPTIONS"])
-def create_contour():
+def create_contour() -> Union[Response, Tuple[Response, int]]:
     """
     Create isosurfaces for the current mesh.
 
@@ -1061,13 +1082,13 @@ def create_contour():
         logger.info(f"[FOAMFlask] [create_contour] Request data: {request_data}")
 
         tutorial = request_data.get("tutorial")
-        case_dir = request_data.get("caseDir")
+        case_dir_str = request_data.get("caseDir")
         scalar_field = request_data.get("scalar_field", "U_Magnitude")
         num_isosurfaces = int(request_data.get("num_isosurfaces", 5))
 
         logger.info(
             f"[FOAMFlask] [create_contour] Parsed parameters: "
-            f"tutorial={tutorial}, caseDir={case_dir}, "
+            f"tutorial={tutorial}, caseDir={case_dir_str}, "
             f"scalarField={scalar_field}, numIsosurfaces={num_isosurfaces}"
         )
 
@@ -1076,20 +1097,21 @@ def create_contour():
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
             return jsonify({"success": False, "error": error_msg}), 400
 
-        if not case_dir:
+        if not case_dir_str:
             error_msg = "Case directory not specified"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
             return jsonify({"success": False, "error": error_msg}), 400
 
         # Normalize path
-        if not os.path.isabs(case_dir):
-            case_dir = os.path.join(CASE_ROOT, case_dir)
+        case_dir = Path(case_dir_str)
+        if not case_dir.is_absolute():
+            case_dir = Path(CASE_ROOT) / case_dir
 
         logger.info(
             f"[FOAMFlask] [create_contour] Normalized case directory: {case_dir}"
         )
 
-        if not os.path.exists(case_dir):
+        if not case_dir.exists():
             error_msg = f"Case directory not found: {case_dir}"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
             return jsonify({"success": False, "error": error_msg}), 404
@@ -1101,10 +1123,9 @@ def create_contour():
             f"[FOAMFlask] [create_contour] Searching for VTK files in {case_dir}"
         )
         vtk_files = []
-        for root, _, files in os.walk(case_dir):
-            for file in files:
-                if file.endswith((".vtk", ".vtp", ".vtu")):
-                    vtk_files.append(os.path.join(root, file))
+        for file in case_dir.rglob("*"):
+             if file.suffix in [".vtk", ".vtp", ".vtu"]:
+                 vtk_files.append(str(file))
 
         logger.info(f"[FOAMFlask] [create_contour] Found {len(vtk_files)} VTK files")
 
@@ -1214,7 +1235,7 @@ def create_contour():
 
 
 @app.route("/api/upload_vtk", methods=["POST"])
-def upload_vtk():
+def upload_vtk() -> Union[Response, Tuple[Response, int]]:
     """Upload VTK files for visualization.
     
     Returns:
@@ -1228,17 +1249,21 @@ def upload_vtk():
     if file.filename == "":
         return jsonify({"success": False, "error": "No selected file"}), 400
 
-    temp_dir = os.path.join("temp_uploads")
-    os.makedirs(temp_dir, exist_ok=True)
-    filepath = os.path.join(temp_dir, secure_filename(file.filename))
+    temp_dir = Path("temp_uploads")
+    temp_dir.mkdir(exist_ok=True)
+
+    if not file.filename:
+        return jsonify({"success": False, "error": "Invalid filename"}), 400
+
+    filepath = temp_dir / secure_filename(file.filename)
 
     try:
         # Save the file temporarily
-        file.save(filepath)
+        file.save(str(filepath))
 
         # Use IsosurfaceVisualizer to handle the mesh loading
         visualizer = IsosurfaceVisualizer()
-        result = visualizer.load_mesh(filepath)
+        result = visualizer.load_mesh(str(filepath))
 
         if not result.get("success", False):
             return (
@@ -1274,20 +1299,20 @@ def upload_vtk():
     finally:
         # Clean up the temporary file
         try:
-            if "filepath" in locals() and os.path.exists(filepath):
-                os.remove(filepath)
+            if 'filepath' in locals() and filepath.exists():
+                filepath.unlink()
         except Exception as e:
             logger.error(f"Error cleaning up file {filepath}: {e}")
 
 
-def main():
+def main() -> None:
     global CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
     CONFIG = load_config()
     CASE_ROOT = CONFIG["CASE_ROOT"]
     DOCKER_IMAGE = CONFIG["DOCKER_IMAGE"]
     OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 
-    os.makedirs(CASE_ROOT, exist_ok=True)
+    Path(CASE_ROOT).mkdir(parents=True, exist_ok=True)
 
     app.run(host="0.0.0.0", port=5000, debug=True)
 
