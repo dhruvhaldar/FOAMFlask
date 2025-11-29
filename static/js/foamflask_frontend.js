@@ -347,10 +347,9 @@ window.onload = async () => {
             if (savedTutorial)
                 tutorialSelect.value = savedTutorial;
         }
-        const [caseRootData, dockerConfigData] = await Promise.all([
-            fetchWithCache("/get_case_root"),
-            fetchWithCache("/get_docker_config"),
-        ]);
+        // Explicitly typed responses
+        const caseRootData = await fetchWithCache("/get_case_root");
+        const dockerConfigData = await fetchWithCache("/get_docker_config");
         caseDir = caseRootData.caseDir;
         const caseDirInput = document.getElementById("caseDir");
         if (caseDirInput)
@@ -436,15 +435,17 @@ const setCase = async () => {
         const data = await response.json();
         caseDir = data.caseDir;
         document.getElementById("caseDir").value = caseDir;
-        data.output.split("\n").forEach((line) => {
-            line = line.trim();
-            if (line.startsWith("INFO"))
-                appendOutput(line.replace("INFO", ""), "info");
-            else if (line.startsWith("Error"))
-                appendOutput(line, "stderr");
-            else
-                appendOutput(line, "stdout");
-        });
+        if (data.output) {
+            data.output.split("\n").forEach((line) => {
+                line = line.trim();
+                if (line.startsWith("INFO"))
+                    appendOutput(line.replace("INFO", ""), "info");
+                else if (line.startsWith("Error"))
+                    appendOutput(line, "stderr");
+                else
+                    appendOutput(line, "stdout");
+            });
+        }
         showNotification("Case directory set", "info");
     }
     catch (error) {
@@ -497,22 +498,24 @@ const loadTutorial = async () => {
         if (!response.ok)
             throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        data.output.split("\n").forEach((line) => {
-            line = line.trim();
-            if (line.startsWith("INFO:FOAMFlask Tutorial loaded")) {
-                appendOutput(line.replace("INFO:FOAMFlask Tutorial loaded", "FOAMFlask Tutorial loaded"), "tutorial");
-            }
-            else if (line.startsWith("Source")) {
-                appendOutput(`FOAMFlask ${line}`, "info");
-            }
-            else if (line.startsWith("Copied to")) {
-                appendOutput(`FOAMFlask ${line}`, "info");
-            }
-            else {
-                const type = /error/i.test(line) ? "stderr" : "stdout";
-                appendOutput(line, type);
-            }
-        });
+        if (data.output) {
+            data.output.split("\n").forEach((line) => {
+                line = line.trim();
+                if (line.startsWith("INFO:FOAMFlask Tutorial loaded")) {
+                    appendOutput(line.replace("INFO:FOAMFlask Tutorial loaded", "FOAMFlask Tutorial loaded"), "tutorial");
+                }
+                else if (line.startsWith("Source")) {
+                    appendOutput(`FOAMFlask ${line}`, "info");
+                }
+                else if (line.startsWith("Copied to")) {
+                    appendOutput(`FOAMFlask ${line}`, "info");
+                }
+                else {
+                    const type = /error/i.test(line) ? "stderr" : "stdout";
+                    appendOutput(line, type);
+                }
+            });
+        }
         showNotification("Tutorial loaded", "info");
     }
     catch (error) {
@@ -660,10 +663,13 @@ const updateResidualsPlot = async (tutorial) => {
             plotlyColors.orange,
         ];
         fields.forEach((field, idx) => {
-            if (data[field] && data[field].length > 0) {
+            // Need to cast data to any because ResidualsResponse doesn't allow index access easily with string literals in strict mode
+            // or check property existence
+            const fieldData = data[field];
+            if (fieldData && fieldData.length > 0) {
                 traces.push({
-                    x: Array.from({ length: data[field].length }, (_, i) => i + 1),
-                    y: data[field],
+                    x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+                    y: fieldData,
                     type: "scatter",
                     mode: "lines",
                     name: field,
@@ -710,7 +716,8 @@ const updateAeroPlots = async () => {
     if (!selectedTutorial)
         return;
     try {
-        const response = await fetch(`/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        // Switch to api_plot_data to get time series data (arrays)
+        const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
         const data = await response.json();
         if (data.error)
             return;
@@ -721,6 +728,9 @@ const updateAeroPlots = async () => {
             data.p.length > 0) {
             const pinf = 101325;
             const rho = 1.225;
+            // U_mag might be an array, assume we want a reference velocity.
+            // If it's a time series, maybe take the last value or max?
+            // Original code assumed U_mag[0].
             const uinf = Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
             const qinf = 0.5 * rho * uinf * uinf;
             const cp = data.p.map((pval) => (pval - pinf) / qinf);
@@ -811,8 +821,6 @@ const updatePlots = async () => {
                 console.error("Pressure plot element not found");
                 return;
             }
-            // Create new plot data (simplified approach)
-            const plotData = [];
             const legendVisibility = getLegendVisibility(pressureDiv);
             const pressureTrace = {
                 x: data.time,

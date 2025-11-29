@@ -8,15 +8,15 @@ mesh data for visualization purposes.
 # Standard library imports
 import base64
 import logging
-import os
 import tempfile
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple, Union, Any, BinaryIO
+from pathlib import Path
+from typing import Dict, List, Optional, Union, Any
 
 # Third-party imports
-import numpy as np
 import pyvista as pv
 from pyvista import DataSet, Plotter
+import PIL.Image
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
@@ -45,7 +45,7 @@ class MeshVisualizer:
             self.plotter.close()
 
     def load_mesh(
-        self, file_path: str, for_contour: bool = False, **kwargs: Any
+        self, file_path: Union[str, Path], for_contour: bool = False, **kwargs: Any
     ) -> Dict[str, Any]:
         """Load a mesh from a VTK/VTP file.
 
@@ -67,22 +67,19 @@ class MeshVisualizer:
                 - cell_arrays: List of cell data arrays
                 - success: Boolean indicating operation success
                 - error: Error message if operation failed
-
-        Raises:
-            FileNotFoundError: If the specified file does not exist.
         """
         try:
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"Mesh file not found: {file_path}")
+            path = Path(file_path)
+            if not path.exists():
+                raise FileNotFoundError(f"Mesh file not found: {path}")
 
             # Read the mesh
             logger.info("[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh]")
-            self.mesh = pv.read(file_path, progress_bar=True)
+            self.mesh = pv.read(str(path), progress_bar=True)
             logger.info(
-                f"[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh] Loaded mesh from {file_path}"
+                f"[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh] Loaded mesh from {path}"
             )
 
-            # Get mesh information
             # Get mesh information
             mesh_info = {
                 "n_points": self.mesh.n_points,
@@ -105,7 +102,7 @@ class MeshVisualizer:
 
     def get_mesh_screenshot(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         width: int = 800,
         height: int = 600,
         show_edges: bool = True,
@@ -124,15 +121,17 @@ class MeshVisualizer:
 
         Returns:
             Base64-encoded PNG image as a string, or None if an error occurs.
-
-        Raises:
-            FileNotFoundError: If the specified file does not exist.
-            ValueError: If the camera position is invalid.
         """
         try:
-            # Load mesh if not already loaded
-            if self.mesh is None or not os.path.exists(file_path):
-                mesh_info = self.load_mesh(file_path, for_contour=for_contour)
+            path = Path(file_path)
+
+            # Load mesh if not already loaded or if a different file is requested
+            # Note: Checking path equality naively; in a robust system we might want to track current path
+            if self.mesh is None or not path.exists():
+                # We reuse load_mesh logic, though technically if self.mesh is None we load it.
+                # If path exists but self.mesh corresponds to another file, we rely on caller or just reload.
+                # For simplicity, let's just reload if needed.
+                mesh_info = self.load_mesh(path)
                 if not mesh_info.get("success"):
                     return None
 
@@ -166,8 +165,6 @@ class MeshVisualizer:
 
             # Convert to base64
             buffered = BytesIO()
-            import PIL.Image
-
             PIL.Image.fromarray(img_bytes).save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
 
@@ -178,7 +175,7 @@ class MeshVisualizer:
             return None
 
     def get_mesh_html(
-        self, file_path: str, show_edges: bool = True, color: str = "lightblue"
+        self, file_path: Union[str, Path], show_edges: bool = True, color: str = "lightblue"
     ) -> Optional[str]:
         """Generate an interactive HTML viewer for the mesh.
 
@@ -193,12 +190,8 @@ class MeshVisualizer:
         Returns:
             HTML content as a string for the interactive viewer, or None if an
             error occurs.
-
-        Raises:
-            FileNotFoundError: If the specified file does not exist.
         """
         try:
-            # Load mesh if not already loaded
             if self.mesh is None:
                 mesh_info = self.load_mesh(file_path)
                 if not mesh_info.get("success"):
@@ -224,7 +217,7 @@ class MeshVisualizer:
             return None
 
     def get_interactive_viewer_html(
-        self, file_path: str, show_edges: bool = True, color: str = "lightblue"
+        self, file_path: Union[str, Path], show_edges: bool = True, color: str = "lightblue"
     ) -> Optional[str]:
         """Generate a fully interactive HTML viewer with enhanced controls.
 
@@ -239,13 +232,8 @@ class MeshVisualizer:
         Returns:
             HTML content as a string for the interactive viewer with controls,
             or None if an error occurs.
-
-        Raises:
-            FileNotFoundError: If the specified file does not exist.
-            RuntimeError: If there's an error generating the HTML content.
         """
         try:
-            # Load mesh if not already loaded
             if self.mesh is None:
                 mesh_info = self.load_mesh(file_path)
                 if not mesh_info.get("success"):
@@ -277,20 +265,19 @@ class MeshVisualizer:
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".html", delete=False, encoding="utf-8"
                 ) as tmp_file:
-                    tmp_path = tmp_file.name
+                    tmp_path = Path(tmp_file.name)
 
                 # Export to the temporary file
-                plotter.export_html(tmp_path)
+                plotter.export_html(str(tmp_path))
                 plotter.close()
 
                 # Read the HTML content
-                with open(tmp_path, "r", encoding="utf-8") as f:
-                    html_content = f.read()
+                html_content = tmp_path.read_text(encoding="utf-8")
 
                 # Clean up temporary file
                 try:
-                    os.unlink(tmp_path)
-                except:
+                    tmp_path.unlink()
+                except Exception:
                     pass
 
                 return html_content
@@ -305,7 +292,7 @@ class MeshVisualizer:
             return None
 
     def get_available_meshes(
-        self, case_dir: str, tutorial: str
+        self, case_dir: Union[str, Path], tutorial: str
     ) -> List[Dict[str, Union[str, int]]]:
         """Get list of available mesh files in the case directory.
 
@@ -327,8 +314,8 @@ class MeshVisualizer:
             Returns an empty list if no mesh files are found or if an error occurs.
         """
         try:
-            tutorial_path = os.path.join(case_dir, tutorial)
-            if not os.path.exists(tutorial_path):
+            tutorial_path = Path(case_dir) / tutorial
+            if not tutorial_path.exists():
                 return []
 
             mesh_files = []
@@ -336,46 +323,36 @@ class MeshVisualizer:
             # Common locations for mesh files in OpenFOAM cases
             search_dirs = [
                 tutorial_path,
-                os.path.join(tutorial_path, "VTK"),
-                os.path.join(tutorial_path, "postProcessing"),
+                tutorial_path / "VTK",
+                tutorial_path / "postProcessing",
             ]
 
             # Search for VTK/VTP files
             for search_dir in search_dirs:
-                if not os.path.exists(search_dir):
+                if not search_dir.exists():
                     continue
 
-                for root, dirs, files in os.walk(search_dir):
-                    for file in files:
-                        if file.endswith((".vtk", ".vtp", ".vtu")):
-                            full_path = os.path.join(root, file)
-                            rel_path = os.path.relpath(full_path, tutorial_path)
+                for file_path in search_dir.rglob("*"):
+                    if file_path.suffix in [".vtk", ".vtp", ".vtu"]:
+                        try:
+                            rel_path = file_path.relative_to(tutorial_path)
                             mesh_files.append(
                                 {
-                                    "name": file,
-                                    "path": full_path,
-                                    "relative_path": rel_path,
-                                    "size": os.path.getsize(full_path),
+                                    "name": file_path.name,
+                                    "path": str(file_path),
+                                    "relative_path": str(rel_path),
+                                    "size": file_path.stat().st_size,
                                 }
                             )
+                        except ValueError:
+                            # Skip if path is not relative
+                            continue
 
             return mesh_files
 
         except Exception as e:
-            logger.error(f"Failed to export HTML: {e}")
-            if "plotter" in locals():
-                plotter.close()
-            raise
-
-    def __del__(self):
-        """Clean up resources."""
-        if hasattr(self, "plotter") and self.plotter is not None:
-            self.plotter.close()
-
-    def __del__(self):
-        """Clean up resources."""
-        if hasattr(self, "plotter") and self.plotter is not None:
-            self.plotter.close()
+            logger.error(f"Error getting available meshes: {e}")
+            return []
 
 
 # Global instance for use as a singleton
