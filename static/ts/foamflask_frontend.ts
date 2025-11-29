@@ -13,12 +13,92 @@
 import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
 import * as Plotly from "plotly.js";
 
-// Types
-type MeshFile = {
+// --- API Response Interfaces ---
+interface ApiResponse {
+  error?: string;
+  output?: string;
+  success?: boolean;
+}
+
+interface CaseRootResponse extends ApiResponse {
+  caseDir: string;
+}
+
+interface DockerConfigResponse extends ApiResponse {
+  dockerImage: string;
+  openfoamVersion: string;
+}
+
+interface TutorialLoadResponse extends ApiResponse {
+  caseDir: string;
+}
+
+interface MeshFile {
   path: string;
   name: string;
-};
+  size?: number;
+  relative_path?: string;
+}
 
+interface AvailableMeshesResponse extends ApiResponse {
+  meshes: MeshFile[];
+}
+
+interface MeshInfo {
+  n_points: number;
+  n_cells: number;
+  bounds: number[];
+  center?: number[];
+  length?: number;
+  volume?: number;
+  array_names?: string[];
+  point_arrays?: string[];
+  cell_arrays?: string[];
+  success: boolean;
+  error?: string;
+}
+
+interface MeshScreenshotResponse extends ApiResponse {
+  image?: string;
+}
+
+interface PlotData extends ApiResponse {
+  time?: number[];
+  p?: number[];
+  Ux?: number[];
+  Uy?: number[];
+  Uz?: number[];
+  U_mag?: number[];
+  nut?: number[];
+  nuTilda?: number[];
+  k?: number[];
+  epsilon?: number[];
+  omega?: number[];
+  [key: string]: any; // Allow dynamic fields
+}
+
+interface LatestDataResponse extends ApiResponse {
+  time?: number;
+  p?: number;
+  U_mag?: number;
+  Ux?: number;
+  Uy?: number;
+  Uz?: number;
+  [key: string]: any;
+}
+
+interface ResidualsResponse extends ApiResponse {
+  time?: number[];
+  Ux?: number[];
+  Uy?: number[];
+  Uz?: number[];
+  p?: number[];
+  k?: number[];
+  epsilon?: number[];
+  omega?: number[];
+}
+
+// Types
 type CameraView = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 
@@ -85,7 +165,7 @@ const plotlyColors = {
 };
 
 // Common plot layout
-const plotLayout: any = {
+const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Computer Modern Serif, serif", size: 12 },
   plot_bgcolor: "white",
   paper_bgcolor: "#ffffff",
@@ -107,7 +187,7 @@ const plotLayout: any = {
 };
 
 // Plotly config
-const plotConfig = {
+const plotConfig: Partial<Plotly.Config> = {
   responsive: true,
   displayModeBar: true,
   staticPlot: false,
@@ -157,7 +237,7 @@ const downloadPlotAsPNG = (
     width: plotDiv.offsetWidth,
     height: plotDiv.offsetHeight,
     scale: 2,
-    ...downloadLayout,
+    ...(downloadLayout as any),
   }).then((dataUrl: string) => {
     const link = document.createElement("a");
     link.href = dataUrl;
@@ -400,10 +480,11 @@ window.onload = async () => {
       const savedTutorial = localStorage.getItem("lastSelectedTutorial");
       if (savedTutorial) tutorialSelect.value = savedTutorial;
     }
-    const [caseRootData, dockerConfigData] = await Promise.all([
-      fetchWithCache("/get_case_root"),
-      fetchWithCache("/get_docker_config"),
-    ]);
+
+    // Explicitly typed responses
+    const caseRootData = await fetchWithCache<CaseRootResponse>("/get_case_root");
+    const dockerConfigData = await fetchWithCache<DockerConfigResponse>("/get_docker_config");
+
     caseDir = caseRootData.caseDir;
     const caseDirInput = document.getElementById("caseDir") as HTMLInputElement;
     if (caseDirInput) caseDirInput.value = caseDir;
@@ -422,17 +503,19 @@ window.onload = async () => {
 };
 
 // Fetch with caching and abort control
-const fetchWithCache = async (
+const fetchWithCache = async <T = any>(
   url: string,
   options: RequestInit = {}
-): Promise<any> => {
+): Promise<T> => {
   const cacheKey = `${url}${JSON.stringify(options)}`;
   const cached = requestCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
-    return cached.data;
+    return cached.data as T;
+
   if (abortControllers.has(url)) abortControllers.get(url)?.abort();
   const controller = new AbortController();
   abortControllers.set(url, controller);
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -441,7 +524,7 @@ const fetchWithCache = async (
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
     requestCache.set(cacheKey, { data, timestamp: Date.now() });
-    return data;
+    return data as T;
   } finally {
     abortControllers.delete(url);
   }
@@ -484,16 +567,19 @@ const setCase = async (): Promise<void> => {
       body: JSON.stringify({ caseDir }),
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
+    const data = await response.json() as CaseRootResponse;
     caseDir = data.caseDir;
     (document.getElementById("caseDir") as HTMLInputElement).value = caseDir;
-    data.output.split("\n").forEach((line: string) => {
-      line = line.trim();
-      if (line.startsWith("INFO"))
-        appendOutput(line.replace("INFO", ""), "info");
-      else if (line.startsWith("Error")) appendOutput(line, "stderr");
-      else appendOutput(line, "stdout");
-    });
+
+    if (data.output) {
+      data.output.split("\n").forEach((line: string) => {
+        line = line.trim();
+        if (line.startsWith("INFO"))
+          appendOutput(line.replace("INFO", ""), "info");
+        else if (line.startsWith("Error")) appendOutput(line, "stderr");
+        else appendOutput(line, "stdout");
+      });
+    }
     showNotification("Case directory set", "info");
   } catch (error: unknown) {
     console.error("FOAMFlask Error setting case", error);
@@ -522,8 +608,7 @@ const setDockerConfig = async (
       throw new Error(`HTTP error: ${response.status}`);
     }
 
-    const data: { dockerImage: string; openfoamVersion: string } =
-      await response.json();
+    const data = await response.json() as DockerConfigResponse;
 
     dockerImage = data.dockerImage;
     openfoamVersion = data.openfoamVersion;
@@ -562,26 +647,29 @@ const loadTutorial = async (): Promise<void> => {
       body: JSON.stringify({ tutorial: selected }),
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    data.output.split("\n").forEach((line: string) => {
-      line = line.trim();
-      if (line.startsWith("INFO:FOAMFlask Tutorial loaded")) {
-        appendOutput(
-          line.replace(
-            "INFO:FOAMFlask Tutorial loaded",
-            "FOAMFlask Tutorial loaded"
-          ),
-          "tutorial"
-        );
-      } else if (line.startsWith("Source")) {
-        appendOutput(`FOAMFlask ${line}`, "info");
-      } else if (line.startsWith("Copied to")) {
-        appendOutput(`FOAMFlask ${line}`, "info");
-      } else {
-        const type = /error/i.test(line) ? "stderr" : "stdout";
-        appendOutput(line, type);
-      }
-    });
+    const data = await response.json() as TutorialLoadResponse;
+
+    if (data.output) {
+      data.output.split("\n").forEach((line: string) => {
+        line = line.trim();
+        if (line.startsWith("INFO:FOAMFlask Tutorial loaded")) {
+          appendOutput(
+            line.replace(
+              "INFO:FOAMFlask Tutorial loaded",
+              "FOAMFlask Tutorial loaded"
+            ),
+            "tutorial"
+          );
+        } else if (line.startsWith("Source")) {
+          appendOutput(`FOAMFlask ${line}`, "info");
+        } else if (line.startsWith("Copied to")) {
+          appendOutput(`FOAMFlask ${line}`, "info");
+        } else {
+          const type = /error/i.test(line) ? "stderr" : "stdout";
+          appendOutput(line, type);
+        }
+      });
+    }
     showNotification("Tutorial loaded", "info");
   } catch (error: unknown) {
     console.error("FOAMFlask Error loading tutorial", error);
@@ -718,7 +806,7 @@ const stopPlotUpdates = (): void => {
 
 const updateResidualsPlot = async (tutorial: string): Promise<void> => {
   try {
-    const data = await fetchWithCache(
+    const data = await fetchWithCache<ResidualsResponse>(
       `/api/residuals?tutorial=${encodeURIComponent(tutorial)}`
     );
     console.log("Residuals data received:", data);
@@ -727,7 +815,7 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
       return;
     }
     const traces: any[] = [];
-    const fields = ["Ux", "Uy", "Uz", "p"];
+    const fields = ["Ux", "Uy", "Uz", "p"] as const;
     const colors = [
       plotlyColors.blue,
       plotlyColors.red,
@@ -737,10 +825,13 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
       plotlyColors.orange,
     ];
     fields.forEach((field, idx) => {
-      if (data[field] && data[field].length > 0) {
+      // Need to cast data to any because ResidualsResponse doesn't allow index access easily with string literals in strict mode
+      // or check property existence
+      const fieldData = (data as any)[field];
+      if (fieldData && fieldData.length > 0) {
         traces.push({
-          x: Array.from({ length: data[field].length }, (_, i) => i + 1),
-          y: data[field],
+          x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+          y: fieldData,
           type: "scatter",
           mode: "lines",
           name: field,
@@ -789,10 +880,11 @@ const updateAeroPlots = async (): Promise<void> => {
   )?.value;
   if (!selectedTutorial) return;
   try {
+    // Switch to api_plot_data to get time series data (arrays)
     const response = await fetch(
-      `/api/latest_data?tutorial=${encodeURIComponent(selectedTutorial)}`
+      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
     );
-    const data = await response.json();
+    const data = await response.json() as PlotData;
     if (data.error) return;
 
     // Cp plot
@@ -804,6 +896,9 @@ const updateAeroPlots = async (): Promise<void> => {
     ) {
       const pinf = 101325;
       const rho = 1.225;
+      // U_mag might be an array, assume we want a reference velocity.
+      // If it's a time series, maybe take the last value or max?
+      // Original code assumed U_mag[0].
       const uinf =
         Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
       const qinf = 0.5 * rho * uinf * uinf;
@@ -897,7 +992,7 @@ const updatePlots = async (): Promise<void> => {
   isUpdatingPlots = true;
 
   try {
-    const data = await fetchWithCache(
+    const data = await fetchWithCache<PlotData>(
       `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
     );
     if (data.error) {
@@ -914,8 +1009,6 @@ const updatePlots = async (): Promise<void> => {
         return;
       }
 
-      // Create new plot data (simplified approach)
-      const plotData: PlotTrace[] = [];
       const legendVisibility = getLegendVisibility(pressureDiv);
 
       const pressureTrace: PlotTrace = {
@@ -1215,7 +1308,7 @@ const refreshMeshList = async (): Promise<void> => {
       `/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`
     );
     if (!response.ok) throw new Error("Failed to fetch mesh files");
-    const data = await response.json();
+    const data = await response.json() as AvailableMeshesResponse;
     if (data.error) {
       showNotification(data.error, "error");
       return;
@@ -1329,7 +1422,7 @@ const loadMeshVisualization = async (): Promise<void> => {
     });
     if (!infoResponse.ok)
       throw new Error(`HTTP error! status: ${infoResponse.status}`);
-    const meshInfo = await infoResponse.json();
+    const meshInfo = await infoResponse.json() as MeshInfo;
     if (!meshInfo.success) {
       showNotification(`${meshInfo.error} Failed to load mesh`, "error");
       return;
@@ -1393,7 +1486,7 @@ async function updateMeshView(): Promise<void> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as MeshScreenshotResponse;
 
     if (!data.success) {
       throw new Error(data.error || "Failed to render mesh");
@@ -1807,7 +1900,7 @@ async function refreshPostListVTK(): Promise<void> {
     );
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-    const data = await response.json();
+    const data = await response.json() as AvailableMeshesResponse;
     const vtkFiles: MeshFile[] = data.meshes || [];
 
     const vtkSelect = document.getElementById(
@@ -1849,7 +1942,7 @@ async function loadSelectedVTK(): Promise<void> {
       body: JSON.stringify({ file_path: selectedFile }),
     });
 
-    const meshInfo = await response.json();
+    const meshInfo = await response.json() as MeshInfo;
 
     if (meshInfo.success) {
       const scalarFieldSelect = document.getElementById(
@@ -1908,7 +2001,7 @@ async function loadContourVTK(): Promise<void> {
       );
     }
 
-    const meshInfo = await response.json();
+    const meshInfo = await response.json() as MeshInfo;
     console.log("[FOAMFlask] Received mesh info:", meshInfo);
 
     if (!meshInfo.success) {

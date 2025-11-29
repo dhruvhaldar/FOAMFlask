@@ -285,15 +285,22 @@ class TestGetInteractiveViewerHtml:
         mocker.patch('pyvista.Plotter', return_value=mock_plotter)
         
         fake_html = "<html><body>Interactive Viewer</body></html>"
-        mocker.patch('builtins.open', mock_open(read_data=fake_html))
-        mocker.patch('os.unlink')
-        mocker.patch('tempfile.NamedTemporaryFile')
+        # Since Path.read_text is called, patch it directly on the Path object returned by the context manager
         
-        visualizer.load_mesh(temp_vtk_file)
-        result = visualizer.get_interactive_viewer_html(temp_vtk_file)
+        # We need to mock NamedTemporaryFile context manager
+        mock_tmp_file = MagicMock()
+        mock_tmp_file.name = "/tmp/fake.html"
+        mock_named_temp = MagicMock()
+        mock_named_temp.__enter__.return_value = mock_tmp_file
         
-        assert result is not None
-        assert "<html>" in result
+        mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+
+        # Mock Path.read_text
+        with patch('pathlib.Path.read_text', return_value=fake_html):
+            visualizer.load_mesh(temp_vtk_file)
+            result = visualizer.get_interactive_viewer_html(temp_vtk_file)
+
+        assert result == fake_html
         mock_plotter.add_mesh.assert_called_once()
         mock_plotter.add_axes.assert_called_once()
 
@@ -308,12 +315,17 @@ class TestGetInteractiveViewerHtml:
         mocker.patch('pyvista.Plotter', return_value=mock_plotter)
         
         fake_html = "<html>Test</html>"
-        mocker.patch('builtins.open', mock_open(read_data=fake_html))
-        mocker.patch('os.unlink')
-        mocker.patch('tempfile.NamedTemporaryFile')
         
-        visualizer.load_mesh(temp_vtk_file)
-        result = visualizer.get_interactive_viewer_html(temp_vtk_file)
+        # Mock NamedTemporaryFile
+        mock_tmp_file = MagicMock()
+        mock_tmp_file.name = "/tmp/fake.html"
+        mock_named_temp = MagicMock()
+        mock_named_temp.__enter__.return_value = mock_tmp_file
+        mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+
+        with patch('pathlib.Path.read_text', return_value=fake_html):
+            visualizer.load_mesh(temp_vtk_file)
+            result = visualizer.get_interactive_viewer_html(temp_vtk_file)
         
         assert result is not None
         call_kwargs = mock_plotter.add_mesh.call_args[1]
@@ -344,12 +356,19 @@ class TestGetInteractiveViewerHtml:
         mocker.patch('pyvista.Plotter', return_value=mock_plotter)
         
         fake_html = "<html>Test</html>"
-        mocker.patch('builtins.open', mock_open(read_data=fake_html))
-        mocker.patch('os.unlink', side_effect=Exception("Unlink failed"))
-        mocker.patch('tempfile.NamedTemporaryFile')
         
-        visualizer.load_mesh(temp_vtk_file)
-        result = visualizer.get_interactive_viewer_html(temp_vtk_file)
+        mock_tmp_file = MagicMock()
+        mock_tmp_file.name = "/tmp/fake.html"
+        mock_named_temp = MagicMock()
+        mock_named_temp.__enter__.return_value = mock_tmp_file
+        mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+
+        # Patch Path.unlink to raise an exception
+        with patch('pathlib.Path.read_text', return_value=fake_html), \
+             patch('pathlib.Path.unlink', side_effect=Exception("Unlink failed")):
+
+            visualizer.load_mesh(temp_vtk_file)
+            result = visualizer.get_interactive_viewer_html(temp_vtk_file)
         
         # Should still return HTML despite unlink failure
         assert result is not None
@@ -475,15 +494,15 @@ class TestGetAvailableMeshes:
 
     def test_get_available_meshes_exception_returns_empty_list(self, visualizer, mocker):
         """Test that exception in os.walk is handled gracefully."""
-        # Mock os.walk to raise an exception
-        mocker.patch('os.walk', side_effect=Exception("Walk error"))
+        # In the new Path implementation, we use rglob which calls os.scandir/os.walk internally
+        # We'll mock Path.rglob or iterdir to raise an exception
         
-        result = visualizer.get_available_meshes("/path", "tutorial")
-        
-        # Should return empty list on exception per the code's error handler
-        assert isinstance(result, list)
-        # The code has a try-except that logs and raises, but for get_available_meshes
-        # it should handle gracefully
+        with patch('pathlib.Path.rglob', side_effect=OSError("Walk error")):
+            result = visualizer.get_available_meshes("/path", "tutorial")
+
+            # Should return empty list on exception
+            assert isinstance(result, list)
+            assert result == []
 
 
 class TestGlobalInstance:
