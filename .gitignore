@@ -11,3 +11,12 @@ static/js-build/**/*.js.map
 tests/__pycache__/*.pyc
 .coverage
 backend/plots/__pycache__/*.pyc
+backend/visualization/__pycache__/__init__.cpython-312.pyc
+backend/post/__pycache__/isosurface.cpython-313.pyc
+backend/post/__pycache__/isosurface.cpython-312.pyc
+backend/mesh/__pycache__/mesher.cpython-313.pyc
+backend/mesh/__pycache__/mesher.cpython-312.pyc
+backend/plots/__pycache__/realtime_plots.cpython-313.pyc
+backend/plots/__pycache__/realtime_plots.cpython-312.pyc
+backend/visualization/__pycache__/__init__.cpython-313.pyc
+backend/visualization/__pycache__/__init__.cpython-312.pyc

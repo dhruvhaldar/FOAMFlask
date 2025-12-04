@@ -561,7 +561,7 @@ const flushOutputBuffer = (): void => {
 const setCase = async (): Promise<void> => {
   try {
     caseDir = (document.getElementById("caseDir") as HTMLInputElement).value;
-    const response = await fetch("/setcase", {
+    const response = await fetch("/set_case", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caseDir }),
