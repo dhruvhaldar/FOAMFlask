@@ -37,34 +37,43 @@ class OpenFOAMFieldParser:
 
         return sorted(time_dirs, key=float)
 
+    def _get_field_type(self, field_path: Path) -> Optional[str]:
+        """
+        Determine if a file is a volScalarField or volVectorField by reading the header.
+        Returns 'scalar', 'vector', or None.
+        """
+        try:
+            # Read the first 2048 bytes to check the header class
+            with field_path.open("r", encoding="utf-8") as f:
+                header = f.read(2048)
+            
+            if re.search(r"class\s+volScalarField;", header):
+                return "scalar"
+            elif re.search(r"class\s+volVectorField;", header):
+                return "vector"
+            return None
+        except Exception:
+            return None
+
     def _resolve_variable(self, content: str, var_name: str) -> Optional[str]:
         """
         Attempt to resolve a variable definition within the file content.
         Looks for patterns like 'varName value;'
         """
-        # Remove the leading $ if present
         clean_var = var_name.lstrip('$')
         
-        # specific fix for the U file provided which uses #calc
-        # We can't easily parse #calc in Python, so we might need to look for simple definitions
-        # or just return None to trigger the fallback to 0.0
-        
         # Regex to find "variable value;"
-        # We look for the variable name at the start of a line or after whitespace
         pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
         match = pattern.search(content)
         
         if match:
             value_str = match.group(1).strip()
             
-            # If the value is another variable, recurse (simple depth limit could be added)
             if value_str.startswith('$'):
                 return self._resolve_variable(content, value_str)
             
-            # If it's a #calc, we cannot evaluate it safely in Python. 
-            # We return None so the parser falls back to 0.0
             if "#calc" in value_str:
-                logger.warning(f"Skipping #calc macro for variable {clean_var}")
+                logger.debug(f"Variable {clean_var} contains #calc macro, skipping resolution.")
                 return None
                 
             return value_str
@@ -76,22 +85,22 @@ class OpenFOAMFieldParser:
         try:
             content = field_path.read_text(encoding="utf-8")
 
-            # Handle nonuniform field first
+            # Regex for nonuniform: internalField nonuniform List<scalar> ... ( ... ) ;
+            # FIX: Added \s* before the final ; to handle newlines between ) and ;
             if "nonuniform" in content:
                 match = re.search(
-                    r"internalField\s+nonuniform\s+[^\n]*\(\s*([\s\S]*?)\s*\);",
+                    r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
                     content,
                     re.DOTALL,
                 )
-                if not match:
-                    return None
+                if match:
+                    field_data = match.group(1)
+                    numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
+                    if numbers:
+                        val = float(np.mean([float(n) for n in numbers]))
+                        return val
 
-                field_data = match.group(1)
-                numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
-                values = [float(n) for n in numbers]
-                return float(np.mean(values)) if values else None
-
-            # Handle uniform field
+            # Regex for uniform: internalField uniform 10;
             if re.search(r"internalField\s+uniform\b", content):
                 # Check for variable substitution (e.g. uniform $pOut)
                 var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", content)
@@ -100,7 +109,8 @@ class OpenFOAMFieldParser:
                     resolved_value = self._resolve_variable(content, var_name)
                     if resolved_value:
                         try:
-                            return float(resolved_value)
+                            val = float(resolved_value)
+                            return val
                         except ValueError:
                             pass
                 
@@ -108,90 +118,82 @@ class OpenFOAMFieldParser:
                 match = re.search(r"internalField\s+uniform\s+([^;]+);", content)
                 if match:
                     try:
-                        return float(match.group(1).strip())
+                        val = float(match.group(1).strip())
+                        return val
                     except ValueError:
-                        return None
-                return None
-
+                        pass
+            
+            logger.debug(f"Failed to parse scalar {field_path.name} (checked uniform/nonuniform)")
             return None
 
         except Exception as e:
             logger.error(f"Error parsing scalar field {field_path}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Path) -> Tuple[Optional[float], Optional[float], Optional[float]]:
-        """Parse a vector field file and return average components."""
+    def parse_vector_field(self, field_path: Path) -> Tuple[float, float, float]:
+        """Parse a vector field file and return average components. Returns (0,0,0) on failure."""
         try:
             content = field_path.read_text(encoding="utf-8")
 
-            # Handle nonuniform first
+            # Regex for nonuniform: internalField nonuniform List<vector> ... ( ... ) ;
+            # FIX: Added \s* before the final ; to handle newlines between ) and ;
             if "nonuniform" in content:
                 match = re.search(
-                    r"internalField\s+nonuniform\s+[^\n]*\(\s*([\s\S]*?)\s*\);",
+                    r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
                     content,
                     re.DOTALL,
                 )
-                if not match:
-                    return None, None, None
+                if match:
+                    field_data = match.group(1)
+                    vectors = re.findall(
+                        r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
+                        field_data,
+                    )
+                    if vectors:
+                        x = np.mean([float(v[0]) for v in vectors])
+                        y = np.mean([float(v[1]) for v in vectors])
+                        z = np.mean([float(v[2]) for v in vectors])
+                        return float(x), float(y), float(z)
 
-                field_data = match.group(1)
-                vectors = re.findall(
-                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                    field_data,
-                )
-                if not vectors:
-                    return None, None, None
-
-                x_vals = [float(v[0]) for v in vectors]
-                y_vals = [float(v[1]) for v in vectors]
-                z_vals = [float(v[2]) for v in vectors]
-                return float(np.mean(x_vals)), float(np.mean(y_vals)), float(np.mean(z_vals))
-
-            # Handle uniform field
+            # Regex for uniform: internalField uniform (0 0 0);
             if re.search(r"internalField\s+uniform\b", content):
-                # Check for variable substitution (e.g. uniform $Uinlet)
-                var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", content)
-                if var_match:
-                    # If we find a variable, try to resolve it, but for vectors like $Uinlet
-                    # which might be #calc, we often can't parse the value. 
-                    # Returning 0,0,0 is better than None to keep array lengths consistent.
+                # Variable substitution check
+                if re.search(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;", content):
+                    logger.debug(f"Parsed variable vector {field_path.name}: defaulting to (0,0,0)")
                     return 0.0, 0.0, 0.0
 
-                # Standard vector match (x y z)
                 match = re.search(
                     r"internalField\s+uniform\s+(\([^;]+\));",
                     content,
                     re.DOTALL,
                 )
-                if not match:
-                    return None, None, None
-
-                vec_str = match.group(1)
-                vec_match = re.search(
-                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                    vec_str,
-                )
-                if vec_match:
-                    return (
-                        float(vec_match.group(1)),
-                        float(vec_match.group(2)),
-                        float(vec_match.group(3)),
+                if match:
+                    vec_str = match.group(1)
+                    vec_match = re.search(
+                        r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
+                        vec_str,
                     )
-                return None, None, None
+                    if vec_match:
+                        val = (
+                            float(vec_match.group(1)),
+                            float(vec_match.group(2)),
+                            float(vec_match.group(3)),
+                        )
+                        return val
 
-            return None, None, None
+            logger.debug(f"Failed to parse vector {field_path.name}")
+            return 0.0, 0.0, 0.0
 
         except Exception as e:
             logger.error(f"Error parsing vector field {field_path}: {e}")
-            return None, None, None
-
+            return 0.0, 0.0, 0.0
 
     def get_latest_time_data(self) -> Optional[Dict[str, Any]]:
-        """Get data from the latest time directory."""
+        """Get data from the latest time directory using dynamic field discovery."""
         time_dirs = self.get_time_directories()
         if not time_dirs:
             return None
@@ -200,94 +202,93 @@ class OpenFOAMFieldParser:
         time_path = self.case_dir / latest_time
 
         data: Dict[str, Any] = {"time": float(latest_time)}
-
-        # Parse common scalar fields
-        scalar_fields = [
-            "p", "nut", "nuTilda", "k", "epsilon", "omega", "T", "alpha.water",
-        ]
-        for field in scalar_fields:
-            field_path = time_path / field
-            if field_path.exists():
-                value = self.parse_scalar_field(field_path)
-                if value is not None:
-                    data[field] = value
-
-        # Parse velocity field
-        u_field_path = time_path / "U"
-        if u_field_path.exists():
-            ux, uy, uz = self.parse_vector_field(u_field_path)
-            # Use 0.0 if None to ensure data is returned
-            data["Ux"] = ux if ux is not None else 0.0
-            data["Uy"] = uy if uy is not None else 0.0
-            data["Uz"] = uz if uz is not None else 0.0
-            if ux is not None and uy is not None and uz is not None:
-                data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
-            else:
-                data["U_mag"] = 0.0
+        
+        try:
+            for item in time_path.iterdir():
+                if item.is_file() and not item.name.startswith("."):
+                    field_type = self._get_field_type(item)
+                    
+                    if field_type == "scalar":
+                        val = self.parse_scalar_field(item)
+                        if val is not None:
+                            data[item.name] = val
+                    
+                    elif field_type == "vector" and item.name == "U":
+                        ux, uy, uz = self.parse_vector_field(item)
+                        data["Ux"] = ux
+                        data["Uy"] = uy
+                        data["Uz"] = uz
+                        data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
+                        
+        except Exception as e:
+            logger.error(f"Error scanning fields in {time_path}: {e}")
 
         return data
 
     def get_all_time_series_data(self, max_points: int = 100) -> Dict[str, List[float]]:
-        """Get time series data for all available fields."""
+        """Get time series data for all available fields dynamically."""
         time_dirs = self.get_time_directories()
         if not time_dirs:
             return {}
 
-        # Limit to last max_points time steps
         time_dirs = time_dirs[-max_points:]
 
-        # Initialize data structure
-        data: Dict[str, List[float]] = {"time": []}
+        # 1. Discover fields from the latest time step
+        latest_time_path = self.case_dir / time_dirs[-1]
+        scalar_fields = []
+        has_U = False
+        
+        try:
+            for item in latest_time_path.iterdir():
+                if item.is_file() and not item.name.startswith("."):
+                    field_type = self._get_field_type(item)
+                    if field_type == "scalar":
+                        scalar_fields.append(item.name)
+                    elif field_type == "vector" and item.name == "U":
+                        has_U = True
+            
+        except Exception as e:
+            logger.error(f"Error discovering fields: {e}")
+            return {}
 
+        # 2. Initialize data structure
+        data: Dict[str, List[float]] = {"time": []}
+        for f in scalar_fields:
+            data[f] = []
+        if has_U:
+            data['Ux'] = []
+            data['Uy'] = []
+            data['Uz'] = []
+            data['U_mag'] = []
+
+        # 3. Iterate time steps and parse
         for time_dir in time_dirs:
             time_path = self.case_dir / time_dir
             time_val = float(time_dir)
             
-            # Always append time
             data["time"].append(time_val)
 
-            # Parse scalar fields
-            scalar_fields = [
-                "p", "nut", "nuTilda", "k", "epsilon", "omega", "T", "alpha.water",
-            ]
+            # Parse scalars
             for field in scalar_fields:
                 field_path = time_path / field
+                val = 0.0
                 if field_path.exists():
-                    if field not in data:
-                        data[field] = []
-                    value = self.parse_scalar_field(field_path)
-                    data[field].append(value if value is not None else 0.0)
+                    v = self.parse_scalar_field(field_path)
+                    if v is not None:
+                        val = v
+                data[field].append(val)
 
-            # Parse velocity field
-            u_field_path = time_path / "U"
-            if u_field_path.exists():
-                # Initialize arrays if they don't exist
-                if "Ux" not in data:
-                    data["Ux"] = []
-                    data["Uy"] = []
-                    data["Uz"] = []
-                    data["U_mag"] = []
+            # Parse U
+            if has_U:
+                u_path = time_path / "U"
+                ux, uy, uz = 0.0, 0.0, 0.0
+                if u_path.exists():
+                    ux, uy, uz = self.parse_vector_field(u_path)
                 
-                ux, uy, uz = self.parse_vector_field(u_field_path)
-                
-                # CRITICAL FIX: Always append something, even if parsing failed (None)
-                # This keeps the array lengths aligned with data["time"]
-                val_x = ux if ux is not None else 0.0
-                val_y = uy if uy is not None else 0.0
-                val_z = uz if uz is not None else 0.0
-                
-                data["Ux"].append(val_x)
-                data["Uy"].append(val_y)
-                data["Uz"].append(val_z)
-                data["U_mag"].append(float(np.sqrt(val_x**2 + val_y**2 + val_z**2)))
-            else:
-                # If U file doesn't exist but we already have U data from other steps,
-                # we must append 0s to keep alignment.
-                if "Ux" in data:
-                    data["Ux"].append(0.0)
-                    data["Uy"].append(0.0)
-                    data["Uz"].append(0.0)
-                    data["U_mag"].append(0.0)
+                data["Ux"].append(ux)
+                data["Uy"].append(uy)
+                data["Uz"].append(uz)
+                data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
 
         return data
 
