@@ -427,6 +427,18 @@
             </svg> 
             CSV
           </button>
+
+          <button 
+          onclick="downloadPlotAsPNG('pressure-plot', 'pressure_plot.png')" 
+          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+          title="Download Plot as PNG"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          PNG
+        </button>
+
         </div>
         
         <!-- Velocity Plot -->
@@ -442,6 +454,18 @@
             </svg> 
             CSV
           </button>
+
+          <button 
+          onclick="downloadPlotAsPNG('velocity-plot', 'velocity_plot.png')" 
+          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+          title="Download Plot as PNG"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          PNG
+        </button>
+
         </div>
 
         <!-- Turbulence Plot -->
@@ -457,22 +481,47 @@
             </svg> 
             CSV
           </button>
+
+          <button 
+          onclick="downloadPlotAsPNG('turbulence-plot', 'turbulence_plot.png')" 
+          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+          title="Download Plot as PNG"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          PNG
+        </button>
+
         </div>
 
         <!-- Residuals Plot -->
         <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
-          <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
-          <button 
-            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
-            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-            title="Download Residuals Data as CSV"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg> 
-            CSV
-          </button>
-        </div>
+        <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+        
+        <button 
+          onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
+          class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+          title="Download Residuals Data as CSV"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg> 
+          CSV
+        </button>
+
+        <button 
+          onclick="downloadPlotAsPNG('residuals-plot', 'residuals_plot.png')" 
+          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+          title="Download Plot as PNG"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          PNG
+        </button>
+      </div>
+
       </div>
     </div>
 
