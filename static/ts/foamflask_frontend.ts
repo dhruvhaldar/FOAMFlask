@@ -261,14 +261,15 @@ interface PlotTrace {
 
 const getLegendVisibility = (
   plotDiv: HTMLElement
-): Record<string, boolean> => {
+): Record<string, boolean | "legendonly"> => {
   try {
     const plotData = (plotDiv as any).data;
     if (!Array.isArray(plotData)) {
       return {};
     }
 
-    const visibility: Record<string, boolean> = {};
+    // FIX: Update type definition
+    const visibility: Record<string, boolean | "legendonly"> = {};
 
     for (const trace of plotData) {
       const name = trace.name ?? "";
@@ -278,7 +279,9 @@ const getLegendVisibility = (
 
       // trace.visible may be boolean | "legendonly" | undefined
       const vis = trace.visible;
-      visibility[name] = vis === "legendonly" ? false : vis ?? true;
+      
+      // FIX: Preserve "legendonly" state instead of converting it to false
+      visibility[name] = vis === "legendonly" ? "legendonly" : (vis ?? true);
     }
 
     return visibility;

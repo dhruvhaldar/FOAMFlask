@@ -146,6 +146,7 @@ const getLegendVisibility = (plotDiv) => {
         if (!Array.isArray(plotData)) {
             return {};
         }
+        // FIX: Update type definition
         const visibility = {};
         for (const trace of plotData) {
             const name = trace.name ?? "";
@@ -154,7 +155,8 @@ const getLegendVisibility = (plotDiv) => {
             }
             // trace.visible may be boolean | "legendonly" | undefined
             const vis = trace.visible;
-            visibility[name] = vis === "legendonly" ? false : vis ?? true;
+            // FIX: Preserve "legendonly" state instead of converting it to false
+            visibility[name] = vis === "legendonly" ? "legendonly" : (vis ?? true);
         }
         return visibility;
     }
