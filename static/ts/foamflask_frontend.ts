@@ -599,7 +599,7 @@ const setDockerConfig = async (
   try {
     dockerImage = image;
     openfoamVersion = version;
-    const response = await fetch("/setdockerconfig", {
+    const response = await fetch("/set_docker_config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dockerImage, openfoamVersion }),
@@ -1381,7 +1381,7 @@ const runFoamToVTK = async (): Promise<void> => {
     10000
   );
   try {
-    const response = await fetch("/runfoamtovtk", {
+    const response = await fetch("/run_foamtovtk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caseDir, tutorial: selectedTutorial }),
