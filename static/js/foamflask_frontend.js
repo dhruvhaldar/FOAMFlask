@@ -114,23 +114,22 @@ const createBoldTitle = (text) => ({
         size: 22,
     },
 });
-// Helper: Download plot as PNG with white background
-const downloadPlotAsPNG = (plotDiv, filename = "plot.png") => {
-    if (!plotDiv)
+// Helper: Download plot as PNG
+const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png") => {
+    // Handle both string ID (from HTML) or direct element
+    const plotDiv = typeof plotIdOrDiv === "string"
+        ? document.getElementById(plotIdOrDiv)
+        : plotIdOrDiv;
+    if (!plotDiv) {
+        console.error(`Plot element not found: ${plotIdOrDiv}`);
         return;
-    const downloadLayout = {
-        ...plotDiv.layout,
-        font: plotLayout.font,
-        color: "black",
-        plot_bgcolor: "white",
-        paper_bgcolor: "white",
-    };
+    }
+    // Plotly.toImage options (layout overrides are not supported here directly)
     Plotly.toImage(plotDiv, {
         format: "png",
         width: plotDiv.offsetWidth,
         height: plotDiv.offsetHeight,
-        scale: 2,
-        ...downloadLayout,
+        scale: 2, // Higher resolution
     }).then((dataUrl) => {
         const link = document.createElement("a");
         link.href = dataUrl;
@@ -138,6 +137,8 @@ const downloadPlotAsPNG = (plotDiv, filename = "plot.png") => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }).catch((err) => {
+        console.error("Error downloading plot:", err);
     });
 };
 const getLegendVisibility = (plotDiv) => {
@@ -1745,6 +1746,7 @@ window.addEventListener("beforeunload", () => {
     flushOutputBuffer();
 });
 // Make functions globally available for HTML onclick handlers
+// The error Uncaught ReferenceError: showNotification is not defined happens because foamflask_frontend.js is loaded as a JavaScript module. In modules, functions are not automatically global, so inline HTML event handlers (like onclick="...") cannot see them unless they are explicitly attached to the window object
 window.switchPage = switchPage;
 window.setCase = setCase;
 window.setDockerConfig = setDockerConfig;
@@ -1762,6 +1764,8 @@ window.downloadPlotData = downloadPlotData;
 window.loadCustomVTKFile = loadCustomVTKFile;
 window.loadContourVTK = loadContourVTK;
 window.generateContours = generateContoursFn;
+window.downloadPlotAsPNG = downloadPlotAsPNG;
+window.showNotification = showNotification;
 // Attach event listeners for navigation buttons
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, attaching event listeners...');

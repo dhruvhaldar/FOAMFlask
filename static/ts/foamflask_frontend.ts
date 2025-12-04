@@ -219,25 +219,27 @@ const createBoldTitle = (text: string): { text: string; font?: any } => ({
   },
 });
 
-// Helper: Download plot as PNG with white background
+// Helper: Download plot as PNG
 const downloadPlotAsPNG = (
-  plotDiv: any,
+  plotIdOrDiv: string | any,
   filename: string = "plot.png"
 ): void => {
-  if (!plotDiv) return;
-  const downloadLayout = {
-    ...plotDiv.layout,
-    font: plotLayout.font,
-    color: "black",
-    plot_bgcolor: "white",
-    paper_bgcolor: "white",
-  };
+  // Handle both string ID (from HTML) or direct element
+  const plotDiv = typeof plotIdOrDiv === "string" 
+    ? document.getElementById(plotIdOrDiv) 
+    : plotIdOrDiv;
+
+  if (!plotDiv) {
+    console.error(`Plot element not found: ${plotIdOrDiv}`);
+    return;
+  }
+
+  // Plotly.toImage options (layout overrides are not supported here directly)
   Plotly.toImage(plotDiv, {
     format: "png",
     width: plotDiv.offsetWidth,
     height: plotDiv.offsetHeight,
-    scale: 2,
-    ...(downloadLayout as any),
+    scale: 2, // Higher resolution
   }).then((dataUrl: string) => {
     const link = document.createElement("a");
     link.href = dataUrl;
@@ -245,6 +247,8 @@ const downloadPlotAsPNG = (
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }).catch((err: any) => {
+    console.error("Error downloading plot:", err);
   });
 };
 
@@ -2178,6 +2182,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 // Make functions globally available for HTML onclick handlers
+// The error Uncaught ReferenceError: showNotification is not defined happens because foamflask_frontend.js is loaded as a JavaScript module. In modules, functions are not automatically global, so inline HTML event handlers (like onclick="...") cannot see them unless they are explicitly attached to the window object
 (window as any).switchPage = switchPage;
 (window as any).setCase = setCase;
 (window as any).setDockerConfig = setDockerConfig;
@@ -2195,6 +2200,8 @@ window.addEventListener("beforeunload", () => {
 (window as any).loadCustomVTKFile = loadCustomVTKFile;
 (window as any).loadContourVTK = loadContourVTK;
 (window as any).generateContours = generateContoursFn;
+(window as any).downloadPlotAsPNG = downloadPlotAsPNG;
+(window as any).showNotification = showNotification;
 
 // Attach event listeners for navigation buttons
 document.addEventListener('DOMContentLoaded', () => {
