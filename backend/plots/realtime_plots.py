@@ -86,7 +86,6 @@ class OpenFOAMFieldParser:
             content = field_path.read_text(encoding="utf-8")
 
             # Regex for nonuniform: internalField nonuniform List<scalar> ... ( ... ) ;
-            # FIX: Added \s* before the final ; to handle newlines between ) and ;
             if "nonuniform" in content:
                 match = re.search(
                     r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
@@ -123,7 +122,7 @@ class OpenFOAMFieldParser:
                     except ValueError:
                         pass
             
-            logger.debug(f"Failed to parse scalar {field_path.name} (checked uniform/nonuniform)")
+            # logger.debug(f"Failed to parse scalar {field_path.name} (checked uniform/nonuniform)")
             return None
 
         except Exception as e:
@@ -136,7 +135,6 @@ class OpenFOAMFieldParser:
             content = field_path.read_text(encoding="utf-8")
 
             # Regex for nonuniform: internalField nonuniform List<vector> ... ( ... ) ;
-            # FIX: Added \s* before the final ; to handle newlines between ) and ;
             if "nonuniform" in content:
                 match = re.search(
                     r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
@@ -161,7 +159,8 @@ class OpenFOAMFieldParser:
             if re.search(r"internalField\s+uniform\b", content):
                 # Variable substitution check
                 if re.search(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;", content):
-                    logger.debug(f"Parsed variable vector {field_path.name}: defaulting to (0,0,0)")
+                    # FIX: Include parent directory in log to identify which file (e.g. 0/U)
+                    logger.debug(f"Parsed variable vector {field_path.parent.name}/{field_path.name}: defaulting to (0,0,0) (macro detected)")
                     return 0.0, 0.0, 0.0
 
                 match = re.search(
@@ -185,7 +184,7 @@ class OpenFOAMFieldParser:
                         )
                         return val
 
-            logger.debug(f"Failed to parse vector {field_path.name}")
+            logger.debug(f"Failed to parse vector {field_path.parent.name}/{field_path.name}")
             return 0.0, 0.0, 0.0
 
         except Exception as e:
