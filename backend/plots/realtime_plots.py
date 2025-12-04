@@ -37,15 +37,47 @@ class OpenFOAMFieldParser:
 
         return sorted(time_dirs, key=float)
 
+    def _resolve_variable(self, content: str, var_name: str) -> Optional[str]:
+        """
+        Attempt to resolve a variable definition within the file content.
+        Looks for patterns like 'varName value;'
+        """
+        # Remove the leading $ if present
+        clean_var = var_name.lstrip('$')
+        
+        # specific fix for the U file provided which uses #calc
+        # We can't easily parse #calc in Python, so we might need to look for simple definitions
+        # or just return None to trigger the fallback to 0.0
+        
+        # Regex to find "variable value;"
+        # We look for the variable name at the start of a line or after whitespace
+        pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+        match = pattern.search(content)
+        
+        if match:
+            value_str = match.group(1).strip()
+            
+            # If the value is another variable, recurse (simple depth limit could be added)
+            if value_str.startswith('$'):
+                return self._resolve_variable(content, value_str)
+            
+            # If it's a #calc, we cannot evaluate it safely in Python. 
+            # We return None so the parser falls back to 0.0
+            if "#calc" in value_str:
+                logger.warning(f"Skipping #calc macro for variable {clean_var}")
+                return None
+                
+            return value_str
+            
+        return None
+
     def parse_scalar_field(self, field_path: Path) -> Optional[float]:
         """Parse a scalar field file and return average value."""
         try:
-            # Use Path.read_text for simpler reading
             content = field_path.read_text(encoding="utf-8")
 
-            # Handle nonuniform field first (since 'nonuniform' contains 'uniform')
+            # Handle nonuniform field first
             if "nonuniform" in content:
-                # Match multi-line nonuniform lists between parentheses
                 match = re.search(
                     r"internalField\s+nonuniform\s+[^\n]*\(\s*([\s\S]*?)\s*\);",
                     content,
@@ -55,16 +87,30 @@ class OpenFOAMFieldParser:
                     return None
 
                 field_data = match.group(1)
-                # Extract all numbers inside the parentheses
                 numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
                 values = [float(n) for n in numbers]
                 return float(np.mean(values)) if values else None
 
             # Handle uniform field
             if re.search(r"internalField\s+uniform\b", content):
+                # Check for variable substitution (e.g. uniform $pOut)
+                var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", content)
+                if var_match:
+                    var_name = var_match.group(1)
+                    resolved_value = self._resolve_variable(content, var_name)
+                    if resolved_value:
+                        try:
+                            return float(resolved_value)
+                        except ValueError:
+                            pass
+                
+                # Standard number match
                 match = re.search(r"internalField\s+uniform\s+([^;]+);", content)
                 if match:
-                    return float(match.group(1).strip())
+                    try:
+                        return float(match.group(1).strip())
+                    except ValueError:
+                        return None
                 return None
 
             return None
@@ -105,6 +151,15 @@ class OpenFOAMFieldParser:
 
             # Handle uniform field
             if re.search(r"internalField\s+uniform\b", content):
+                # Check for variable substitution (e.g. uniform $Uinlet)
+                var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", content)
+                if var_match:
+                    # If we find a variable, try to resolve it, but for vectors like $Uinlet
+                    # which might be #calc, we often can't parse the value. 
+                    # Returning 0,0,0 is better than None to keep array lengths consistent.
+                    return 0.0, 0.0, 0.0
+
+                # Standard vector match (x y z)
                 match = re.search(
                     r"internalField\s+uniform\s+(\([^;]+\));",
                     content,
@@ -148,14 +203,7 @@ class OpenFOAMFieldParser:
 
         # Parse common scalar fields
         scalar_fields = [
-            "p",
-            "nut",
-            "nuTilda",
-            "k",
-            "epsilon",
-            "omega",
-            "T",
-            "alpha.water",
+            "p", "nut", "nuTilda", "k", "epsilon", "omega", "T", "alpha.water",
         ]
         for field in scalar_fields:
             field_path = time_path / field
@@ -168,11 +216,14 @@ class OpenFOAMFieldParser:
         u_field_path = time_path / "U"
         if u_field_path.exists():
             ux, uy, uz = self.parse_vector_field(u_field_path)
+            # Use 0.0 if None to ensure data is returned
+            data["Ux"] = ux if ux is not None else 0.0
+            data["Uy"] = uy if uy is not None else 0.0
+            data["Uz"] = uz if uz is not None else 0.0
             if ux is not None and uy is not None and uz is not None:
-                data["Ux"] = ux
-                data["Uy"] = uy
-                data["Uz"] = uz
                 data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
+            else:
+                data["U_mag"] = 0.0
 
         return data
 
@@ -191,18 +242,13 @@ class OpenFOAMFieldParser:
         for time_dir in time_dirs:
             time_path = self.case_dir / time_dir
             time_val = float(time_dir)
+            
+            # Always append time
             data["time"].append(time_val)
 
             # Parse scalar fields
             scalar_fields = [
-                "p",
-                "nut",
-                "nuTilda",
-                "k",
-                "epsilon",
-                "omega",
-                "T",
-                "alpha.water",
+                "p", "nut", "nuTilda", "k", "epsilon", "omega", "T", "alpha.water",
             ]
             for field in scalar_fields:
                 field_path = time_path / field
@@ -215,17 +261,33 @@ class OpenFOAMFieldParser:
             # Parse velocity field
             u_field_path = time_path / "U"
             if u_field_path.exists():
+                # Initialize arrays if they don't exist
+                if "Ux" not in data:
+                    data["Ux"] = []
+                    data["Uy"] = []
+                    data["Uz"] = []
+                    data["U_mag"] = []
+                
                 ux, uy, uz = self.parse_vector_field(u_field_path)
-                if ux is not None and uy is not None and uz is not None:
-                    if "Ux" not in data:
-                        data["Ux"] = []
-                        data["Uy"] = []
-                        data["Uz"] = []
-                        data["U_mag"] = []
-                    data["Ux"].append(ux)
-                    data["Uy"].append(uy)
-                    data["Uz"].append(uz)
-                    data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+                
+                # CRITICAL FIX: Always append something, even if parsing failed (None)
+                # This keeps the array lengths aligned with data["time"]
+                val_x = ux if ux is not None else 0.0
+                val_y = uy if uy is not None else 0.0
+                val_z = uz if uz is not None else 0.0
+                
+                data["Ux"].append(val_x)
+                data["Uy"].append(val_y)
+                data["Uz"].append(val_z)
+                data["U_mag"].append(float(np.sqrt(val_x**2 + val_y**2 + val_z**2)))
+            else:
+                # If U file doesn't exist but we already have U data from other steps,
+                # we must append 0s to keep alignment.
+                if "Ux" in data:
+                    data["Ux"].append(0.0)
+                    data["Uy"].append(0.0)
+                    data["Uz"].append(0.0)
+                    data["U_mag"].append(0.0)
 
         return data
 
@@ -256,10 +318,8 @@ class OpenFOAMFieldParser:
         }
 
         try:
-            # Using standard open because we are iterating line by line
             with log_path.open("r", encoding="utf-8") as f:
                 for line in f:
-                    # Parse time
                     time_match = re.search(
                         r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", line
                     )
@@ -267,7 +327,6 @@ class OpenFOAMFieldParser:
                         current_time = float(time_match.group(1))
                         residuals["time"].append(current_time)
 
-                    # Parse residuals
                     for field in ["Ux", "Uy", "Uz", "p", "k", "epsilon", "omega"]:
                         residual_match = re.search(
                             rf"{field}.*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
