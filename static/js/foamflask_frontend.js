@@ -206,7 +206,6 @@ const switchPage = (pageName) => {
     pages.forEach((page) => {
         const pageElement = document.getElementById(`page-${page}`);
         const navButton = document.getElementById(`nav-${page}`);
-        console.log(`Processing page: ${page}, element:`, pageElement, `button:`, navButton);
         if (pageElement)
             pageElement.classList.add("hidden");
         if (navButton) {
@@ -216,7 +215,6 @@ const switchPage = (pageName) => {
     });
     const selectedPage = document.getElementById(`page-${pageName}`);
     const selectedNav = document.getElementById(`nav-${pageName}`);
-    console.log(`Selected page element:`, selectedPage, `Selected nav:`, selectedNav);
     if (selectedPage)
         selectedPage.classList.remove("hidden");
     if (selectedNav) {
@@ -228,6 +226,12 @@ const switchPage = (pageName) => {
             const plotsContainer = document.getElementById("plotsContainer");
             if (plotsContainer) {
                 plotsContainer.classList.remove("hidden");
+                // FIX: Show loading on first load
+                if (isFirstPlotLoad) {
+                    const loader = document.getElementById("plotsLoading");
+                    if (loader)
+                        loader.classList.remove("hidden");
+                }
                 if (!plotsContainer.hasAttribute("data-initialized")) {
                     plotsContainer.setAttribute("data-initialized", "true");
                     if (!plotUpdateInterval)
@@ -236,7 +240,7 @@ const switchPage = (pageName) => {
             }
             const aeroBtn = document.getElementById("toggleAeroBtn");
             if (aeroBtn)
-                aeroBtn.classList.remove("hidden"); // Always show the button on plots page
+                aeroBtn.classList.remove("hidden");
             break;
         case "mesh":
             const meshContainer = document.getElementById("page-mesh");
@@ -1023,6 +1027,11 @@ const updatePlots = async () => {
     }
     finally {
         isUpdatingPlots = false;
+        // FIX: Hide loader after update completes
+        const loader = document.getElementById("plotsLoading");
+        if (loader && !loader.classList.contains("hidden")) {
+            loader.classList.add("hidden");
+        }
         if (pendingPlotUpdate) {
             pendingPlotUpdate = false;
             requestAnimationFrame(updatePlots);

@@ -6,12 +6,16 @@ Parses OpenFOAM field files and extracts data for visualization.
 import re
 import numpy as np
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
 
+# --- Global Cache ---
+# Structure: { "file_path_str": (mtime, parsed_value) }
+_FILE_CACHE: Dict[str, Tuple[float, Any]] = {}
 
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
@@ -43,7 +47,7 @@ class OpenFOAMFieldParser:
         Returns 'scalar', 'vector', or None.
         """
         try:
-            # Read the first 2048 bytes to check the header class
+            # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
             with field_path.open("r", encoding="utf-8") as f:
                 header = f.read(2048)
             
@@ -81,11 +85,22 @@ class OpenFOAMFieldParser:
         return None
 
     def parse_scalar_field(self, field_path: Path) -> Optional[float]:
-        """Parse a scalar field file and return average value."""
+        """Parse a scalar field file and return average value with caching."""
+        path_str = str(field_path)
         try:
-            content = field_path.read_text(encoding="utf-8")
+            # Check modification time
+            mtime = field_path.stat().st_mtime
+            
+            # Return cached if valid
+            if path_str in _FILE_CACHE:
+                cached_mtime, cached_val = _FILE_CACHE[path_str]
+                if cached_mtime == mtime:
+                    return cached_val
 
-            # Regex for nonuniform: internalField nonuniform List<scalar> ... ( ... ) ;
+            content = field_path.read_text(encoding="utf-8")
+            val = None
+
+            # Regex for nonuniform
             if "nonuniform" in content:
                 match = re.search(
                     r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
@@ -97,11 +112,10 @@ class OpenFOAMFieldParser:
                     numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
                     if numbers:
                         val = float(np.mean([float(n) for n in numbers]))
-                        return val
 
-            # Regex for uniform: internalField uniform 10;
-            if re.search(r"internalField\s+uniform\b", content):
-                # Check for variable substitution (e.g. uniform $pOut)
+            # Regex for uniform
+            if val is None and re.search(r"internalField\s+uniform\b", content):
+                # Check for variable substitution
                 var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", content)
                 if var_match:
                     var_name = var_match.group(1)
@@ -109,32 +123,43 @@ class OpenFOAMFieldParser:
                     if resolved_value:
                         try:
                             val = float(resolved_value)
-                            return val
                         except ValueError:
                             pass
                 
                 # Standard number match
-                match = re.search(r"internalField\s+uniform\s+([^;]+);", content)
-                if match:
-                    try:
-                        val = float(match.group(1).strip())
-                        return val
-                    except ValueError:
-                        pass
+                if val is None:
+                    match = re.search(r"internalField\s+uniform\s+([^;]+);", content)
+                    if match:
+                        try:
+                            val = float(match.group(1).strip())
+                        except ValueError:
+                            pass
             
-            # logger.debug(f"Failed to parse scalar {field_path.name} (checked uniform/nonuniform)")
-            return None
+            # Update cache
+            _FILE_CACHE[path_str] = (mtime, val)
+            return val
 
         except Exception as e:
             logger.error(f"Error parsing scalar field {field_path}: {e}")
             return None
 
     def parse_vector_field(self, field_path: Path) -> Tuple[float, float, float]:
-        """Parse a vector field file and return average components. Returns (0,0,0) on failure."""
+        """Parse a vector field file and return average components with caching."""
+        path_str = str(field_path)
         try:
-            content = field_path.read_text(encoding="utf-8")
+            # Check modification time
+            mtime = field_path.stat().st_mtime
+            
+            # Return cached if valid
+            if path_str in _FILE_CACHE:
+                cached_mtime, cached_val = _FILE_CACHE[path_str]
+                if cached_mtime == mtime:
+                    return cached_val
 
-            # Regex for nonuniform: internalField nonuniform List<vector> ... ( ... ) ;
+            content = field_path.read_text(encoding="utf-8")
+            val = (0.0, 0.0, 0.0)
+
+            # Regex for nonuniform
             if "nonuniform" in content:
                 match = re.search(
                     r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
@@ -153,39 +178,38 @@ class OpenFOAMFieldParser:
                         x = np.mean([float(v[0]) for v in vectors])
                         y = np.mean([float(v[1]) for v in vectors])
                         z = np.mean([float(v[2]) for v in vectors])
-                        return float(x), float(y), float(z)
+                        val = (float(x), float(y), float(z))
 
-            # Regex for uniform: internalField uniform (0 0 0);
-            if re.search(r"internalField\s+uniform\b", content):
+            # Regex for uniform
+            if val == (0.0, 0.0, 0.0) and re.search(r"internalField\s+uniform\b", content):
                 # Variable substitution check
                 if re.search(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;", content):
-                    # FIX: Include parent directory in log to identify which file (e.g. 0/U)
                     logger.debug(f"Parsed variable vector {field_path.parent.name}/{field_path.name}: defaulting to (0,0,0) (macro detected)")
-                    return 0.0, 0.0, 0.0
-
-                match = re.search(
-                    r"internalField\s+uniform\s+(\([^;]+\));",
-                    content,
-                    re.DOTALL,
-                )
-                if match:
-                    vec_str = match.group(1)
-                    vec_match = re.search(
-                        r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                        vec_str,
+                    val = (0.0, 0.0, 0.0)
+                else:
+                    match = re.search(
+                        r"internalField\s+uniform\s+(\([^;]+\));",
+                        content,
+                        re.DOTALL,
                     )
-                    if vec_match:
-                        val = (
-                            float(vec_match.group(1)),
-                            float(vec_match.group(2)),
-                            float(vec_match.group(3)),
+                    if match:
+                        vec_str = match.group(1)
+                        vec_match = re.search(
+                            r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                            r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+                            r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
+                            vec_str,
                         )
-                        return val
-
-            logger.debug(f"Failed to parse vector {field_path.parent.name}/{field_path.name}")
-            return 0.0, 0.0, 0.0
+                        if vec_match:
+                            val = (
+                                float(vec_match.group(1)),
+                                float(vec_match.group(2)),
+                                float(vec_match.group(3)),
+                            )
+            
+            # Update cache
+            _FILE_CACHE[path_str] = (mtime, val)
+            return val
 
         except Exception as e:
             logger.error(f"Error parsing vector field {field_path}: {e}")

@@ -411,12 +411,17 @@
     </div>
 
     <!-- Main Plots Container -->
-    <div id="plotsContainer" class="w-full bg-white">
+    <div id="plotsContainer" class="w-full bg-white relative">
+      <div id="plotsLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 z-50 hidden transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mb-3"></div>
+        <span class="text-lg font-semibold text-gray-700">Loading Plot Data...</span>
+      </div>
+
       <div class="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2 mb-2 w-full auto-rows-min">
         
-        <!-- Pressure Plot -->
         <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
           <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          
           <button 
             onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -429,21 +434,20 @@
           </button>
 
           <button 
-          onclick="downloadPlotAsPNG('pressure-plot', 'pressure_plot.png')" 
-          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-          title="Download Plot as PNG"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          PNG
-        </button>
-
+            onclick="downloadPlotAsPNG('pressure-plot', 'pressure_plot.png')" 
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
         </div>
         
-        <!-- Velocity Plot -->
         <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
           <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          
           <button 
             onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -456,21 +460,20 @@
           </button>
 
           <button 
-          onclick="downloadPlotAsPNG('velocity-plot', 'velocity_plot.png')" 
-          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-          title="Download Plot as PNG"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          PNG
-        </button>
-
+            onclick="downloadPlotAsPNG('velocity-plot', 'velocity_plot.png')" 
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
         </div>
 
-        <!-- Turbulence Plot -->
         <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
           <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          
           <button 
             onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')" 
             class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
@@ -483,47 +486,45 @@
           </button>
 
           <button 
-          onclick="downloadPlotAsPNG('turbulence-plot', 'turbulence_plot.png')" 
-          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-          title="Download Plot as PNG"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          PNG
-        </button>
-
+            onclick="downloadPlotAsPNG('turbulence-plot', 'turbulence_plot.png')" 
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
         </div>
 
-        <!-- Residuals Plot -->
         <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
-        <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
-        
-        <button 
-          onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
-          class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-          title="Download Residuals Data as CSV"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-          </svg> 
-          CSV
-        </button>
+          <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          
+          <button 
+            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')" 
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Residuals Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg> 
+            CSV
+          </button>
 
-        <button 
-          onclick="downloadPlotAsPNG('residuals-plot', 'residuals_plot.png')" 
-          class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
-          title="Download Plot as PNG"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          PNG
-        </button>
-      </div>
+          <button 
+            onclick="downloadPlotAsPNG('residuals-plot', 'residuals_plot.png')" 
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10" 
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
+        </div>
 
       </div>
-    </div>
+    </div>    
 
     <!-- Aerodynamic Plots Container (optional) -->
     <div id="aeroContainer" class="hidden mt-4 w-full">
