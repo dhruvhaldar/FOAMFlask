@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union, Generator
 import docker
 from docker import DockerClient
 from docker.errors import DockerException
-from flask import Flask, Response, jsonify, render_template_string, request
+from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
 from werkzeug.utils import secure_filename
 
 # Local application imports
@@ -350,6 +350,11 @@ def index() -> str:
     tutorials = get_tutorials()
     options_html = "\n".join(f'<option value="{t}">{t}</option>' for t in tutorials)
     return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 @app.route("/get_case_root", methods=["GET"])
