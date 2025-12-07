@@ -47,6 +47,19 @@
 
 ### Quick Start
 1. **Clone the repository** and navigate to the project directory
+2. **Pull the OpenFOAM Docker image**:
+   ```bash
+   # OpenFOAM v12 (Community Edition) - Recommended
+   docker pull haldardhruv/ubuntu_noble_openfoam:v12
+   ```
+   This image provides Ubuntu Noble with OpenFOAM 12 pre-installed and configured.
+   
+   > **Alternative**: For OpenFOAM v2412 (by OpenCFD):
+   > ```bash
+   > # OpenFOAM v2412 (by OpenCFD)
+   > docker pull haldardhruv/ubuntu_noble_openfoam:v2412
+   > ```
+   > This image provides Ubuntu Noble with OpenFOAM 2412 pre-installed and configured.
 2. **Set up the frontend** (see Frontend Setup below)
 3. **Set up the backend** (see Backend Setup below)
 4. **Run the application** (see Running the Application below)
