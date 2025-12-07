@@ -103,8 +103,6 @@ python -m venv venv
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install pdoc for API documentation (optional)
-pip install pdoc
 ```
 </details>
 
