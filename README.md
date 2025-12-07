@@ -41,6 +41,8 @@ pip install -r requirements.txt
 ```
 
 3. **Install Node.js dependencies** (for TypeScript compilation):
+Ensure that [Node.js and npm](https://nodejs.org/en/download) is installed on your system.
+
 ```bash
 npm install
 ```
