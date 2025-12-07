@@ -23,7 +23,7 @@
 - **Tutorial Management**: Load and copy tutorials from the OpenFOAM tutorials directory
 - **Command Execution**: Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output
 - **Enhanced Output**: Color-coded console output for stdout, stderr, info, and tutorial messages
-- **Version Compatibility**: Fully compatible with OpenFOAM 2506 (adjustable for other versions)
+- **Version Compatibility**: Fully compatible with OpenFOAM 12 (adjustable for other versions)
 - **Security**: Hardened command execution with input validation and injection protection
 - **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
 - **Automatic Field Detection**: Detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
