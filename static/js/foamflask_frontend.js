@@ -1141,7 +1141,7 @@ const runFoamToVTK = async () => {
         outputDiv.innerHTML = "";
     outputBuffer.length = 0;
     showNotification("Running foamToVTK...", "info");
-    showNotification("Check <strong>Run/Log</strong> for more details", "info", 10000);
+    showNotification("Check <strong>RunLog Console Log</strong> for more details", "info", 10000);
     try {
         const response = await fetch("/run_foamtovtk", {
             method: "POST",
