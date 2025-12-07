@@ -54,14 +54,9 @@
 ### Frontend Setup
 
 1. **Clone the repository**:
-   ```bash
-   # Linux/macOS
+   ```
    git clone https://github.com/dhruvhaldar/FOAMFlask
    cd FOAMFlask
-   
-   # Windows (PowerShell)
-   # git clone https://github.com/dhruvhaldar/FOAMFlask
-   # cd FOAMFlask
    ```
 
 2. **Install Node.js dependencies**:
@@ -81,7 +76,9 @@
 
 ### Backend Setup
 
-#### Linux/macOS
+<details>
+<summary>Linux/macOS</summary>
+
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
@@ -93,8 +90,11 @@ pip install -r requirements.txt
 # Install pdoc for API documentation (optional)
 pip install pdoc
 ```
+</details>
 
-#### Windows (PowerShell)
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
 # Create and activate virtual environment
 python -m venv venv
@@ -106,10 +106,13 @@ pip install -r requirements.txt
 # Install pdoc for API documentation (optional)
 pip install pdoc
 ```
+</details>
 
 ### Running the Application
 
-#### Linux/macOS
+<details>
+<summary>Linux/macOS</summary>
+
 ```bash
 # Ensure Docker is running
 sudo systemctl start docker  # For Linux with systemd
@@ -117,13 +120,17 @@ sudo systemctl start docker  # For Linux with systemd
 # Start the application
 python app.py 2>&1 | tee app.log
 ```
+</details>
 
-#### Windows (PowerShell)
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
 # Ensure Docker Desktop is running
 # Start the application
 python app.py 2>&1 | Tee-Object -FilePath app.log
 ```
+</details>
 
 ### API Documentation
 
@@ -224,26 +231,132 @@ FOAMFlask/
 
 ## FAQ
 
-### Docker Desktop Warning
-This program is dependent on Docker since it uses OpenFOAM docker image.
+## Docker Setup and Troubleshooting
 
-**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`. (For Linux/MacOS, the message is `Docker daemon not available. Make sure Docker Desktop is running. Details: Error while fetching server API version`)
+### Prerequisites
+FOAMFlask requires Docker to run OpenFOAM in a containerized environment. You'll need to have Docker properly installed and running on your system.
 
-**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
+### Common Issues
 
-**Resolution**: Here's how to resolve this:
+#### 1. Docker Not Running
 
-For Windows:
-1. Install Docker Desktop (if not already installed):
+**Symptoms**:
+- Backend console shows: `WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`
+- Frontend shows an empty dropdown for `Load Tutorial`
+- On Linux/macOS, you might see: `Docker daemon not available. Make sure Docker Desktop is running.`
+
+**Solution**:
+
+<details>
+<summary>Windows</summary>
+
+1. **Install Docker Desktop** (if not already installed):
    - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
-   - Follow the installation instructions for your operating system
-   - This build was tested on 4.45.0 (203075)
+   - Follow the installation instructions for Windows
+   - This build was tested on Docker Desktop 4.45.0 (203075)
 
-2. Start Docker Desktop
-   - Launch Docker Desktop before running the FOAMFlask application
-   - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
+2. **Start Docker Desktop**:
+   - Launch Docker Desktop before running FOAMFlask
+   - Wait for Docker to fully start (look for the Docker icon in the system tray showing "Docker Desktop is running")
+   - Make sure to accept any Windows security prompts for Docker
 
-3. Restart FOAMFlask after Docker is running
+3. **Verify Installation**:
+   - Open PowerShell and run:
+     ```powershell
+     docker --version
+     docker run hello-world
+     ```
+   - You should see version information and a success message
+
+</details>
+
+<details>
+
+<summary>MacOS/Linux</summary>
+
+1. **Install Docker Engine**:
+   - For Ubuntu/Debian:
+     ```bash
+     sudo apt-get update
+     sudo apt-get install docker.io
+     sudo systemctl enable --now docker
+     ```
+   - For Fedora:
+     ```bash
+     sudo dnf install docker
+     sudo systemctl enable --now docker
+     ```
+
+2. **Add your user to the docker group** (to avoid using sudo):
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker  # Apply the new group immediately
+   ```
+
+3. **Verify Installation**:
+   ```bash
+   docker --version
+   docker run hello-world
+   ```
+   - You should see version information and a success message
+
+</details>
+
+#### 2. Docker Daemon Not Accessible
+
+**Symptoms**:
+- Docker is installed but the application still can't connect
+- Permission denied errors when running Docker commands
+
+**Solution**:
+- **Windows/macOS**: Make sure Docker Desktop is actually running (not just installed)
+- **Linux**: Ensure the Docker service is running:
+  ```bash
+  sudo systemctl status docker
+  # If not running, start it with:
+  sudo systemctl start docker
+  ```
+- If you're on Linux and using Docker without root, make sure your user is in the `docker` group (see Linux installation above)
+- Try restarting your computer after Docker installation
+
+#### 3. Firewall/Antivirus Blocking Docker
+
+**Symptoms**:
+- Docker seems to be running but the application can't connect
+- Connection timeouts when trying to pull images
+
+**Solution**:
+- Add Docker to your firewall's whitelist
+- Temporarily disable your antivirus to test if it's causing the issue
+- On Windows, make sure Docker is allowed through Windows Defender Firewall
+
+### Verifying Docker Integration
+
+After setting up Docker, verify everything works by running:
+
+```bash
+# Test Docker is accessible
+docker --version
+
+# Test running a container
+docker run hello-world
+
+# Check if OpenFOAM image is available
+docker images | grep openfoam
+```
+
+If you encounter any issues, check the Docker logs for more detailed error messages.
+
+### Need Help?
+
+If you're still having issues, please:
+1. Check the [Docker documentation](https://docs.docker.com/get-docker/)
+2. Search for your specific error message online
+3. Open an issue on our GitHub repository with:
+   - Your operating system and version
+   - Docker version (`docker --version`)
+   - The exact error message you're seeing
+   - Steps you've already tried
 
 4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
 
