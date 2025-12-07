@@ -426,7 +426,7 @@ pytest -k "test_name_pattern"
 
 ### Docker Desktop Warning (Windows)
 
-**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
+**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`. (For Linux/MacOS, the message is `Docker daemon not available. Make sure Docker Desktop is running. Details: Error while fetching server API version`)
 
 **Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
 
