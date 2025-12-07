@@ -12,75 +12,150 @@
 
 **Note**: Currently only loading and execution of OpenFOAM tutorials (`$FOAM_TUTORIALS`) is supported. Creating custom cases is planned.
 
+**Note**: This program requires Docker to be installed and running, as it uses the OpenFOAM Docker image for its operations. Please ensure Docker is properly set up before proceeding with the installation.
+
 ---
 
 ## Features
 
-- Web interface for OpenFOAM case management.
-- Persistently store the **CASE_ROOT** across sessions.
-- Load and copy tutorials from the OpenFOAM tutorials directory.
-- Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output.
-- Color-coded console output for stdout, stderr, info, and tutorial messages.
-- Fully compatible with OpenFOAM 2506 (adjustable for other versions).
-- **Security-hardened command execution** with input validation and injection protection.
-
----
+- **Web Interface**: Intuitive web-based interface for OpenFOAM case management
+- **Persistent Configuration**: Stores the **CASE_ROOT** across sessions
+- **Tutorial Management**: Load and copy tutorials from the OpenFOAM tutorials directory
+- **Command Execution**: Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output
+- **Enhanced Output**: Color-coded console output for stdout, stderr, info, and tutorial messages
+- **Version Compatibility**: Fully compatible with OpenFOAM 2506 (adjustable for other versions)
+- **Security**: Hardened command execution with input validation and injection protection
+- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
+- **Automatic Field Detection**: Detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
+- **Realtime Plotting**: Visualizes OpenFOAM simulation data as it runs with multiple plot types:
+  - Pressure vs Time
+  - Velocity components (Ux, Uy, Uz) and magnitude
+  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
+  - Residuals (logarithmic scale)
+- **Aerodynamic Analysis** (optional):
+  - Pressure coefficient (Cp)
+  - 3D velocity profiles
+- **IsoSurface Extraction** (optional): Extract isosurfaces from OpenFOAM fields
 
 ## Installation
 
+### Prerequisites
+- [Docker](https://www.docker.com/) (required for OpenFOAM)
+- [Node.js](https://nodejs.org/) (v14+ recommended)
+- Python 3.8+
+- Git
+
+### Quick Start
+1. **Clone the repository** and navigate to the project directory
+2. **Set up the frontend** (see Frontend Setup below)
+3. **Set up the backend** (see Backend Setup below)
+4. **Run the application** (see Running the Application below)
+
+### Frontend Setup
+
 1. **Clone the repository**:
+   ```bash
+   # Linux/macOS
+   git clone https://github.com/dhruvhaldar/FOAMFlask
+   cd FOAMFlask
+   
+   # Windows (PowerShell)
+   # git clone https://github.com/dhruvhaldar/FOAMFlask
+   # cd FOAMFlask
+   ```
 
-```bash
-git clone https://github.com/dhruvhaldar/FOAMFlask
-cd FOAMFlask
-```
+2. **Install Node.js dependencies**:
+   ```bash
+   npm install
+   ```
 
-2. **Install Python dependencies**:
+3. **Build the frontend**:
+   ```bash
+   npm run build
+   ```
+   
+   For development with auto-reload:
+   ```bash
+   npm run build:watch
+   ```
+
+### Backend Setup
+
+#### Linux/macOS
 ```bash
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install pdoc for API documentation (optional)
+pip install pdoc
 ```
 
-3. **Install Node.js dependencies** (for TypeScript compilation):
-Ensure that [Node.js and npm](https://nodejs.org/en/download) is installed on your system.
+#### Windows (PowerShell)
+```powershell
+# Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install pdoc for API documentation (optional)
+pip install pdoc
+```
+
+### Running the Application
+
+#### Linux/macOS
+```bash
+# Ensure Docker is running
+sudo systemctl start docker  # For Linux with systemd
+
+# Start the application
+python app.py 2>&1 | tee app.log
+```
+
+#### Windows (PowerShell)
+```powershell
+# Ensure Docker Desktop is running
+# Start the application
+python app.py 2>&1 | Tee-Object -FilePath app.log
+```
+
+### API Documentation
+
+To generate API documentation:
 
 ```bash
-npm install
+# Linux/macOS
+pdoc app.py build_utils.py --output-dir docs
+
+# Windows (PowerShell)
+python -m pdoc app.py build_utils.py --output-dir docs
 ```
 
-4. **Build the frontend**:
-```bash
-npm run build
-```
-
-### Frontend Build Process
-
-FOAMFlask uses TypeScript for the frontend, which provides type safety and better development experience. The build process compiles TypeScript to browser-compatible JavaScript:
-
-- **Source**: `static/ts/foamflask_frontend.ts` (TypeScript)
-- **Compiled**: `static/js/foamflask_frontend.js` (JavaScript)
-- **Process**: TypeScript compiler (`tsc`) + custom copy script
-
-#### Build Commands:
-```bash
-npm run build          # Compile TypeScript to JavaScript
-npm run build:watch    # Watch mode: auto-compile on file changes
-```
-
-The build process:
-1. Compiles TypeScript (`static/ts/*.ts`) to JavaScript (`static/js-build/*.js`)
-2. Copies compiled files to `static/js/` directory
-3. Removes Plotly import (since Plotly is loaded via CDN)
-4. Makes the frontend ready for browser deployment
-
-**Note**: You must run `npm run build` after making any TypeScript changes for them to take effect in the browser.
+Documentation will be available in the `docs` directory as HTML files.
 
 ## Usage
-1. **Run the server**:
-```bash
-python app.py
-```
-2. **Access the web interface**:
-Open your browser and navigate to `http://localhost:5000`.
+1. **Access the web interface**:
+   Open your browser and navigate to `http://localhost:5000`
+
+2. **Development mode** (optional):
+   - For frontend development with auto-reload:
+     ```bash
+     npm run build:watch
+     ```
+   - In another terminal, run the Flask development server:
+     ```bash
+     export FLASK_DEBUG=1  # Linux/macOS
+     # or
+     $env:FLASK_DEBUG=1  # Windows PowerShell
+     
+     python app.py
+     ```
 
 3. **Set a case directory**:
 Enter a path for your simulation cases.
@@ -98,41 +173,6 @@ The tutorial will be copied to your selected case directory.
 6. **Run OpenFOAM commands**:
 Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
 Live output is shown in the console panel.
-
----
-
-## Development
-
-### Frontend Development Workflow
-
-1. **Make changes to TypeScript files** (`static/ts/*.ts`)
-2. **Compile to JavaScript**:
-   ```bash
-   npm run build        # One-time build
-   npm run build:watch  # Auto-compile on changes (recommended for development)
-   ```
-3. **Refresh browser** to see changes
-
-### TypeScript Benefits
-
-- **Type Safety**: Catch errors at compile time instead of runtime
-- **Better IDE Support**: Autocomplete, refactoring, and error checking
-- **Modern JavaScript**: Use latest ES6+ features with backward compatibility
-- **Code Organization**: Interfaces, classes, and modules for cleaner code
-
-### File Structure
-
-```text
-static/
-├── ts/                    # TypeScript source (development)
-│   └── foamflask_frontend.ts
-├── js-build/              # TypeScript compiler output (intermediate)
-│   └── foamflask_frontend.js
-└── js/                    # Browser-ready JavaScript (production)
-    └── foamflask_frontend.js
-```
-
-**Important**: Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
 
 ---
 
@@ -182,122 +222,41 @@ FOAMFlask/
 
 ---
 
-## License
+## FAQ
 
-FOAMFlask is released under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html) License.
+### Docker Desktop Warning
+This program is dependent on Docker since it uses OpenFOAM docker image.
 
----
+**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`. (For Linux/MacOS, the message is `Docker daemon not available. Make sure Docker Desktop is running. Details: Error while fetching server API version`)
 
-## Realtime Plotting
+**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
 
-FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
+**Resolution**: Here's how to resolve this:
 
----
+For Windows:
+1. Install Docker Desktop (if not already installed):
+   - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
+   - Follow the installation instructions for your operating system
+   - This build was tested on 4.45.0 (203075)
 
-### Features
+2. Start Docker Desktop
+   - Launch Docker Desktop before running the FOAMFlask application
+   - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
 
-- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
-- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
-- **Realtime Updates**: Plots update every 2 seconds during simulation
-- **Multiple Plot Types**:
-  - Pressure vs Time
-  - Velocity components (Ux, Uy, Uz) and magnitude
-  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
-  - Residuals (logarithmic scale)
-- **Aerodynamic Analysis** (optional):
-  - Pressure coefficient (Cp)
-  - 3D velocity profiles
+3. Restart FOAMFlask after Docker is running
 
----
+4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
 
-### Usage
+For Linux/MacOS:
+1. Install Docker Desktop on Linux (if not already installed):
+   - Download from [Docker's official website](https://docs.docker.com/desktop/setup/install/linux/)
+   - Follow the installation instructions for your operating system
+   - This build was tested on Linux Mint 22.2
+   - Docker engine is a part of Docker Desktop
 
-1. Load a tutorial case
-2. Click "Show Plots" to enable realtime plotting
-3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
-4. Watch the plots update in realtime
-5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
+2. Start/Enable Docker engine and check status to ensure it's working properly.
 
 ---
-
-### Technical Details
-
-The plotting system uses:
-- **Plotly.js** for interactive browser-based plots (no external software needed)
-- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
-- **Flask API endpoints** for serving plot data
-- **Automatic field parsing** for both uniform and nonuniform fields
-
----
-
-## Installation (For Backend after Frontend has been built)
-
-<details>
-<summary><strong>Bash (Linux/macOS)</strong></summary>
-
-### Step 1: Create a Python virtual environment
-```bash
-mkdir -p environments
-python3 -m venv ./environments/my-python313-venv-linux
-```
-
-### Step 2: Activate the virtual environment
-```bash
-source ./environments/my-python313-venv-linux/bin/activate
-```
-
-### Step 3: Install dependencies
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r ../requirements.txt
-```
-
-### Step 4: Run the application
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 app.py
-```
-
-### Generate API Documentation
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
-
-To generate Python-related API documentation, run the following command:
-
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc build_utils.py --output-dir docs
-```
-
-This generates HTML documentation in the `docs` directory as `app.html` and `build_utils.html`.
-
-**Note**: Make sure to install pdoc first if not already installed:
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc
-```
-
-</details>
-
-<details>
-<summary><strong>PowerShell (Windows)</strong></summary>
-
-### Step 1: Create a Python virtual environment
-```powershell
-mkdir environments
-python3 -m venv .\environments\my-python313-venv-win
-```
-
-### Step 2: Activate the virtual environment
-```powershell
-.\environments\my-python313-venv-win\Scripts\activate.ps1
-```
-
-### Step 3: Install dependencies
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r ..\requirements.txt
-```
-
-### Step 4: Run the application
-```powershell
- .\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
-```
 
 ### Generate API Documentation
 
@@ -422,25 +381,44 @@ pytest -k "test_name_pattern"
 
 </details>
 
-## FAQ
+---
 
-### Docker Desktop Warning (Windows)
+## Development
 
-**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`. (For Linux/MacOS, the message is `Docker daemon not available. Make sure Docker Desktop is running. Details: Error while fetching server API version`)
+### Frontend Development Workflow
 
-**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
+1. **Make changes to TypeScript files** (`static/ts/*.ts`)
+2. **Compile to JavaScript**:
+   ```bash
+   npm run build        # One-time build
+   npm run build:watch  # Auto-compile on changes (recommended for development)
+   ```
+3. **Refresh browser** to see changes
 
-**Resolution**: Here's how to resolve this:
+**Important**: Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
 
-1. Install Docker Desktop (if not already installed):
-   - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
-   - Follow the installation instructions for your operating system
-   - This build was tested on 4.45.0 (203075)
+---
 
-2. Start Docker Desktop
-   - Launch Docker Desktop before running the FOAMFlask application
-   - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
+### Usage
 
-3. Restart FOAMFlask after Docker is running
+1. Load a tutorial case
+2. Click "Show Plots" to enable realtime plotting
+3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
+4. Watch the plots update in realtime
+5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
 
-4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
+---
+
+### Technical Details
+
+The plotting system uses:
+- **Plotly.js** for interactive browser-based plots (no external software needed)
+- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
+- **Flask API endpoints** for serving plot data
+- **Automatic field parsing** for both uniform and nonuniform fields
+
+---
+
+## License
+
+FOAMFlask is released under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html) License.
