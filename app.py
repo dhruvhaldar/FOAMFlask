@@ -22,6 +22,8 @@ from typing import Dict, List, Optional, Tuple, Union, Generator
 import docker
 from docker import DockerClient
 from docker.errors import DockerException
+
+import flask
 from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
 from werkzeug.utils import secure_filename
 
@@ -45,6 +47,7 @@ DOCKER_IMAGE: Optional[str] = None
 OPENFOAM_VERSION: Optional[str] = None
 docker_client: Optional[DockerClient] = None
 foamrun_logs: Dict[str, str] = {}  # Maps tutorial names to their log content
+IS_FIRST_RUN = False  # Flag to track if this is the first initialization
 
 
 # Security validation functions
@@ -120,16 +123,15 @@ def is_safe_script_name(script_name: str) -> bool:
     
     return True
 
-
 def load_config() -> Dict[str, str]:
-    """Load configuration from case_config.json with sensible defaults.
+    """Load configuration from case_config.json. 
+    If missing, creates it with defaults and sets IS_FIRST_RUN flag.
 
     Returns:
-        Dictionary containing configuration with keys:
-            - CASE_ROOT: Root directory for OpenFOAM cases
-            - DOCKER_IMAGE: Docker image to use
-            - OPENFOAM_VERSION: OpenFOAM version
+        Dictionary containing configuration.
     """
+    global IS_FIRST_RUN
+    
     defaults = {
         "CASE_ROOT": str(Path("tutorial_cases").resolve()),
         "DOCKER_IMAGE": "haldardhruv/ubuntu_noble_openfoam:v12",
@@ -137,7 +139,17 @@ def load_config() -> Dict[str, str]:
     }
 
     if not CONFIG_FILE.exists():
-        return defaults
+        logger.info("[FOAMFlask] First run detected. Creating case_config.json with defaults.")
+        IS_FIRST_RUN = True
+        try:
+            with CONFIG_FILE.open("w", encoding="utf-8") as f:
+                json.dump(defaults, f, indent=2)
+            return defaults
+        except (OSError, TypeError) as e:
+            logger.error(
+                "[FOAMFlask] Could not create config file: %s. Using defaults in memory.", str(e)
+            )
+            return defaults
 
     try:
         with CONFIG_FILE.open("r", encoding="utf-8") as f:
@@ -347,9 +359,29 @@ def index() -> str:
     Returns:
         Rendered HTML template with tutorials and case root.
     """
+    global IS_FIRST_RUN
     tutorials = get_tutorials()
     options_html = "\n".join(f'<option value="{t}">{t}</option>' for t in tutorials)
-    return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
+    
+    # Check if this is a first run and inject a notification if so
+    current_template = TEMPLATE
+    if IS_FIRST_RUN:
+        notification_script = """
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                alert("Welcome to FOAMFlask!\\n\\nSince this is your first run, a default configuration file (case_config.json) has been created.\\n\\nIMPORTANT:\\n1. Please set your 'Case Directory' to a valid location on your machine where you want simulations to be stored.\\n2. Verify the 'Docker Config' settings match your installed OpenFOAM docker image version.");
+            });
+        </script>
+        """
+        # Append script before closing body tag
+        if "</body>" in current_template:
+            current_template = current_template.replace("</body>", f"{notification_script}</body>")
+        else:
+            current_template += notification_script
+            
+        IS_FIRST_RUN = False # Disable flag after showing once
+
+    return render_template_string(current_template, options=options_html, CASE_ROOT=CASE_ROOT)
 
 
 @app.route('/favicon.ico')
@@ -480,6 +512,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     # Base docker command: create directory and copy tutorial
     docker_cmd = (
         f"bash -c 'source {bashrc} && "
+        f"mkdir -p {container_run_path} && "
         f"mkdir -p {container_case_path} && "
         f"cp -r $FOAM_TUTORIALS/{tutorial}/* {container_case_path}"
     )
@@ -502,6 +535,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
             volumes={host_path_str: {"bind": container_run_path, "mode": "rw"}},
             working_dir=container_run_path,
             remove=True,
+            user="root",  # Run as root to create directories
         )
 
         result = container.wait()
@@ -650,6 +684,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 tty=False,
                 volumes=volumes,
                 working_dir=container_case_path,
+                user="root",  # Run as root to ensure proper permissions
             )
 
             try:

@@ -21,3 +21,4 @@ backend/plots/__pycache__/realtime_plots.cpython-312.pyc
 backend/visualization/__pycache__/__init__.cpython-313.pyc
 backend/visualization/__pycache__/__init__.cpython-312.pyc
 venv/*
+case_config.json

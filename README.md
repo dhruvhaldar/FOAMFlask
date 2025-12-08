@@ -20,6 +20,7 @@
 
 - **Web Interface**: Intuitive web-based interface for OpenFOAM case management
 - **Persistent Configuration**: Stores the **CASE_ROOT** across sessions
+- **First Run Wizard**: Automatically generates configuration files and prompts for setup on the first launch.
 - **Tutorial Management**: Load and copy tutorials from the OpenFOAM tutorials directory
 - **Command Execution**: Run common OpenFOAM commands (`blockMesh`, `simpleFoam`, `pimpleFoam`) with live output
 - **Enhanced Output**: Color-coded console output for stdout, stderr, info, and tutorial messages
