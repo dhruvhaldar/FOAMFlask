@@ -1420,7 +1420,7 @@ const runFoamToVTK = async (): Promise<void> => {
     localStorage.removeItem(CONSOLE_LOG_KEY);
   }
   outputBuffer.length = 0;
-  showNotification("Running foamToVTK...", "info");
+  showNotification("Running <strong>foamToVTK</strong>", "info");
   showNotification(
     "Check <strong>Run/Log</strong> for more details",
     "info",
