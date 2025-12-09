@@ -112,6 +112,9 @@ const getErrorMessage = (error: unknown): string => {
   return typeof error === "string" ? error : "Unknown error";
 };
 
+// Storage for Console Log
+const CONSOLE_LOG_KEY = "foamflask_console_log";
+
 // Global state
 let caseDir: string = "";
 let dockerImage: string = "";
@@ -169,14 +172,14 @@ const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Computer Modern Serif, serif", size: 12 },
   plot_bgcolor: "white",
   paper_bgcolor: "#ffffff",
-  margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 }, // Increased bottom margin
+  margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
   height: 400,
   autosize: true,
   showlegend: true,
   legend: {
     orientation: "h" as const,
-    y: -0.3, // Moved further down
-    x: 0.5,  // Centered
+    y: -0.3,
+    x: 0.5,
     xanchor: "center" as const,
     yanchor: "top" as const,
     bgcolor: "white",
@@ -272,7 +275,6 @@ const getLegendVisibility = (
       return {};
     }
 
-    // FIX: Update type definition
     const visibility: Record<string, boolean | "legendonly"> = {};
 
     for (const trace of plotData) {
@@ -284,7 +286,7 @@ const getLegendVisibility = (
       // trace.visible may be boolean | "legendonly" | undefined
       const vis = trace.visible;
       
-      // FIX: Preserve "legendonly" state instead of converting it to false
+      // Preserve "legendonly" state instead of converting it to false
       visibility[name] = vis === "legendonly" ? "legendonly" : (vis ?? true);
     }
 
@@ -507,6 +509,15 @@ window.onload = async () => {
     ) as HTMLInputElement;
     if (openfoamRootInput)
       openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+
+    // Restore Console Log from LocalStorage
+    const outputDiv = document.getElementById("output");
+    const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
+    if (outputDiv && savedLog) {
+      outputDiv.innerHTML = savedLog;
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+    
   } catch (error: unknown) {
     console.error("FOAMFlask Initialization error", error);
     appendOutput("FOAMFlask Failed to initialize application", "stderr");
@@ -566,6 +577,14 @@ const flushOutputBuffer = (): void => {
   container.appendChild(fragment);
   container.scrollTop = container.scrollHeight;
   outputBuffer.length = 0;
+
+  // Save to LocalStorage
+  try {
+    localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+  } catch (e) {
+    console.warn("Failed to save console log to local storage (likely quota exceeded).");
+  }
+
 };
 
 // Set case directory manually
@@ -700,11 +719,16 @@ const runCommand = async (cmd: string): Promise<void> => {
     return;
   }
   try {
+    // ... get selectedTutorial ...
     const selectedTutorial = (
       document.getElementById("tutorialSelect") as HTMLSelectElement
     ).value;
     const outputDiv = document.getElementById("output");
-    if (outputDiv) outputDiv.innerHTML = "";
+    if (outputDiv) {
+      outputDiv.innerHTML = "";
+      localStorage.removeItem(CONSOLE_LOG_KEY);
+    }
+    
     outputBuffer.length = 0;
     showNotification(`Running ${cmd}...`, "info");
     const response = await fetch("/run", {
@@ -1382,6 +1406,7 @@ const refreshMeshList = async (): Promise<void> => {
 };
 
 const runFoamToVTK = async (): Promise<void> => {
+  // ... check for selectedTutorial ...
   const selectedTutorial = (
     document.getElementById("tutorialSelect") as HTMLSelectElement
   )?.value;
@@ -1390,7 +1415,10 @@ const runFoamToVTK = async (): Promise<void> => {
     return;
   }
   const outputDiv = document.getElementById("output");
-  if (outputDiv) outputDiv.innerHTML = "";
+  if (outputDiv) {
+    outputDiv.innerHTML = "";
+    localStorage.removeItem(CONSOLE_LOG_KEY);
+  }
   outputBuffer.length = 0;
   showNotification("Running foamToVTK...", "info");
   showNotification(
