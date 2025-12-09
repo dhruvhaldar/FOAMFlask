@@ -820,7 +820,7 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
     const data = await fetchWithCache<ResidualsResponse>(
       `/api/residuals?tutorial=${encodeURIComponent(tutorial)}`
     );
-    console.log("Residuals data received:", data);
+    // console.log("Residuals data received:", data);
     if (data.error || !data.time || data.time.length === 0) {
       console.log("Residuals plot early return:", { error: data.error, hasTime: !!data.time, timeLength: data.time?.length });
       return;
@@ -1394,7 +1394,7 @@ const runFoamToVTK = async (): Promise<void> => {
   outputBuffer.length = 0;
   showNotification("Running foamToVTK...", "info");
   showNotification(
-    "Check <strong>RunLog Console Log</strong> for more details",
+    "Check <strong>Run/Log</strong> for more details",
     "info",
     10000
   );

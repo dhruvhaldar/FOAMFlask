@@ -654,7 +654,7 @@ const stopPlotUpdates = () => {
 const updateResidualsPlot = async (tutorial) => {
     try {
         const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
-        console.log("Residuals data received:", data);
+        // console.log("Residuals data received:", data);
         if (data.error || !data.time || data.time.length === 0) {
             console.log("Residuals plot early return:", { error: data.error, hasTime: !!data.time, timeLength: data.time?.length });
             return;
