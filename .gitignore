@@ -22,3 +22,6 @@ backend/visualization/__pycache__/__init__.cpython-313.pyc
 backend/visualization/__pycache__/__init__.cpython-312.pyc
 # Local configuration files
 case_config.json
+
+# npm logs
+npm.log
