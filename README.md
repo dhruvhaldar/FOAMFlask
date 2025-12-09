@@ -10,7 +10,9 @@
 
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
 
-**Note**: Currently only loading and execution of OpenFOAM tutorials (`$FOAM_TUTORIALS`) is supported. Creating custom cases is planned.
+**Important**
+1. Currently only loading and execution of OpenFOAM tutorials (`$FOAM_TUTORIALS`) is supported. Creating custom cases is planned.
+2. Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
 
 ---
 
@@ -28,49 +30,98 @@
 
 ## Installation
 
-1. **Clone the repository**:
+<details>
+<summary><strong>Windows</strong></summary>
 
+### Step 1: Clone the repository
+```powershell
+git clone https://github.com/dhruvhaldar/FOAMFlask
+cd FOAMFlask
+```
+
+### Step 2: Install Node.js dependencies and build frontend
+```powershell
+npm install
+npm run build
+```
+
+### Step 3: Create and activate Python virtual environment
+```powershell
+mkdir environments
+python3 -m venv .\environments\my-python313-venv-win
+.\environments\my-python313-venv-win\Scripts\activate.ps1
+```
+
+### Step 4: Install Python dependencies
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### Step 5: Run the application
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
+```
+
+### Optional: Generate API Documentation
+Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+
+To generate Python-related API documentation:
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
+.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc build_utils.py --output-dir docs
+```
+(Note: Install pdoc first: `.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc`)
+
+### Generate Frontend Documentation
+```bash
+npm run docs
+```
+
+</details>
+
+<details>
+<summary><strong>Linux/MacOS</strong></summary>
+
+### Step 1: Clone the repository
 ```bash
 git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
 ```
 
-2. **Install Python dependencies**:
-```bash
-pip install -r requirements.txt
-```
-
-3. **Install Node.js dependencies** (for TypeScript compilation):
+### Step 2: Install Node.js dependencies and build frontend
 ```bash
 npm install
-```
-
-4. **Build the frontend**:
-```bash
 npm run build
 ```
 
-### Frontend Build Process
-
-FOAMFlask uses TypeScript for the frontend, which provides type safety and better development experience. The build process compiles TypeScript to browser-compatible JavaScript:
-
-- **Source**: `static/ts/foamflask_frontend.ts` (TypeScript)
-- **Compiled**: `static/js/foamflask_frontend.js` (JavaScript)
-- **Process**: TypeScript compiler (`tsc`) + custom copy script
-
-#### Build Commands:
+### Step 3: Create and activate Python virtual environment
 ```bash
-npm run build          # Compile TypeScript to JavaScript
-npm run build:watch    # Watch mode: auto-compile on file changes
+mkdir -p environments
+python3 -m venv ./environments/my-python313-venv-linux
+source ./environments/my-python313-venv-linux/bin/activate
 ```
 
-The build process:
-1. Compiles TypeScript (`static/ts/*.ts`) to JavaScript (`static/js-build/*.js`)
-2. Copies compiled files to `static/js/` directory
-3. Removes Plotly import (since Plotly is loaded via CDN)
-4. Makes the frontend ready for browser deployment
+### Step 4: Install Python dependencies
+```bash
+./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
+```
 
-**Note**: You must run `npm run build` after making any TypeScript changes for them to take effect in the browser.
+### Step 5: Run the application
+```bash
+./environments/my-python313-venv-linux/bin/python3.13 app.py
+```
+
+### Optional: Generate API Documentation
+Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+
+To generate Python-related API documentation:
+```bash
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
+./environments/my-python313-venv-linux/bin/python3.13 -m pdoc build_utils.py --output-dir docs
+```
+(Note: Install pdoc first: `./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc`)
+
+</details>
 
 ## Usage
 1. **Run the server**:
@@ -111,26 +162,172 @@ Live output is shown in the console panel.
    ```
 3. **Refresh browser** to see changes
 
-### TypeScript Benefits
+---
 
-- **Type Safety**: Catch errors at compile time instead of runtime
-- **Better IDE Support**: Autocomplete, refactoring, and error checking
-- **Modern JavaScript**: Use latest ES6+ features with backward compatibility
-- **Code Organization**: Interfaces, classes, and modules for cleaner code
+### Features
 
-### File Structure
+- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
+- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
+- **Realtime Updates**: Plots update every 2 seconds during simulation
+- **Multiple Plot Types**:
+  - Pressure vs Time
+  - Velocity components (Ux, Uy, Uz) and magnitude
+  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
+  - Residuals (logarithmic scale)
+- **Aerodynamic Analysis** (optional):
+  - Pressure coefficient (Cp)
+  - 3D velocity profiles
 
-```text
-static/
-├── ts/                    # TypeScript source (development)
-│   └── foamflask_frontend.ts
-├── js-build/              # TypeScript compiler output (intermediate)
-│   └── foamflask_frontend.js
-└── js/                    # Browser-ready JavaScript (production)
-    └── foamflask_frontend.js
+---
+
+### Usage
+
+1. Load a tutorial case
+2. Click "Show Plots" to enable realtime plotting
+3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
+4. Watch the plots update in realtime
+5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
+
+---
+
+### Technical Details
+
+The plotting system uses:
+- **Plotly.js** for interactive browser-based plots (no external software needed)
+- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
+- **Flask API endpoints** for serving plot data
+- **Automatic field parsing** for both uniform and nonuniform fields
+
+---
+
+## FAQ
+
+### Docker Desktop Warning (Windows)
+
+**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
+
+**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
+
+**Resolution**: Here's how to resolve this:
+
+1. Install Docker Desktop (if not already installed):
+   - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
+   - Follow the installation instructions for your operating system
+   - This build was tested on 4.45.0 (203075)
+
+2. Start Docker Desktop
+   - Launch Docker Desktop before running the FOAMFlask application
+   - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
+
+3. Restart FOAMFlask after Docker is running
+
+4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
+
+### Permissions issue (Linux)
+
+**Issue Description**: Permission denied error when trying to access Docker socket.
+
+**Explanation**: The application is trying to access the Docker socket but doesn't have the necessary permissions.
+
+**Resolution**: Here's how to resolve this:
+
+1. Add your user to the `docker` group:
+   ```bash
+   sudo usermod -aG docker $USER
+   ```
+
+2. Restart your system to apply the changes
+
+---
+
+## Testing
+
+FOAMFlask includes a comprehensive test suite using pytest. The test suite includes unit tests, integration tests, and end-to-end tests for the application's core functionality.
+
+### Running Tests
+
+1. **Install test dependencies** (if not already installed):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run all tests** with coverage:
+   ```bash
+   # Run all tests with coverage
+   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
+   ```
+
+3. **Run specific test files** or individual tests:
+   ```bash
+   # Run a specific test file
+   pytest test/test_app.py -v
+   
+   # Run a specific test function
+   pytest test/test_app.py::test_index_route -v
+   ```
+
+4. **Run tests in parallel** (faster execution):
+   ```bash
+   pytest -n auto --cov=app --cov=backend
+   ```
+
+### Test Coverage
+
+To check test coverage and generate reports:
+
+```bash
+# Generate HTML coverage report (recommended)
+pytest --cov=app --cov=backend --cov-report=html
+
+# View coverage in terminal
+pytest --cov=app --cov=backend --cov-report=term-missing
+
+# Generate XML report (for CI/CD integration)
+pytest --cov=app --cov=backend --cov-report=xml
 ```
 
-**Important**: Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
+**Coverage Reports**:
+- HTML report will be generated in the `htmlcov` directory
+- Open `htmlcov/index.html` in your browser to view the detailed coverage report
+- The terminal report shows which lines are missing coverage
+
+### Test Structure
+
+```
+test/
+├── conftest.py        # Test fixtures and configuration
+├── test_app.py        # Main application tests
+└── test_security.py   # Security-related tests
+```
+
+### Writing New Tests
+
+1. Create a new test file following the naming convention `test_*.py`
+2. Use pytest fixtures from `conftest.py` when available
+3. Follow the existing test patterns for consistency
+4. Include docstrings explaining what each test verifies
+
+### Test Coverage Commands Reference
+
+```bash
+# Run all tests with coverage
+pytest --cov=app --cov=backend
+
+# Run tests without coverage
+pytest
+
+# Run tests with detailed output
+pytest -v
+
+# Run tests and stop after first failure
+pytest -x
+
+# Run tests and show output from print statements
+pytest -s
+
+# Run tests matching a specific pattern
+pytest -k "test_name_pattern"
+```
 
 ---
 
@@ -185,260 +382,3 @@ FOAMFlask/
 FOAMFlask is released under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html) License.
 
 ---
-
-## Realtime Plotting
-
-FOAMFlask includes a powerful realtime plotting system that visualizes OpenFOAM simulation data as it runs.
-
----
-
-### Features
-
-- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
-- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
-- **Realtime Updates**: Plots update every 2 seconds during simulation
-- **Multiple Plot Types**:
-  - Pressure vs Time
-  - Velocity components (Ux, Uy, Uz) and magnitude
-  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
-  - Residuals (logarithmic scale)
-- **Aerodynamic Analysis** (optional):
-  - Pressure coefficient (Cp)
-  - 3D velocity profiles
-
----
-
-### Usage
-
-1. Load a tutorial case
-2. Click "Show Plots" to enable realtime plotting
-3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
-4. Watch the plots update in realtime
-5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
-
----
-
-### Technical Details
-
-The plotting system uses:
-- **Plotly.js** for interactive browser-based plots (no external software needed)
-- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
-- **Flask API endpoints** for serving plot data
-- **Automatic field parsing** for both uniform and nonuniform fields
-
----
-
-## Installation (For Backend after Frontend has been built)
-
-<details>
-<summary><strong>Bash (Linux/macOS)</strong></summary>
-
-### Step 1: Create a Python virtual environment
-```bash
-mkdir -p environments
-python3 -m venv ./environments/my-python313-venv-linux
-```
-
-### Step 2: Activate the virtual environment
-```bash
-source ./environments/my-python313-venv-linux/bin/activate
-```
-
-### Step 3: Install dependencies
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r ../requirements.txt
-```
-
-### Step 4: Run the application
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 app.py
-```
-
-### Generate API Documentation
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
-
-To generate Python-related API documentation, run the following command:
-
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc build_utils.py --output-dir docs
-```
-
-This generates HTML documentation in the `docs` directory as `app.html` and `build_utils.html`.
-
-**Note**: Make sure to install pdoc first if not already installed:
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc
-```
-
-</details>
-
-<details>
-<summary><strong>PowerShell (Windows)</strong></summary>
-
-### Step 1: Create a Python virtual environment
-```powershell
-mkdir environments
-python3 -m venv .\environments\my-python313-venv-win
-```
-
-### Step 2: Activate the virtual environment
-```powershell
-.\environments\my-python313-venv-win\Scripts\activate.ps1
-```
-
-### Step 3: Install dependencies
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r ..\requirements.txt
-```
-
-### Step 4: Run the application
-```powershell
- .\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
-```
-
-### Generate API Documentation
-
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
-
-To generate Python-related API documentation, run the following command:
-
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
-.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc build_utils.py --output-dir docs
-```
-
-This generates HTML documentation in the `docs` directory as `app.html` and `build_utils.html`.
-
-**Note**: Make sure to install pdoc first if not already installed:
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc
-```
-
-### Generate Frontend Documentation
-
-To generate TypeScript API documentation for the frontend, run the following command:
-
-```bash
-npm run docs
-```
-
-This generates comprehensive documentation for all TypeScript files in `docs/frontend/` directory, including:
-- **foamflask_frontend.ts** - Main frontend logic
-- **frontend/isosurface.ts** - PyVista integration functions
-
-The documentation includes function signatures, type definitions, and interactive HTML documentation.
-
-### Testing
-
-FOAMFlask includes a comprehensive test suite using pytest. The test suite includes unit tests, integration tests, and end-to-end tests for the application's core functionality.
-
-#### Running Tests
-
-1. **Install test dependencies** (if not already installed):
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Run all tests** with coverage:
-   ```bash
-   # Run all tests with coverage
-   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
-   ```
-
-3. **Run specific test files** or individual tests:
-   ```bash
-   # Run a specific test file
-   pytest test/test_app.py -v
-   
-   # Run a specific test function
-   pytest test/test_app.py::test_index_route -v
-   ```
-
-4. **Run tests in parallel** (faster execution):
-   ```bash
-   pytest -n auto --cov=app --cov=backend
-   ```
-
-#### Test Coverage
-
-To check test coverage and generate reports:
-
-```bash
-# Generate HTML coverage report (recommended)
-pytest --cov=app --cov=backend --cov-report=html
-
-# View coverage in terminal
-pytest --cov=app --cov=backend --cov-report=term-missing
-
-# Generate XML report (for CI/CD integration)
-pytest --cov=app --cov=backend --cov-report=xml
-```
-
-**Coverage Reports**:
-- HTML report will be generated in the `htmlcov` directory
-- Open `htmlcov/index.html` in your browser to view the detailed coverage report
-- The terminal report shows which lines are missing coverage
-
-#### Test Structure
-
-```
-test/
-├── conftest.py        # Test fixtures and configuration
-├── test_app.py        # Main application tests
-└── test_security.py   # Security-related tests
-```
-
-#### Writing New Tests
-
-1. Create a new test file following the naming convention `test_*.py`
-2. Use pytest fixtures from `conftest.py` when available
-3. Follow the existing test patterns for consistency
-4. Include docstrings explaining what each test verifies
-
-#### Test Coverage Commands Reference
-
-```bash
-# Run all tests with coverage
-pytest --cov=app --cov=backend
-
-# Run tests without coverage
-pytest
-
-# Run tests with detailed output
-pytest -v
-
-# Run tests and stop after first failure
-pytest -x
-
-# Run tests and show output from print statements
-pytest -s
-
-# Run tests matching a specific pattern
-pytest -k "test_name_pattern"
-```
-
-</details>
-
-## FAQ
-
-### Docker Desktop Warning (Windows)
-
-**Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
-
-**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
-
-**Resolution**: Here's how to resolve this:
-
-1. Install Docker Desktop (if not already installed):
-   - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
-   - Follow the installation instructions for your operating system
-   - This build was tested on 4.45.0 (203075)
-
-2. Start Docker Desktop
-   - Launch Docker Desktop before running the FOAMFlask application
-   - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
-
-3. Restart FOAMFlask after Docker is running
-
-4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
