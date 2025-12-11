@@ -238,6 +238,20 @@ The plotting system uses:
 
 2. Restart your system to apply the changes
 
+### File Permissions (Linux)
+
+**Issue Description**: Files created by the OpenFOAM container (e.g., tutorial files, logs) are owned by `root` and cannot be deleted by the user.
+
+**Explanation**: By default, Docker containers run as root, so any files they write to the host system via bind mounts are owned by root.
+
+**Resolution**: FOAMFlask includes an automated startup check to handle this:
+1. On the first run, it performs a "dry run" by launching a container to write a test file.
+2. It attempts to delete this file.
+3. If deletion fails (Permission Denied), it detects the issue and automatically configures future containers to run with your current user ID (UID) and group ID (GID).
+4. This ensures all subsequent files created by OpenFOAM are owned by you.
+
+You will see a "System Check" modal on startup while this verification takes place.
+
 ---
 
 ## Testing

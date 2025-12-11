@@ -29,6 +29,7 @@ from werkzeug.utils import secure_filename
 from backend.mesh.mesher import mesh_visualizer
 from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
 from backend.post.isosurface import IsosurfaceVisualizer, isosurface_visualizer
+from backend.startup import check_docker_permissions
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -45,6 +46,7 @@ DOCKER_IMAGE: Optional[str] = None
 OPENFOAM_VERSION: Optional[str] = None
 docker_client: Optional[DockerClient] = None
 foamrun_logs: Dict[str, str] = {}  # Maps tutorial names to their log content
+STARTUP_STATUS = {"status": "starting", "message": "Initializing..."}
 
 
 # Security validation functions
@@ -217,6 +219,59 @@ def docker_unavailable_response() -> Tuple[Response, int]:
     return jsonify({"output": error_msg}), 503
 
 
+def get_docker_user_config() -> Dict[str, str]:
+    """
+    Get Docker user configuration for running containers.
+
+    Returns:
+        Dictionary with 'user' key if configured, else empty.
+    """
+    if CONFIG and CONFIG.get("docker_run_as_user"):
+        uid = CONFIG.get("docker_uid")
+        gid = CONFIG.get("docker_gid")
+        if uid is not None and gid is not None:
+            return {"user": f"{uid}:{gid}"}
+    return {}
+
+
+def run_startup_check() -> None:
+    """
+    Run the startup check in a background thread.
+    """
+    global STARTUP_STATUS, CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
+
+    STARTUP_STATUS["status"] = "running"
+    STARTUP_STATUS["message"] = "Performing initial system checks and permission verification..."
+
+    try:
+        # Re-load config to ensure we have latest
+        current_config = load_config()
+
+        # Use a temporary client for the check
+        check_client_func = get_docker_client
+
+        result = check_docker_permissions(
+            check_client_func,
+            current_config["CASE_ROOT"], # Use config directly as global CASE_ROOT might be stale
+            current_config["DOCKER_IMAGE"],
+            save_config,
+            current_config
+        )
+
+        STARTUP_STATUS.update(result)
+
+        # Reload global config after check (which might have updated it)
+        CONFIG = load_config()
+        CASE_ROOT = CONFIG["CASE_ROOT"]
+        DOCKER_IMAGE = CONFIG["DOCKER_IMAGE"]
+        OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
+
+    except Exception as e:
+        logger.error(f"Startup check failed: {e}", exc_info=True)
+        STARTUP_STATUS["status"] = "failed"
+        STARTUP_STATUS["message"] = f"Startup check failed: {str(e)}"
+
+
 # Load HTML template
 TEMPLATE_FILE = Path("static/html/foamflask_frontend.html")
 try:
@@ -350,6 +405,17 @@ def index() -> str:
     tutorials = get_tutorials()
     options_html = "\n".join(f'<option value="{t}">{t}</option>' for t in tutorials)
     return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
+
+
+@app.route("/api/startup_status", methods=["GET"])
+def get_startup_status() -> Response:
+    """
+    Get the status of the startup checks.
+
+    Returns:
+        JSON response with status and message.
+    """
+    return jsonify(STARTUP_STATUS)
 
 
 @app.route('/favicon.ico')
@@ -492,16 +558,22 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
 
     container = None
     try:
+        run_kwargs = {
+            "detach": True,
+            "tty": True,
+            "stdout": True,
+            "stderr": True,
+            "volumes": {host_path_str: {"bind": container_run_path, "mode": "rw"}},
+            "working_dir": container_run_path,
+            "remove": True,
+        }
+        # Update with user config if present
+        run_kwargs.update(get_docker_user_config())
+
         container = client.containers.run(
             DOCKER_IMAGE,
             docker_cmd,
-            detach=True,
-            tty=True,
-            stdout=True,
-            stderr=True,
-            volumes={host_path_str: {"bind": container_run_path, "mode": "rw"}},
-            working_dir=container_run_path,
-            remove=True,
+            **run_kwargs
         )
 
         result = container.wait()
@@ -643,13 +715,18 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             docker_cmd = ["bash", "-c", wrapper_script]
 
         try:
+            run_kwargs = {
+                "detach": True,
+                "tty": False,
+                "volumes": volumes,
+                "working_dir": container_case_path,
+            }
+            run_kwargs.update(get_docker_user_config())
+
             container = client.containers.run(
                 DOCKER_IMAGE,
                 docker_cmd,
-                detach=True,
-                tty=False,
-                volumes=volumes,
-                working_dir=container_case_path,
+                **run_kwargs
             )
 
             try:
@@ -1003,13 +1080,18 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
         )
 
         try:
+            run_kwargs = {
+                "detach": True,
+                "tty": False,
+                "volumes": volumes,
+                "working_dir": container_case_path,
+            }
+            run_kwargs.update(get_docker_user_config())
+
             container = client.containers.run(
                 DOCKER_IMAGE,
                 docker_cmd,
-                detach=True,
-                tty=False,
-                volumes=volumes,
-                working_dir=container_case_path,
+                **run_kwargs
             )
 
             # Stream logs line by line
@@ -1318,6 +1400,12 @@ def main() -> None:
     OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 
     Path(CASE_ROOT).mkdir(parents=True, exist_ok=True)
+
+    # Start startup check in background
+    # We use a thread to not block the server startup
+    # We check if we are in the reloader or not to avoid running twice if possible
+    # but re-running is safe.
+    threading.Thread(target=run_startup_check, daemon=True).start()
 
     app.run(host="0.0.0.0", port=5000, debug=True)
 
