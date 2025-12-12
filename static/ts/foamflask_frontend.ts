@@ -150,6 +150,23 @@ const CACHE_DURATION: number = 1000; // 1 second cache
 // Performance optimization
 const outputBuffer: { message: string; type: string }[] = [];
 let outputFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let saveLogTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Save log to local storage (Debounced)
+const saveLogToStorage = (): void => {
+  const container = document.getElementById("output");
+  if (!container) return;
+  try {
+    localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+  } catch (e) {
+    console.warn("Failed to save console log to local storage (likely quota exceeded).");
+  }
+};
+
+const saveLogDebounced = (): void => {
+  if (saveLogTimer) clearTimeout(saveLogTimer);
+  saveLogTimer = setTimeout(saveLogToStorage, 2000);
+};
 
 // Custom color palette
 const plotlyColors = {
@@ -578,13 +595,8 @@ const flushOutputBuffer = (): void => {
   container.scrollTop = container.scrollHeight;
   outputBuffer.length = 0;
 
-  // Save to LocalStorage
-  try {
-    localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
-  } catch (e) {
-    console.warn("Failed to save console log to local storage (likely quota exceeded).");
-  }
-
+  // Save to LocalStorage (Debounced)
+  saveLogDebounced();
 };
 
 // Set case directory manually
@@ -727,6 +739,7 @@ const runCommand = async (cmd: string): Promise<void> => {
     if (outputDiv) {
       outputDiv.innerHTML = "";
       localStorage.removeItem(CONSOLE_LOG_KEY);
+      if (saveLogTimer) clearTimeout(saveLogTimer);
     }
     
     outputBuffer.length = 0;
@@ -1418,6 +1431,7 @@ const runFoamToVTK = async (): Promise<void> => {
   if (outputDiv) {
     outputDiv.innerHTML = "";
     localStorage.removeItem(CONSOLE_LOG_KEY);
+    if (saveLogTimer) clearTimeout(saveLogTimer);
   }
   outputBuffer.length = 0;
   showNotification("Running <strong>foamToVTK</strong>", "info");
@@ -2218,6 +2232,12 @@ window.addEventListener("beforeunload", () => {
   requestCache.clear();
 
   flushOutputBuffer();
+
+  // Force save log if pending
+  if (saveLogTimer) {
+    clearTimeout(saveLogTimer);
+    saveLogToStorage();
+  }
 });
 
 // Make functions globally available for HTML onclick handlers
