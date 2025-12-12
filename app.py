@@ -1319,7 +1319,9 @@ def main() -> None:
 
     Path(CASE_ROOT).mkdir(parents=True, exist_ok=True)
 
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Security: Debug mode disabled by default for production safety
+    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode)
 
 
 if __name__ == "__main__":
