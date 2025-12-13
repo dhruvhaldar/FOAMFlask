@@ -50,6 +50,24 @@ const CACHE_DURATION = 1000; // 1 second cache
 // Performance optimization
 const outputBuffer = [];
 let outputFlushTimer = null;
+let saveLogTimer = null;
+// Save log to local storage (Debounced)
+const saveLogToStorage = () => {
+    const container = document.getElementById("output");
+    if (!container)
+        return;
+    try {
+        localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+    }
+    catch (e) {
+        console.warn("Failed to save console log to local storage (likely quota exceeded).");
+    }
+};
+const saveLogDebounced = () => {
+    if (saveLogTimer)
+        clearTimeout(saveLogTimer);
+    saveLogTimer = setTimeout(saveLogToStorage, 2000);
+};
 // Custom color palette
 const plotlyColors = {
     blue: "#1f77b4",
@@ -442,13 +460,8 @@ const flushOutputBuffer = () => {
     container.appendChild(fragment);
     container.scrollTop = container.scrollHeight;
     outputBuffer.length = 0;
-    // Save to LocalStorage
-    try {
-        localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
-    }
-    catch (e) {
-        console.warn("Failed to save console log to local storage (likely quota exceeded).");
-    }
+    // Save to LocalStorage (Debounced)
+    saveLogDebounced();
 };
 // Set case directory manually
 const setCase = async () => {
@@ -567,6 +580,8 @@ const runCommand = async (cmd) => {
         if (outputDiv) {
             outputDiv.innerHTML = "";
             localStorage.removeItem(CONSOLE_LOG_KEY);
+            if (saveLogTimer)
+                clearTimeout(saveLogTimer);
         }
         outputBuffer.length = 0;
         showNotification(`Running ${cmd}...`, "info");
@@ -1166,6 +1181,8 @@ const runFoamToVTK = async () => {
     if (outputDiv) {
         outputDiv.innerHTML = "";
         localStorage.removeItem(CONSOLE_LOG_KEY);
+        if (saveLogTimer)
+            clearTimeout(saveLogTimer);
     }
     outputBuffer.length = 0;
     showNotification("Running <strong>foamToVTK</strong>", "info");
@@ -1838,6 +1855,11 @@ window.addEventListener("beforeunload", () => {
     abortControllers.clear();
     requestCache.clear();
     flushOutputBuffer();
+    // Force save log if pending
+    if (saveLogTimer) {
+        clearTimeout(saveLogTimer);
+        saveLogToStorage();
+    }
 });
 // Make functions globally available for HTML onclick handlers
 // The error Uncaught ReferenceError: showNotification is not defined happens because foamflask_frontend.js is loaded as a JavaScript module. In modules, functions are not automatically global, so inline HTML event handlers (like onclick="...") cannot see them unless they are explicitly attached to the window object
