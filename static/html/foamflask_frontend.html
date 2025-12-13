@@ -337,12 +337,16 @@
       <h2 class="text-2xl font-bold">Meshing Configuration</h2>
     </div>
 
+    <div class="mb-6 text-gray-600 text-sm">
+      <p>Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured background mesh with blockMesh, then refines and snaps it to complex geometry (like STL files) using snappyHexMesh, a common workflow for detailed, automated meshing, especially for boundary layers, by starting simple and adding complexity.</p>
+    </div>
+
     <div class="flex flex-col gap-6">
 
         <!-- BlockMesh Config -->
         <div class="border border-gray-200 rounded-lg p-4 shadow-sm bg-gray-50">
             <h3 class="text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center cursor-pointer" onclick="toggleSection('blockMeshSection')">
-                <span>Background Mesh (blockMesh)</span>
+                <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Foundation</span></span>
                 <span id="blockMeshSectionToggle" class="text-sm">▼</span>
             </h3>
             <div id="blockMeshSection" class="block space-y-3">
@@ -379,7 +383,7 @@
 
         <!-- SnappyHexMesh Config -->
         <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
-            <h3 class="text-lg font-semibold mb-3 border-b pb-2">SnappyHexMesh</h3>
+            <h3 class="text-lg font-semibold mb-3 border-b pb-2">SnappyHexMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Refinement</span></h3>
 
             <div class="flex flex-col lg:flex-row gap-6">
 
