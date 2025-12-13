@@ -25,12 +25,12 @@ def test_get_time_directories(tmp_path):
 
 def test_parse_scalar_field_uniform_and_nonuniform(tmp_path):
     uniform_file = tmp_path / "uniform_field"
-    uniform_file.write_text("internalField uniform 10;")
+    uniform_file.write_text("class volScalarField;\ninternalField uniform 10;")
 
     nonuniform_file = tmp_path / "nonuniform_field"
     
     nonuniform_file.write_text(
-    "internalField nonuniform List<double> (\n1\n2\n3\n4\n5\n);")
+    "class volScalarField;\ninternalField nonuniform List<double> (\n1\n2\n3\n4\n5\n);")
 
     parser = OpenFOAMFieldParser(tmp_path)
     val_uniform = parser.parse_scalar_field(uniform_file)
@@ -43,12 +43,12 @@ def test_parse_scalar_field_uniform_and_nonuniform(tmp_path):
 def test_parse_vector_field_uniform_and_nonuniform(tmp_path):
     # Uniform vector field
     uniform_file = tmp_path / "uniform_vector"
-    uniform_file.write_text("internalField uniform (1 2 3);")
+    uniform_file.write_text("class volVectorField;\ninternalField uniform (1 2 3);")
 
     # Nonuniform vector field
     nonuniform_file = tmp_path / "nonuniform_vector"
     nonuniform_file.write_text(
-        "internalField nonuniform List<vector> (\n"
+        "class volVectorField;\ninternalField nonuniform List<vector> (\n"
         "(1 2 3)\n"
         "(4 5 6)\n"
         "(7 8 9)\n"
@@ -81,11 +81,11 @@ def test_get_latest_time_data(tmp_path):
     # Create file "p" inside latest time dir
     p_file = tmp_path / "1" / "p"
     p_file.parent.mkdir(parents=True, exist_ok=True)
-    p_file.write_text("internalField uniform 5;")
+    p_file.write_text("class volScalarField;\ninternalField uniform 5;")
 
     # Create velocity field U
     u_file = tmp_path / "1" / "U"
-    u_file.write_text("internalField uniform (3 4 0);")
+    u_file.write_text("class volVectorField;\ninternalField uniform (3 4 0);")
 
     parser = OpenFOAMFieldParser(tmp_path)
     latest_data = parser.get_latest_time_data()
@@ -107,7 +107,7 @@ def test_get_all_time_series_data(tmp_path):
     for idx, t in enumerate(["0.1", "0.2", "0.3"]):
         f = tmp_path / t / "p"
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(f"internalField uniform {idx + 1};")
+        f.write_text(f"class volScalarField;\ninternalField uniform {idx + 1};")
 
     parser = OpenFOAMFieldParser(tmp_path)
     data = parser.get_all_time_series_data()
