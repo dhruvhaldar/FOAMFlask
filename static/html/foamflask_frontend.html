@@ -1,3 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FOAMFlask</title>
+
+  <!-- Resource hints for better performance -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.plot.ly">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+
+  <style>
+    :root {
+      --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    }
+    body {
+      font-family: var(--font-sans);
+    }
+  </style>
+  <link rel="dns-prefetch" href="https://cdn.plot.ly">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            clifford: '#da373d',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Performance optimizations for plots -->
+  <style>
+    /* Optimize plot containers for smooth scrolling */
+    #plotsContainer, #aeroContainer {
+      contain: layout style paint;
+      will-change: auto;
+      content-visibility: auto;
+    }
+
+    #pressure-plot, #velocity-plot, #turbulence-plot, #residuals-plot,
+    #cp-plot, #velocity-profile-plot {
+      contain: layout style paint;
+      /* transform: translateZ(0);
+      backface-visibility: hidden; */
+      content-visibility: auto;
+    }
+
+    /* Reduce repaints during scroll */
+    .js-plotly-plot {
+      will-change: auto;
+    }
+
+    /* Optimize output container */
+    #output {
+      contain: strict;
+      content-visibility: auto;
+    }
+
+    /* Reduce layout thrashing */
+    .grid {
+      contain: layout style;
+    }
+
+  </style>
+
+  <style>
+    /* Modebar container styles */
+    .modebar-container {
+      position: absolute;
+      top: 355px !important;
+      right: 550px !important;
+      z-index: 1001;
+    }
+
+    /* Modebar styles */
+    .modebar {
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      transform: scale(1.5);
+      transform-origin: bottom left;
+      pointer-events: none;
+      border: none;
+      position: relative;
+    }
+
+    /* Show modebar on plot hover */
+    .plot-container:hover .modebar,
+    .js-plotly-plot:hover .modebar,
+    .plotly-graph-div:hover .modebar,
+    .plot-container:hover .modebar-container .modebar,
+    .js-plotly-plot:hover .modebar-container .modebar,
+    .plotly-graph-div:hover .modebar-container .modebar {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 1000;
+    }
+
+    /* Notification styles */
+    .notification {
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    /* Page transition */
+    .page {
+      animation: fadeInPage 0.3s ease-in;
+    }
+
+    @keyframes fadeInPage {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- Notification Container -->
+  <div id="notificationContainer" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+  </div>
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-10">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
+        </div>
+        <div class="flex space-x-1">
+          <button id="nav-setup" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
+            Setup
+          </button>
+          <button id="nav-geometry" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Geometry
+          </button>
+          <button id="nav-meshing" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Meshing
+          </button>
+          <button id="nav-visualizer" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Visualizer
+          </button>
+          <button id="nav-run" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Run/Log
+          </button>
+          <button id="nav-plots" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Plots
+          </button>
+          <button id="nav-post" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Post
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="px-4 py-2 sm:px-6">
+
+  <!-- Setup Page -->
+  <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+
+    <!-- Active Case Selection -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h2 class="text-xl font-bold mb-2 text-blue-900">Active Case</h2>
+        <p class="text-sm text-blue-700 mb-3">Select the case you want to work on. This selection applies to Geometry, Meshing, and Run tabs.</p>
+        <div class="flex flex-col sm:flex-row gap-2 items-center">
+            <select id="caseSelect" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium" onchange="selectCase(this.value)">
+                <option value="">-- Select a Case --</option>
+            </select>
+            <button onclick="refreshCaseList()" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded transition-colors" title="Refresh List">
+                ↻ Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Case Management Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Create New Case -->
+        <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+             <h3 class="text-lg font-bold mb-3 text-gray-800">Create New Case</h3>
+             <p class="text-sm text-gray-500 mb-3">Create a blank case structure (0, constant, system).</p>
+             <div class="flex flex-col gap-3">
+                 <input type="text" id="newCaseName" placeholder="Case Name (e.g. my_case)" class="border border-gray-300 rounded px-3 py-2">
+                 <button onclick="createNewCase()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium transition-colors">
+                    Create Case
+                 </button>
+             </div>
+        </div>
+
+        <!-- Import Tutorial -->
+        <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+             <h3 class="text-lg font-bold mb-3 text-gray-800">Import Tutorial</h3>
+             <p class="text-sm text-gray-500 mb-3">Copy an OpenFOAM tutorial to your workspace.</p>
+             <div class="flex flex-col gap-3">
+                 <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    {{ options|safe }}
+                 </select>
+                 <button id="loadTutorialBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded font-medium transition-colors">
+                    Import Tutorial
+                 </button>
+             </div>
+        </div>
+    </div>
+
+    <!-- Advanced Configuration (Collapsible) -->
+    <details class="border-t pt-4">
+        <summary class="cursor-pointer text-gray-500 font-medium hover:text-gray-700">
+            Advanced Configuration (Case Root, Docker)
+        </summary>
+        <div class="mt-4 space-y-4 pl-2">
+            <!-- Case Directory -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+              <label class="w-32 font-medium text-gray-700">Case Root:</label>
+              <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" />
+              <button type="button" onclick="setCase()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                Set Root
+              </button>
+            </div>
+
+            <!-- Docker Config -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <label class="w-32 font-medium text-gray-700">Docker Image:</label>
+                <input type="text" id="dockerImage" name="dockerImage" class="border border-gray-300 rounded px-3 py-2 flex-1" />
+                <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version" class="border border-gray-300 rounded px-3 py-2 w-24" />
+                <button type="button" onclick="setDockerConfig(
+                  document.getElementById('dockerImage').value,
+                  document.getElementById('openfoamVersion').value
+                )" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                  Update
+                </button>
+            </div>
+        </div>
+    </details>
+
+  </div>
+
+  <!-- Geometry Page -->
+  <div id="page-geometry" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Geometry Management</h2>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Left Sidebar: Controls -->
+      <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+
+        <!-- File Upload -->
+        <div class="flex flex-col gap-2">
+           <label class="text-sm font-medium">Upload STL File</label>
+           <input type="file" id="geometryUpload" accept=".stl" class="block w-full text-sm text-gray-500
+             file:mr-4 file:py-2 file:px-4
+             file:rounded-full file:border-0
+             file:text-sm file:font-semibold
+             file:bg-blue-50 file:text-blue-700
+             hover:file:bg-blue-100
+           "/>
+           <button onclick="uploadGeometry()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
+             Upload
+           </button>
+        </div>
+
+        <!-- Geometry List -->
+        <div class="flex flex-col gap-2 mt-4">
+          <label class="text-sm font-medium">Available Geometries</label>
+          <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full" size="5">
+             <!-- Populated by JS -->
+          </select>
+          <div class="flex gap-2">
+             <button onclick="loadGeometryView()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex-1 text-sm">
+               View
+             </button>
+             <button onclick="deleteGeometry()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex-1 text-sm">
+               Delete
+             </button>
+          </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div id="geometryInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+          <h3 class="font-semibold text-blue-900 mb-2">Geometry Info</h3>
+          <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1"></div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Viewer -->
+      <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 500px;">
+         <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
+         <div id="geometryPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none bg-gray-50">
+            <p>Select a geometry and click View</p>
+         </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Meshing Page -->
   <div id="page-meshing" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
     <div class="flex justify-between items-center mb-4">
@@ -183,3 +516,585 @@
        </div>
     </div>
   </div>
+
+  <!-- Run Page -->
+  <div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+
+    <!-- Run Commands Section -->
+    <div class="my-4">
+      <h3 class="text-xl font-semibold mb-2">Run OpenFOAM Commands</h3>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button onclick="runCommand('./Allrun')" class="bg-green-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          Allrun
+        </button>
+        <button onclick="runCommand('./Allclean')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          Allclean
+        </button>
+        <button onclick="runCommand('blockMesh')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          blockMesh
+        </button>
+        <button onclick="runCommand('simpleFoam')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          simpleFoam
+        </button>
+        <button onclick="runCommand('pimpleFoam')" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          pimpleFoam
+        </button>
+      </div>
+    </div>
+
+    <!-- Console Log -->
+    <div class="flex flex-col">
+      <h2 class="text-xl font-semibold mb-2">Console Log
+        <sup class="relative group">
+        <span class="text-blue-500 cursor-help">ℹ️</span>
+        <span class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+        Output from OpenFOAM is viewed here
+        </span>
+        </sup>
+        </h2>
+      <div id="output" class="bg-gray-100 border border-gray-300 rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono"></div>
+    </div>
+
+  </div>
+
+  <!-- Visualizer Page -->
+<div id="page-visualizer" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+  <div class="flex flex-col gap-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Result Visualization</h2>
+      <div class="flex gap-2">
+
+      </div>
+    </div>
+
+    <!-- Main Two-Column Layout -->
+    <div class="flex flex-col lg:flex-row gap-6">
+
+      <!-- Left Sidebar: Controls -->
+      <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+
+        <!-- Mesh Selection -->
+        <div class="flex flex-col gap-2">
+           <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
+
+           <!-- Buttons are Hidden when Mesh files have been found/loaded-->
+           <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
+            <button onclick="runFoamToVTK()" class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
+              Generate VTK files (foamToVTK)
+            </button>
+            <button onclick="refreshMeshList()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
+              Refresh List
+            </button>
+          </div>
+
+          <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+            <option value="">-- Select a mesh file --</option>
+          </select>
+          <button onclick="loadMeshVisualization()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full">
+            Load Mesh
+          </button>
+        </div>
+
+        <!-- Mesh Controls -->
+        <div id="meshControls" class="hidden flex flex-col gap-3 bg-white p-3 rounded border border-gray-300">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="showEdges" checked class="rounded">
+            <span class="text-sm">Show Edges</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-sm">Color:</span>
+            <select id="meshColor" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1">
+              <option value="lightblue">Light Blue</option>
+              <option value="white">White</option>
+              <option value="gray">Gray</option>
+              <option value="red">Red</option>
+              <option value="green">Green</option>
+              <option value="blue">Blue</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-sm">View:</span>
+            <select id="cameraPosition" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1">
+              <option value="">Auto</option>
+              <option value="xy">XY Plane</option>
+              <option value="xz">XZ Plane</option>
+              <option value="yz">YZ Plane</option>
+              <option value="iso">Isometric</option>
+            </select>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="updateMeshView()" id="updateViewBtn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm w-1/2">
+              Update View
+            </button>
+            <button onclick="toggleInteractiveMode()" id="toggleInteractiveBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm w-1/2">
+              Interactive Mode
+            </button>
+          </div>
+        </div>
+
+        <!-- Mesh Info -->
+        <div id="meshInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3">
+          <h3 class="font-semibold text-blue-900 mb-2">Mesh Information</h3>
+          <div id="meshInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Geometry Viewer -->
+      <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 400px;">
+        <!-- Camera Controls -->
+        <div id="cameraControls" class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+          <button onclick="setCameraView('xy')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Top View (XY)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+          <button onclick="setCameraView('xz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Front View (XZ)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+          </button>
+          <button onclick="setCameraView('yz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Side View (YZ)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+          <button onclick="setCameraView('iso')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Isometric View">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button onclick="resetCamera()" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Reset Camera">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Viewer -->
+        <div id="meshPlaceholder" class="flex flex-col items-center justify-center h-full p-8 text-center">
+          <div class="text-gray-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">No Mesh Loaded</h3>
+          <p class="text-gray-500">Select a mesh file and click "Load Mesh" to visualize</p>
+        </div>
+        <img id="meshImage" class="hidden w-full h-auto" alt="Mesh Visualization">
+        <iframe id="meshInteractive" class="hidden w-full border-0" style="height: 800px;" title="Interactive Mesh Viewer"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Plots Page -->
+  <div id="page-plots" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Realtime Plots</h2>
+      <div class="flex gap-2">
+        <button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
+          Show Aero Plots
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Plots Container -->
+    <div id="plotsContainer" class="w-full bg-white relative">
+      <div id="plotsLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 z-50 hidden transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mb-3"></div>
+        <span class="text-lg font-semibold text-gray-700">Loading Plot Data...</span>
+      </div>
+
+      <div class="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2 mb-2 w-full auto-rows-min">
+
+        <!-- Pressure Plot -->
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+          <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+
+          <button
+            onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Pressure Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+
+          <button
+            onclick="downloadPlotAsPNG('pressure-plot', 'pressure_plot.png')"
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
+        </div>
+
+        <!-- Velocity Plot -->
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+          <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+
+          <button
+            onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Velocity Data as separate CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+
+          <button
+            onclick="downloadPlotAsPNG('velocity-plot', 'velocity_plot.png')"
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
+        </div>
+
+        <!-- Turbulence Plot -->
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+          <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+
+          <button
+            onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Turbulence Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+
+          <button
+            onclick="downloadPlotAsPNG('turbulence-plot', 'turbulence_plot.png')"
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
+        </div>
+
+        <!-- Residuals Plot -->
+        <div class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+          <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+
+          <button
+            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Residuals Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+
+          <button
+            onclick="downloadPlotAsPNG('residuals-plot', 'residuals_plot.png')"
+            class="absolute bottom-3 right-20 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Plot as PNG"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            PNG
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Aerodynamic Plots Container (optional) -->
+    <div id="aeroContainer" class="hidden mt-4 w-full">
+      <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div class="w-full overflow-hidden">
+          <div id="cp-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="velocity-profile-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Processing Page -->
+  <div id="page-post" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4">
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
+    </div>
+
+    <!-- Contour Visualization Section -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4">Contour Visualization</h3>
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Left Sidebar: Controls -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+
+          <!-- VTK File Selection -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Select VTK File</label>
+            <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+              <option value="">-- Select a VTK file --</option>
+            </select>
+          </div>
+
+          <!-- File Browser (Optional) -->
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')"
+              class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none"
+            >
+              <span>Load custom VTK file</span>
+              <svg class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div class="p-4 bg-white hidden">
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-col sm:flex-row gap-2 w-full">
+                  <div class="flex-1 min-w-0">
+                    <input
+                      type="file"
+                      id="vtkFileBrowser"
+                      accept=".vtk,.vtp,.vtu,.vtm,.pvtu"
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate"
+                    >
+                  </div>
+                  <button
+                    onclick="loadCustomVTKFile()"
+                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap w-full sm:w-auto">
+                    Load File
+                  </button>
+                </div>
+                <small class="text-gray-500 text-xs">Supported: .vtk, .vtp, .vtu, .vtm, .pvtu</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Load Selected VTK Button -->
+          <button
+            onclick="loadContourVTK()"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full font-medium">
+            Load for Contour
+          </button>
+
+          <!-- VTK File Info -->
+          <div id="vtkFileInfo" class="hidden bg-green-50 border border-green-200 rounded p-3">
+            <h3 class="font-semibold text-green-900 mb-2">VTK File Information</h3>
+            <div id="vtkFileInfoContent" class="text-sm text-green-800 space-y-1"></div>
+          </div>
+
+          <!-- Scalar Field Selection -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Scalar Field</label>
+            <select id="scalarField" class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-blue-500 [&_.cell-data-option]:text-green-500">
+              <style>
+                option.point-data-option { color: #3b82f6; }
+                option.cell-data-option { color: #10b981; }
+                #scalarField option { padding: 4px 8px; }
+              </style>
+            </select>
+          </div>
+
+          <!-- Color Map Selection -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Color Map</label>
+            <select id="colorMap" class="border border-gray-300 rounded px-3 py-2">
+              <option value="viridis">Viridis</option>
+              <option value="plasma">Plasma</option>
+              <option value="inferno">Inferno</option>
+              <option value="magma">Magma</option>
+              <option value="cividis">Cividis</option>
+            </select>
+          </div>
+
+          <!-- Range Selection -->
+          <div class="mt-2 w-full">
+            <div class="grid grid-cols-2 gap-2 w-full">
+              <div class="w-full">
+                <input type="number" id="rangeMin" placeholder="Min" class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34">
+              </div>
+              <div class="w-full">
+                <input type="number" id="rangeMax" placeholder="Max" class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177">
+              </div>
+            </div>
+            <button id="RangeBtn" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors duration-200 w-full">
+              Set Range
+            </button>
+          </div>
+
+          <!-- Number of Isosurfaces -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Number of Isosurfaces <span class="text-gray-500">(Optional)</span></label>
+            <input
+              type="number"
+              id="numIsosurfaces"
+              placeholder="Leave empty for default (10)"
+              min="1"
+              max="40"
+              class="border border-gray-300 rounded px-3 py-2"
+            >
+          </div>
+
+          <!-- Generate Contours Button -->
+          <button id="generateContoursBtn" onclick="generateContours()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
+            Generate Contours
+          </button>
+
+          <!-- Contour Info -->
+          <div id="contourInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+            <h3 class="font-semibold text-blue-900 mb-2">Contour Information</h3>
+            <div id="contourInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Contour Viewer -->
+        <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 600px;">
+          <!-- Camera Controls -->
+          <div id="contourCameraControls" class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+            <button onclick="setCameraView('xy')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Top View (XY)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button onclick="setCameraView('xz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Front View (XZ)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+            </button>
+            <button onclick="setCameraView('yz')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Side View (YZ)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button onclick="setCameraView('iso')" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Isometric View">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button onclick="resetCamera()" class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm" title="Reset Camera">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Viewer -->
+          <div id="contourPlaceholder" class="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div class="text-gray-500 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-700 mb-2">No Contour Loaded</h3>
+            <p class="text-gray-500">Click "Generate Contours" to visualize the data</p>
+          </div>
+          <div id="contourViewer" class="hidden w-full h-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="post-processing-content" class="bg-gray-50 p-4 rounded-lg">
+      <!-- Other post-processing content will be loaded here by refreshPostList() -->
+    </div>
+  </div>
+
+  </div>
+  <!-- End Main Content Area -->
+
+  <!-- Plotly.js - Load synchronously to ensure it's available when needed -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script>
+  // Initialize after both DOM and Plotly are loaded
+  document.addEventListener("DOMContentLoaded", function() {
+    // Check if Plotly is loaded
+    if (typeof Plotly === 'undefined') {
+      console.error('Plotly.js not loaded!');
+      return;
+    }
+
+    // Initialize modebar styling
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.modebar').forEach(bar => {
+        bar.style.backgroundColor = 'transparent';
+        bar.style.boxShadow = 'none';
+      });
+    });
+
+    // Observe the document for Plotly plot creation
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Initialize plots if we're on the plots page
+    if (document.getElementById('page-plots') && !document.getElementById('page-plots').classList.contains('hidden')) {
+      if (typeof startPlotUpdates === 'function') {
+        startPlotUpdates();
+      }
+    }
+  });
+  </script>
+
+
+<!-- JS loading (compiled from TypeScript) -->
+<!-- Load isosurface module first (required by foamflask_frontend.js) -->
+<script type="module" src="{{ url_for('static', filename='js/frontend/isosurface.js') }}"></script>
+
+<!-- Main frontend script -->
+<script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
+
+
+<footer class="py-4 bg-white border-t border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 space-y-2 md:space-y-0">
+      <div class="text-center md:text-left">
+        <div>FOAMFlask &copy; 2025</div>
+        <div class="text-xs mt-1">
+          Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html"
+          target="_blank" rel="noopener noreferrer"
+          class="text-blue-600 hover:text-blue-800">GNU GPLv3</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+  <span>Powered by:</span>
+
+<a href="https://pyvista.org/" target="_blank" rel="noopener noreferrer"
+   class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+  <img src="{{ url_for('static', filename='icons/PyVista-logo.avif') }}"
+       alt="PyVista"
+       class="h-8 w-auto">
+</a>
+  <span class="text-gray-400">|</span>
+
+  <a href="https://plotly.com/" target="_blank" rel="noopener noreferrer"
+     class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+   <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}"
+     alt="Plotly"
+     class="h-8 w-auto">
+  </a>
+</div>
+
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
