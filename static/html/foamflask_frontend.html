@@ -167,11 +167,17 @@
           <button id="nav-setup" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
             Setup
           </button>
+          <button id="nav-geometry" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Geometry
+          </button>
+          <button id="nav-meshing" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Meshing
+          </button>
+          <button id="nav-visualizer" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Visualizer
+          </button>
           <button id="nav-run" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
             Run/Log
-          </button>
-          <button id="nav-mesh" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
-            Mesh
           </button>
           <button id="nav-plots" class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
             Plots
@@ -231,6 +237,155 @@
 
   </div>
 
+  <!-- Geometry Page -->
+  <div id="page-geometry" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Geometry Management</h2>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Left Sidebar: Controls -->
+      <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+
+        <!-- File Upload -->
+        <div class="flex flex-col gap-2">
+           <label class="text-sm font-medium">Upload STL File</label>
+           <input type="file" id="geometryUpload" accept=".stl" class="block w-full text-sm text-gray-500
+             file:mr-4 file:py-2 file:px-4
+             file:rounded-full file:border-0
+             file:text-sm file:font-semibold
+             file:bg-blue-50 file:text-blue-700
+             hover:file:bg-blue-100
+           "/>
+           <button onclick="uploadGeometry()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
+             Upload
+           </button>
+        </div>
+
+        <!-- Geometry List -->
+        <div class="flex flex-col gap-2 mt-4">
+          <label class="text-sm font-medium">Available Geometries</label>
+          <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full" size="5">
+             <!-- Populated by JS -->
+          </select>
+          <div class="flex gap-2">
+             <button onclick="loadGeometryView()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex-1 text-sm">
+               View
+             </button>
+             <button onclick="deleteGeometry()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex-1 text-sm">
+               Delete
+             </button>
+          </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div id="geometryInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+          <h3 class="font-semibold text-blue-900 mb-2">Geometry Info</h3>
+          <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1"></div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Viewer -->
+      <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative" style="min-height: 500px;">
+         <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
+         <div id="geometryPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none bg-gray-50">
+            <p>Select a geometry and click View</p>
+         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meshing Page -->
+  <div id="page-meshing" class="page hidden max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Meshing Configuration</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- BlockMesh Config -->
+      <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+        <h3 class="text-xl font-semibold mb-3 border-b pb-2">Background Mesh (blockMesh)</h3>
+
+        <div class="space-y-3">
+          <div>
+             <label class="block text-sm font-medium text-gray-700">Bounds (Min / Max)</label>
+             <div class="grid grid-cols-2 gap-2">
+               <input type="text" id="bmMin" placeholder="-1 -1 -1" class="border rounded px-2 py-1 text-sm">
+               <input type="text" id="bmMax" placeholder="1 1 1" class="border rounded px-2 py-1 text-sm">
+             </div>
+             <button onclick="fillBoundsFromGeometry()" class="text-xs text-blue-600 hover:underline mt-1">
+               Auto-fill from selected Geometry
+             </button>
+          </div>
+
+          <div>
+             <label class="block text-sm font-medium text-gray-700">Cells (x y z)</label>
+             <input type="text" id="bmCells" value="20 20 20" class="border rounded px-2 py-1 text-sm w-full">
+          </div>
+
+          <div>
+             <label class="block text-sm font-medium text-gray-700">Grading (x y z)</label>
+             <input type="text" id="bmGrading" value="1 1 1" class="border rounded px-2 py-1 text-sm w-full">
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button onclick="generateBlockMeshDict()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm flex-1">
+              Generate Dict
+            </button>
+            <button onclick="runMeshingCommand('blockMesh')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex-1">
+              Run blockMesh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SnappyHexMesh Config -->
+      <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+        <h3 class="text-xl font-semibold mb-3 border-b pb-2">SnappyHexMesh</h3>
+
+        <div class="space-y-3">
+          <div>
+             <label class="block text-sm font-medium text-gray-700">Target Geometry</label>
+             <select id="shmStlSelect" class="border rounded px-2 py-1 text-sm w-full">
+                <!-- Populated by JS -->
+             </select>
+          </div>
+
+          <div>
+             <label class="block text-sm font-medium text-gray-700">Refinement Level</label>
+             <input type="number" id="shmLevel" value="2" min="0" max="10" class="border rounded px-2 py-1 text-sm w-full">
+          </div>
+
+           <div>
+             <label class="block text-sm font-medium text-gray-700">Location In Mesh (x y z)</label>
+             <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full">
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button onclick="generateSnappyHexMeshDict()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm flex-1">
+              Generate Dict
+            </button>
+            <button onclick="runMeshingCommand('snappyHexMesh')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex-1">
+              Run snappyHexMesh
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Meshing Output -->
+    <div class="mt-6">
+       <h3 class="text-sm font-semibold mb-1">Meshing Output</h3>
+       <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto">
+         Ready...
+       </div>
+    </div>
+  </div>
+
+
   <!-- Run Page -->
   <div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
 
@@ -271,12 +426,12 @@
 
   </div>
 
-  <!-- Mesh Page -->
-<div id="page-mesh" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+  <!-- Visualizer Page -->
+<div id="page-visualizer" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
   <div class="flex flex-col gap-4">
     <!-- Header -->
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">Mesh Visualization</h2>
+      <h2 class="text-2xl font-bold">Result Visualization</h2>
       <div class="flex gap-2">
         
       </div>

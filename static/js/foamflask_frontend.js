@@ -31,6 +31,8 @@ let currentPage = "setup";
 let currentMeshPath = null;
 let availableMeshes = [];
 let isInteractiveMode = false;
+// Geometry State
+let selectedGeometry = null;
 // Notification management
 let notificationId = 0;
 let lastErrorNotificationTime = 0;
@@ -203,7 +205,7 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
 // Page Switching
 const switchPage = (pageName) => {
     console.log(`switchPage called with: ${pageName}`);
-    const pages = ["setup", "run", "mesh", "plots", "post"];
+    const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
     pages.forEach((page) => {
         const pageElement = document.getElementById(`page-${page}`);
         const navButton = document.getElementById(`nav-${page}`);
@@ -223,6 +225,28 @@ const switchPage = (pageName) => {
         selectedNav.classList.add("bg-blue-500", "text-white");
     }
     switch (pageName) {
+        case "geometry":
+            refreshGeometryList();
+            break;
+        case "meshing":
+            refreshGeometryList().then(() => {
+                // Sync geometry list to SHM dropdown
+                const shmSelect = document.getElementById("shmStlSelect");
+                const geoSelect = document.getElementById("geometrySelect");
+                if (shmSelect && geoSelect) {
+                    // Copy options
+                    shmSelect.innerHTML = geoSelect.innerHTML;
+                }
+            });
+            break;
+        case "visualizer": // Was "mesh"
+            const visualizerContainer = document.getElementById("page-visualizer");
+            if (visualizerContainer && !visualizerContainer.hasAttribute("data-initialized")) {
+                visualizerContainer.setAttribute("data-initialized", "true");
+                console.log("Visualizer page initialized");
+                refreshMeshList();
+            }
+            break;
         case "plots":
             const plotsContainer = document.getElementById("plotsContainer");
             if (plotsContainer) {
@@ -243,14 +267,6 @@ const switchPage = (pageName) => {
             if (aeroBtn)
                 aeroBtn.classList.remove("hidden");
             break;
-        case "mesh":
-            const meshContainer = document.getElementById("page-mesh");
-            if (meshContainer && !meshContainer.hasAttribute("data-initialized")) {
-                meshContainer.setAttribute("data-initialized", "true");
-                console.log("Mesh page initialized");
-                refreshMeshList();
-            }
-            break;
         case "post":
             const postContainer = document.getElementById("page-post");
             if (postContainer && !postContainer.hasAttribute("data-initialized")) {
@@ -260,7 +276,7 @@ const switchPage = (pageName) => {
             }
             break;
         default:
-            console.log(`Unknown page: ${pageName}`);
+            console.log(`Unknown page or setup/run: ${pageName}`);
             break;
     }
 };
@@ -610,6 +626,306 @@ const runCommand = async (cmd) => {
             ? "Failed to generate VTK files. Make sure the simulation has completed successfully."
             : `Error running ${cmd}`;
         showNotification(errorMsg, "error");
+    }
+};
+// --- Geometry & Meshing Functions ---
+const refreshGeometryList = async () => {
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!selectedCase) {
+        // showNotification("Please select a case/tutorial first", "warning");
+        return;
+    }
+    try {
+        const response = await fetch(`/api/geometry/list?caseName=${encodeURIComponent(selectedCase)}`);
+        const data = await response.json();
+        if (data.success && data.files) {
+            const select = document.getElementById("geometrySelect");
+            if (select) {
+                select.innerHTML = "";
+                data.files.forEach((f) => {
+                    const opt = document.createElement("option");
+                    opt.value = f;
+                    opt.textContent = f;
+                    select.appendChild(opt);
+                });
+            }
+        }
+    }
+    catch (e) {
+        console.error("Error refreshing geometry list", e);
+    }
+};
+const uploadGeometry = async () => {
+    const input = document.getElementById("geometryUpload");
+    const file = input?.files?.[0];
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!file || !selectedCase) {
+        showNotification("Please select a file and a case", "warning");
+        return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("caseName", selectedCase);
+    showNotification("Uploading geometry...", "info");
+    try {
+        const response = await fetch("/api/geometry/upload", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification("Upload successful", "success");
+            input.value = ""; // Clear input
+            refreshGeometryList();
+        }
+        else {
+            showNotification(`Upload failed: ${data.message}`, "error");
+        }
+    }
+    catch (e) {
+        console.error("Upload error", e);
+        showNotification("Upload failed", "error");
+    }
+};
+const deleteGeometry = async () => {
+    const select = document.getElementById("geometrySelect");
+    const filename = select?.value;
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!filename || !selectedCase) {
+        showNotification("No geometry selected", "warning");
+        return;
+    }
+    if (!confirm(`Delete ${filename}?`))
+        return;
+    try {
+        const response = await fetch("/api/geometry/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, filename })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification("Deleted successfully", "success");
+            refreshGeometryList();
+            selectedGeometry = null;
+            // Clear viewer if needed
+        }
+        else {
+            showNotification(`Delete failed: ${data.message}`, "error");
+        }
+    }
+    catch (e) {
+        showNotification("Delete error", "error");
+    }
+};
+const loadGeometryView = async () => {
+    const select = document.getElementById("geometrySelect");
+    const filename = select?.value;
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!filename || !selectedCase) {
+        showNotification("No geometry selected", "warning");
+        return;
+    }
+    showNotification("Loading geometry view...", "info");
+    // Load Info
+    try {
+        const infoRes = await fetch("/api/geometry/info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, filename })
+        });
+        const info = await infoRes.json();
+        const infoDiv = document.getElementById("geometryInfoContent");
+        if (infoDiv) {
+            if (info.success) {
+                const boundsStr = info.bounds.map((b) => b.toFixed(3)).join(", ");
+                infoDiv.innerHTML = `
+                   <div><strong>Bounds:</strong> [${boundsStr}]</div>
+                   <div><strong>Points:</strong> ${info.n_points}</div>
+                   <div><strong>Cells:</strong> ${info.n_cells}</div>
+                `;
+                document.getElementById("geometryInfo")?.classList.remove("hidden");
+                selectedGeometry = filename;
+            }
+            else {
+                infoDiv.innerHTML = `<span class="text-red-500">${info.error}</span>`;
+            }
+        }
+    }
+    catch (e) {
+        console.error(e);
+    }
+    // Load View
+    try {
+        const response = await fetch("/api/geometry/view", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, filename })
+        });
+        if (response.ok) {
+            const html = await response.text();
+            const iframe = document.getElementById("geometryInteractive");
+            if (iframe) {
+                iframe.srcdoc = html;
+                document.getElementById("geometryPlaceholder")?.classList.add("hidden");
+            }
+        }
+        else {
+            showNotification("Failed to load view", "error");
+        }
+    }
+    catch (e) {
+        console.error(e);
+        showNotification("Error loading view", "error");
+    }
+};
+const fillBoundsFromGeometry = async () => {
+    // If we have selected geometry info, use it.
+    // We might need to store the last loaded bounds.
+    // For now, re-fetch info of selected geometry from the list.
+    // Since we are in Meshing page, we need to know which geometry is selected in Geometry page or dropdown?
+    // The design has a dropdown for SnappyHexMesh, maybe use that?
+    // Or assume the user just came from Geometry page.
+    // Let's use the selected item in the hidden geometrySelect (it's shared/cached list) or just re-fetch.
+    // Better: use the geometry selected in SnappyHexMesh config?
+    const shmSelect = document.getElementById("shmStlSelect");
+    const filename = shmSelect?.value;
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!filename || !selectedCase) {
+        showNotification("No geometry selected in SnappyHexMesh config", "warning");
+        return;
+    }
+    try {
+        const response = await fetch("/api/geometry/info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, filename })
+        });
+        const info = await response.json();
+        if (info.success && info.bounds) {
+            // bounds: [xmin, xmax, ymin, ymax, zmin, zmax]
+            const b = info.bounds;
+            // Add padding? e.g. 10%
+            const padding = 0.1;
+            const dx = b[1] - b[0];
+            const dy = b[3] - b[2];
+            const dz = b[5] - b[4];
+            const minStr = `${(b[0] - dx * padding).toFixed(2)} ${(b[2] - dy * padding).toFixed(2)} ${(b[4] - dz * padding).toFixed(2)}`;
+            const maxStr = `${(b[1] + dx * padding).toFixed(2)} ${(b[3] + dy * padding).toFixed(2)} ${(b[5] + dz * padding).toFixed(2)}`;
+            document.getElementById("bmMin").value = minStr;
+            document.getElementById("bmMax").value = maxStr;
+            showNotification("Bounds auto-filled with padding", "success");
+        }
+    }
+    catch (e) {
+        showNotification("Failed to fetch bounds", "error");
+    }
+};
+const generateBlockMeshDict = async () => {
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!selectedCase)
+        return;
+    const minVal = document.getElementById("bmMin").value.trim().split(/\s+/).map(Number);
+    const maxVal = document.getElementById("bmMax").value.trim().split(/\s+/).map(Number);
+    const cells = document.getElementById("bmCells").value.trim().split(/\s+/).map(Number);
+    const grading = document.getElementById("bmGrading").value.trim().split(/\s+/).map(Number);
+    if (minVal.length !== 3 || maxVal.length !== 3 || cells.length !== 3 || grading.length !== 3) {
+        showNotification("Invalid inputs. Format: 'x y z'", "error");
+        return;
+    }
+    const config = {
+        min_point: minVal,
+        max_point: maxVal,
+        cells: cells,
+        grading: grading
+    };
+    showNotification("Generating blockMeshDict...", "info");
+    try {
+        const response = await fetch("/api/meshing/blockMesh/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, config })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification("blockMeshDict generated", "success");
+            appendToMeshingOutput("Generated blockMeshDict");
+        }
+        else {
+            showNotification(data.message, "error");
+            appendToMeshingOutput(`Error: ${data.message}`);
+        }
+    }
+    catch (e) {
+        showNotification("Error generating dict", "error");
+    }
+};
+const generateSnappyHexMeshDict = async () => {
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    const filename = document.getElementById("shmStlSelect")?.value;
+    if (!selectedCase || !filename) {
+        showNotification("Case or STL not selected", "warning");
+        return;
+    }
+    const level = parseInt(document.getElementById("shmLevel").value);
+    const location = document.getElementById("shmLocation").value.trim().split(/\s+/).map(Number);
+    const config = {
+        stl_filename: filename,
+        refinement_level: level,
+        location_in_mesh: location
+    };
+    showNotification("Generating snappyHexMeshDict...", "info");
+    try {
+        const response = await fetch("/api/meshing/snappyHexMesh/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, config })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification("snappyHexMeshDict generated", "success");
+            appendToMeshingOutput("Generated snappyHexMeshDict");
+        }
+        else {
+            showNotification(data.message, "error");
+            appendToMeshingOutput(`Error: ${data.message}`);
+        }
+    }
+    catch (e) {
+        showNotification("Error generating dict", "error");
+    }
+};
+const runMeshingCommand = async (command) => {
+    const selectedCase = document.getElementById("tutorialSelect")?.value;
+    if (!selectedCase)
+        return;
+    showNotification(`Running ${command}...`, "info");
+    appendToMeshingOutput(`> Running ${command}...`);
+    try {
+        const response = await fetch("/api/meshing/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caseName: selectedCase, command })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification(`${command} finished`, "success");
+            appendToMeshingOutput(data.output || "Done.");
+        }
+        else {
+            showNotification(`${command} failed`, "error");
+            appendToMeshingOutput(`Error: ${data.message}\n${data.output || ""}`);
+        }
+    }
+    catch (e) {
+        showNotification("Execution error", "error");
+    }
+};
+const appendToMeshingOutput = (text) => {
+    const div = document.getElementById("meshingOutput");
+    if (div) {
+        div.innerText += "\n" + text;
+        div.scrollTop = div.scrollHeight;
     }
 };
 // Realtime Plotting Functions
@@ -1109,7 +1425,7 @@ const refreshMeshList = async () => {
     try {
         const tutorial = document.getElementById("tutorialSelect")?.value;
         if (!tutorial) {
-            showNotification("Please select a tutorial first", "error");
+            // showNotification("Please select a tutorial first", "error");
             return;
         }
         const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
@@ -1860,6 +2176,14 @@ window.loadContourVTK = loadContourVTK;
 window.generateContours = generateContoursFn;
 window.downloadPlotAsPNG = downloadPlotAsPNG;
 window.showNotification = showNotification;
+window.uploadGeometry = uploadGeometry;
+window.refreshGeometryList = refreshGeometryList;
+window.deleteGeometry = deleteGeometry;
+window.loadGeometryView = loadGeometryView;
+window.fillBoundsFromGeometry = fillBoundsFromGeometry;
+window.generateBlockMeshDict = generateBlockMeshDict;
+window.generateSnappyHexMeshDict = generateSnappyHexMeshDict;
+window.runMeshingCommand = runMeshingCommand;
 // Attach event listeners for navigation buttons
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, attaching event listeners...');
@@ -1867,7 +2191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const navButtons = [
         { id: 'nav-setup', handler: () => switchPage('setup') },
         { id: 'nav-run', handler: () => switchPage('run') },
-        { id: 'nav-mesh', handler: () => switchPage('mesh') },
+        { id: 'nav-geometry', handler: () => switchPage('geometry') },
+        { id: 'nav-meshing', handler: () => switchPage('meshing') },
+        { id: 'nav-visualizer', handler: () => switchPage('visualizer') },
         { id: 'nav-plots', handler: () => switchPage('plots') },
         { id: 'nav-post', handler: () => switchPage('post') }
     ];

@@ -30,6 +30,10 @@ from backend.mesh.mesher import mesh_visualizer
 from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
 from backend.post.isosurface import IsosurfaceVisualizer, isosurface_visualizer
 from backend.startup import check_docker_permissions
+from backend.case.manager import CaseManager
+from backend.geometry.manager import GeometryManager
+from backend.geometry.visualizer import GeometryVisualizer
+from backend.meshing.runner import MeshingRunner
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -461,6 +465,219 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
     except Exception as e:
         logger.error("Error setting case directory: %s", str(e))
         return jsonify({"output": f"[FOAMFlask] [Error] {str(e)}"}), 400
+
+
+@app.route("/api/case/create", methods=["POST"])
+def api_create_case() -> Union[Response, Tuple[Response, int]]:
+    """
+    Create a new OpenFOAM case with minimal structure.
+
+    Returns:
+        JSON response with status and path.
+    """
+    data = request.get_json()
+    case_name = data.get("caseName")
+
+    if not case_name:
+        return jsonify({"success": False, "message": "No case name provided"}), 400
+
+    try:
+        # Use globally set CASE_ROOT
+        if not CASE_ROOT:
+             return jsonify({"success": False, "message": "Case root not set"}), 500
+
+        full_path = Path(CASE_ROOT) / case_name
+        result = CaseManager.create_case_structure(full_path)
+
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        logger.error(f"Error in api_create_case: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# --- Geometry Routes ---
+
+@app.route("/api/geometry/upload", methods=["POST"])
+def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Upload an STL file to the current case."""
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file part"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "message": "No selected file"}), 400
+
+    # Get the current case path from request or global state
+    # Ideally, the frontend should send the current case directory or name
+    # But we also have global CASE_ROOT.
+    # Let's rely on the frontend sending 'caseDir' or using the set case.
+
+    # Check if 'caseDir' is in form data?
+    case_dir = request.form.get("caseDir")
+    if not case_dir:
+        # Fallback to global CASE_ROOT + tutorial? Or just CASE_ROOT if it's the specific case?
+        # The frontend usually sets CASE_ROOT to the parent folder, and then loads a tutorial.
+        # But for custom cases, CASE_ROOT might be the parent, and we need the case name.
+        # Or CASE_ROOT is the actual case?
+
+        # Current logic: CASE_ROOT is the root of *all* cases.
+        # We need to know which case we are uploading to.
+        # Let's assume the user selects a case/tutorial in the frontend.
+
+        case_name = request.form.get("caseName")
+        if not case_name:
+             return jsonify({"success": False, "message": "No case name or directory specified"}), 400
+
+        case_dir = str(Path(CASE_ROOT) / case_name)
+
+    result = GeometryManager.upload_stl(case_dir, file, file.filename)
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route("/api/geometry/list", methods=["GET"])
+def api_list_geometry() -> Union[Response, Tuple[Response, int]]:
+    """List STL files in the current case."""
+    case_name = request.args.get("caseName")
+    if not case_name:
+         return jsonify({"success": False, "message": "No case name specified"}), 400
+
+    case_dir = str(Path(CASE_ROOT) / case_name)
+    result = GeometryManager.list_stls(case_dir)
+
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route("/api/geometry/delete", methods=["POST"])
+def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Delete an STL file."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    filename = data.get("filename")
+
+    if not case_name or not filename:
+        return jsonify({"success": False, "message": "Missing parameters"}), 400
+
+    case_dir = str(Path(CASE_ROOT) / case_name)
+    result = GeometryManager.delete_stl(case_dir, filename)
+
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route("/api/geometry/view", methods=["POST"])
+def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Get interactive HTML viewer for an STL."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    filename = data.get("filename")
+    color = data.get("color", "lightblue")
+    opacity = data.get("opacity", 1.0)
+
+    if not case_name or not filename:
+        return jsonify({"success": False, "message": "Missing parameters"}), 400
+
+    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+
+    html_content = GeometryVisualizer.get_interactive_html(file_path, color, opacity)
+
+    if html_content:
+        return Response(html_content, mimetype="text/html")
+    else:
+        return jsonify({"success": False, "message": "Failed to generate view"}), 500
+
+@app.route("/api/geometry/info", methods=["POST"])
+def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Get info (bounds, etc) for an STL."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    filename = data.get("filename")
+
+    if not case_name or not filename:
+        return jsonify({"success": False, "message": "Missing parameters"}), 400
+
+    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+
+    info = GeometryVisualizer.get_mesh_info(file_path)
+    return jsonify(info)
+
+
+# --- Meshing Routes ---
+
+@app.route("/api/meshing/blockMesh/config", methods=["POST"])
+def api_meshing_blockmesh_config() -> Union[Response, Tuple[Response, int]]:
+    """Generate blockMeshDict."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    config = data.get("config", {})
+
+    if not case_name:
+         return jsonify({"success": False, "message": "No case name specified"}), 400
+
+    case_path = Path(CASE_ROOT) / case_name
+    result = MeshingRunner.configure_blockmesh(case_path, config)
+
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route("/api/meshing/snappyHexMesh/config", methods=["POST"])
+def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
+    """Generate snappyHexMeshDict."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    config = data.get("config", {})
+
+    if not case_name:
+         return jsonify({"success": False, "message": "No case name specified"}), 400
+
+    case_path = Path(CASE_ROOT) / case_name
+    result = MeshingRunner.configure_snappyhexmesh(case_path, config)
+
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route("/api/meshing/run", methods=["POST"])
+def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
+    """Run a meshing command."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    command = data.get("command") # "blockMesh" or "snappyHexMesh"
+
+    if not case_name or not command:
+         return jsonify({"success": False, "message": "Missing parameters"}), 400
+
+    if command not in ["blockMesh", "snappyHexMesh"]:
+        return jsonify({"success": False, "message": "Invalid command"}), 400
+
+    case_path = Path(CASE_ROOT) / case_name
+    client = get_docker_client()
+    user_config = get_docker_user_config()
+
+    result = MeshingRunner.run_meshing_command(
+        case_path,
+        command,
+        client,
+        DOCKER_IMAGE,
+        OPENFOAM_VERSION,
+        user_config
+    )
+
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
 
 
 @app.route("/get_docker_config", methods=["GET"])
