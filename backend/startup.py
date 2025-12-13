@@ -57,7 +57,7 @@ def check_docker_permissions(
     # Generate a unique test file name
     test_filename = f".permission_test_{uuid.uuid4().hex}"
     host_test_file = case_dir_path / test_filename
-    container_run_path = "/home/foam/run_test"
+    container_run_path = "/tmp/foam_flask_check"
 
     # Volume mapping
     volumes = {
@@ -113,8 +113,9 @@ def check_docker_permissions(
                 logger.error(f"[FOAMFlask] Failed to cleanup root file: {e}")
 
     except Exception as e:
-        logger.error(f"[FOAMFlask] Permission Check: Error during Attempt 1: {e}")
-        return {"status": "failed", "message": f"Error during permission check: {e}"}
+        logger.warning(f"[FOAMFlask] Permission Check: Default write caused error: {e}")
+        logger.warning("[FOAMFlask] Default permission check failed. Attempting automatic fix by switching to user mapping...")
+        # Proceed to Attempt 2
 
     # Attempt 2: Run as user
     try:

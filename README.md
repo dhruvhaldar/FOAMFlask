@@ -103,12 +103,12 @@ source ./environments/my-python313-venv-linux/bin/activate
 
 ### Step 4: Install Python dependencies
 ```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Step 5: Run the application
 ```bash
-./environments/my-python313-venv-linux/bin/python3.13 app.py
+python app.py
 ```
 
 ### Optional: Generate API Documentation
@@ -223,20 +223,27 @@ The plotting system uses:
 
 4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
 
-### Permissions issue (Linux)
+### Docker Socket Permissions (Linux)
 
-**Issue Description**: Permission denied error when trying to access Docker socket.
+**Issue Description**: "Permission denied" error when trying to access the Docker socket (e.g., cannot connect to Docker daemon).
 
-**Explanation**: The application is trying to access the Docker socket but doesn't have the necessary permissions.
+**Explanation**: The application needs to communicate with the Docker daemon, but your user does not have permission to access the Unix socket `/var/run/docker.sock`.
 
-**Resolution**: Here's how to resolve this:
-
+**Resolution**:
 1. Add your user to the `docker` group:
    ```bash
    sudo usermod -aG docker $USER
    ```
 
-2. Restart your system to apply the changes
+2. Apply the group changes:
+   - **Method A (Temporary)**: Run `newgrp docker` in your current terminal.
+   - **Method B (Permanent)**: Log out and log back in (recommended).
+   - **Method C**: Restart your computer.
+
+3. Verify access:
+   ```bash
+   docker run --rm hello-world
+   ```
 
 ### File Permissions (Linux)
 
@@ -251,6 +258,17 @@ The plotting system uses:
 4. This ensures all subsequent files created by OpenFOAM are owned by you.
 
 You will see a "System Check" modal on startup while this verification takes place.
+
+---
+
+## IMPORTANT: Docker Configuration
+
+The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux). 
+
+> [!CAUTION]
+> **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
+> The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
+> Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
 ---
 

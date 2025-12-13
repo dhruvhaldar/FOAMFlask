@@ -533,7 +533,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
         return docker_unavailable_response()
 
     bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
-    container_run_path = f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run"
+    container_run_path = "/tmp/FOAM_Run"
     container_case_path = posixpath.join(container_run_path, tutorial)
 
     # Convert Windows paths to POSIX style for Docker
@@ -647,7 +647,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             return
 
         container_case_path = posixpath.join(
-            f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run", tutorial
+            "/tmp/FOAM_Run", tutorial
         )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
@@ -657,7 +657,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         volumes = {
             host_path_str: {
-                "bind": f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run",
+                "bind": "/tmp/FOAM_Run",
                 "mode": "rw",
             }
         }
@@ -1055,7 +1055,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             return
 
         container_case_path = posixpath.join(
-            f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run", tutorial
+            "/tmp/FOAM_Run", tutorial
         )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
@@ -1065,7 +1065,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
 
         volumes = {
             host_path_str: {
-                "bind": f"/home/foam/OpenFOAM/{OPENFOAM_VERSION}/run",
+                "bind": "/tmp/FOAM_Run",
                 "mode": "rw",
             }
         }
