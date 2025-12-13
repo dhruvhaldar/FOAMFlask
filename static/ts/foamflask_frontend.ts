@@ -485,6 +485,13 @@ const removeNotification = (id: number): void => {
 
 // Initialize on page load
 window.onload = async () => {
+  // Check startup status first
+  try {
+    await checkStartupStatus();
+  } catch (error) {
+    console.error("Startup check failed", error);
+  }
+
   try {
     const tutorialSelect = document.getElementById(
       "tutorialSelect"
@@ -2207,6 +2214,66 @@ async function loadCustomVTKFile(): Promise<void> {
     );
   }
 }
+
+// Check startup status
+const checkStartupStatus = async (): Promise<void> => {
+  const modal = document.createElement("div");
+  modal.id = "startup-modal";
+  modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
+  modal.innerHTML = `
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
+      <div class="mb-4">
+        <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold mb-2">System Check</h2>
+      <p id="startup-message" class="text-gray-600">Checking Docker permissions...</p>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const pollStatus = async () => {
+    try {
+      const response = await fetch("/api/startup_status");
+      const data = await response.json();
+
+      const messageEl = document.getElementById("startup-message");
+      if (messageEl) messageEl.textContent = data.message;
+
+      if (data.status === "completed") {
+        modal.remove();
+        return;
+      } else if (data.status === "failed") {
+        if (messageEl) {
+          messageEl.className = "text-red-600";
+          messageEl.textContent = `Error: ${data.message}. Please check server logs.`;
+        }
+        // Don't remove modal on error, let user see it
+        // Add retry button?
+        const contentDiv = modal.querySelector("div > div");
+        if (contentDiv && !document.getElementById("startup-retry-btn")) {
+             const retryBtn = document.createElement("button");
+             retryBtn.id = "startup-retry-btn";
+             retryBtn.className = "mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600";
+             retryBtn.textContent = "Retry (Reload Page)";
+             retryBtn.onclick = () => window.location.reload();
+             contentDiv.appendChild(retryBtn);
+        }
+        return;
+      }
+
+      // Continue polling
+      setTimeout(pollStatus, 1000);
+    } catch (e) {
+      console.error("Error polling startup status:", e);
+      setTimeout(pollStatus, 2000);
+    }
+  };
+
+  await pollStatus();
+};
 
 // Clean up on page unload
 window.addEventListener("beforeunload", () => {

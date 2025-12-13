@@ -103,12 +103,12 @@ source ./environments/my-python313-venv-linux/bin/activate
 
 ### Step 4: Install Python dependencies
 ```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Step 5: Run the application
 ```bash
-./environments/my-python313-venv-linux/bin/python3.13 app.py
+python app.py
 ```
 
 ### Optional: Generate API Documentation
@@ -124,7 +124,7 @@ To generate Python-related API documentation:
 </details>
 
 ## Usage
-1. **Run the server**:
+1. **Run the server (activate virtual environment first if using one)**:
 ```bash
 python app.py
 ```
@@ -145,58 +145,111 @@ Click `Load Tutorial`.
 The tutorial will be copied to your selected case directory.
 
 6. **Run OpenFOAM commands**:
-Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
-Live output is shown in the console panel.
+   Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
+   Live output is shown in the console panel.
+
+7. **Realtime Plotting**:
+   - Click "Show Plots" to enable realtime polling of OpenFOAM results.
+   - Plots update every 2 seconds.
+   - For aerodynamic cases, click "Show Aero Plots" to see Pressure Coefficient (Cp) and Velocity Profiles.
 
 ---
 
 ## Development
 
+> [!NOTE]
+> This section is intended for developers who wish to contribute to or modify FOAMFlask.
+
+
+### Project Structure
+
+```text
+FOAMFlask/
+├── app.py # Main Flask application
+├── case_config.json # Stores the last used CASE_ROOT
+├── package.json # Node.js dependencies and build scripts
+├── tsconfig.json # TypeScript configuration
+├── copy-built-js.mjs # Custom build script
+├── requirements.txt # Python dependencies
+├── static/
+│ ├── html/
+│ │ └── foamflask_frontend.html # HTML template
+│ ├── ts/
+│ │ └── foamflask_frontend.ts # TypeScript source code
+│ ├── js/
+│ │ └── foamflask_frontend.js # Compiled JavaScript (for browser)
+│ ├── js-build/
+│ │ └── foamflask_frontend.js # TypeScript compiler output
+│ └── js/
+│   └── frontend/
+│       └── isosurface.js # PyVista integration
+├── backend/
+│   ├── mesh/
+│   │   └── mesher.py # Mesh generation utilities
+│   ├── plots/
+│   │   └── realtime_plots.py # Real-time plotting backend
+│   └── post/
+│       └── isosurface.py # Post-processing utilities
+├── test/
+│   ├── check_coverage.py # Code coverage analysis script
+│   ├── check_docstrings.py # Docstring coverage checker
+│   ├── docker_test.py # Docker functionality tests
+│   ├── pyvista_test.py # PyVista integration tests
+│   ├── foamlib_test.py # FOAM library tests
+│   └── bike.vtp # Test VTK file
+├── docs/ # Generated documentation
+├── environments/ # Python virtual environments
+└── README.md # This file
+```
+
+### Key Locations
+- **Backend Source**: `app.py` & `backend/`
+- **Frontend Source**: `static/ts/`
+- **Frontend Template**: `static/html/`
+
 ### Frontend Development Workflow
 
-1. **Make changes to TypeScript files** (`static/ts/*.ts`)
+1. **Make changes** to the TypeScript files in `static/ts/`.
 2. **Compile to JavaScript**:
+   You must compile the TypeScript to JavaScript for the browser to run it.
    ```bash
    npm run build        # One-time build
-   npm run build:watch  # Auto-compile on changes (recommended for development)
+   npm run build:watch  # Wrapper to watch for changes
    ```
-3. **Refresh browser** to see changes
+3. **Run the backend** (see Usage section) and refresh your browser.
+
+### Backend Development Workflow
+
+1. **Add/Modify Logic**:
+   - Create new modules in `backend/` for organized logic (e.g., new file parsers, simulation controllers).
+   - Import them in `app.py`.
+2. **Add Endpoints**:
+   - Define new routes in `app.py` using `@app.route`.
+3. **Restart the server**:
+   - Flask's debug mode (default) usually auto-reloads on python file changes.
 
 ---
 
-### Features
+### Tech Stack & Frameworks
 
-- **Universal Compatibility**: Works with all OpenFOAM cases (incompressible, compressible, multiphase, etc.)
-- **Automatic Field Detection**: Automatically detects and plots available fields (p, U, nut, nuTilda, k, epsilon, omega, T, etc.)
-- **Realtime Updates**: Plots update every 2 seconds during simulation
-- **Multiple Plot Types**:
-  - Pressure vs Time
-  - Velocity components (Ux, Uy, Uz) and magnitude
-  - Turbulence properties (nut, nuTilda, k, epsilon, omega)
-  - Residuals (logarithmic scale)
-- **Aerodynamic Analysis** (optional):
-  - Pressure coefficient (Cp)
-  - 3D velocity profiles
+This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
----
+- **Backend**:
+  - **Python 3.13+**: Core logic.
+  - **Flask**: Lightweight WSGI web application framework.
+  - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
+  - **PyVista / VTK**: For mesh processing and isosurface generation.
+  - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
-### Usage
+- **Frontend**:
+  - **TypeScript**: For type-safe, maintainable client-side code.
+  - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
+  - **TailwindCSS**: Utility-first CSS framework for styling.
+  - **Plotly.js**: For responsive, interactive charts (using data served by Flask endpoints).
 
-1. Load a tutorial case
-2. Click "Show Plots" to enable realtime plotting
-3. Run your OpenFOAM command (blockMesh, simpleFoam, etc.)
-4. Watch the plots update in realtime
-5. For aerodynamic cases, click "Show Aero Plots" for additional analysis
-
----
-
-### Technical Details
-
-The plotting system uses:
-- **Plotly.js** for interactive browser-based plots (no external software needed)
-- **Custom OpenFOAM parser** in `realtime_plots.py` that reads field files
-- **Flask API endpoints** for serving plot data
-- **Automatic field parsing** for both uniform and nonuniform fields
+- **Architecture**:
+  - RESTful API for client-server communication.
+  - **Stateless Backend**: The server does not maintain session state; state is managed by the client or persisted to disk.
 
 ---
 
@@ -223,20 +276,52 @@ The plotting system uses:
 
 4. In Docker Desktop settings, you have the option `Start Docker Desktop when you sign in to your computer` to ensure Docker Desktop runs automatically the next time you login.
 
-### Permissions issue (Linux)
+### Docker Socket Permissions (Linux)
 
-**Issue Description**: Permission denied error when trying to access Docker socket.
+**Issue Description**: "Permission denied" error when trying to access the Docker socket (e.g., cannot connect to Docker daemon).
 
-**Explanation**: The application is trying to access the Docker socket but doesn't have the necessary permissions.
+**Explanation**: The application needs to communicate with the Docker daemon, but your user does not have permission to access the Unix socket `/var/run/docker.sock`.
 
-**Resolution**: Here's how to resolve this:
-
+**Resolution**:
 1. Add your user to the `docker` group:
    ```bash
    sudo usermod -aG docker $USER
    ```
 
-2. Restart your system to apply the changes
+2. Apply the group changes:
+   - **Method A (Temporary)**: Run `newgrp docker` in your current terminal.
+   - **Method B (Permanent)**: Log out and log back in (recommended).
+   - **Method C**: Restart your computer.
+
+3. Verify access:
+   ```bash
+   docker run --rm hello-world
+   ```
+
+### File Permissions (Linux)
+
+**Issue Description**: Files created by the OpenFOAM container (e.g., tutorial files, logs) are owned by `root` and cannot be deleted by the user.
+
+**Explanation**: By default, Docker containers run as root, so any files they write to the host system via bind mounts are owned by root.
+
+**Resolution**: FOAMFlask includes an automated startup check to handle this:
+1. On the first run, it performs a "dry run" by launching a container to write a test file.
+2. It attempts to delete this file.
+3. If deletion fails (Permission Denied), it detects the issue and automatically configures future containers to run with your current user ID (UID) and group ID (GID).
+4. This ensures all subsequent files created by OpenFOAM are owned by you.
+
+You will see a "System Check" modal on startup while this verification takes place.
+
+---
+
+## IMPORTANT: Docker Configuration
+
+The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux). 
+
+> [!CAUTION]
+> **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
+> The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
+> Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
 ---
 
@@ -331,45 +416,6 @@ pytest -k "test_name_pattern"
 
 ---
 
-## Project Structure
-```text
-FOAMFlask/
-├── app.py # Main Flask application
-├── case_config.json # Stores the last used CASE_ROOT
-├── package.json # Node.js dependencies and build scripts
-├── tsconfig.json # TypeScript configuration
-├── copy-built-js.mjs # Custom build script
-├── requirements.txt # Python dependencies
-├── static/
-│ ├── html/
-│ │ └── foamflask_frontend.html # HTML template
-│ ├── ts/
-│ │ └── foamflask_frontend.ts # TypeScript source code
-│ ├── js/
-│ │ └── foamflask_frontend.js # Compiled JavaScript (for browser)
-│ ├── js-build/
-│ │ └── foamflask_frontend.js # TypeScript compiler output
-│ └── js/
-│   └── frontend/
-│       └── isosurface.js # PyVista integration
-├── backend/
-│   ├── mesh/
-│   │   └── mesher.py # Mesh generation utilities
-│   ├── plots/
-│   │   └── realtime_plots.py # Real-time plotting backend
-│   └── post/
-│       └── isosurface.py # Post-processing utilities
-├── test/
-│   ├── check_coverage.py # Code coverage analysis script
-│   ├── check_docstrings.py # Docstring coverage checker
-│   ├── docker_test.py # Docker functionality tests
-│   ├── pyvista_test.py # PyVista integration tests
-│   ├── foamlib_test.py # FOAM library tests
-│   └── bike.vtp # Test VTK file
-├── docs/ # Generated documentation
-├── environments/ # Python virtual environments
-└── README.md # This file
-```
 ---
 
 ## Screenshots
