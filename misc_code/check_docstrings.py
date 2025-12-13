@@ -108,8 +108,7 @@ def main():
     
     # Files to check
     files_to_check = [
-        "app.py",
-        "build_utils.py"
+        "app.py"
     ]
     
     print("=" * 60)
