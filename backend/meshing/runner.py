@@ -50,20 +50,14 @@ class MeshingRunner:
 
         Args:
             case_path: Path to the case directory.
-            config: Dictionary containing 'stl_filename', 'refinement_level', etc.
+            config: Configuration dictionary (new complex structure or legacy).
 
         Returns:
             Dict with success status and message.
         """
         try:
-            stl_filename = config.get("stl_filename")
-            if not stl_filename:
-                return {"success": False, "message": "STL filename is required"}
-
-            refinement_level = int(config.get("refinement_level", 2))
-            location = tuple(config.get("location_in_mesh", [0, 0, 0]))
-
-            success = SnappyHexMeshGenerator.generate_dict(case_path, stl_filename, refinement_level, location)
+            # Pass the full config to the generator
+            success = SnappyHexMeshGenerator.generate_dict(case_path, config)
 
             if success:
                 return {"success": True, "message": "snappyHexMeshDict generated successfully"}
@@ -91,10 +85,6 @@ class MeshingRunner:
 
             # Setup paths
             container_run_path = "/tmp/FOAM_Run"
-            # We assume the case is already mounted or we mount it now
-            # Typically we mount the specific case dir to /tmp/FOAM_Run/case_name
-            # BUT app.py usually mounts the PARENT of the case (CASE_ROOT) to /tmp/FOAM_Run
-            # and then runs inside /tmp/FOAM_Run/<case_name>
 
             case_name = case_path.name
             container_case_path = posixpath.join(container_run_path, case_name)
