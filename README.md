@@ -310,6 +310,16 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
 
 You will see a "System Check" modal on startup while this verification takes place.
 
+### Startup Checks
+
+On the first run, FOAMFlask performs several checks to ensure your environment is correctly configured:
+1. **Docker Installation**: Checks if the Docker executable is in your system PATH.
+2. **Permissions**: Verifies that the current user can run Docker commands (without sudo).
+3. **Image Availability**: Checks if the required OpenFOAM Docker image exists.
+   - If missing, it will automatically pull the image.
+   - **Note**: This is a large download (several GBs). A warning will be displayed for metered connections.
+4. **File Permissions**: As mentioned above, it ensures container-generated files are owned by you.
+
 ---
 
 ## IMPORTANT: Docker Configuration

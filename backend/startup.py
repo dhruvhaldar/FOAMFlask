@@ -4,10 +4,106 @@ import platform
 import logging
 import uuid
 import time
+import shutil
+import docker
+import docker.errors
 from pathlib import Path
 from typing import Dict, Any, Callable, Tuple, Optional
 
 logger = logging.getLogger("FOAMFlask")
+
+def run_initial_setup_checks(
+    get_docker_client_func: Callable[[], Any],
+    case_root: str,
+    docker_image: str,
+    save_config_func: Callable[[Dict[str, Any]], bool],
+    config: Dict[str, Any],
+    status_callback: Optional[Callable[[str], None]] = None
+) -> Dict[str, Any]:
+    """
+    Performs comprehensive startup checks:
+    1. Checks if Docker executable exists in PATH.
+    2. Checks if Docker daemon is accessible (permission check).
+    3. Checks if the required Docker image exists, pulling it if necessary.
+    4. Performs file permission checks (Linux).
+
+    Args:
+        get_docker_client_func: Function to get docker client
+        case_root: Path to the case directory
+        docker_image: Docker image name
+        save_config_func: Function to save configuration
+        config: Current configuration dictionary
+        status_callback: Optional callback to update status message
+
+    Returns:
+        Dictionary with status and message
+    """
+
+    # 1. Check if setup is already done
+    if config.get("initial_setup_done"):
+        return {"status": "completed", "message": "Initial setup already completed"}
+
+    logger.info("[FOAMFlask] Performing first-time setup checks...")
+
+    # 2. Check if docker executable exists
+    if not shutil.which("docker"):
+        msg = "Docker is not installed or not in PATH. Please install Docker first."
+        logger.error(f"[FOAMFlask] {msg}")
+        return {"status": "failed", "message": msg}
+
+    # 3. Check if we can connect to Docker daemon (permission check)
+    try:
+        # We try to get the client. get_docker_client_func usually catches errors but
+        # we might want to catch specific ones here if the func re-raises or returns None.
+        # Assuming get_docker_client_func returns None on failure as per app.py
+        client = get_docker_client_func()
+        if client is None:
+            # If client is None, it means docker.from_env() failed.
+            # We need to know WHY. So we might need to try docker.from_env() ourselves here
+            # to distinguish between "not running" and "permission denied".
+            try:
+                temp_client = docker.from_env()
+                temp_client.ping()
+            except docker.errors.DockerException as e:
+                err_str = str(e).lower()
+                if "permission denied" in err_str or "eacces" in err_str:
+                    msg = "Docker exists but permission denied. Please add your user to the 'docker' group and re-login."
+                    logger.error(f"[FOAMFlask] {msg}")
+                    return {"status": "failed", "message": msg}
+                else:
+                    msg = f"Docker is installed but not running or not accessible: {e}"
+                    logger.error(f"[FOAMFlask] {msg}")
+                    return {"status": "failed", "message": msg}
+    except Exception as e:
+        msg = f"Unexpected error checking Docker: {e}"
+        logger.error(f"[FOAMFlask] {msg}")
+        return {"status": "failed", "message": msg}
+
+    # 4. Check if image exists, pull if not
+    try:
+        client = get_docker_client_func() # Should be valid now
+        try:
+            client.images.get(docker_image)
+            logger.info(f"[FOAMFlask] Image {docker_image} found.")
+        except docker.errors.ImageNotFound:
+            msg = f"Docker image '{docker_image}' not found. Pulling now... (Warning: Large download, check for metered connection)"
+            logger.info(f"[FOAMFlask] {msg}")
+            print(f"INFO::[FOAMFlask] {msg}") # Console output
+
+            if status_callback:
+                status_callback(msg)
+
+            client.images.pull(docker_image)
+            logger.info(f"[FOAMFlask] Image {docker_image} pulled successfully.")
+
+    except Exception as e:
+         msg = f"Failed to check/pull Docker image: {e}"
+         logger.error(f"[FOAMFlask] {msg}")
+         return {"status": "failed", "message": msg}
+
+    # 5. Run file permission checks
+    return check_docker_permissions(get_docker_client_func, case_root, docker_image, save_config_func, config)
+
 
 def check_docker_permissions(
     get_docker_client_func: Callable[[], Any],
@@ -18,19 +114,10 @@ def check_docker_permissions(
 ) -> Dict[str, Any]:
     """
     Checks if Docker creates files with root permissions and attempts to fix it.
-
-    Args:
-        get_docker_client_func: Function to get docker client
-        case_root: Path to the case directory
-        docker_image: Docker image name
-        save_config_func: Function to save configuration
-        config: Current configuration dictionary
-
-    Returns:
-        Dictionary with status and message
     """
 
-    # Skip if already done
+    # Note: run_initial_setup_checks already handles the "first time" check generally,
+    # but we keep this here just in case this function is called independently.
     if config.get("initial_setup_done"):
         return {"status": "completed", "message": "Initial setup already completed"}
 
