@@ -289,12 +289,28 @@ except (OSError, UnicodeDecodeError) as e:
     TEMPLATE = "<html><body>Error loading template</body></html>"
 
 
+# --- Caching for Tutorials ---
+# Structure: { "key": (docker_image, openfoam_version), "data": [tutorials] }
+_TUTORIALS_CACHE: Dict[str, Union[Tuple[Optional[str], Optional[str]], List[str]]] = {}
+
+
 def get_tutorials() -> List[str]:
     """Get a list of available OpenFOAM tutorial cases.
 
     Returns:
         Sorted list of available OpenFOAM tutorial paths (category/case).
     """
+    global _TUTORIALS_CACHE
+
+    # Check cache
+    cache_key = (DOCKER_IMAGE, OPENFOAM_VERSION)
+    if _TUTORIALS_CACHE.get("key") == cache_key:
+        logger.debug("[FOAMFlask] Returning cached tutorials list")
+        # Type check to satisfy mypy, though we know it's a list if key matches
+        data = _TUTORIALS_CACHE.get("data", [])
+        if isinstance(data, list):
+            return data
+
     try:
         client = get_docker_client()
         if client is None:
@@ -341,7 +357,15 @@ def get_tutorials() -> List[str]:
             # Using posixpath.relpath because Docker paths are POSIX
             tutorials = [posixpath.relpath(c, tutorial_root) for c in cases]
 
-        return sorted(tutorials)
+        sorted_tutorials = sorted(tutorials)
+
+        # Update cache
+        _TUTORIALS_CACHE = {
+            "key": cache_key,
+            "data": sorted_tutorials
+        }
+
+        return sorted_tutorials
 
     except docker.errors.APIError as e:
         logger.error(
