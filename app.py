@@ -1638,7 +1638,7 @@ def main() -> None:
     # but re-running is safe.
     threading.Thread(target=run_startup_check, daemon=True).start()
 
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
 
 
 if __name__ == "__main__":
