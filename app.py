@@ -29,7 +29,7 @@ from werkzeug.utils import secure_filename
 from backend.mesh.mesher import mesh_visualizer
 from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
 from backend.post.isosurface import IsosurfaceVisualizer, isosurface_visualizer
-from backend.startup import check_docker_permissions
+from backend.startup import run_initial_setup_checks
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -241,7 +241,11 @@ def run_startup_check() -> None:
     global STARTUP_STATUS, CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
 
     STARTUP_STATUS["status"] = "running"
-    STARTUP_STATUS["message"] = "Performing initial system checks and permission verification..."
+    STARTUP_STATUS["message"] = "Performing initial system checks..."
+
+    def update_status_message(msg: str) -> None:
+        """Callback to update global startup status message."""
+        STARTUP_STATUS["message"] = msg
 
     try:
         # Re-load config to ensure we have latest
@@ -250,12 +254,13 @@ def run_startup_check() -> None:
         # Use a temporary client for the check
         check_client_func = get_docker_client
 
-        result = check_docker_permissions(
+        result = run_initial_setup_checks(
             check_client_func,
             current_config["CASE_ROOT"], # Use config directly as global CASE_ROOT might be stale
             current_config["DOCKER_IMAGE"],
             save_config,
-            current_config
+            current_config,
+            status_callback=update_status_message
         )
 
         STARTUP_STATUS.update(result)
