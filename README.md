@@ -63,12 +63,11 @@ python3 -m venv .\environments\my-python313-venv-win
 ```
 
 ### Optional: Generate API Documentation
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+Github-flavored Markdown is already generated under `docs` directory as `app.md`.
 
 To generate Python-related API documentation:
 ```powershell
 .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
-.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc build_utils.py --output-dir docs
 ```
 (Note: Install pdoc first: `.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc`)
 
@@ -112,12 +111,11 @@ python app.py
 ```
 
 ### Optional: Generate API Documentation
-Github-flavored Markdown is already generated under `docs` directory as `app.md` and `build_utils.md`.
+Github-flavored Markdown is already generated under `docs` directory as `app.md`.
 
 To generate Python-related API documentation:
 ```bash
 ./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc build_utils.py --output-dir docs
 ```
 (Note: Install pdoc first: `./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc`)
 
