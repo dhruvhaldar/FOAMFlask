@@ -467,6 +467,20 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"output": f"[FOAMFlask] [Error] {str(e)}"}), 400
 
 
+@app.route("/api/cases/list", methods=["GET"])
+def api_list_cases() -> Response:
+    """List available cases in the CASE_ROOT."""
+    if not CASE_ROOT:
+         return jsonify({"cases": []})
+
+    root = Path(CASE_ROOT)
+    if not root.exists():
+         return jsonify({"cases": []})
+
+    # List subdirectories that look like cases (or just all dirs)
+    cases = [d.name for d in root.iterdir() if d.is_dir()]
+    return jsonify({"cases": sorted(cases)})
+
 @app.route("/api/case/create", methods=["POST"])
 def api_create_case() -> Union[Response, Tuple[Response, int]]:
     """
