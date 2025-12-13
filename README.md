@@ -124,7 +124,7 @@ To generate Python-related API documentation:
 </details>
 
 ## Usage
-1. **Run the server**:
+1. **Run the server (activate virtual environment first if using one)**:
 ```bash
 python app.py
 ```
