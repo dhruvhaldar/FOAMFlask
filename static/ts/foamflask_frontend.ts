@@ -830,7 +830,7 @@ const toggleAeroPlots = (): void => {
   if (aeroVisible) {
     container?.classList.remove("hidden");
     if (btn) btn.textContent = "Hide Aero Plots";
-    updateAeroPlots();
+    if (!isUpdatingPlots) updateAeroPlots();
   } else {
     container?.classList.add("hidden");
     if (btn) btn.textContent = "Show Aero Plots";
@@ -919,16 +919,21 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
   }
 };
 
-const updateAeroPlots = async (): Promise<void> => {
+const updateAeroPlots = async (preloadedData?: PlotData): Promise<void> => {
   const selectedTutorial = (
     document.getElementById("tutorialSelect") as HTMLSelectElement
   )?.value;
   if (!selectedTutorial) return;
   try {
-    const response = await fetch(
-      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
-    );
-    const data = await response.json() as PlotData;
+    let data: PlotData;
+    if (preloadedData) {
+      data = preloadedData;
+    } else {
+      data = await fetchWithCache<PlotData>(
+        `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
+      );
+    }
+
     if (data.error) return;
 
     // Cp plot
@@ -1258,7 +1263,7 @@ const updatePlots = async (): Promise<void> => {
 
     // Update residuals and aero plots in parallel
     const updatePromises = [updateResidualsPlot(selectedTutorial)];
-    if (aeroVisible) updatePromises.push(updateAeroPlots());
+    if (aeroVisible) updatePromises.push(updateAeroPlots(data));
     await Promise.allSettled(updatePromises);
 
     // After all plots are updated

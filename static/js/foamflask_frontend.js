@@ -711,7 +711,8 @@ const toggleAeroPlots = () => {
         container?.classList.remove("hidden");
         if (btn)
             btn.textContent = "Hide Aero Plots";
-        updateAeroPlots();
+        if (!isUpdatingPlots)
+            updateAeroPlots();
     }
     else {
         container?.classList.add("hidden");
@@ -800,13 +801,18 @@ const updateResidualsPlot = async (tutorial) => {
         console.error("FOAMFlask Error updating residuals", error);
     }
 };
-const updateAeroPlots = async () => {
+const updateAeroPlots = async (preloadedData) => {
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial)
         return;
     try {
-        const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
-        const data = await response.json();
+        let data;
+        if (preloadedData) {
+            data = preloadedData;
+        }
+        else {
+            data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        }
         if (data.error)
             return;
         // Cp plot
@@ -1084,7 +1090,7 @@ const updatePlots = async () => {
         // Update residuals and aero plots in parallel
         const updatePromises = [updateResidualsPlot(selectedTutorial)];
         if (aeroVisible)
-            updatePromises.push(updateAeroPlots());
+            updatePromises.push(updateAeroPlots(data));
         await Promise.allSettled(updatePromises);
         // After all plots are updated
         if (isFirstPlotLoad) {
