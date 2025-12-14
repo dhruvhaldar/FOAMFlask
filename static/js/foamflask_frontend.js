@@ -62,57 +62,6 @@ const fallbackCopyText = (text) => {
         showNotification("Failed to copy log", "error");
     }
 };
-// Copy Console Log to Clipboard
-const copyLogToClipboard = () => {
-    const outputDiv = document.getElementById("output");
-    if (!outputDiv)
-        return;
-    // Get text content (strip HTML tags)
-    // innerText preserves newlines better than textContent for visual layout
-    const text = outputDiv.innerText;
-    if (!text) {
-        showNotification("Log is empty", "info", 2000);
-        return;
-    }
-    // Use navigator.clipboard if available (requires secure context)
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showNotification("Log copied to clipboard", "success", 2000);
-        }).catch((err) => {
-            console.error("Failed to copy log via navigator.clipboard:", err);
-            // Fallback
-            fallbackCopyText(text);
-        });
-    }
-    else {
-        fallbackCopyText(text);
-    }
-};
-const fallbackCopyText = (text) => {
-    try {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        // Ensure it's not visible but part of DOM
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
-        textArea.style.top = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        if (successful) {
-            showNotification("Log copied to clipboard", "success", 2000);
-        }
-        else {
-            showNotification("Failed to copy log", "error");
-        }
-    }
-    catch (err) {
-        console.error("Fallback copy failed:", err);
-        showNotification("Failed to copy log", "error");
-    }
-};
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
 // Global state
@@ -292,11 +241,11 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
     };
     void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
         .then(() => {
-            plotDiv.dataset.whiteButtonAdded = "true";
-        })
+        plotDiv.dataset.whiteButtonAdded = "true";
+    })
         .catch((err) => {
-            console.error("Plotly update failed:", err);
-        });
+        console.error("Plotly update failed:", err);
+    });
 };
 const downloadPlotData = (plotId, filename) => {
     const plotDiv = document.getElementById(plotId);
@@ -893,11 +842,11 @@ const updateAeroPlots = async () => {
                     },
                 }, plotConfig)
                     .then(() => {
-                        attachWhiteBGDownloadButton(cpDiv);
-                    })
+                    attachWhiteBGDownloadButton(cpDiv);
+                })
                     .catch((err) => {
-                        console.error("Plotly update failed:", err);
-                    });
+                    console.error("Plotly update failed:", err);
+                });
             }
         }
         // Velocity profile 3D plot
@@ -925,11 +874,11 @@ const updateAeroPlots = async () => {
                     },
                 }, plotConfig)
                     .then(() => {
-                        attachWhiteBGDownloadButton(velocityDiv);
-                    })
+                    attachWhiteBGDownloadButton(velocityDiv);
+                })
                     .catch((err) => {
-                        console.error("Plotly update failed:", err);
-                    });
+                    console.error("Plotly update failed:", err);
+                });
             }
         }
     }
@@ -981,11 +930,11 @@ const updatePlots = async () => {
                 },
             }, plotConfig)
                 .then(() => {
-                    attachWhiteBGDownloadButton(pressureDiv);
-                })
+                attachWhiteBGDownloadButton(pressureDiv);
+            })
                 .catch((err) => {
-                    console.error("Plotly update failed:", err);
-                });
+                console.error("Plotly update failed:", err);
+            });
         }
         // Velocity plot
         if (data.U_mag && data.time) {
@@ -1680,7 +1629,7 @@ window.showNotification = showNotification;
 window.runPostOperation = runPostOperation;
 window.copyLogToClipboard = copyLogToClipboard;
 window.togglePlots = togglePlots;
-document.addEventListener('DOMContentLoaded', () => {
+const init = () => {
     const navButtons = [
         { id: 'nav-setup', handler: () => switchPage('setup') },
         { id: 'nav-run', handler: () => switchPage('run') },
@@ -1698,5 +1647,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadTutorialBtn = document.getElementById('loadTutorialBtn');
     if (loadTutorialBtn)
         loadTutorialBtn.addEventListener('click', loadTutorial);
-});
+};
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+}
+else {
+    init();
+}
 //# sourceMappingURL=foamflask_frontend.js.map
