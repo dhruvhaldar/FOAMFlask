@@ -174,6 +174,62 @@ const fallbackCopyText = (text: string): void => {
   }
 };
 
+// Copy Console Log to Clipboard
+const copyLogToClipboard = (): void => {
+  const outputDiv = document.getElementById("output");
+  if (!outputDiv) return;
+
+  // Get text content (strip HTML tags)
+  // innerText preserves newlines better than textContent for visual layout
+  const text = outputDiv.innerText;
+
+  if (!text) {
+    showNotification("Log is empty", "info", 2000);
+    return;
+  }
+
+  // Use navigator.clipboard if available (requires secure context)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showNotification("Log copied to clipboard", "success", 2000);
+    }).catch((err) => {
+      console.error("Failed to copy log via navigator.clipboard:", err);
+      // Fallback
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+};
+
+const fallbackCopyText = (text: string): void => {
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Ensure it's not visible but part of DOM
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+
+    textArea.focus();
+    textArea.select();
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    if (successful) {
+      showNotification("Log copied to clipboard", "success", 2000);
+    } else {
+      showNotification("Failed to copy log", "error");
+    }
+  } catch (err) {
+    console.error("Fallback copy failed:", err);
+    showNotification("Failed to copy log", "error");
+  }
+};
+
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
 
@@ -443,17 +499,17 @@ const switchPage = (pageName: string): void => {
   // Auto-refresh lists based on page
   switch (pageName) {
     case "geometry":
-        refreshGeometryList();
-        break;
+      refreshGeometryList();
+      break;
     case "meshing":
-        refreshGeometryList().then(() => {
-          const shmSelect = document.getElementById("shmStlSelect") as HTMLSelectElement;
-          const geoSelect = document.getElementById("geometrySelect") as HTMLSelectElement;
-          if (shmSelect && geoSelect) {
-            shmSelect.innerHTML = geoSelect.innerHTML;
-          }
-        });
-        break;
+      refreshGeometryList().then(() => {
+        const shmSelect = document.getElementById("shmStlSelect") as HTMLSelectElement;
+        const geoSelect = document.getElementById("geometrySelect") as HTMLSelectElement;
+        if (shmSelect && geoSelect) {
+          shmSelect.innerHTML = geoSelect.innerHTML;
+        }
+      });
+      break;
     case "visualizer":
       const visualizerContainer = document.getElementById("page-visualizer");
       if (visualizerContainer && !visualizerContainer.hasAttribute("data-initialized")) {
@@ -466,8 +522,8 @@ const switchPage = (pageName: string): void => {
       if (plotsContainer) {
         plotsContainer.classList.remove("hidden");
         if (isFirstPlotLoad) {
-           const loader = document.getElementById("plotsLoading");
-           if (loader) loader.classList.remove("hidden");
+          const loader = document.getElementById("plotsLoading");
+          if (loader) loader.classList.remove("hidden");
         }
         if (!plotsContainer.hasAttribute("data-initialized")) {
           plotsContainer.setAttribute("data-initialized", "true");
@@ -691,64 +747,64 @@ const loadTutorial = async (): Promise<void> => {
 
     const data = await response.json() as TutorialLoadResponse;
     if (data.output) {
-        data.output.split("\n").forEach((line: string) => {
-            if (line.trim()) appendOutput(line.trim(), "info");
-        });
+      data.output.split("\n").forEach((line: string) => {
+        if (line.trim()) appendOutput(line.trim(), "info");
+      });
     }
 
     showNotification("Tutorial imported", "success");
     await refreshCaseList();
     const importedName = selected.split('/').pop();
     if (importedName) {
-        selectCase(importedName);
-        const select = document.getElementById("caseSelect") as HTMLSelectElement;
-        if (select) select.value = importedName;
+      selectCase(importedName);
+      const select = document.getElementById("caseSelect") as HTMLSelectElement;
+      if (select) select.value = importedName;
     }
   } catch (e) { showNotification("Failed to load tutorial", "error"); }
 };
 
 // Case Management
 const refreshCaseList = async () => {
-    try {
-        const response = await fetch("/api/cases/list");
-        const data = await response.json() as CaseListResponse;
-        const select = document.getElementById("caseSelect") as HTMLSelectElement;
-        if (select && data.cases) {
-            const current = select.value;
-            select.innerHTML = '<option value="">-- Select a Case --</option>';
-            data.cases.forEach(c => {
-                const opt = document.createElement("option");
-                opt.value = c;
-                opt.textContent = c;
-                select.appendChild(opt);
-            });
-            if (current && data.cases.includes(current)) select.value = current;
-            else if (activeCase && data.cases.includes(activeCase)) select.value = activeCase;
-        }
-    } catch (e) { console.error(e); }
+  try {
+    const response = await fetch("/api/cases/list");
+    const data = await response.json() as CaseListResponse;
+    const select = document.getElementById("caseSelect") as HTMLSelectElement;
+    if (select && data.cases) {
+      const current = select.value;
+      select.innerHTML = '<option value="">-- Select a Case --</option>';
+      data.cases.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        select.appendChild(opt);
+      });
+      if (current && data.cases.includes(current)) select.value = current;
+      else if (activeCase && data.cases.includes(activeCase)) select.value = activeCase;
+    }
+  } catch (e) { console.error(e); }
 };
 
 const selectCase = (val: string) => {
-    activeCase = val;
-    localStorage.setItem("lastSelectedCase", val);
+  activeCase = val;
+  localStorage.setItem("lastSelectedCase", val);
 };
 
 const createNewCase = async () => {
-    const caseName = (document.getElementById("newCaseName") as HTMLInputElement).value;
-    if (!caseName) { showNotification("Enter case name", "warning"); return; }
-    showNotification(`Creating case ${caseName}...`, "info");
-    try {
-        const response = await fetch("/api/case/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName }) });
-        const data = await response.json();
-        if (data.success) {
-            showNotification("Case created", "success");
-            (document.getElementById("newCaseName") as HTMLInputElement).value = "";
-            await refreshCaseList();
-            selectCase(caseName);
-            const select = document.getElementById("caseSelect") as HTMLSelectElement;
-            if (select) select.value = caseName;
-        } else { showNotification(data.message || "Failed", "error"); }
-    } catch (e) { showNotification("Error creating case", "error"); }
+  const caseName = (document.getElementById("newCaseName") as HTMLInputElement).value;
+  if (!caseName) { showNotification("Enter case name", "warning"); return; }
+  showNotification(`Creating case ${caseName}...`, "info");
+  try {
+    const response = await fetch("/api/case/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName }) });
+    const data = await response.json();
+    if (data.success) {
+      showNotification("Case created", "success");
+      (document.getElementById("newCaseName") as HTMLInputElement).value = "";
+      await refreshCaseList();
+      selectCase(caseName);
+      const select = document.getElementById("caseSelect") as HTMLSelectElement;
+      if (select) select.value = caseName;
+    } else { showNotification(data.message || "Failed", "error"); }
+  } catch (e) { showNotification("Error creating case", "error"); }
 };
 
 const runCommand = async (cmd: string): Promise<void> => {
@@ -766,25 +822,25 @@ const runCommand = async (cmd: string): Promise<void> => {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     const read = async () => {
-        const { done, value } = (await reader?.read()) || { done: true, value: undefined };
-        if (done) {
-            showNotification("Done", "success");
-            flushOutputBuffer();
-            return;
+      const { done, value } = (await reader?.read()) || { done: true, value: undefined };
+      if (done) {
+        showNotification("Done", "success");
+        flushOutputBuffer();
+        return;
+      }
+      const text = decoder.decode(value);
+      text.split("\n").forEach(line => {
+        if (line.trim()) {
+          const type = /error/i.test(line) ? "stderr" : "stdout";
+          appendOutput(line, type);
         }
-        const text = decoder.decode(value);
-        text.split("\n").forEach(line => {
-            if(line.trim()) {
-                const type = /error/i.test(line) ? "stderr" : "stdout";
-                appendOutput(line, type);
-            }
-        });
-        await read();
+      });
+      await read();
     };
     await read();
   } catch (e) {
-      console.error(e);
-      showNotification("Error running command", "error");
+    console.error(e);
+    showNotification("Error running command", "error");
   }
 };
 
@@ -1277,8 +1333,7 @@ const updatePlots = async (): Promise<void> => {
       currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN
     ) {
       showNotification(
-        `Error updating plots: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Error updating plots: ${error instanceof Error ? error.message : "Unknown error"
         }`,
         "error"
       );
@@ -1302,163 +1357,163 @@ const updatePlots = async (): Promise<void> => {
 
 // Geometry Functions
 const refreshGeometryList = async () => {
-    if (!activeCase) return;
-    try {
-        const response = await fetch(`/api/geometry/list?caseName=${encodeURIComponent(activeCase)}`);
-        const data = await response.json();
-        if (data.success) {
-            const select = document.getElementById("geometrySelect") as HTMLSelectElement;
-            if (select) {
-                select.innerHTML = "";
-                data.files.forEach((f: string) => {
-                    const opt = document.createElement("option");
-                    opt.value = f; opt.textContent = f; select.appendChild(opt);
-                });
-            }
-        }
-    } catch (e) { console.error(e); }
+  if (!activeCase) return;
+  try {
+    const response = await fetch(`/api/geometry/list?caseName=${encodeURIComponent(activeCase)}`);
+    const data = await response.json();
+    if (data.success) {
+      const select = document.getElementById("geometrySelect") as HTMLSelectElement;
+      if (select) {
+        select.innerHTML = "";
+        data.files.forEach((f: string) => {
+          const opt = document.createElement("option");
+          opt.value = f; opt.textContent = f; select.appendChild(opt);
+        });
+      }
+    }
+  } catch (e) { console.error(e); }
 };
 
 const uploadGeometry = async () => {
-    const input = document.getElementById("geometryUpload") as HTMLInputElement;
-    const file = input?.files?.[0];
-    if (!file || !activeCase) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("caseName", activeCase);
-    try {
-        await fetch("/api/geometry/upload", { method: "POST", body: formData });
-        showNotification("Uploaded", "success");
-        input.value = "";
-        refreshGeometryList();
-    } catch (e) { showNotification("Failed", "error"); }
+  const input = document.getElementById("geometryUpload") as HTMLInputElement;
+  const file = input?.files?.[0];
+  if (!file || !activeCase) return;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("caseName", activeCase);
+  try {
+    await fetch("/api/geometry/upload", { method: "POST", body: formData });
+    showNotification("Uploaded", "success");
+    input.value = "";
+    refreshGeometryList();
+  } catch (e) { showNotification("Failed", "error"); }
 };
 
 const deleteGeometry = async () => {
-    const filename = (document.getElementById("geometrySelect") as HTMLSelectElement)?.value;
-    if (!filename || !activeCase) return;
-    if (!confirm("Delete?")) return;
-    try {
-        await fetch("/api/geometry/delete", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, filename})});
-        refreshGeometryList();
-    } catch (e) { showNotification("Failed", "error"); }
+  const filename = (document.getElementById("geometrySelect") as HTMLSelectElement)?.value;
+  if (!filename || !activeCase) return;
+  if (!confirm("Delete?")) return;
+  try {
+    await fetch("/api/geometry/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+    refreshGeometryList();
+  } catch (e) { showNotification("Failed", "error"); }
 };
 
 const loadGeometryView = async () => {
-    const filename = (document.getElementById("geometrySelect") as HTMLSelectElement)?.value;
-    if (!filename || !activeCase) return;
-    showNotification("Loading...", "info");
-    try {
-        const res = await fetch("/api/geometry/view", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, filename})});
-        if (res.ok) {
-            const html = await res.text();
-            (document.getElementById("geometryInteractive") as HTMLIFrameElement).srcdoc = html;
-            document.getElementById("geometryPlaceholder")?.classList.add("hidden");
-        }
-    } catch (e) { showNotification("Failed", "error"); }
+  const filename = (document.getElementById("geometrySelect") as HTMLSelectElement)?.value;
+  if (!filename || !activeCase) return;
+  showNotification("Loading...", "info");
+  try {
+    const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+    if (res.ok) {
+      const html = await res.text();
+      (document.getElementById("geometryInteractive") as HTMLIFrameElement).srcdoc = html;
+      document.getElementById("geometryPlaceholder")?.classList.add("hidden");
+    }
+  } catch (e) { showNotification("Failed", "error"); }
 
-    // Info
-    try {
-        const res = await fetch("/api/geometry/info", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, filename})});
-        const info = await res.json();
-        if (info.success) {
-            const div = document.getElementById("geometryInfoContent");
-            if (div) div.innerHTML = `Bounds: [${info.bounds.join(", ")}]`;
-            document.getElementById("geometryInfo")?.classList.remove("hidden");
-        }
-    } catch (e) {}
+  // Info
+  try {
+    const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+    const info = await res.json();
+    if (info.success) {
+      const div = document.getElementById("geometryInfoContent");
+      if (div) div.innerHTML = `Bounds: [${info.bounds.join(", ")}]`;
+      document.getElementById("geometryInfo")?.classList.remove("hidden");
+    }
+  } catch (e) { }
 };
 
 // Meshing Functions
 const fillBoundsFromGeometry = async () => {
-    // simplified for brevity
-    const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
-    if (!filename || !activeCase) return;
-    try {
-        const res = await fetch("/api/geometry/info", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, filename})});
-        const info = await res.json();
-        if (info.success) {
-            const b = info.bounds;
-            const p = 0.1;
-            const dx=b[1]-b[0]; const dy=b[3]-b[2]; const dz=b[5]-b[4];
-            (document.getElementById("bmMin") as HTMLInputElement).value = `${(b[0]-dx*p).toFixed(2)} ${(b[2]-dy*p).toFixed(2)} ${(b[4]-dz*p).toFixed(2)}`;
-            (document.getElementById("bmMax") as HTMLInputElement).value = `${(b[1]+dx*p).toFixed(2)} ${(b[3]+dy*p).toFixed(2)} ${(b[5]+dz*p).toFixed(2)}`;
-        }
-    } catch (e) {}
+  // simplified for brevity
+  const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
+  if (!filename || !activeCase) return;
+  try {
+    const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+    const info = await res.json();
+    if (info.success) {
+      const b = info.bounds;
+      const p = 0.1;
+      const dx = b[1] - b[0]; const dy = b[3] - b[2]; const dz = b[5] - b[4];
+      (document.getElementById("bmMin") as HTMLInputElement).value = `${(b[0] - dx * p).toFixed(2)} ${(b[2] - dy * p).toFixed(2)} ${(b[4] - dz * p).toFixed(2)}`;
+      (document.getElementById("bmMax") as HTMLInputElement).value = `${(b[1] + dx * p).toFixed(2)} ${(b[3] + dy * p).toFixed(2)} ${(b[5] + dz * p).toFixed(2)}`;
+    }
+  } catch (e) { }
 };
 
 const generateBlockMeshDict = async () => {
-    if (!activeCase) return;
-    const minVal = (document.getElementById("bmMin") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
-    const maxVal = (document.getElementById("bmMax") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
-    const cells = (document.getElementById("bmCells") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
-    const grading = (document.getElementById("bmGrading") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
-    try {
-        await fetch("/api/meshing/blockMesh/config", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, config: {min_point: minVal, max_point: maxVal, cells, grading}})});
-        showNotification("Generated", "success");
-    } catch (e) {}
+  if (!activeCase) return;
+  const minVal = (document.getElementById("bmMin") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  const maxVal = (document.getElementById("bmMax") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  const cells = (document.getElementById("bmCells") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  const grading = (document.getElementById("bmGrading") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  try {
+    await fetch("/api/meshing/blockMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { min_point: minVal, max_point: maxVal, cells, grading } }) });
+    showNotification("Generated", "success");
+  } catch (e) { }
 };
 
 const generateSnappyHexMeshDict = async () => {
-    const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
-    if (!activeCase || !filename) return;
-    const level = parseInt((document.getElementById("shmLevel") as HTMLInputElement).value);
-    const location = (document.getElementById("shmLocation") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
-    try {
-        await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, config: {stl_filename: filename, refinement_level: level, location_in_mesh: location}})});
-        showNotification("Generated", "success");
-    } catch (e) {}
+  const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
+  if (!activeCase || !filename) return;
+  const level = parseInt((document.getElementById("shmLevel") as HTMLInputElement).value);
+  const location = (document.getElementById("shmLocation") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  try {
+    await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { stl_filename: filename, refinement_level: level, location_in_mesh: location } }) });
+    showNotification("Generated", "success");
+  } catch (e) { }
 };
 
 const runMeshingCommand = async (cmd: string) => {
-    if (!activeCase) return;
-    showNotification(`Running ${cmd}`, "info");
-    try {
-        const res = await fetch("/api/meshing/run", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({caseName: activeCase, command: cmd})});
-        const data = await res.json();
-        if (data.success) {
-            showNotification("Done", "success");
-            const div = document.getElementById("meshingOutput");
-            if (div) div.innerText += `\n${data.output}`;
-        }
-    } catch (e) {}
+  if (!activeCase) return;
+  showNotification(`Running ${cmd}`, "info");
+  try {
+    const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
+    const data = await res.json();
+    if (data.success) {
+      showNotification("Done", "success");
+      const div = document.getElementById("meshingOutput");
+      if (div) div.innerText += `\n${data.output}`;
+    }
+  } catch (e) { }
 };
 
 // Visualizer
 const refreshMeshList = async () => {
-    if (!activeCase) return;
-    try {
-        const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
-        const data = await res.json();
-        const select = document.getElementById("meshSelect") as HTMLSelectElement;
-        if (select && data.meshes) {
-            select.innerHTML = '<option value="">Select</option>';
-            data.meshes.forEach((m: MeshFile) => {
-                const opt = document.createElement("option");
-                opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
-            });
-        }
-    } catch (e) {}
+  if (!activeCase) return;
+  try {
+    const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
+    const data = await res.json();
+    const select = document.getElementById("meshSelect") as HTMLSelectElement;
+    if (select && data.meshes) {
+      select.innerHTML = '<option value="">Select</option>';
+      data.meshes.forEach((m: MeshFile) => {
+        const opt = document.createElement("option");
+        opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
+      });
+    }
+  } catch (e) { }
 };
 
 const loadMeshVisualization = async () => {
-    const path = (document.getElementById("meshSelect") as HTMLSelectElement)?.value;
-    if (!path) return;
-    currentMeshPath = path;
-    updateMeshView();
+  const path = (document.getElementById("meshSelect") as HTMLSelectElement)?.value;
+  if (!path) return;
+  currentMeshPath = path;
+  updateMeshView();
 };
 
 const updateMeshView = async () => {
-    if (!currentMeshPath) return;
-    try {
-        const res = await fetch("/api/mesh_screenshot", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({file_path: currentMeshPath, width: 800, height: 600})});
-        const data = await res.json();
-        if (data.success) {
-            (document.getElementById("meshImage") as HTMLImageElement).src = `data:image/png;base64,${data.image}`;
-            document.getElementById("meshImage")?.classList.remove("hidden");
-            document.getElementById("meshPlaceholder")?.classList.add("hidden");
-        }
-    } catch (e) {}
+  if (!currentMeshPath) return;
+  try {
+    const res = await fetch("/api/mesh_screenshot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_path: currentMeshPath, width: 800, height: 600 }) });
+    const data = await res.json();
+    if (data.success) {
+      (document.getElementById("meshImage") as HTMLImageElement).src = `data:image/png;base64,${data.image}`;
+      document.getElementById("meshImage")?.classList.remove("hidden");
+      document.getElementById("meshPlaceholder")?.classList.add("hidden");
+    }
+  } catch (e) { }
 };
 
 function displayMeshInfo(meshInfo: {
@@ -1611,7 +1666,7 @@ async function toggleInteractiveMode(): Promise<void> {
         "success",
         8000
       );
-    } catch (error: unknown)  {
+    } catch (error: unknown) {
       console.error("[FOAMFlask] Error loading interactive viewer:", error);
       const errorMessage =
         error instanceof Error
@@ -1673,7 +1728,7 @@ function setCameraView(view: CameraView): void {
     );
 
     showNotification(`Set view to ${view.toUpperCase()}`, "info", 1500);
-  } catch (error: unknown)  {
+  } catch (error: unknown) {
     console.error("Error setting camera view:", error);
   }
 }
@@ -1695,37 +1750,37 @@ function resetCamera(): void {
     );
 
     showNotification("Camera view reset", "info", 1500);
-  } catch (error: unknown)  {
+  } catch (error: unknown) {
     console.error("Error resetting camera:", error);
   }
 }
 
 // Post Processing
 const refreshPostList = async () => {
-    refreshPostListVTK();
+  refreshPostListVTK();
 };
 
 const refreshPostListVTK = async () => {
-    if (!activeCase) return;
-    try {
-        const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
-        const data = await res.json();
-        const select = document.getElementById("vtkFileSelect") as HTMLSelectElement;
-        if (select && data.meshes) {
-            select.innerHTML = '<option value="">Select</option>';
-            data.meshes.forEach((m: MeshFile) => {
-                const opt = document.createElement("option");
-                opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
-            });
-        }
-    } catch (e) {}
+  if (!activeCase) return;
+  try {
+    const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
+    const data = await res.json();
+    const select = document.getElementById("vtkFileSelect") as HTMLSelectElement;
+    if (select && data.meshes) {
+      select.innerHTML = '<option value="">Select</option>';
+      data.meshes.forEach((m: MeshFile) => {
+        const opt = document.createElement("option");
+        opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
+      });
+    }
+  } catch (e) { }
 };
 
 const runPostOperation = async (operation: string) => {
-    // Stub
+  // Stub
 };
-const loadCustomVTKFile = async () => {};
-const loadContourVTK = async () => {};
+const loadCustomVTKFile = async () => { };
+const loadContourVTK = async () => { };
 
 
 // Check startup status
@@ -1775,8 +1830,8 @@ window.onload = async () => {
     // Restore Log
     const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
     if (savedLog) {
-        outputDiv.innerHTML = savedLog;
-        outputDiv.scrollTop = outputDiv.scrollHeight;
+      outputDiv.innerHTML = savedLog;
+      outputDiv.scrollTop = outputDiv.scrollHeight;
     }
   }
 
@@ -1795,15 +1850,15 @@ window.onload = async () => {
     await refreshCaseList();
     const savedCase = localStorage.getItem("lastSelectedCase");
     if (savedCase) {
-        const select = document.getElementById("caseSelect") as HTMLSelectElement;
-        let exists = false;
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === savedCase) { exists = true; break; }
-        }
-        if (exists) {
-            select.value = savedCase;
-            activeCase = savedCase;
-        }
+      const select = document.getElementById("caseSelect") as HTMLSelectElement;
+      let exists = false;
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === savedCase) { exists = true; break; }
+      }
+      if (exists) {
+        select.value = savedCase;
+        activeCase = savedCase;
+      }
     }
 
     // Check if we need to restore any plot state or similar
