@@ -762,7 +762,8 @@ def test_run_case_fallback_script(client, tmp_path):
         
         # Verify the bash script includes necessary setup
         assert "source /opt/" in wrapper_script  # Should source OpenFOAM bashrc
-        assert f"cd /home/foam/OpenFOAM/{flask_app.OPENFOAM_VERSION}/run/{tutorial}" in wrapper_script
+        # The test should check for /tmp/FOAM_Run as that is the container mount path
+        assert f"cd /tmp/FOAM_Run/{tutorial}" in wrapper_script
         assert "chmod +x setup_environment" in wrapper_script
         assert "./setup_environment" in wrapper_script
 
@@ -1088,4 +1089,4 @@ def test_main_startup(monkeypatch, tmp_path):
         flask_app.main()
 
         mkdir_mock.assert_called()
-        run_mock.assert_called_once_with(host="0.0.0.0", port=5000, debug=True)
+        run_mock.assert_called_once_with(host="0.0.0.0", port=5000, debug=False)

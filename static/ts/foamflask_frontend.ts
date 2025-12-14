@@ -118,6 +118,62 @@ const getErrorMessage = (error: unknown): string => {
   return typeof error === "string" ? error : "Unknown error";
 };
 
+// Copy Console Log to Clipboard
+const copyLogToClipboard = (): void => {
+  const outputDiv = document.getElementById("output");
+  if (!outputDiv) return;
+
+  // Get text content (strip HTML tags)
+  // innerText preserves newlines better than textContent for visual layout
+  const text = outputDiv.innerText;
+
+  if (!text) {
+    showNotification("Log is empty", "info", 2000);
+    return;
+  }
+
+  // Use navigator.clipboard if available (requires secure context)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showNotification("Log copied to clipboard", "success", 2000);
+    }).catch((err) => {
+      console.error("Failed to copy log via navigator.clipboard:", err);
+      // Fallback
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+};
+
+const fallbackCopyText = (text: string): void => {
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Ensure it's not visible but part of DOM
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+
+    textArea.focus();
+    textArea.select();
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    if (successful) {
+      showNotification("Log copied to clipboard", "success", 2000);
+    } else {
+      showNotification("Failed to copy log", "error");
+    }
+  } catch (err) {
+    console.error("Fallback copy failed:", err);
+    showNotification("Failed to copy log", "error");
+  }
+};
+
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
 
@@ -159,6 +215,23 @@ const CACHE_DURATION: number = 1000;
 
 const outputBuffer: { message: string; type: string }[] = [];
 let outputFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let saveLogTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Save log to local storage (Debounced)
+const saveLogToStorage = (): void => {
+  const container = document.getElementById("output");
+  if (!container) return;
+  try {
+    localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+  } catch (e) {
+    console.warn("Failed to save console log to local storage (likely quota exceeded).");
+  }
+};
+
+const saveLogDebounced = (): void => {
+  if (saveLogTimer) clearTimeout(saveLogTimer);
+  saveLogTimer = setTimeout(saveLogToStorage, 2000);
+};
 
 // Colors
 const plotlyColors = {
@@ -224,6 +297,95 @@ const createBoldTitle = (text: string): { text: string; font?: any } => ({
   font: { ...plotLayout.font, size: 22 },
 });
 
+// Helper: Download plot as PNG
+const downloadPlotAsPNG = (
+  plotIdOrDiv: string | any,
+  filename: string = "plot.png"
+): void => {
+  // Handle both string ID (from HTML) or direct element
+  const plotDiv = typeof plotIdOrDiv === "string"
+    ? document.getElementById(plotIdOrDiv)
+    : plotIdOrDiv;
+
+  if (!plotDiv) {
+    console.error(`Plot element not found: ${plotIdOrDiv}`);
+    return;
+  }
+
+  // Plotly.toImage options (layout overrides are not supported here directly)
+  Plotly.toImage(plotDiv, {
+    format: "png",
+    width: plotDiv.offsetWidth,
+    height: plotDiv.offsetHeight,
+    scale: 2, // Higher resolution
+  }).then((dataUrl: string) => {
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }).catch((err: any) => {
+    console.error("Error downloading plot:", err);
+  });
+};
+
+// Helper: Save current legend visibility
+const getLegendVisibility = (
+  plotDiv: HTMLElement
+): Record<string, boolean | "legendonly"> => {
+  try {
+    const plotData = (plotDiv as any).data;
+    if (!Array.isArray(plotData)) {
+      return {};
+    }
+
+    const visibility: Record<string, boolean | "legendonly"> = {};
+
+    for (const trace of plotData) {
+      const name = trace.name ?? "";
+      if (!name) {
+        continue;
+      }
+
+      // trace.visible may be boolean | "legendonly" | undefined
+      const vis = trace.visible;
+
+      // Preserve "legendonly" state instead of converting it to false
+      visibility[name] = vis === "legendonly" ? "legendonly" : (vis ?? true);
+    }
+
+    return visibility;
+  } catch (error) {
+    console.warn("Error getting legend visibility:", error);
+    return {};
+  }
+};
+
+// Helper: Attach white-bg download button to a plot
+const attachWhiteBGDownloadButton = (plotDiv: any): void => {
+  if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
+  plotDiv.layout.paper_bgcolor = "white";
+  plotDiv.layout.plot_bgcolor = "white";
+  plotDiv.dataset.whiteButtonAdded = "true";
+  const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
+  configWithWhiteBG.toImageButtonOptions = {
+    format: "png",
+    filename: `${plotDiv.id}whitebg`,
+    height: plotDiv.clientHeight,
+    width: plotDiv.clientWidth,
+    scale: 2,
+  };
+
+  void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
+    .then(() => {
+      plotDiv.dataset.whiteButtonAdded = "true";
+    })
+    .catch((err: unknown) => {
+      console.error("Plotly update failed:", err);
+    });
+};
+
 const downloadPlotData = (plotId: string, filename: string): void => {
   const plotDiv = document.getElementById(plotId) as any;
   if (!plotDiv || !plotDiv.data) return;
@@ -256,57 +418,9 @@ const downloadPlotData = (plotId: string, filename: string): void => {
   });
 };
 
-// Helper: Download plot as PNG
-const downloadPlotAsPNG = (plotIdOrDiv: string | any, filename: string = "plot.png"): void => {
-  const plotDiv = typeof plotIdOrDiv === "string" ? document.getElementById(plotIdOrDiv) : plotIdOrDiv;
-  if (!plotDiv) return;
-  Plotly.toImage(plotDiv, {
-    format: "png",
-    width: plotDiv.offsetWidth,
-    height: plotDiv.offsetHeight,
-    scale: 2,
-  }).then((dataUrl: string) => {
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }).catch((err: any) => console.error(err));
-};
-
-const getLegendVisibility = (plotDiv: HTMLElement): Record<string, boolean | "legendonly"> => {
-  try {
-    const plotData = (plotDiv as any).data;
-    if (!Array.isArray(plotData)) return {};
-    const visibility: Record<string, boolean | "legendonly"> = {};
-    for (const trace of plotData) {
-      if (!trace.name) continue;
-      visibility[trace.name] = trace.visible === "legendonly" ? "legendonly" : (trace.visible ?? true);
-    }
-    return visibility;
-  } catch (error) { return {}; }
-};
-
-const attachWhiteBGDownloadButton = (plotDiv: any): void => {
-  if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
-  plotDiv.layout.paper_bgcolor = "white";
-  plotDiv.layout.plot_bgcolor = "white";
-  plotDiv.dataset.whiteButtonAdded = "true";
-  const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
-  configWithWhiteBG.toImageButtonOptions = {
-    format: "png",
-    filename: `${plotDiv.id}whitebg`,
-    height: plotDiv.clientHeight,
-    width: plotDiv.clientWidth,
-    scale: 2,
-  };
-  void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
-    .then(() => { plotDiv.dataset.whiteButtonAdded = "true"; });
-};
-
 // Page Switching
 const switchPage = (pageName: string): void => {
+  console.log(`switchPage called with: ${pageName}`);
   const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
   pages.forEach((page) => {
     const pageElement = document.getElementById(`page-${page}`);
@@ -360,6 +474,8 @@ const switchPage = (pageName: string): void => {
           if (!plotUpdateInterval) startPlotUpdates();
         }
       }
+      const aeroBtn = document.getElementById("toggleAeroBtn");
+      if (aeroBtn) aeroBtn.classList.remove("hidden");
       break;
     case "post":
       const postContainer = document.getElementById("page-post");
@@ -371,122 +487,120 @@ const switchPage = (pageName: string): void => {
   }
 };
 
-const showNotification = (message: string, type: "success" | "error" | "warning" | "info", duration: number = 5000): number | null => {
+// Show notification
+const showNotification = (
+  message: string,
+  type: "success" | "error" | "warning" | "info",
+  duration: number = 5000
+): number | null => {
   const container = document.getElementById("notificationContainer");
   if (!container) return null;
   const id = ++notificationId;
   const notification = document.createElement("div");
   notification.id = `notification-${id}`;
-  notification.className = "notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative";
-  const colors = { success: "bg-green-500 text-white", error: "bg-red-500 text-white", warning: "bg-yellow-500 text-white", info: "bg-blue-500 text-white" };
+  notification.className =
+    "notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative";
+  const colors = {
+    success: "bg-green-500 text-white",
+    error: "bg-red-500 text-white",
+    warning: "bg-yellow-500 text-white",
+    info: "bg-blue-500 text-white",
+  };
   const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
   const content = document.createElement("div");
   content.className = "relative z-10";
-  content.innerHTML = `<div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2"><span class="text-2xl font-bold">${icons[type]}</span><span class="text-lg font-medium">${message}</span></div></div>`;
+  content.innerHTML = `
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl font-bold">${icons[type]}</span>
+        <span class="text-lg font-medium">${message}</span>
+      </div>
+    </div>
+  `;
   notification.appendChild(content);
+  if (duration > 0) {
+    const progressBar = document.createElement("div");
+    progressBar.className =
+      "h-1 bg-white bg-opacity-50 absolute bottom-0 left-0";
+    progressBar.style.width = "100%";
+    progressBar.style.transition = "width linear";
+    progressBar.style.transitionDuration = `${duration}ms`;
+    notification.appendChild(progressBar);
+    const countdown = document.createElement("div");
+    countdown.className = "flex items-center justify-end gap-2 mt-1";
+    countdown.innerHTML = `<span id="countdown-${id}" class="text-xs opacity-75">${(
+      duration / 1000
+    ).toFixed(1)}s</span>`;
+    content.appendChild(countdown);
+    const countdownInterval = setInterval(() => {
+      duration -= 100;
+      if (duration <= 0) {
+        clearInterval(countdownInterval);
+        removeNotification(id);
+        return;
+      }
+      const countdownEl = document.getElementById(`countdown-${id}`);
+      if (countdownEl)
+        countdownEl.textContent = (duration / 1000).toFixed(1) + "s";
+    }, 100);
+    notification.dataset.intervalId = countdownInterval.toString();
+    setTimeout(() => (progressBar.style.width = "0%"), 10);
+  } else {
+    const closeBtn = document.createElement("button");
+    closeBtn.innerHTML = "×";
+    closeBtn.className =
+      "text-white hover:text-gray-200 font-bold text-lg leading-none";
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      removeNotification(id);
+    };
+    closeBtn.style.position = "absolute";
+    closeBtn.style.top = "0.5rem";
+    closeBtn.style.right = "0.5rem";
+    notification.appendChild(closeBtn);
+  }
   notification.className += ` ${colors[type]}`;
   container.appendChild(notification);
-  setTimeout(() => removeNotification(id), duration);
   return id;
 };
 
 const removeNotification = (id: number): void => {
   const notification = document.getElementById(`notification-${id}`);
   if (notification) {
+    if (notification.dataset.intervalId)
+      clearInterval(parseInt(notification.dataset.intervalId, 10));
     notification.style.opacity = "0";
+    notification.style.transition = "opacity 0.3s ease";
     setTimeout(() => notification.remove(), 300);
   }
 };
 
-// Check startup status
-const checkStartupStatus = async (): Promise<void> => {
-  const modal = document.createElement("div");
-  modal.id = "startup-modal";
-  modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
-  modal.innerHTML = `
-    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
-      <div class="mb-4"><svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-      <h2 class="text-xl font-bold mb-2">System Check</h2>
-      <p id="startup-message" class="text-gray-600">Checking Docker permissions...</p>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const pollStatus = async () => {
-    try {
-      const response = await fetch("/api/startup_status");
-      const data = await response.json();
-      const messageEl = document.getElementById("startup-message");
-      if (messageEl) messageEl.textContent = data.message;
-      if (data.status === "completed") {
-        modal.remove();
-        return;
-      } else if (data.status === "failed") {
-        if (messageEl) {
-          messageEl.className = "text-red-600";
-          messageEl.textContent = `Error: ${data.message}. Please check server logs.`;
-        }
-        return;
-      }
-      setTimeout(pollStatus, 1000);
-    } catch (e) {
-      setTimeout(pollStatus, 2000);
-    }
-  };
-  await pollStatus();
-};
-
-// Initialize
-window.onload = async () => {
-  try { await checkStartupStatus(); } catch (e) { console.error(e); }
-  try {
-    const caseRootData = await fetchWithCache<CaseRootResponse>("/get_case_root");
-    const dockerConfigData = await fetchWithCache<DockerConfigResponse>("/get_docker_config");
-    caseDir = caseRootData.caseDir;
-    const caseDirInput = document.getElementById("caseDir") as HTMLInputElement;
-    if (caseDirInput) caseDirInput.value = caseDir;
-    dockerImage = dockerConfigData.dockerImage;
-    openfoamVersion = dockerConfigData.openfoamVersion;
-    const openfoamRootInput = document.getElementById("openfoamRoot") as HTMLInputElement;
-    if (openfoamRootInput) openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
-
-    // Restore Log
-    const outputDiv = document.getElementById("output");
-    const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
-    if (outputDiv && savedLog) {
-      outputDiv.innerHTML = savedLog;
-      outputDiv.scrollTop = outputDiv.scrollHeight;
-    }
-
-    // Load Cases
-    await refreshCaseList();
-    const savedCase = localStorage.getItem("lastSelectedCase");
-    if (savedCase) {
-        const select = document.getElementById("caseSelect") as HTMLSelectElement;
-        let exists = false;
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === savedCase) { exists = true; break; }
-        }
-        if (exists) {
-            select.value = savedCase;
-            activeCase = savedCase;
-        }
-    }
-  } catch (e) { console.error(e); }
-};
-
 // Network
-const fetchWithCache = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
+const fetchWithCache = async <T = any>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> => {
   const cacheKey = `${url}${JSON.stringify(options)}`;
   const cached = requestCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) return cached.data as T;
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
+    return cached.data as T;
+
+  if (abortControllers.has(url)) abortControllers.get(url)?.abort();
+  const controller = new AbortController();
+  abortControllers.set(url, controller);
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
     requestCache.set(cacheKey, { data, timestamp: Date.now() });
     return data as T;
-  } catch (e) { throw e; }
+  } finally {
+    abortControllers.delete(url);
+  }
 };
 
 // Logging
@@ -500,17 +614,23 @@ const flushOutputBuffer = (): void => {
   if (outputBuffer.length === 0) return;
   const container = document.getElementById("output");
   if (!container) return;
+  const fragment = document.createDocumentFragment();
   outputBuffer.forEach(({ message, type }) => {
     const line = document.createElement("div");
     if (type === "stderr") line.className = "text-red-600";
+    else if (type === "tutorial")
+      line.className = "text-blue-600 font-semibold";
     else if (type === "info") line.className = "text-yellow-600 italic";
     else line.className = "text-green-700";
     line.textContent = message;
-    container.appendChild(line);
+    fragment.appendChild(line);
   });
+  container.appendChild(fragment);
   container.scrollTop = container.scrollHeight;
   outputBuffer.length = 0;
-  localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+
+  // Save to LocalStorage (Debounced)
+  saveLogDebounced();
 };
 
 // Setup Functions
@@ -522,9 +642,23 @@ const setCase = async (): Promise<void> => {
     const data = await response.json() as CaseRootResponse;
     caseDir = data.caseDir;
     (document.getElementById("caseDir") as HTMLInputElement).value = caseDir;
+
+    if (data.output) {
+      data.output.split("\n").forEach((line: string) => {
+        line = line.trim();
+        if (line.startsWith("INFO"))
+          appendOutput(line.replace("INFO", ""), "info");
+        else if (line.startsWith("Error")) appendOutput(line, "stderr");
+        else appendOutput(line, "stdout");
+      });
+    }
+
     showNotification("Case directory set", "info");
     refreshCaseList();
-  } catch (e) { showNotification("Failed to set case directory", "error"); }
+  } catch (e) {
+    console.error(e);
+    showNotification("Failed to set case directory", "error");
+  }
 };
 
 const setDockerConfig = async (image: string, version: string): Promise<void> => {
@@ -533,6 +667,15 @@ const setDockerConfig = async (image: string, version: string): Promise<void> =>
     openfoamVersion = version;
     const response = await fetch("/set_docker_config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dockerImage, openfoamVersion }) });
     if (!response.ok) throw new Error();
+    const data = await response.json() as DockerConfigResponse;
+    dockerImage = data.dockerImage;
+    openfoamVersion = data.openfoamVersion;
+
+    const openfoamRootInput = document.getElementById("openfoamRoot");
+    if (openfoamRootInput instanceof HTMLInputElement) {
+      openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+    }
+
     showNotification("Docker config updated", "success");
   } catch (e) { showNotification("Failed to set Docker config", "error"); }
 };
@@ -541,9 +684,18 @@ const loadTutorial = async (): Promise<void> => {
   try {
     const tutorialSelect = document.getElementById("tutorialSelect") as HTMLSelectElement;
     const selected = tutorialSelect.value;
+    if (selected) localStorage.setItem("lastSelectedTutorial", selected);
     showNotification("Importing tutorial...", "info");
     const response = await fetch("/load_tutorial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tutorial: selected }) });
     if (!response.ok) throw new Error();
+
+    const data = await response.json() as TutorialLoadResponse;
+    if (data.output) {
+        data.output.split("\n").forEach((line: string) => {
+            if (line.trim()) appendOutput(line.trim(), "info");
+        });
+    }
+
     showNotification("Tutorial imported", "success");
     await refreshCaseList();
     const importedName = selected.split('/').pop();
@@ -600,22 +752,552 @@ const createNewCase = async () => {
 };
 
 const runCommand = async (cmd: string): Promise<void> => {
-  if (!cmd || !activeCase) { showNotification("Select case and command", "error"); return; }
+  if (!cmd) { showNotification("No command specified", "error"); return; }
+
+  // Use tutorial select if activeCase is not set, or prefer tutorial select for "Run" tab
+  const selectedTutorial = (document.getElementById("tutorialSelect") as HTMLSelectElement)?.value || activeCase;
+
+  if (!selectedTutorial) { showNotification("Select case and command", "error"); return; }
+
   try {
     showNotification(`Running ${cmd}...`, "info");
-    const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir, tutorial: activeCase, command: cmd }) });
+    const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir, tutorial: selectedTutorial, command: cmd }) });
     if (!response.ok) throw new Error();
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     const read = async () => {
         const { done, value } = (await reader?.read()) || { done: true, value: undefined };
-        if (done) { showNotification("Done", "success"); return; }
+        if (done) {
+            showNotification("Done", "success");
+            flushOutputBuffer();
+            return;
+        }
         const text = decoder.decode(value);
-        text.split("\n").forEach(line => { if(line.trim()) appendOutput(line, "stdout"); });
+        text.split("\n").forEach(line => {
+            if(line.trim()) {
+                const type = /error/i.test(line) ? "stderr" : "stdout";
+                appendOutput(line, type);
+            }
+        });
         await read();
     };
     await read();
-  } catch (e) { showNotification("Error", "error"); }
+  } catch (e) {
+      console.error(e);
+      showNotification("Error running command", "error");
+  }
+};
+
+// Realtime Plotting Functions
+const togglePlots = (): void => {
+  plotsVisible = !plotsVisible;
+  const container = document.getElementById("plotsContainer");
+  const btn = document.getElementById("togglePlotsBtn");
+  const aeroBtn = document.getElementById("toggleAeroBtn");
+  if (plotsVisible) {
+    container?.classList.remove("hidden");
+    if (btn) btn.textContent = "Hide Plots";
+    aeroBtn?.classList.remove("hidden");
+    startPlotUpdates();
+    setupIntersectionObserver();
+  } else {
+    container?.classList.add("hidden");
+    if (btn) btn.textContent = "Show Plots";
+    aeroBtn?.classList.add("hidden");
+    stopPlotUpdates();
+  }
+};
+
+const setupIntersectionObserver = (): void => {
+  const plotsContainer = document.getElementById("plotsContainer");
+  if (!plotsContainer || plotsContainer.dataset.observerSetup) return;
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        plotsInViewport = entry.isIntersecting;
+      });
+    },
+    { threshold: 0.1, rootMargin: "50px" }
+  );
+  observer.observe(plotsContainer);
+  plotsContainer.dataset.observerSetup = "true";
+};
+
+const toggleAeroPlots = (): void => {
+  aeroVisible = !aeroVisible;
+  const container = document.getElementById("aeroContainer");
+  const btn = document.getElementById("toggleAeroBtn");
+  if (aeroVisible) {
+    container?.classList.remove("hidden");
+    if (btn) btn.textContent = "Hide Aero Plots";
+    updateAeroPlots();
+  } else {
+    container?.classList.add("hidden");
+    if (btn) btn.textContent = "Show Aero Plots";
+  }
+};
+
+const startPlotUpdates = (): void => {
+  if (plotUpdateInterval) return;
+  plotUpdateInterval = setInterval(() => {
+    if (!plotsInViewport) return;
+    if (!isUpdatingPlots) updatePlots();
+    else pendingPlotUpdate = true;
+  }, 2000);
+};
+
+const stopPlotUpdates = (): void => {
+  if (plotUpdateInterval) {
+    clearInterval(plotUpdateInterval);
+    plotUpdateInterval = null;
+  }
+};
+
+const updateResidualsPlot = async (tutorial: string): Promise<void> => {
+  try {
+    const data = await fetchWithCache<ResidualsResponse>(
+      `/api/residuals?tutorial=${encodeURIComponent(tutorial)}`
+    );
+    if (data.error || !data.time || data.time.length === 0) {
+      return;
+    }
+    const traces: any[] = [];
+    const fields = ["Ux", "Uy", "Uz", "p"] as const;
+    const colors = [
+      plotlyColors.blue,
+      plotlyColors.red,
+      plotlyColors.green,
+      plotlyColors.magenta,
+      plotlyColors.cyan,
+      plotlyColors.orange,
+    ];
+    fields.forEach((field, idx) => {
+      const fieldData = (data as any)[field];
+      if (fieldData && fieldData.length > 0) {
+        traces.push({
+          x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+          y: fieldData,
+          type: "scatter",
+          mode: "lines",
+          name: field,
+          line: { color: colors[idx], width: 2.5, shape: "linear" },
+        });
+      }
+    });
+    if (traces.length > 0) {
+      const residualsPlotDiv = getElement<HTMLElement>("residuals-plot");
+
+      if (residualsPlotDiv) {
+        const layout = {
+          ...plotLayout,
+          title: createBoldTitle("Residuals"),
+          xaxis: {
+            title: { text: "Iteration" },
+            showline: true,
+            mirror: "all",
+            showgrid: false,
+          },
+          yaxis: {
+            title: { text: "Residual" },
+            type: "log",
+            showline: true,
+            mirror: "all",
+            showgrid: true,
+            gridwidth: 1,
+            gridcolor: "rgba(0,0,0,0.1)",
+          },
+        };
+        void Plotly.react(residualsPlotDiv, traces as any, layout as any, {
+          ...plotConfig,
+          displayModeBar: true,
+          scrollZoom: false,
+        }).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
+      }
+    }
+  } catch (error: unknown) {
+    console.error("FOAMFlask Error updating residuals", error);
+  }
+};
+
+const updateAeroPlots = async (): Promise<void> => {
+  const selectedTutorial = (
+    document.getElementById("tutorialSelect") as HTMLSelectElement
+  )?.value;
+  if (!selectedTutorial) return;
+  try {
+    const response = await fetch(
+      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
+    );
+    const data = await response.json() as PlotData;
+    if (data.error) return;
+
+    // Cp plot
+    if (
+      Array.isArray(data.p) &&
+      Array.isArray(data.time) &&
+      data.p.length === data.time.length &&
+      data.p.length > 0
+    ) {
+      const pinf = 101325;
+      const rho = 1.225;
+      const uinf =
+        Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
+      const qinf = 0.5 * rho * uinf * uinf;
+      const cp = data.p.map((pval: number) => (pval - pinf) / qinf);
+      const cpDiv = document.getElementById("cp-plot");
+      if (cpDiv) {
+        const cpTrace: any = {
+          x: data.time,
+          y: cp,
+          type: "scatter",
+          mode: "lines+markers",
+          name: "Cp",
+          line: { color: plotlyColors.red, width: 2.5 },
+        };
+        void Plotly.react(
+          cpDiv,
+          [cpTrace as any],
+          {
+            ...plotLayout,
+            title: createBoldTitle("Pressure Coefficient"),
+            xaxis: {
+              ...plotLayout.xaxis,
+              title: { text: "Time (s)" },
+            },
+            yaxis: {
+              ...plotLayout.yaxis,
+              title: { text: "Cp" },
+            },
+          },
+          plotConfig
+        )
+          .then(() => {
+            attachWhiteBGDownloadButton(cpDiv);
+          })
+          .catch((err: unknown) => {
+            console.error("Plotly update failed:", err);
+          });
+      }
+    }
+
+    // Velocity profile 3D plot
+    if (
+      Array.isArray(data.Ux) &&
+      Array.isArray(data.Uy) &&
+      Array.isArray(data.Uz)
+    ) {
+      const velocityDiv = document.getElementById("velocity-profile-plot");
+      if (velocityDiv) {
+        const velocityTrace: any = {
+          x: data.Ux,
+          y: data.Uy,
+          z: data.Uz,
+          type: "scatter3d",
+          mode: "markers",
+          name: "Velocity",
+          marker: { color: plotlyColors.blue, size: 5 },
+        };
+        void Plotly.react(
+          velocityDiv,
+          [velocityTrace as any],
+          {
+            ...plotLayout,
+            title: createBoldTitle("Velocity Profile"),
+            scene: {
+              xaxis: { title: { text: "Ux" } },
+              yaxis: { title: { text: "Uy" } },
+              zaxis: { title: { text: "Uz" } },
+            },
+          },
+          plotConfig
+        )
+          .then(() => {
+            attachWhiteBGDownloadButton(velocityDiv);
+          })
+          .catch((err: unknown) => {
+            console.error("Plotly update failed:", err);
+          });
+      }
+    }
+  } catch (error: unknown) {
+    console.error("FOAMFlask Error updating aero plots", error);
+  }
+};
+
+const updatePlots = async (): Promise<void> => {
+  const selectedTutorial = (
+    document.getElementById("tutorialSelect") as HTMLSelectElement
+  )?.value;
+  if (!selectedTutorial || isUpdatingPlots) return;
+  isUpdatingPlots = true;
+
+  try {
+    const data = await fetchWithCache<PlotData>(
+      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
+    );
+    if (data.error) {
+      console.error("FOAMFlask Error fetching plot data", data.error);
+      showNotification("Error fetching plot data", "error");
+      return;
+    }
+
+    // Pressure plot
+    if (data.p && data.time) {
+      const pressureDiv = getElement<HTMLElement>("pressure-plot");
+      if (!pressureDiv) {
+        console.error("Pressure plot element not found");
+        return;
+      }
+
+      const legendVisibility = getLegendVisibility(pressureDiv);
+
+      const pressureTrace: PlotTrace = {
+        x: data.time,
+        y: data.p,
+        type: "scatter",
+        mode: "lines",
+        name: "Pressure",
+        line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
+      };
+
+      if (pressureTrace.name && legendVisibility.hasOwnProperty(pressureTrace.name)) {
+        pressureTrace.visible = legendVisibility[pressureTrace.name] as
+          | boolean
+          | "legendonly";
+      }
+
+      void Plotly.react(
+        pressureDiv,
+        [pressureTrace as any],
+        {
+          ...plotLayout,
+          title: createBoldTitle("Pressure vs Time"),
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: { text: "Time (s)" },
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: { text: "Pressure (Pa)" },
+          },
+        },
+        plotConfig
+      )
+        .then(() => {
+          attachWhiteBGDownloadButton(pressureDiv);
+        })
+        .catch((err: unknown) => {
+          console.error("Plotly update failed:", err);
+        });
+    }
+
+    // Velocity plot
+    if (data.U_mag && data.time) {
+      const velocityDiv = getElement<HTMLElement>("velocity-plot");
+      if (!velocityDiv) {
+        console.error("Velocity plot element not found");
+        return;
+      }
+
+      const legendVisibility = getLegendVisibility(velocityDiv as any);
+
+      const traces: PlotTrace[] = [
+        {
+          x: data.time,
+          y: data.U_mag,
+          type: "scatter",
+          mode: "lines",
+          name: "|U|",
+          line: { color: plotlyColors.red, ...lineStyle, width: 2.5 },
+        },
+      ];
+
+      if (data.Ux) {
+        traces.push({
+          x: data.time,
+          y: data.Ux,
+          type: "scatter",
+          mode: "lines",
+          name: "Ux",
+          line: {
+            color: plotlyColors.blue,
+            ...lineStyle,
+            dash: "dash",
+            width: 2.5,
+          },
+        });
+      }
+
+      if (data.Uy) {
+        traces.push({
+          x: data.time,
+          y: data.Uy,
+          type: "scatter",
+          mode: "lines",
+          name: "Uy",
+          line: {
+            color: plotlyColors.green,
+            ...lineStyle,
+            dash: "dot",
+            width: 2.5,
+          },
+        });
+      }
+
+      if (data.Uz) {
+        traces.push({
+          x: data.time,
+          y: data.Uz,
+          type: "scatter",
+          mode: "lines",
+          name: "Uz",
+          line: {
+            color: plotlyColors.purple,
+            ...lineStyle,
+            dash: "dashdot",
+            width: 2.5,
+          },
+        });
+      }
+
+      // Apply saved visibility safely
+      traces.forEach((tr) => {
+        if (tr.name && Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
+          tr.visible = legendVisibility[tr.name] as boolean | "legendonly";
+        }
+      });
+
+      void Plotly.react(
+        velocityDiv,
+        traces as any,
+        {
+          ...plotLayout,
+          title: createBoldTitle("Velocity vs Time"),
+          xaxis: {
+            ...plotLayout.xaxis,
+            title: { text: "Time (s)" },
+          },
+          yaxis: {
+            ...plotLayout.yaxis,
+            title: { text: "Velocity (m/s)" },
+          },
+        },
+        plotConfig
+      ).then(() => {
+        attachWhiteBGDownloadButton(velocityDiv);
+      });
+    }
+
+    // Turbulence plot
+    const turbulenceTrace: PlotTrace[] = [];
+    if (data.nut && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.nut,
+        type: "scatter",
+        mode: "lines",
+        name: "nut",
+        line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 },
+      });
+    }
+    if (data.nuTilda && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.nuTilda,
+        type: "scatter",
+        mode: "lines",
+        name: "nuTilda",
+        line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 },
+      });
+    }
+    if (data.k && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.k,
+        type: "scatter",
+        mode: "lines",
+        name: "k",
+        line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 },
+      });
+    }
+    if (data.omega && data.time) {
+      turbulenceTrace.push({
+        x: data.time,
+        y: data.omega,
+        type: "scatter",
+        mode: "lines",
+        name: "omega",
+        line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 },
+      });
+    }
+
+    if (turbulenceTrace.length > 0) {
+      const turbPlotDiv = document.getElementById("turbulence-plot");
+      if (turbPlotDiv) {
+        void Plotly.react(
+          turbPlotDiv,
+          turbulenceTrace as any,
+          {
+            ...plotLayout,
+            title: createBoldTitle("Turbulence Properties vs Time"),
+            xaxis: {
+              ...plotLayout.xaxis,
+              title: { text: "Time (s)" },
+            },
+            yaxis: {
+              ...plotLayout.yaxis,
+              title: { text: "Value" },
+            },
+          },
+          plotConfig
+        ).then(() => {
+          attachWhiteBGDownloadButton(turbPlotDiv);
+        });
+      }
+    }
+
+    // Update residuals and aero plots in parallel
+    const updatePromises = [updateResidualsPlot(selectedTutorial)];
+    if (aeroVisible) updatePromises.push(updateAeroPlots());
+    await Promise.allSettled(updatePromises);
+
+    // After all plots are updated
+    if (isFirstPlotLoad) {
+      showNotification("Plots loaded successfully", "success", 3000);
+      isFirstPlotLoad = false;
+    }
+  } catch (error: unknown) {
+    console.error("FOAMFlask Error updating plots", error);
+    const currentTime = Date.now();
+    const selectedTutorial = (
+      document.getElementById("tutorialSelect") as HTMLSelectElement
+    )?.value;
+    if (
+      selectedTutorial &&
+      currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN
+    ) {
+      showNotification(
+        `Error updating plots: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        "error"
+      );
+      lastErrorNotificationTime = currentTime;
+    }
+  } finally {
+    isUpdatingPlots = false;
+
+    // FIX: Hide loader after update completes
+    const loader = document.getElementById("plotsLoading");
+    if (loader && !loader.classList.contains("hidden")) {
+      loader.classList.add("hidden");
+    }
+
+    if (pendingPlotUpdate) {
+      pendingPlotUpdate = false;
+      requestAnimationFrame(updatePlots);
+    }
+  }
 };
 
 // Geometry Functions
@@ -1039,23 +1721,97 @@ const refreshPostListVTK = async () => {
     } catch (e) {}
 };
 
-// ... I need to add loadCustomVTKFile, loadContourVTK, runPostOperation etc.
-// I will just add placeholders for these to make it compile, since the core request was Setup Page.
-// But to avoid breaking existing functionality, I should try to include them.
-
 const runPostOperation = async (operation: string) => {
-    // ...
+    // Stub
 };
 const loadCustomVTKFile = async () => {};
 const loadContourVTK = async () => {};
 
-// Plots
-const startPlotUpdates = () => {
-    if (!activeCase) return;
-    // logic to poll plot data
+
+// Check startup status
+const checkStartupStatus = async (): Promise<void> => {
+  const modal = document.createElement("div");
+  modal.id = "startup-modal";
+  modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
+  modal.innerHTML = `
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
+      <div class="mb-4"><svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+      <h2 class="text-xl font-bold mb-2">System Check</h2>
+      <p id="startup-message" class="text-gray-600">Checking Docker permissions...</p>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const pollStatus = async () => {
+    try {
+      const response = await fetch("/api/startup_status");
+      const data = await response.json();
+      const messageEl = document.getElementById("startup-message");
+      if (messageEl) messageEl.textContent = data.message;
+      if (data.status === "completed") {
+        modal.remove();
+        return;
+      } else if (data.status === "failed") {
+        if (messageEl) {
+          messageEl.className = "text-red-600";
+          messageEl.textContent = `Error: ${data.message}. Please check server logs.`;
+        }
+        return;
+      }
+      setTimeout(pollStatus, 1000);
+    } catch (e) {
+      setTimeout(pollStatus, 2000);
+    }
+  };
+  await pollStatus();
 };
-const stopPlotUpdates = () => {};
-const toggleAeroPlots = () => {};
+
+// Initialize
+window.onload = async () => {
+  try { await checkStartupStatus(); } catch (e) { console.error(e); }
+
+  const outputDiv = document.getElementById("output");
+  if (outputDiv) {
+    // Restore Log
+    const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
+    if (savedLog) {
+        outputDiv.innerHTML = savedLog;
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+  }
+
+  try {
+    const caseRootData = await fetchWithCache<CaseRootResponse>("/get_case_root");
+    const dockerConfigData = await fetchWithCache<DockerConfigResponse>("/get_docker_config");
+    caseDir = caseRootData.caseDir;
+    const caseDirInput = document.getElementById("caseDir") as HTMLInputElement;
+    if (caseDirInput) caseDirInput.value = caseDir;
+    dockerImage = dockerConfigData.dockerImage;
+    openfoamVersion = dockerConfigData.openfoamVersion;
+    const openfoamRootInput = document.getElementById("openfoamRoot") as HTMLInputElement;
+    if (openfoamRootInput) openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+
+    // Load Cases
+    await refreshCaseList();
+    const savedCase = localStorage.getItem("lastSelectedCase");
+    if (savedCase) {
+        const select = document.getElementById("caseSelect") as HTMLSelectElement;
+        let exists = false;
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === savedCase) { exists = true; break; }
+        }
+        if (exists) {
+            select.value = savedCase;
+            activeCase = savedCase;
+        }
+    }
+
+    // Check if we need to restore any plot state or similar
+    // ...
+
+  } catch (e) { console.error(e); }
+};
+
 
 // Exports
 (window as any).switchPage = switchPage;
@@ -1088,6 +1844,8 @@ const toggleAeroPlots = () => {};
 (window as any).downloadPlotAsPNG = downloadPlotAsPNG;
 (window as any).showNotification = showNotification;
 (window as any).runPostOperation = runPostOperation;
+(window as any).copyLogToClipboard = copyLogToClipboard;
+(window as any).togglePlots = togglePlots;
 
 document.addEventListener('DOMContentLoaded', () => {
   const navButtons = [
