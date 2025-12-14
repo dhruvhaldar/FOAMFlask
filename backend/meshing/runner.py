@@ -28,6 +28,8 @@ class MeshingRunner:
             Dict with success status and message.
         """
         try:
+            # We assume case_path is validated by caller (app.py uses validate_path)
+
             min_point = tuple(config.get("min_point", [-1, -1, -1]))
             max_point = tuple(config.get("max_point", [1, 1, 1]))
             cells = tuple(config.get("cells", [10, 10, 10]))
@@ -107,6 +109,10 @@ class MeshingRunner:
 
             # Create command
             # Source bashrc, cd to case, run command
+            # Validate command is strictly one of allowed
+            if command not in ["blockMesh", "snappyHexMesh"]:
+                 return {"success": False, "message": "Invalid command"}
+
             docker_cmd = (
                 f"bash -c 'source {bashrc} && "
                 f"cd {container_case_path} && "

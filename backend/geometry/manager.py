@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from werkzeug.utils import secure_filename
+from backend.security import validate_path
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -24,7 +25,16 @@ class GeometryManager:
             Dictionary with success status and message.
         """
         try:
+            # Validate case_path (ensure it's safe - caller should have done it, but double check doesn't hurt if we knew base)
+            # Since managers might be used independently, we assume case_path is valid/authorized path passed by caller.
+            # But we must ensure we don't write outside it.
+
             path = Path(case_path).resolve()
+
+            # Ensure path exists (it should)
+            if not path.exists():
+                 return {"success": False, "message": "Case directory does not exist."}
+
             tri_surface_dir = path / "constant" / "triSurface"
             tri_surface_dir.mkdir(parents=True, exist_ok=True)
 
@@ -33,6 +43,13 @@ class GeometryManager:
                  return {"success": False, "message": "Only .stl files are allowed."}
 
             filepath = tri_surface_dir / safe_filename
+
+            # Additional check: ensure filepath is within tri_surface_dir
+            try:
+                filepath.resolve().relative_to(tri_surface_dir.resolve())
+            except ValueError:
+                 return {"success": False, "message": "Invalid file path."}
+
             file.save(str(filepath))
 
             logger.info(f"Uploaded STL to {filepath}")
@@ -81,7 +98,15 @@ class GeometryManager:
         """
         try:
             path = Path(case_path).resolve()
-            filepath = path / "constant" / "triSurface" / secure_filename(filename)
+
+            safe_filename = secure_filename(filename)
+            filepath = path / "constant" / "triSurface" / safe_filename
+
+            # Ensure we are deleting inside the directory
+            try:
+                filepath.resolve().relative_to(path)
+            except ValueError:
+                return {"success": False, "message": "Invalid file path."}
 
             if not filepath.exists():
                 return {"success": False, "message": "File not found."}

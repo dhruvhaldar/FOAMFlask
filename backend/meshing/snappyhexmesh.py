@@ -14,20 +14,21 @@ class SnappyHexMeshGenerator:
     ) -> bool:
         """
         Generates the snappyHexMeshDict file.
-
-        Args:
-            case_path: Path to the case directory.
-            config: Configuration dictionary.
-                    Can be legacy (stl_filename, refinement_level keys)
-                    or new complex structure.
-
-        Returns:
-            True if successful, False otherwise.
         """
         try:
+            # Check if case_path exists
+            if not case_path.exists():
+                return False
+
             system_dir = case_path / "system"
             if not system_dir.exists():
                 logger.error(f"System directory not found: {system_dir}")
+                return False
+
+            # Ensure system_dir is inside case_path
+            try:
+                system_dir.resolve().relative_to(case_path.resolve())
+            except ValueError:
                 return False
 
             dict_path = system_dir / "snappyHexMeshDict"
@@ -89,6 +90,10 @@ class SnappyHexMeshGenerator:
             geometry_str = ""
             for obj in objects:
                 name = obj["name"]
+                # Sanitize name to be safe
+                if ".." in name or "/" in name or "\\" in name:
+                     continue # Skip unsafe names
+
                 if name.lower().endswith(".stl"):
                     region_name = name
                     geometry_str += f"""
@@ -103,6 +108,8 @@ class SnappyHexMeshGenerator:
             features_str = ""
             for obj in objects:
                 name = obj["name"]
+                if ".." in name or "/" in name or "\\" in name: continue
+
                 level = obj.get("refinement_level_min", 1)
                 features_str += f"""
         {{
@@ -117,6 +124,8 @@ class SnappyHexMeshGenerator:
 
             for obj in objects:
                 name = obj["name"]
+                if ".." in name or "/" in name or "\\" in name: continue
+
                 min_lvl = obj.get("refinement_level_min", 2)
                 max_lvl = obj.get("refinement_level_max", 2)
                 num_layers = int(obj.get("layers", 0))

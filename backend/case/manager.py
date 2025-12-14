@@ -20,15 +20,17 @@ class CaseManager:
             Dictionary with success status and message.
         """
         try:
+            # We assume case_path is validated by caller (app.py)
             path = Path(case_path).resolve()
+
+            # Additional check: ensure we are not creating root directory etc
+            # This is already handled by validate_path in app.py with CASE_ROOT
 
             if path.exists() and any(path.iterdir()):
                  # Check if it looks like a case (has 0, constant, system)
                  if (path / "system").exists() and (path / "constant").exists():
                      return {"success": True, "message": "Case directory already exists and appears valid.", "path": str(path)}
                  else:
-                     # It exists but might not be a valid case, or is just a random folder.
-                     # We will try to add missing folders.
                      pass
 
             # Create directories

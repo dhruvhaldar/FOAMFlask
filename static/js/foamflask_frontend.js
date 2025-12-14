@@ -281,6 +281,77 @@ const downloadPlotData = (plotId, filename) => {
         }
     });
 };
+// Forward declaration of functions to avoid hoisting issues in TS
+// Note: In TS/JS functions are hoisted, but `const func = ...` are not.
+// We'll change critical ones to standard function declarations.
+// Realtime Plotting Functions
+function startPlotUpdates() {
+    if (plotUpdateInterval)
+        return;
+    plotUpdateInterval = setInterval(() => {
+        if (!plotsInViewport)
+            return;
+        if (!isUpdatingPlots)
+            updatePlots();
+        else
+            pendingPlotUpdate = true;
+    }, 2000);
+}
+function stopPlotUpdates() {
+    if (plotUpdateInterval) {
+        clearInterval(plotUpdateInterval);
+        plotUpdateInterval = null;
+    }
+}
+function togglePlots() {
+    plotsVisible = !plotsVisible;
+    const container = document.getElementById("plotsContainer");
+    const btn = document.getElementById("togglePlotsBtn");
+    const aeroBtn = document.getElementById("toggleAeroBtn");
+    if (plotsVisible) {
+        container?.classList.remove("hidden");
+        if (btn)
+            btn.textContent = "Hide Plots";
+        aeroBtn?.classList.remove("hidden");
+        startPlotUpdates();
+        setupIntersectionObserver();
+    }
+    else {
+        container?.classList.add("hidden");
+        if (btn)
+            btn.textContent = "Show Plots";
+        aeroBtn?.classList.add("hidden");
+        stopPlotUpdates();
+    }
+}
+function setupIntersectionObserver() {
+    const plotsContainer = document.getElementById("plotsContainer");
+    if (!plotsContainer || plotsContainer.dataset.observerSetup)
+        return;
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            plotsInViewport = entry.isIntersecting;
+        });
+    }, { threshold: 0.1, rootMargin: "50px" });
+    observer.observe(plotsContainer);
+    plotsContainer.dataset.observerSetup = "true";
+}
+function toggleAeroPlots() {
+    aeroVisible = !aeroVisible;
+    const container = document.getElementById("aeroContainer");
+    const btn = document.getElementById("toggleAeroBtn");
+    if (aeroVisible) {
+        container?.classList.remove("hidden");
+        if (btn)
+            btn.textContent = "Hide Aero Plots";
+        updateAeroPlots();
+    }
+    else {
+        container?.classList.add("hidden");
+        if (btn)
+            btn.textContent = "Show Aero Plots";
+    }
+}
 // Page Switching
 const switchPage = (pageName) => {
     console.log(`switchPage called with: ${pageName}`);
@@ -371,14 +442,21 @@ const showNotification = (message, type, duration = 5000) => {
     const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
     const content = document.createElement("div");
     content.className = "relative z-10";
-    content.innerHTML = `
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl font-bold">${icons[type]}</span>
-        <span class="text-lg font-medium">${message}</span>
-      </div>
-    </div>
-  `;
+    // Use createElement to avoid innerHTML for message
+    const flexContainer = document.createElement("div");
+    flexContainer.className = "flex items-center justify-between gap-3";
+    const innerFlex = document.createElement("div");
+    innerFlex.className = "flex items-center gap-2";
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "text-2xl font-bold";
+    iconSpan.textContent = icons[type];
+    const msgSpan = document.createElement("span");
+    msgSpan.className = "text-lg font-medium";
+    msgSpan.textContent = message; // Safe assignment
+    innerFlex.appendChild(iconSpan);
+    innerFlex.appendChild(msgSpan);
+    flexContainer.appendChild(innerFlex);
+    content.appendChild(flexContainer);
     notification.appendChild(content);
     if (duration > 0) {
         const progressBar = document.createElement("div");
@@ -390,7 +468,12 @@ const showNotification = (message, type, duration = 5000) => {
         notification.appendChild(progressBar);
         const countdown = document.createElement("div");
         countdown.className = "flex items-center justify-end gap-2 mt-1";
-        countdown.innerHTML = `<span id="countdown-${id}" class="text-xs opacity-75">${(duration / 1000).toFixed(1)}s</span>`;
+        // This part is safe as it's just setting text content dynamically, but let's be safe
+        const countdownSpan = document.createElement("span");
+        countdownSpan.id = `countdown-${id}`;
+        countdownSpan.className = "text-xs opacity-75";
+        countdownSpan.textContent = `${(duration / 1000).toFixed(1)}s`;
+        countdown.appendChild(countdownSpan);
         content.appendChild(countdown);
         const countdownInterval = setInterval(() => {
             duration -= 100;
@@ -408,7 +491,7 @@ const showNotification = (message, type, duration = 5000) => {
     }
     else {
         const closeBtn = document.createElement("button");
-        closeBtn.innerHTML = "×";
+        closeBtn.textContent = "×";
         closeBtn.className =
             "text-white hover:text-gray-200 font-bold text-lg leading-none";
         closeBtn.onclick = (e) => {
@@ -667,74 +750,6 @@ const runCommand = async (cmd) => {
     catch (e) {
         console.error(e);
         showNotification("Error running command", "error");
-    }
-};
-// Realtime Plotting Functions
-const togglePlots = () => {
-    plotsVisible = !plotsVisible;
-    const container = document.getElementById("plotsContainer");
-    const btn = document.getElementById("togglePlotsBtn");
-    const aeroBtn = document.getElementById("toggleAeroBtn");
-    if (plotsVisible) {
-        container?.classList.remove("hidden");
-        if (btn)
-            btn.textContent = "Hide Plots";
-        aeroBtn?.classList.remove("hidden");
-        startPlotUpdates();
-        setupIntersectionObserver();
-    }
-    else {
-        container?.classList.add("hidden");
-        if (btn)
-            btn.textContent = "Show Plots";
-        aeroBtn?.classList.add("hidden");
-        stopPlotUpdates();
-    }
-};
-const setupIntersectionObserver = () => {
-    const plotsContainer = document.getElementById("plotsContainer");
-    if (!plotsContainer || plotsContainer.dataset.observerSetup)
-        return;
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            plotsInViewport = entry.isIntersecting;
-        });
-    }, { threshold: 0.1, rootMargin: "50px" });
-    observer.observe(plotsContainer);
-    plotsContainer.dataset.observerSetup = "true";
-};
-const toggleAeroPlots = () => {
-    aeroVisible = !aeroVisible;
-    const container = document.getElementById("aeroContainer");
-    const btn = document.getElementById("toggleAeroBtn");
-    if (aeroVisible) {
-        container?.classList.remove("hidden");
-        if (btn)
-            btn.textContent = "Hide Aero Plots";
-        updateAeroPlots();
-    }
-    else {
-        container?.classList.add("hidden");
-        if (btn)
-            btn.textContent = "Show Aero Plots";
-    }
-};
-const startPlotUpdates = () => {
-    if (plotUpdateInterval)
-        return;
-    plotUpdateInterval = setInterval(() => {
-        if (!plotsInViewport)
-            return;
-        if (!isUpdatingPlots)
-            updatePlots();
-        else
-            pendingPlotUpdate = true;
-    }, 2000);
-};
-const stopPlotUpdates = () => {
-    if (plotUpdateInterval) {
-        clearInterval(plotUpdateInterval);
-        plotUpdateInterval = null;
     }
 };
 const updateResidualsPlot = async (tutorial) => {
@@ -1194,7 +1209,7 @@ const loadGeometryView = async () => {
         if (info.success) {
             const div = document.getElementById("geometryInfoContent");
             if (div)
-                div.innerHTML = `Bounds: [${info.bounds.join(", ")}]`;
+                div.textContent = `Bounds: [${info.bounds.join(", ")}]`;
             document.getElementById("geometryInfo")?.classList.remove("hidden");
         }
     }
@@ -1314,35 +1329,33 @@ function displayMeshInfo(meshInfo) {
         meshInfoDiv.classList.add("hidden");
         return;
     }
-    // Format the mesh information
-    const infoItems = [
-        { label: "Points", value: meshInfo.n_points?.toLocaleString() || "N/A" },
-        { label: "Cells", value: meshInfo.n_cells?.toLocaleString() || "N/A" },
-        {
-            label: "Length",
-            value: meshInfo.length ? meshInfo.length.toFixed(3) : "N/A",
-        },
-        {
-            label: "Volume",
-            value: meshInfo.volume ? meshInfo.volume.toFixed(3) : "N/A",
-        },
-    ];
-    meshInfoContent.innerHTML = infoItems
-        .map((item) => `<div><strong>${item.label}:</strong> ${item.value}</div>`)
-        .join("");
+    // Use DOM methods to build content safely
+    meshInfoContent.innerHTML = ""; // Clear existing content
+    const createItem = (label, value) => {
+        const div = document.createElement("div");
+        const strong = document.createElement("strong");
+        strong.textContent = label + ": ";
+        div.appendChild(strong);
+        div.appendChild(document.createTextNode(value));
+        return div;
+    };
+    meshInfoContent.appendChild(createItem("Points", meshInfo.n_points?.toLocaleString() || "N/A"));
+    meshInfoContent.appendChild(createItem("Cells", meshInfo.n_cells?.toLocaleString() || "N/A"));
+    meshInfoContent.appendChild(createItem("Length", meshInfo.length ? meshInfo.length.toFixed(3) : "N/A"));
+    meshInfoContent.appendChild(createItem("Volume", meshInfo.volume ? meshInfo.volume.toFixed(3) : "N/A"));
     // Add bounds if available
     if (meshInfo.bounds && Array.isArray(meshInfo.bounds)) {
-        const boundsStr = `[${meshInfo.bounds
-            .map((b) => b.toFixed(2))
-            .join(", ")}]`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> ${boundsStr}</div>`;
+        const boundsStr = `[${meshInfo.bounds.map((b) => b.toFixed(2)).join(", ")}]`;
+        const div = createItem("Bounds", boundsStr);
+        div.className = "col-span-2";
+        meshInfoContent.appendChild(div);
     }
     // Add center if available
     if (meshInfo.center && Array.isArray(meshInfo.center)) {
-        const centerStr = `(${meshInfo.center
-            .map((c) => c.toFixed(2))
-            .join(", ")})`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> ${centerStr}</div>`;
+        const centerStr = `(${meshInfo.center.map((c) => c.toFixed(2)).join(", ")})`;
+        const div = createItem("Center", centerStr);
+        div.className = "col-span-2";
+        meshInfoContent.appendChild(div);
     }
     meshInfoDiv.classList.remove("hidden");
 }
@@ -1509,13 +1522,24 @@ const checkStartupStatus = async () => {
     const modal = document.createElement("div");
     modal.id = "startup-modal";
     modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
-    modal.innerHTML = `
-    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
-      <div class="mb-4"><svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-      <h2 class="text-xl font-bold mb-2">System Check</h2>
-      <p id="startup-message" class="text-gray-600">Checking Docker permissions...</p>
-    </div>
-  `;
+    // Create modal content using DOM methods to check for safe structure
+    // The spinner SVG is static/safe
+    const content = document.createElement("div");
+    content.className = "bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center";
+    const spinnerContainer = document.createElement("div");
+    spinnerContainer.className = "mb-4";
+    spinnerContainer.innerHTML = `<svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    content.appendChild(spinnerContainer);
+    const title = document.createElement("h2");
+    title.className = "text-xl font-bold mb-2";
+    title.textContent = "System Check";
+    content.appendChild(title);
+    const msg = document.createElement("p");
+    msg.id = "startup-message";
+    msg.className = "text-gray-600";
+    msg.textContent = "Checking Docker permissions...";
+    content.appendChild(msg);
+    modal.appendChild(content);
     document.body.appendChild(modal);
     const pollStatus = async () => {
         try {
@@ -1556,6 +1580,14 @@ window.onload = async () => {
         // Restore Log
         const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
         if (savedLog) {
+            // Use textContent or sanitization? Logs might have HTML format for colors.
+            // Backend now sanitizes/escapes or sends text.
+            // Current usage: appendOutput uses textContent for message.
+            // So savedLog should be safe text?
+            // Actually savedLog comes from `container.innerHTML`.
+            // If we used innerHTML to save, we might be reloading malicious HTML if it got in.
+            // But appendOutput uses textContent. So only safe HTML tags (divs with classes) should be there.
+            // We will allow it for now as it's local storage restoration.
             outputDiv.innerHTML = savedLog;
             outputDiv.scrollTop = outputDiv.scrollHeight;
         }

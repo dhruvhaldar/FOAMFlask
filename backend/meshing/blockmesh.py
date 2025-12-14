@@ -17,21 +17,23 @@ class BlockMeshGenerator:
     ) -> bool:
         """
         Generates the blockMeshDict file.
-
-        Args:
-            case_path: Path to the case directory.
-            min_point: (x, y, z) tuple for minimum bounds.
-            max_point: (x, y, z) tuple for maximum bounds.
-            cells: (nx, ny, nz) tuple for number of cells.
-            grading: (gx, gy, gz) tuple for grading.
-
-        Returns:
-            True if successful, False otherwise.
         """
         try:
+            # Check if case_path is valid/exists
+            if not case_path.exists():
+                 logger.error(f"Case path not found: {case_path}")
+                 return False
+
             system_dir = case_path / "system"
             if not system_dir.exists():
                 logger.error(f"System directory not found: {system_dir}")
+                return False
+
+            # Ensure system_dir is inside case_path
+            try:
+                system_dir.resolve().relative_to(case_path.resolve())
+            except ValueError:
+                logger.error("Invalid system directory")
                 return False
 
             dict_path = system_dir / "blockMeshDict"
