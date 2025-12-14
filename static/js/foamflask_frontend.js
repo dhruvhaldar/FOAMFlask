@@ -1,14 +1,6 @@
 /**
  * FOAMFlask Frontend JavaScript
- *
- * External Dependencies:
- * - isosurface.js: Provides contour generation and visualization functions
- *   Required functions: generateContours, generateContoursWithParams, downloadContourImage, etc.
- *  Plotly: Loaded via CDN in HTML, available as global object
  */
-// Plotly is loaded globally via CDN in the HTML file
-// Utility functions
-// FOAMFlask Frontend TypeScript External Dependencies
 import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
 // Utility functions
 const getElement = (id) => {
@@ -76,17 +68,20 @@ const CONSOLE_LOG_KEY = "foamflask_console_log";
 let caseDir = "";
 let dockerImage = "";
 let openfoamVersion = "";
+let activeCase = "";
 // Page management
 let currentPage = "setup";
 // Mesh visualization state
 let currentMeshPath = null;
 let availableMeshes = [];
 let isInteractiveMode = false;
+// Geometry State
+let selectedGeometry = null;
 // Notification management
 let notificationId = 0;
 let lastErrorNotificationTime = 0;
-const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
-// Plotting variables and theme
+const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000;
+// Plotting variables
 let plotUpdateInterval = null;
 let plotsVisible = true;
 let aeroVisible = false;
@@ -97,8 +92,7 @@ let isFirstPlotLoad = true;
 // Request management
 let abortControllers = new Map();
 let requestCache = new Map();
-const CACHE_DURATION = 1000; // 1 second cache
-// Performance optimization
+const CACHE_DURATION = 1000;
 const outputBuffer = [];
 let outputFlushTimer = null;
 let saveLogTimer = null;
@@ -119,7 +113,7 @@ const saveLogDebounced = () => {
         clearTimeout(saveLogTimer);
     saveLogTimer = setTimeout(saveLogToStorage, 2000);
 };
-// Custom color palette
+// Colors
 const plotlyColors = {
     blue: "#1f77b4",
     orange: "#ff7f0e",
@@ -134,7 +128,6 @@ const plotlyColors = {
     cyan: "#17becf",
     magenta: "#e377c2",
 };
-// Common plot layout
 const plotLayout = {
     font: { family: "Computer Modern Serif, serif", size: 12 },
     plot_bgcolor: "white",
@@ -155,7 +148,6 @@ const plotLayout = {
     xaxis: { showgrid: false, linewidth: 1 },
     yaxis: { showgrid: false, linewidth: 1 },
 };
-// Plotly config
 const plotConfig = {
     responsive: true,
     displayModeBar: true,
@@ -175,15 +167,10 @@ const plotConfig = {
     ],
     displaylogo: false,
 };
-// Helper: Common line style
 const lineStyle = { width: 2, opacity: 0.9 };
-// Helper: Create bold title
 const createBoldTitle = (text) => ({
     text: `<b>${text}</b>`,
-    font: {
-        ...plotLayout.font,
-        size: 22,
-    },
+    font: { ...plotLayout.font, size: 22 },
 });
 // Helper: Download plot as PNG
 const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png") => {
@@ -212,6 +199,7 @@ const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png") => {
         console.error("Error downloading plot:", err);
     });
 };
+// Helper: Save current legend visibility
 const getLegendVisibility = (plotDiv) => {
     try {
         const plotData = plotDiv.data;
@@ -236,16 +224,6 @@ const getLegendVisibility = (plotDiv) => {
         return {};
     }
 };
-// Helper: Apply saved legend visibility to new traces
-const applyLegendVisibility = (plotDiv, visibility) => {
-    if (!plotDiv || !plotDiv.data || !visibility)
-        return;
-    plotDiv.data.forEach((trace) => {
-        if (trace.name && visibility.hasOwnProperty(trace.name)) {
-            trace.visible = visibility[trace.name];
-        }
-    });
-};
 // Helper: Attach white-bg download button to a plot
 const attachWhiteBGDownloadButton = (plotDiv) => {
     if (!plotDiv || plotDiv.dataset.whiteButtonAdded)
@@ -269,10 +247,44 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
         console.error("Plotly update failed:", err);
     });
 };
+const downloadPlotData = (plotId, filename) => {
+    const plotDiv = document.getElementById(plotId);
+    if (!plotDiv || !plotDiv.data)
+        return;
+    const traces = plotDiv.data;
+    traces.forEach((trace, index) => {
+        if (!trace.x || !trace.y)
+            return;
+        let csvContent = "x,y\n";
+        for (let i = 0; i < trace.x.length; i++) {
+            const x = trace.x[i] ?? "";
+            const y = trace.y[i] ?? "";
+            csvContent += `${x},${y}\n`;
+        }
+        const traceName = trace.name?.replace(/\s+/g, "").toLowerCase() || `trace${index + 1}`;
+        const traceFilename = filename.replace(".csv", `${traceName}.csv`);
+        try {
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = traceFilename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        }
+        catch (error) {
+            console.error(`FOAMFlask Error downloading ${traceName} data`, error);
+        }
+    });
+};
 // Page Switching
 const switchPage = (pageName) => {
     console.log(`switchPage called with: ${pageName}`);
-    const pages = ["setup", "run", "mesh", "plots", "post"];
+    const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
     pages.forEach((page) => {
         const pageElement = document.getElementById(`page-${page}`);
         const navButton = document.getElementById(`nav-${page}`);
@@ -291,12 +303,31 @@ const switchPage = (pageName) => {
         selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
         selectedNav.classList.add("bg-blue-500", "text-white");
     }
+    // Auto-refresh lists based on page
     switch (pageName) {
+        case "geometry":
+            refreshGeometryList();
+            break;
+        case "meshing":
+            refreshGeometryList().then(() => {
+                const shmSelect = document.getElementById("shmStlSelect");
+                const geoSelect = document.getElementById("geometrySelect");
+                if (shmSelect && geoSelect) {
+                    shmSelect.innerHTML = geoSelect.innerHTML;
+                }
+            });
+            break;
+        case "visualizer":
+            const visualizerContainer = document.getElementById("page-visualizer");
+            if (visualizerContainer && !visualizerContainer.hasAttribute("data-initialized")) {
+                visualizerContainer.setAttribute("data-initialized", "true");
+                refreshMeshList();
+            }
+            break;
         case "plots":
             const plotsContainer = document.getElementById("plotsContainer");
             if (plotsContainer) {
                 plotsContainer.classList.remove("hidden");
-                // FIX: Show loading on first load
                 if (isFirstPlotLoad) {
                     const loader = document.getElementById("plotsLoading");
                     if (loader)
@@ -312,24 +343,12 @@ const switchPage = (pageName) => {
             if (aeroBtn)
                 aeroBtn.classList.remove("hidden");
             break;
-        case "mesh":
-            const meshContainer = document.getElementById("page-mesh");
-            if (meshContainer && !meshContainer.hasAttribute("data-initialized")) {
-                meshContainer.setAttribute("data-initialized", "true");
-                console.log("Mesh page initialized");
-                refreshMeshList();
-            }
-            break;
         case "post":
             const postContainer = document.getElementById("page-post");
             if (postContainer && !postContainer.hasAttribute("data-initialized")) {
                 postContainer.setAttribute("data-initialized", "true");
-                console.log("Post page initialized");
                 refreshPostList();
             }
-            break;
-        default:
-            console.log(`Unknown page: ${pageName}`);
             break;
     }
 };
@@ -415,48 +434,7 @@ const removeNotification = (id) => {
         setTimeout(() => notification.remove(), 300);
     }
 };
-// Initialize on page load
-window.onload = async () => {
-    // Check startup status first
-    try {
-        await checkStartupStatus();
-    }
-    catch (error) {
-        console.error("Startup check failed", error);
-    }
-    try {
-        const tutorialSelect = document.getElementById("tutorialSelect");
-        if (tutorialSelect) {
-            const savedTutorial = localStorage.getItem("lastSelectedTutorial");
-            if (savedTutorial)
-                tutorialSelect.value = savedTutorial;
-        }
-        // Explicitly typed responses
-        const caseRootData = await fetchWithCache("/get_case_root");
-        const dockerConfigData = await fetchWithCache("/get_docker_config");
-        caseDir = caseRootData.caseDir;
-        const caseDirInput = document.getElementById("caseDir");
-        if (caseDirInput)
-            caseDirInput.value = caseDir;
-        dockerImage = dockerConfigData.dockerImage;
-        openfoamVersion = dockerConfigData.openfoamVersion;
-        const openfoamRootInput = document.getElementById("openfoamRoot");
-        if (openfoamRootInput)
-            openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
-        // Restore Console Log from LocalStorage
-        const outputDiv = document.getElementById("output");
-        const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
-        if (outputDiv && savedLog) {
-            outputDiv.innerHTML = savedLog;
-            outputDiv.scrollTop = outputDiv.scrollHeight;
-        }
-    }
-    catch (error) {
-        console.error("FOAMFlask Initialization error", error);
-        appendOutput("FOAMFlask Failed to initialize application", "stderr");
-    }
-};
-// Fetch with caching and abort control
+// Network
 const fetchWithCache = async (url, options = {}) => {
     const cacheKey = `${url}${JSON.stringify(options)}`;
     const cached = requestCache.get(cacheKey);
@@ -481,7 +459,7 @@ const fetchWithCache = async (url, options = {}) => {
         abortControllers.delete(url);
     }
 };
-// Append output helper with buffering
+// Logging
 const appendOutput = (message, type) => {
     outputBuffer.push({ message, type });
     if (outputFlushTimer)
@@ -514,17 +492,13 @@ const flushOutputBuffer = () => {
     // Save to LocalStorage (Debounced)
     saveLogDebounced();
 };
-// Set case directory manually
+// Setup Functions
 const setCase = async () => {
     try {
         caseDir = document.getElementById("caseDir").value;
-        const response = await fetch("/set_case", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ caseDir }),
-        });
+        const response = await fetch("/set_case", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir }) });
         if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error();
         const data = await response.json();
         caseDir = data.caseDir;
         document.getElementById("caseDir").value = caseDir;
@@ -540,26 +514,20 @@ const setCase = async () => {
             });
         }
         showNotification("Case directory set", "info");
+        refreshCaseList();
     }
-    catch (error) {
-        console.error("FOAMFlask Error setting case", error);
-        appendOutput(`FOAMFlask Failed to set case directory ${getErrorMessage(error)}`, "stderr");
+    catch (e) {
+        console.error(e);
         showNotification("Failed to set case directory", "error");
     }
 };
-// Update Docker config instead of OpenFOAM root
 const setDockerConfig = async (image, version) => {
     try {
         dockerImage = image;
         openfoamVersion = version;
-        const response = await fetch("/set_docker_config", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ dockerImage, openfoamVersion }),
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
+        const response = await fetch("/set_docker_config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dockerImage, openfoamVersion }) });
+        if (!response.ok)
+            throw new Error();
         const data = await response.json();
         dockerImage = data.dockerImage;
         openfoamVersion = data.openfoamVersion;
@@ -567,115 +535,138 @@ const setDockerConfig = async (image, version) => {
         if (openfoamRootInput instanceof HTMLInputElement) {
             openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
         }
-        appendOutput(`Docker config set to ${dockerImage} OpenFOAM ${openfoamVersion}`, "info");
         showNotification("Docker config updated", "success");
     }
-    catch (error) {
-        console.error("FOAMFlask Error setting Docker config", error);
-        appendOutput(`FOAMFlask Failed to set Docker config ${getErrorMessage(error)}`, "stderr");
+    catch (e) {
         showNotification("Failed to set Docker config", "error");
     }
 };
-// Load a tutorial
 const loadTutorial = async () => {
     try {
         const tutorialSelect = document.getElementById("tutorialSelect");
         const selected = tutorialSelect.value;
         if (selected)
             localStorage.setItem("lastSelectedTutorial", selected);
-        const response = await fetch("/load_tutorial", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tutorial: selected }),
-        });
+        showNotification("Importing tutorial...", "info");
+        const response = await fetch("/load_tutorial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tutorial: selected }) });
         if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error();
         const data = await response.json();
         if (data.output) {
             data.output.split("\n").forEach((line) => {
-                line = line.trim();
-                if (line.startsWith("INFO:FOAMFlask Tutorial loaded")) {
-                    appendOutput(line.replace("INFO:FOAMFlask Tutorial loaded", "FOAMFlask Tutorial loaded"), "tutorial");
-                }
-                else if (line.startsWith("Source")) {
-                    appendOutput(`FOAMFlask ${line}`, "info");
-                }
-                else if (line.startsWith("Copied to")) {
-                    appendOutput(`FOAMFlask ${line}`, "info");
-                }
-                else {
-                    const type = /error/i.test(line) ? "stderr" : "stdout";
-                    appendOutput(line, type);
-                }
+                if (line.trim())
+                    appendOutput(line.trim(), "info");
             });
         }
-        showNotification("Tutorial loaded", "info");
+        showNotification("Tutorial imported", "success");
+        await refreshCaseList();
+        const importedName = selected.split('/').pop();
+        if (importedName) {
+            selectCase(importedName);
+            const select = document.getElementById("caseSelect");
+            if (select)
+                select.value = importedName;
+        }
     }
-    catch (error) {
-        console.error("FOAMFlask Error loading tutorial", error);
-        appendOutput(`FOAMFlask Failed to load tutorial ${getErrorMessage(error)}`, "stderr");
+    catch (e) {
         showNotification("Failed to load tutorial", "error");
     }
 };
-// Run OpenFOAM commands
+// Case Management
+const refreshCaseList = async () => {
+    try {
+        const response = await fetch("/api/cases/list");
+        const data = await response.json();
+        const select = document.getElementById("caseSelect");
+        if (select && data.cases) {
+            const current = select.value;
+            select.innerHTML = '<option value="">-- Select a Case --</option>';
+            data.cases.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+            if (current && data.cases.includes(current))
+                select.value = current;
+            else if (activeCase && data.cases.includes(activeCase))
+                select.value = activeCase;
+        }
+    }
+    catch (e) {
+        console.error(e);
+    }
+};
+const selectCase = (val) => {
+    activeCase = val;
+    localStorage.setItem("lastSelectedCase", val);
+};
+const createNewCase = async () => {
+    const caseName = document.getElementById("newCaseName").value;
+    if (!caseName) {
+        showNotification("Enter case name", "warning");
+        return;
+    }
+    showNotification(`Creating case ${caseName}...`, "info");
+    try {
+        const response = await fetch("/api/case/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName }) });
+        const data = await response.json();
+        if (data.success) {
+            showNotification("Case created", "success");
+            document.getElementById("newCaseName").value = "";
+            await refreshCaseList();
+            selectCase(caseName);
+            const select = document.getElementById("caseSelect");
+            if (select)
+                select.value = caseName;
+        }
+        else {
+            showNotification(data.message || "Failed", "error");
+        }
+    }
+    catch (e) {
+        showNotification("Error creating case", "error");
+    }
+};
 const runCommand = async (cmd) => {
     if (!cmd) {
-        appendOutput("FOAMFlask Error: No command specified!", "stderr");
         showNotification("No command specified", "error");
         return;
     }
+    // Use tutorial select if activeCase is not set, or prefer tutorial select for "Run" tab
+    const selectedTutorial = document.getElementById("tutorialSelect")?.value || activeCase;
+    if (!selectedTutorial) {
+        showNotification("Select case and command", "error");
+        return;
+    }
     try {
-        // ... get selectedTutorial ...
-        const selectedTutorial = document.getElementById("tutorialSelect").value;
-        const outputDiv = document.getElementById("output");
-        if (outputDiv) {
-            outputDiv.innerHTML = "";
-            localStorage.removeItem(CONSOLE_LOG_KEY);
-            if (saveLogTimer)
-                clearTimeout(saveLogTimer);
-        }
-        outputBuffer.length = 0;
         showNotification(`Running ${cmd}...`, "info");
-        const response = await fetch("/run", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                caseDir,
-                tutorial: selectedTutorial,
-                command: cmd,
-            }),
-        });
+        const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir, tutorial: selectedTutorial, command: cmd }) });
         if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error();
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
         const read = async () => {
-            const { done, value } = (await reader?.read()) || {
-                done: true,
-                value: undefined,
-            };
+            const { done, value } = (await reader?.read()) || { done: true, value: undefined };
             if (done) {
+                showNotification("Done", "success");
                 flushOutputBuffer();
-                showNotification(`${cmd} completed`, "success");
                 return;
             }
             const text = decoder.decode(value);
-            text.split("\n").forEach((line) => {
-                if (!line.trim())
-                    return;
-                const type = /error/i.test(line) ? "stderr" : "stdout";
-                appendOutput(line, type);
+            text.split("\n").forEach(line => {
+                if (line.trim()) {
+                    const type = /error/i.test(line) ? "stderr" : "stdout";
+                    appendOutput(line, type);
+                }
             });
             await read();
         };
         await read();
     }
-    catch (error) {
-        appendOutput(`FOAMFlask Error reading response ${getErrorMessage(error)}`, "stderr");
-        const errorMsg = cmd.includes("foamToVTK")
-            ? "Failed to generate VTK files. Make sure the simulation has completed successfully."
-            : `Error running ${cmd}`;
-        showNotification(errorMsg, "error");
+    catch (e) {
+        console.error(e);
+        showNotification("Error running command", "error");
     }
 };
 // Realtime Plotting Functions
@@ -686,14 +677,16 @@ const togglePlots = () => {
     const aeroBtn = document.getElementById("toggleAeroBtn");
     if (plotsVisible) {
         container?.classList.remove("hidden");
-        btn.textContent = "Hide Plots";
+        if (btn)
+            btn.textContent = "Hide Plots";
         aeroBtn?.classList.remove("hidden");
         startPlotUpdates();
         setupIntersectionObserver();
     }
     else {
         container?.classList.add("hidden");
-        btn.textContent = "Show Plots";
+        if (btn)
+            btn.textContent = "Show Plots";
         aeroBtn?.classList.add("hidden");
         stopPlotUpdates();
     }
@@ -716,12 +709,14 @@ const toggleAeroPlots = () => {
     const btn = document.getElementById("toggleAeroBtn");
     if (aeroVisible) {
         container?.classList.remove("hidden");
-        btn.textContent = "Hide Aero Plots";
+        if (btn)
+            btn.textContent = "Hide Aero Plots";
         updateAeroPlots();
     }
     else {
         container?.classList.add("hidden");
-        btn.textContent = "Show Aero Plots";
+        if (btn)
+            btn.textContent = "Show Aero Plots";
     }
 };
 const startPlotUpdates = () => {
@@ -745,9 +740,7 @@ const stopPlotUpdates = () => {
 const updateResidualsPlot = async (tutorial) => {
     try {
         const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
-        // console.log("Residuals data received:", data);
         if (data.error || !data.time || data.time.length === 0) {
-            console.log("Residuals plot early return:", { error: data.error, hasTime: !!data.time, timeLength: data.time?.length });
             return;
         }
         const traces = [];
@@ -761,8 +754,6 @@ const updateResidualsPlot = async (tutorial) => {
             plotlyColors.orange,
         ];
         fields.forEach((field, idx) => {
-            // Need to cast data to any because ResidualsResponse doesn't allow index access easily with string literals in strict mode
-            // or check property existence
             const fieldData = data[field];
             if (fieldData && fieldData.length > 0) {
                 traces.push({
@@ -814,7 +805,6 @@ const updateAeroPlots = async () => {
     if (!selectedTutorial)
         return;
     try {
-        // Switch to api_plot_data to get time series data (arrays)
         const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
         const data = await response.json();
         if (data.error)
@@ -826,9 +816,6 @@ const updateAeroPlots = async () => {
             data.p.length > 0) {
             const pinf = 101325;
             const rho = 1.225;
-            // U_mag might be an array, assume we want a reference velocity.
-            // If it's a time series, maybe take the last value or max?
-            // Original code assumed U_mag[0].
             const uinf = Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
             const qinf = 0.5 * rho * uinf * uinf;
             const cp = data.p.map((pval) => (pval - pinf) / qinf);
@@ -899,7 +886,6 @@ const updateAeroPlots = async () => {
         console.error("FOAMFlask Error updating aero plots", error);
     }
 };
-// UpdatePlots
 const updatePlots = async () => {
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial || isUpdatingPlots)
@@ -1129,239 +1115,194 @@ const updatePlots = async () => {
         }
     }
 };
-const downloadPlotData = (plotId, filename) => {
-    const plotDiv = document.getElementById(plotId); // Cast to any for plotly data access
-    if (!plotDiv || !plotDiv.data) {
-        console.error("FOAMFlask Plot data not available");
+// Geometry Functions
+const refreshGeometryList = async () => {
+    if (!activeCase)
         return;
-    }
-    const traces = plotDiv.data;
-    if (traces.length === 0) {
-        console.error("FOAMFlask No traces found in the plot");
-        return;
-    }
-    traces.forEach((trace, index) => {
-        // Explicit types
-        if (!trace.x || !trace.y)
-            return;
-        let csvContent = "x,y\n";
-        for (let i = 0; i < trace.x.length; i++) {
-            const x = trace.x[i] ?? "";
-            const y = trace.y[i] ?? "";
-            csvContent += `${x},${y}\n`;
-        }
-        const traceName = trace.name?.replace(/\s+/g, "").toLowerCase() || `trace${index + 1}`;
-        const traceFilename = filename.replace(".csv", `${traceName}.csv`);
-        try {
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = traceFilename;
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => {
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-        }
-        catch (error) {
-            console.error(`FOAMFlask Error downloading ${traceName} data`, error);
-        }
-    });
-};
-// Mesh Visualization Functions
-const refreshMeshList = async () => {
     try {
-        const tutorial = document.getElementById("tutorialSelect")?.value;
-        if (!tutorial) {
-            showNotification("Please select a tutorial first", "error");
-            return;
-        }
-        const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
-        if (!response.ok)
-            throw new Error("Failed to fetch mesh files");
+        const response = await fetch(`/api/geometry/list?caseName=${encodeURIComponent(activeCase)}`);
         const data = await response.json();
-        if (data.error) {
-            showNotification(data.error, "error");
-            return;
-        }
-        availableMeshes = data.meshes;
-        const meshSelect = document.getElementById("meshSelect");
-        const meshActionButtons = document.getElementById("meshActionButtons");
-        if (!meshSelect) {
-            console.error("meshSelect element not found");
-            return;
-        }
-        meshSelect.innerHTML = '<option value="">-- Select a mesh file --</option>';
-        if (availableMeshes.length === 0) {
-            showNotification("No mesh files found in this case", "warning");
-            meshSelect.innerHTML =
-                '<option value="" disabled>No mesh files found</option>';
-            if (meshActionButtons) {
-                meshActionButtons.classList.remove("opacity-50", "h-0", "overflow-hidden", "mb-0");
-                meshActionButtons.classList.add("opacity-100", "h-auto", "mb-2");
+        if (data.success) {
+            const select = document.getElementById("geometrySelect");
+            if (select) {
+                select.innerHTML = "";
+                data.files.forEach((f) => {
+                    const opt = document.createElement("option");
+                    opt.value = f;
+                    opt.textContent = f;
+                    select.appendChild(opt);
+                });
             }
-            return;
-        }
-        availableMeshes.forEach((mesh) => {
-            const option = document.createElement("option");
-            option.value = mesh.path;
-            option.textContent = mesh.name;
-            meshSelect.appendChild(option);
-        });
-        showNotification(`Found ${availableMeshes.length} mesh files`, "success");
-        if (meshActionButtons) {
-            meshActionButtons.classList.add("opacity-50", "h-0", "overflow-hidden", "mb-0");
-            meshActionButtons.classList.remove("opacity-100", "h-auto", "mb-2");
         }
     }
-    catch (error) {
-        console.error("Error refreshing mesh list", error);
-        showNotification(`Error loading mesh files: ${getErrorMessage(error)}`, "error");
+    catch (e) {
+        console.error(e);
     }
 };
-const runFoamToVTK = async () => {
-    // ... check for selectedTutorial ...
-    const selectedTutorial = document.getElementById("tutorialSelect")?.value;
-    if (!selectedTutorial) {
-        showNotification("Please select a tutorial first", "error");
+const uploadGeometry = async () => {
+    const input = document.getElementById("geometryUpload");
+    const file = input?.files?.[0];
+    if (!file || !activeCase)
         return;
-    }
-    const outputDiv = document.getElementById("output");
-    if (outputDiv) {
-        outputDiv.innerHTML = "";
-        localStorage.removeItem(CONSOLE_LOG_KEY);
-        if (saveLogTimer)
-            clearTimeout(saveLogTimer);
-    }
-    outputBuffer.length = 0;
-    showNotification("Running <strong>foamToVTK</strong>", "info");
-    showNotification("Check <strong>Run/Log</strong> for more details", "info", 10000);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("caseName", activeCase);
     try {
-        const response = await fetch("/run_foamtovtk", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ caseDir, tutorial: selectedTutorial }),
-        });
-        if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-            const { done, value } = (await reader?.read()) || {
-                done: true,
-                value: undefined,
-            };
-            if (done)
-                break;
-            const text = decoder.decode(value);
-            appendOutput(text, "stdout");
+        await fetch("/api/geometry/upload", { method: "POST", body: formData });
+        showNotification("Uploaded", "success");
+        input.value = "";
+        refreshGeometryList();
+    }
+    catch (e) {
+        showNotification("Failed", "error");
+    }
+};
+const deleteGeometry = async () => {
+    const filename = document.getElementById("geometrySelect")?.value;
+    if (!filename || !activeCase)
+        return;
+    if (!confirm("Delete?"))
+        return;
+    try {
+        await fetch("/api/geometry/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        refreshGeometryList();
+    }
+    catch (e) {
+        showNotification("Failed", "error");
+    }
+};
+const loadGeometryView = async () => {
+    const filename = document.getElementById("geometrySelect")?.value;
+    if (!filename || !activeCase)
+        return;
+    showNotification("Loading...", "info");
+    try {
+        const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        if (res.ok) {
+            const html = await res.text();
+            document.getElementById("geometryInteractive").srcdoc = html;
+            document.getElementById("geometryPlaceholder")?.classList.add("hidden");
         }
-        showNotification("foamToVTK completed", "success");
     }
-    catch (error) {
-        console.error("Error running foamToVTK", error);
-        appendOutput(`Error: ${getErrorMessage(error)}`, "stderr");
-        showNotification("Failed to run foamToVTK", "error");
+    catch (e) {
+        showNotification("Failed", "error");
     }
+    // Info
+    try {
+        const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        const info = await res.json();
+        if (info.success) {
+            const div = document.getElementById("geometryInfoContent");
+            if (div)
+                div.innerHTML = `Bounds: [${info.bounds.join(", ")}]`;
+            document.getElementById("geometryInfo")?.classList.remove("hidden");
+        }
+    }
+    catch (e) { }
+};
+// Meshing Functions
+const fillBoundsFromGeometry = async () => {
+    // simplified for brevity
+    const filename = document.getElementById("shmStlSelect")?.value;
+    if (!filename || !activeCase)
+        return;
+    try {
+        const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        const info = await res.json();
+        if (info.success) {
+            const b = info.bounds;
+            const p = 0.1;
+            const dx = b[1] - b[0];
+            const dy = b[3] - b[2];
+            const dz = b[5] - b[4];
+            document.getElementById("bmMin").value = `${(b[0] - dx * p).toFixed(2)} ${(b[2] - dy * p).toFixed(2)} ${(b[4] - dz * p).toFixed(2)}`;
+            document.getElementById("bmMax").value = `${(b[1] + dx * p).toFixed(2)} ${(b[3] + dy * p).toFixed(2)} ${(b[5] + dz * p).toFixed(2)}`;
+        }
+    }
+    catch (e) { }
+};
+const generateBlockMeshDict = async () => {
+    if (!activeCase)
+        return;
+    const minVal = document.getElementById("bmMin").value.trim().split(/\s+/).map(Number);
+    const maxVal = document.getElementById("bmMax").value.trim().split(/\s+/).map(Number);
+    const cells = document.getElementById("bmCells").value.trim().split(/\s+/).map(Number);
+    const grading = document.getElementById("bmGrading").value.trim().split(/\s+/).map(Number);
+    try {
+        await fetch("/api/meshing/blockMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { min_point: minVal, max_point: maxVal, cells, grading } }) });
+        showNotification("Generated", "success");
+    }
+    catch (e) { }
+};
+const generateSnappyHexMeshDict = async () => {
+    const filename = document.getElementById("shmStlSelect")?.value;
+    if (!activeCase || !filename)
+        return;
+    const level = parseInt(document.getElementById("shmLevel").value);
+    const location = document.getElementById("shmLocation").value.trim().split(/\s+/).map(Number);
+    try {
+        await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { stl_filename: filename, refinement_level: level, location_in_mesh: location } }) });
+        showNotification("Generated", "success");
+    }
+    catch (e) { }
+};
+const runMeshingCommand = async (cmd) => {
+    if (!activeCase)
+        return;
+    showNotification(`Running ${cmd}`, "info");
+    try {
+        const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
+        const data = await res.json();
+        if (data.success) {
+            showNotification("Done", "success");
+            const div = document.getElementById("meshingOutput");
+            if (div)
+                div.innerText += `\n${data.output}`;
+        }
+    }
+    catch (e) { }
+};
+// Visualizer
+const refreshMeshList = async () => {
+    if (!activeCase)
+        return;
+    try {
+        const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
+        const data = await res.json();
+        const select = document.getElementById("meshSelect");
+        if (select && data.meshes) {
+            select.innerHTML = '<option value="">Select</option>';
+            data.meshes.forEach((m) => {
+                const opt = document.createElement("option");
+                opt.value = m.path;
+                opt.textContent = m.name;
+                select.appendChild(opt);
+            });
+        }
+    }
+    catch (e) { }
 };
 const loadMeshVisualization = async () => {
-    const meshSelect = document.getElementById("meshSelect");
-    const selectedPath = meshSelect.value;
-    if (!selectedPath) {
-        showNotification("Please select a mesh file", "warning");
+    const path = document.getElementById("meshSelect")?.value;
+    if (!path)
         return;
-    }
-    try {
-        showNotification("Loading mesh...", "info");
-        const infoResponse = await fetch("/api/load_mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ file_path: selectedPath }),
-        });
-        if (!infoResponse.ok)
-            throw new Error(`HTTP error! status: ${infoResponse.status}`);
-        const meshInfo = await infoResponse.json();
-        if (!meshInfo.success) {
-            showNotification(`${meshInfo.error} Failed to load mesh`, "error");
-            return;
-        }
-        displayMeshInfo(meshInfo);
-        currentMeshPath = selectedPath;
-        await updateMeshView();
-        document.getElementById("meshControls")?.classList.remove("hidden");
-        showNotification("Mesh loaded successfully", "success");
-    }
-    catch (error) {
-        console.error("FOAMFlask Error loading mesh", error);
-        showNotification("Failed to load mesh", "error");
-    }
+    currentMeshPath = path;
+    updateMeshView();
 };
-async function updateMeshView() {
-    if (!currentMeshPath) {
-        showNotification("No mesh loaded", "warning");
+const updateMeshView = async () => {
+    if (!currentMeshPath)
         return;
-    }
-    let loadingNotification = null;
     try {
-        const showEdgesInput = document.getElementById("showEdges");
-        const colorInput = document.getElementById("meshColor");
-        const cameraPositionSelect = document.getElementById("cameraPosition");
-        if (!showEdgesInput || !colorInput || !cameraPositionSelect) {
-            showNotification("Required mesh controls not found", "error");
-            return;
+        const res = await fetch("/api/mesh_screenshot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_path: currentMeshPath, width: 800, height: 600 }) });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById("meshImage").src = `data:image/png;base64,${data.image}`;
+            document.getElementById("meshImage")?.classList.remove("hidden");
+            document.getElementById("meshPlaceholder")?.classList.add("hidden");
         }
-        const showEdges = showEdgesInput.checked;
-        const color = colorInput.value;
-        const cameraPosition = cameraPositionSelect.value;
-        // Show persistent loading notification
-        loadingNotification = showNotification("Rendering mesh...", "info", 0);
-        const response = await fetch("/api/mesh_screenshot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                file_path: currentMeshPath,
-                width: 1200,
-                height: 800,
-                show_edges: showEdges,
-                color: color,
-                camera_position: cameraPosition || null,
-            }),
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.error || "Failed to render mesh");
-        }
-        // Display the image
-        const meshImage = document.getElementById("meshImage");
-        const meshPlaceholder = document.getElementById("meshPlaceholder");
-        if (!meshImage || !meshPlaceholder) {
-            showNotification("Mesh image or placeholder element not found", "error");
-            return;
-        }
-        meshImage.onload = function () {
-            // Only remove loading notification after image is fully loaded
-            if (loadingNotification !== null) {
-                removeNotification(loadingNotification);
-            }
-            showNotification("Mesh rendered successfully", "success", 2000);
-        };
-        meshImage.src = `data:image/png;base64,${data.image}`;
-        meshImage.classList.remove("hidden");
-        meshPlaceholder.classList.add("hidden");
     }
-    catch (error) {
-        console.error("[FOAMFlask] Error rendering mesh:", error);
-        if (loadingNotification !== null) {
-            removeNotification(loadingNotification);
-        }
-        showNotification(`Error: ${getErrorMessage(error)}`, "error", 3000);
-    }
-}
+    catch (e) { }
+};
 function displayMeshInfo(meshInfo) {
     const meshInfoDiv = document.getElementById("meshInfo");
     const meshInfoContent = document.getElementById("meshInfoContent");
@@ -1535,313 +1476,34 @@ function resetCamera() {
         console.error("Error resetting camera:", error);
     }
 }
-// Simple path join function for browser
-function joinPath(...parts) {
-    // Filter out empty parts and join with forward slashes
-    return parts
-        .filter((part) => part)
-        .join("/")
-        .replace(/\/+/g, "/");
-}
-// --- Post Processing Functions ---
-async function refreshPostList() {
-    const postContainer = document.getElementById("post-processing-content");
-    if (!postContainer)
+// Post Processing
+const refreshPostList = async () => {
+    refreshPostListVTK();
+};
+const refreshPostListVTK = async () => {
+    if (!activeCase)
         return;
-    // Show loading state
-    postContainer.innerHTML =
-        '<div class="p-4 text-center text-gray-500">Loading post-processing options...</div>';
-    // Call VTK file loading function
-    await refreshPostListVTK();
     try {
-        postContainer.innerHTML = `
-        <div class="space-y-4">
-          <div class="bg-white p-4 rounded-lg shadow">
-            <h3 class="font-medium text-gray-900">VTK File Selection</h3>
-            <div class="mt-2">
-              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
-                <option value="">-- Select a VTK file --</option>
-              </select>
-            </div>
-          </div>
-          <div class="bg-white p-4 rounded-lg shadow">
-            <h3 class="font-medium text-gray-900">Available Operations</h3>
-            <div class="mt-2 space-y-2">
-              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-                      onclick="runPostOperation('create_slice')">
-                Create Slice
-              </button>
-              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-                      onclick="runPostOperation('generate_streamlines')">
-                Generate Streamlines
-              </button>
-              <button class="w-full text-left p-2 hover:bg-gray-50 rounded" 
-                      onclick="runPostOperation('create_contour')">
-                Create Contour
-              </button>
-            </div>
-          </div>
-          <div id="post-results" class="mt-4"></div>
-        </div>
-      `;
-    }
-    catch (error) {
-        console.error("[FOAMFlask] [refreshPostList] Error loading post-processing options:", error);
-        if (postContainer) {
-            postContainer.innerHTML = `
-        <div class="p-4 text-red-600">
-          Failed to load post-processing options. Please try again.
-        </div>
-      `;
-        }
-    }
-}
-// Helper function for post-processing operations
-async function runPostOperation(operation) {
-    const resultsDiv = document.getElementById("post-results") || document.body;
-    try {
-        if (operation === "create_contour") {
-            const tutorialSelect = document.getElementById("tutorialSelect");
-            const tutorial = tutorialSelect ? tutorialSelect.value : null;
-            if (!tutorial) {
-                showNotification("Please select a tutorial first", "warning");
-                return;
-            }
-            const caseDirInput = document.getElementById("caseDir");
-            const caseDirValue = caseDirInput ? caseDirInput.value : "";
-            await generateContoursFn({
-                tutorial: tutorial,
-                caseDir: caseDirValue,
-                scalarField: "U_Magnitude",
-                numIsosurfaces: 10,
+        const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
+        const data = await res.json();
+        const select = document.getElementById("vtkFileSelect");
+        if (select && data.meshes) {
+            select.innerHTML = '<option value="">Select</option>';
+            data.meshes.forEach((m) => {
+                const opt = document.createElement("option");
+                opt.value = m.path;
+                opt.textContent = m.name;
+                select.appendChild(opt);
             });
         }
-        else {
-            resultsDiv.innerHTML = `<div class="p-4 text-blue-600">Running ${operation}...</div>`;
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            resultsDiv.innerHTML = `
-        <div class="p-4 bg-green-50 text-green-700 rounded">
-          ${operation
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())} completed successfully!
-        </div>
-      `;
-        }
     }
-    catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        resultsDiv.innerHTML = `
-      <div class="p-4 bg-red-50 text-red-700 rounded">
-        Error running ${operation}: ${errorMessage}
-      </div>
-    `;
-        console.error(`[FOAMFlask] [runPostOperation] Error running ${operation}:`, error);
-    }
-}
-// Refresh VTK file list on Post page
-async function refreshPostListVTK() {
-    const tutorialSelect = document.getElementById("tutorialSelect");
-    const tutorial = tutorialSelect?.value;
-    if (!tutorial) {
-        showNotification("Please select a tutorial first", "warning");
-        return;
-    }
-    try {
-        const response = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(tutorial)}`);
-        if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        const vtkFiles = data.meshes || [];
-        const vtkSelect = document.getElementById("vtkFileSelect");
-        if (!vtkSelect) {
-            console.error("vtkFileSelect element not found");
-            return;
-        }
-        vtkSelect.innerHTML = '<option value="">-- Select a VTK file --</option>';
-        vtkFiles.forEach((file) => {
-            const option = document.createElement("option");
-            option.value = file.path;
-            option.textContent = file.name || file.path.split("/").pop() || null;
-            vtkSelect.appendChild(option);
-        });
-    }
-    catch (error) {
-        console.error("[FOAMFlask] Error fetching VTK files:", error);
-    }
-}
-// Load selected VTK file
-async function loadSelectedVTK() {
-    const vtkSelect = document.getElementById("vtkFileSelect");
-    const selectedFile = vtkSelect?.value;
-    if (!selectedFile) {
-        showNotification("Please select a VTK file", "warning");
-        return;
-    }
-    try {
-        const response = await fetch("/api/load_mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ file_path: selectedFile }),
-        });
-        const meshInfo = await response.json();
-        if (meshInfo.success) {
-            const scalarFieldSelect = document.getElementById("scalarField");
-            if (!scalarFieldSelect) {
-                console.error("scalarField select element not found");
-                return;
-            }
-            scalarFieldSelect.innerHTML = "";
-            (meshInfo.point_arrays || []).forEach((field) => {
-                const option = document.createElement("option");
-                option.value = field;
-                option.textContent = field;
-                scalarFieldSelect.appendChild(option);
-            });
-            showNotification("VTK file loaded successfully!", "success");
-        }
-    }
-    catch (error) {
-        console.error("[FOAMFlask] Error loading VTK file:", error);
-        showNotification("Error loading VTK file", "error");
-    }
-}
-// Contour Visualization
-async function loadContourVTK() {
-    const vtkSelect = document.getElementById("vtkFileSelect");
-    const selectedFile = vtkSelect?.value;
-    if (!selectedFile) {
-        showNotification("Please select a VTK file", "warning");
-        return;
-    }
-    try {
-        showNotification("Loading VTK file for contour generation...", "info");
-        console.log("[FOAMFlask] Loading VTK file for contour:", selectedFile);
-        const response = await fetch("/api/load_mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                file_path: selectedFile,
-                for_contour: true,
-            }),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        const meshInfo = await response.json();
-        console.log("[FOAMFlask] Received mesh info:", meshInfo);
-        if (!meshInfo.success) {
-            throw new Error(meshInfo.error || "Failed to load mesh");
-        }
-        const scalarFieldSelect = document.getElementById("scalarField");
-        if (!scalarFieldSelect) {
-            throw new Error("Could not find scalar field select element");
-        }
-        const pointArrays = meshInfo.point_arrays || [];
-        const cellArrays = meshInfo.cell_arrays || [];
-        scalarFieldSelect.innerHTML = "";
-        pointArrays.forEach((field) => {
-            const option = document.createElement("option");
-            option.value = `${field}@point`;
-            option.textContent = `🔵 ${field} (Point Data)`;
-            option.className = "point-data-option";
-            option.dataset.fieldType = "point";
-            scalarFieldSelect.appendChild(option);
-        });
-        cellArrays.forEach((field) => {
-            const option = document.createElement("option");
-            option.value = `${field}@cell`;
-            option.textContent = `🟢 ${field} (Cell Data)`;
-            option.className = "cell-data-option";
-            option.dataset.fieldType = "cell";
-            scalarFieldSelect.appendChild(option);
-        });
-        if (scalarFieldSelect.options.length === 0) {
-            console.warn("[FOAMFlask] No data arrays found in mesh");
-            showNotification("No scalar fields found in the mesh", "warning");
-        }
-        const generateBtn = document.getElementById("generateContoursBtn");
-        if (generateBtn) {
-            generateBtn.disabled = false;
-        }
-        else {
-            console.warn("[FOAMFlask] Could not find generateContoursBtn");
-        }
-        showNotification("VTK file loaded for contour generation!", "success");
-        console.log("[FOAMFlask] Successfully loaded mesh for contour generation");
-    }
-    catch (error) {
-        console.error("[FOAMFlask] Error loading VTK file for contour:", error);
-        showNotification(`Error: ${error instanceof Error
-            ? error.message
-            : "Failed to load VTK file for contour generation"}`, "error");
-    }
-}
-// Handle custom VTK file upload
-async function loadCustomVTKFile() {
-    const fileInput = document.getElementById("vtkFileBrowser");
-    const file = fileInput?.files?.[0];
-    if (!file) {
-        showNotification("Please select a file first", "warning");
-        return;
-    }
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-        showNotification("Uploading and processing VTK file...", "info");
-        const response = await fetch("/api/upload_vtk", {
-            method: "POST",
-            body: formData,
-        });
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.error || "Failed to upload file");
-        }
-        const fileInfo = document.getElementById("vtkFileInfo");
-        const fileInfoContent = document.getElementById("vtkFileInfoContent");
-        if (fileInfo && fileInfoContent) {
-            fileInfoContent.innerHTML = `
-        <div><strong>File:</strong> ${file.name}</div>
-        <div><strong>Type:</strong> ${file.type || "VTK"}</div>
-        <div><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</div>
-        ${result.mesh_info
-                ? `
-        <div><strong>Points:</strong> ${(result.mesh_info.n_points || 0).toLocaleString()}</div>
-        <div><strong>Cells:</strong> ${(result.mesh_info.n_cells || 0).toLocaleString()}</div>
-        `
-                : ""}
-      `;
-            fileInfo.classList.remove("hidden");
-        }
-        const scalarFieldSelect = document.getElementById("scalarField");
-        if (scalarFieldSelect && result.mesh_info) {
-            scalarFieldSelect.innerHTML = "";
-            (result.mesh_info.point_arrays || []).forEach((field) => {
-                const option = document.createElement("option");
-                option.value = `${field}@point`;
-                option.textContent = `🔵 ${field} (Point Data)`;
-                option.className = "point-data-option";
-                scalarFieldSelect.appendChild(option);
-            });
-            (result.mesh_info.cell_arrays || []).forEach((field) => {
-                const option = document.createElement("option");
-                option.value = `${field}@cell`;
-                option.textContent = `🟢 ${field} (Cell Data)`;
-                option.className = "cell-data-option";
-                scalarFieldSelect.appendChild(option);
-            });
-            const generateBtn = document.getElementById("generateContoursBtn");
-            if (generateBtn) {
-                generateBtn.disabled = false;
-            }
-        }
-        showNotification("VTK file loaded successfully!", "success");
-    }
-    catch (error) {
-        console.error("Error loading VTK file:", error);
-        showNotification(`Error: ${error instanceof Error ? error.message : "Failed to load VTK file"}`, "error");
-    }
-}
+    catch (e) { }
+};
+const runPostOperation = async (operation) => {
+    // Stub
+};
+const loadCustomVTKFile = async () => { };
+const loadContourVTK = async () => { };
 // Check startup status
 const checkStartupStatus = async () => {
     const modal = document.createElement("div");
@@ -1849,12 +1511,7 @@ const checkStartupStatus = async () => {
     modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
     modal.innerHTML = `
     <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
-      <div class="mb-4">
-        <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </div>
+      <div class="mb-4"><svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
       <h2 class="text-xl font-bold mb-2">System Check</h2>
       <p id="startup-message" class="text-gray-600">Checking Docker permissions...</p>
     </div>
@@ -1876,93 +1533,125 @@ const checkStartupStatus = async () => {
                     messageEl.className = "text-red-600";
                     messageEl.textContent = `Error: ${data.message}. Please check server logs.`;
                 }
-                // Don't remove modal on error, let user see it
-                // Add retry button?
-                const contentDiv = modal.querySelector("div > div");
-                if (contentDiv && !document.getElementById("startup-retry-btn")) {
-                    const retryBtn = document.createElement("button");
-                    retryBtn.id = "startup-retry-btn";
-                    retryBtn.className = "mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600";
-                    retryBtn.textContent = "Retry (Reload Page)";
-                    retryBtn.onclick = () => window.location.reload();
-                    contentDiv.appendChild(retryBtn);
-                }
                 return;
             }
-            // Continue polling
             setTimeout(pollStatus, 1000);
         }
         catch (e) {
-            console.error("Error polling startup status:", e);
             setTimeout(pollStatus, 2000);
         }
     };
     await pollStatus();
 };
-// Clean up on page unload
-window.addEventListener("beforeunload", () => {
-    stopPlotUpdates();
-    abortControllers.forEach((controller) => controller.abort());
-    abortControllers.clear();
-    requestCache.clear();
-    flushOutputBuffer();
-    // Force save log if pending
-    if (saveLogTimer) {
-        clearTimeout(saveLogTimer);
-        saveLogToStorage();
+// Initialize
+window.onload = async () => {
+    try {
+        await checkStartupStatus();
     }
-});
-// Make functions globally available for HTML onclick handlers
-// The error Uncaught ReferenceError: showNotification is not defined happens because foamflask_frontend.js is loaded as a JavaScript module. In modules, functions are not automatically global, so inline HTML event handlers (like onclick="...") cannot see them unless they are explicitly attached to the window object
+    catch (e) {
+        console.error(e);
+    }
+    const outputDiv = document.getElementById("output");
+    if (outputDiv) {
+        // Restore Log
+        const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
+        if (savedLog) {
+            outputDiv.innerHTML = savedLog;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+    }
+    try {
+        const caseRootData = await fetchWithCache("/get_case_root");
+        const dockerConfigData = await fetchWithCache("/get_docker_config");
+        caseDir = caseRootData.caseDir;
+        const caseDirInput = document.getElementById("caseDir");
+        if (caseDirInput)
+            caseDirInput.value = caseDir;
+        dockerImage = dockerConfigData.dockerImage;
+        openfoamVersion = dockerConfigData.openfoamVersion;
+        const openfoamRootInput = document.getElementById("openfoamRoot");
+        if (openfoamRootInput)
+            openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+        // Load Cases
+        await refreshCaseList();
+        const savedCase = localStorage.getItem("lastSelectedCase");
+        if (savedCase) {
+            const select = document.getElementById("caseSelect");
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === savedCase) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (exists) {
+                select.value = savedCase;
+                activeCase = savedCase;
+            }
+        }
+        // Check if we need to restore any plot state or similar
+        // ...
+    }
+    catch (e) {
+        console.error(e);
+    }
+};
+// Exports
 window.switchPage = switchPage;
 window.setCase = setCase;
 window.setDockerConfig = setDockerConfig;
 window.loadTutorial = loadTutorial;
-window.runCommand = runCommand;
-window.runFoamToVTK = runFoamToVTK;
+window.createNewCase = createNewCase;
+window.selectCase = selectCase;
+window.refreshCaseList = refreshCaseList;
+window.uploadGeometry = uploadGeometry;
+window.deleteGeometry = deleteGeometry;
+window.loadGeometryView = loadGeometryView;
+window.fillBoundsFromGeometry = fillBoundsFromGeometry;
+window.generateBlockMeshDict = generateBlockMeshDict;
+window.generateSnappyHexMeshDict = generateSnappyHexMeshDict;
+window.runMeshingCommand = runMeshingCommand;
 window.refreshMeshList = refreshMeshList;
 window.loadMeshVisualization = loadMeshVisualization;
 window.updateMeshView = updateMeshView;
+window.refreshPostList = refreshPostList;
+window.toggleAeroPlots = toggleAeroPlots;
+window.runCommand = runCommand;
 window.toggleInteractiveMode = toggleInteractiveMode;
 window.setCameraView = setCameraView;
 window.resetCamera = resetCamera;
-window.toggleAeroPlots = toggleAeroPlots;
 window.downloadPlotData = downloadPlotData;
 window.loadCustomVTKFile = loadCustomVTKFile;
 window.loadContourVTK = loadContourVTK;
 window.generateContours = generateContoursFn;
 window.downloadPlotAsPNG = downloadPlotAsPNG;
 window.showNotification = showNotification;
+window.runPostOperation = runPostOperation;
 window.copyLogToClipboard = copyLogToClipboard;
-// Attach event listeners for navigation buttons
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, attaching event listeners...');
-    // Navigation buttons
+window.togglePlots = togglePlots;
+const init = () => {
     const navButtons = [
         { id: 'nav-setup', handler: () => switchPage('setup') },
         { id: 'nav-run', handler: () => switchPage('run') },
-        { id: 'nav-mesh', handler: () => switchPage('mesh') },
+        { id: 'nav-geometry', handler: () => switchPage('geometry') },
+        { id: 'nav-meshing', handler: () => switchPage('meshing') },
+        { id: 'nav-visualizer', handler: () => switchPage('visualizer') },
         { id: 'nav-plots', handler: () => switchPage('plots') },
         { id: 'nav-post', handler: () => switchPage('post') }
     ];
     navButtons.forEach(({ id, handler }) => {
         const button = document.getElementById(id);
-        if (button) {
-            console.log(`Attaching listener to ${id}`);
+        if (button)
             button.addEventListener('click', handler);
-        }
-        else {
-            console.error(`Button ${id} not found`);
-        }
     });
-    // Load Tutorial button
     const loadTutorialBtn = document.getElementById('loadTutorialBtn');
-    if (loadTutorialBtn) {
-        console.log('Attaching listener to loadTutorialBtn');
+    if (loadTutorialBtn)
         loadTutorialBtn.addEventListener('click', loadTutorial);
-    }
-    else {
-        console.error('Load Tutorial button not found');
-    }
-});
+};
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+}
+else {
+    init();
+}
 //# sourceMappingURL=foamflask_frontend.js.map
