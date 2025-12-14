@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from werkzeug.utils import secure_filename
-from backend.security import validate_path
+from backend.security import validate_path, safe_join
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -25,30 +25,26 @@ class GeometryManager:
             Dictionary with success status and message.
         """
         try:
-            # Validate case_path (ensure it's safe - caller should have done it, but double check doesn't hurt if we knew base)
-            # Since managers might be used independently, we assume case_path is valid/authorized path passed by caller.
-            # But we must ensure we don't write outside it.
-
+            # case_path is assumed validated by caller, but we use safe_join to be sure about subpaths
             path = Path(case_path).resolve()
 
-            # Ensure path exists (it should)
             if not path.exists():
                  return {"success": False, "message": "Case directory does not exist."}
 
-            tri_surface_dir = path / "constant" / "triSurface"
-            tri_surface_dir.mkdir(parents=True, exist_ok=True)
+            # Use safe_join to construct triSurface path
+            tri_surface_dir = safe_join(path, "constant", "triSurface")
+
+            # Ensure triSurface dir exists (validate_path/safe_join might return it even if not exists if allow_new=True,
+            # but here we want to create it if missing)
+            if not tri_surface_dir.exists():
+                tri_surface_dir.mkdir(parents=True, exist_ok=True)
 
             safe_filename = secure_filename(filename)
             if not safe_filename.lower().endswith(".stl"):
                  return {"success": False, "message": "Only .stl files are allowed."}
 
-            filepath = tri_surface_dir / safe_filename
-
-            # Additional check: ensure filepath is within tri_surface_dir
-            try:
-                filepath.resolve().relative_to(tri_surface_dir.resolve())
-            except ValueError:
-                 return {"success": False, "message": "Invalid file path."}
+            # Use safe_join for the file path
+            filepath = safe_join(tri_surface_dir, safe_filename)
 
             file.save(str(filepath))
 
@@ -57,7 +53,7 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error uploading STL: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}
 
     @staticmethod
     def list_stls(case_path: Union[str, Path]) -> Dict[str, Union[bool, List[str], str]]:
@@ -72,7 +68,7 @@ class GeometryManager:
         """
         try:
             path = Path(case_path).resolve()
-            tri_surface_dir = path / "constant" / "triSurface"
+            tri_surface_dir = safe_join(path, "constant", "triSurface")
 
             if not tri_surface_dir.exists():
                 return {"success": True, "files": []}
@@ -82,7 +78,7 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error listing STLs: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}
 
     @staticmethod
     def delete_stl(case_path: Union[str, Path], filename: str) -> Dict[str, Union[bool, str]]:
@@ -100,13 +96,7 @@ class GeometryManager:
             path = Path(case_path).resolve()
 
             safe_filename = secure_filename(filename)
-            filepath = path / "constant" / "triSurface" / safe_filename
-
-            # Ensure we are deleting inside the directory
-            try:
-                filepath.resolve().relative_to(path)
-            except ValueError:
-                return {"success": False, "message": "Invalid file path."}
+            filepath = safe_join(path, "constant", "triSurface", safe_filename)
 
             if not filepath.exists():
                 return {"success": False, "message": "File not found."}
@@ -117,4 +107,4 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error deleting STL: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}

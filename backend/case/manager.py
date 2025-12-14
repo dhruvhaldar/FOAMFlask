@@ -2,6 +2,7 @@ import os
 import logging
 from pathlib import Path
 from typing import Dict, Optional, Union
+from backend.security import safe_join
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -23,35 +24,33 @@ class CaseManager:
             # We assume case_path is validated by caller (app.py)
             path = Path(case_path).resolve()
 
-            # Additional check: ensure we are not creating root directory etc
-            # This is already handled by validate_path in app.py with CASE_ROOT
-
             if path.exists() and any(path.iterdir()):
                  # Check if it looks like a case (has 0, constant, system)
-                 if (path / "system").exists() and (path / "constant").exists():
+                 # Use safe_join to check existence of subdirs safely
+                 if safe_join(path, "system").exists() and safe_join(path, "constant").exists():
                      return {"success": True, "message": "Case directory already exists and appears valid.", "path": str(path)}
                  else:
                      pass
 
-            # Create directories
-            (path / "0").mkdir(parents=True, exist_ok=True)
-            (path / "constant").mkdir(parents=True, exist_ok=True)
-            (path / "constant" / "triSurface").mkdir(parents=True, exist_ok=True)
-            (path / "system").mkdir(parents=True, exist_ok=True)
+            # Create directories safely
+            safe_join(path, "0").mkdir(parents=True, exist_ok=True)
+            safe_join(path, "constant").mkdir(parents=True, exist_ok=True)
+            safe_join(path, "constant", "triSurface").mkdir(parents=True, exist_ok=True)
+            safe_join(path, "system").mkdir(parents=True, exist_ok=True)
 
             # Create default system files if they don't exist
-            CaseManager._create_default_control_dict(path / "system" / "controlDict")
-            CaseManager._create_default_fv_schemes(path / "system" / "fvSchemes")
-            CaseManager._create_default_fv_solution(path / "system" / "fvSolution")
+            CaseManager._create_default_control_dict(safe_join(path, "system", "controlDict"))
+            CaseManager._create_default_fv_schemes(safe_join(path, "system", "fvSchemes"))
+            CaseManager._create_default_fv_solution(safe_join(path, "system", "fvSolution"))
 
             # Create empty transportProperties in constant
-            CaseManager._create_default_transport_properties(path / "constant" / "transportProperties")
+            CaseManager._create_default_transport_properties(safe_join(path, "constant", "transportProperties"))
 
             return {"success": True, "message": f"Case created at {path}", "path": str(path)}
 
         except Exception as e:
             logger.error(f"Error creating case structure: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}
 
     @staticmethod
     def _create_default_control_dict(filepath: Path) -> None:

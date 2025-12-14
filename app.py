@@ -35,7 +35,7 @@ from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
 from backend.geometry.visualizer import GeometryVisualizer
 from backend.meshing.runner import MeshingRunner
-from backend.security import validate_path, is_safe_command, is_safe_script_name
+from backend.security import validate_path, is_safe_command, is_safe_script_name, safe_join
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -79,7 +79,7 @@ def load_config() -> Dict[str, str]:
             return {**defaults, **data}
     except (json.JSONDecodeError, OSError) as e:
         logger.warning(
-            "[FOAMFlask] Could not load config file: %s. Using defaults.", str(e)
+            "[FOAMFlask] Could not load config file. Using defaults."
         )
         return defaults
 
@@ -101,7 +101,7 @@ def save_config(updates: Dict[str, str]) -> bool:
             json.dump(config, f, indent=2)
         return True
     except (OSError, TypeError) as e:
-        logger.error("[FOAMFlask] Could not save config to %s: %s", CONFIG_FILE, str(e))
+        logger.error("[FOAMFlask] Could not save config.")
         return False
 
 
@@ -132,8 +132,7 @@ def get_docker_client() -> Optional[DockerClient]:
     except DockerException as e:
         logger.error(
             "[FOAMFlask] Docker daemon not available. "
-            "Make sure Docker Desktop is running. Details: %s",
-            str(e),
+            "Make sure Docker Desktop is running."
         )
         return None
 
@@ -216,7 +215,7 @@ try:
         TEMPLATE = f.read()
 except (OSError, UnicodeDecodeError) as e:
     logger.error(
-        "[FOAMFlask] Failed to load template file %s: %s", TEMPLATE_FILE, str(e)
+        "[FOAMFlask] Failed to load template file."
     )
     TEMPLATE = "<html><body>Error loading template</body></html>"
 
@@ -301,12 +300,11 @@ def get_tutorials() -> List[str]:
 
     except docker.errors.APIError as e:
         logger.error(
-            "[FOAMFlask] Docker API error while fetching tutorials: %s", str(e)
+            "[FOAMFlask] Docker API error while fetching tutorials"
         )
     except Exception as e:
         logger.error(
-            "[FOAMFlask] Unexpected error while fetching tutorials: %s",
-            str(e),
+            "[FOAMFlask] Unexpected error while fetching tutorials",
             exc_info=True,
         )
 
@@ -325,9 +323,13 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
         case_dir: The path to the case directory.
     """
     try:
+        # Validate base path
         validated_case_dir = validate_path(case_dir, CASE_ROOT)
-        host_log_path = validate_path(validated_case_dir / tutorial / "log.FoamRun", CASE_ROOT)
-        output_file = validate_path(validated_case_dir / tutorial / "foamrun_logs.txt", CASE_ROOT, allow_new=True)
+
+        # Use safe_join for constructing sub-paths
+        host_log_path = safe_join(validated_case_dir, tutorial, "log.FoamRun")
+        output_file = safe_join(validated_case_dir, tutorial, "foamrun_logs.txt")
+
     except Exception as e:
         logger.error(f"[FOAMFlask] Invalid path in monitor_foamrun_log: {e}")
         return
@@ -351,7 +353,7 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
                 )
                 return
             except (OSError, UnicodeDecodeError) as e:
-                logger.error("[FOAMFlask] Could not process foamrun_logs: %s", str(e))
+                logger.error("[FOAMFlask] Could not process foamrun_logs")
                 return
 
         time.sleep(interval)
@@ -413,15 +415,9 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         if not data or "caseDir" not in data or not data["caseDir"]:
             return jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"}), 400
 
-        # We allow setting absolute paths for CASE_ROOT, as this is the configuration step.
-        # However, we should ensure it is a directory.
         case_dir_path = Path(data["caseDir"]).resolve()
 
-        # Security check: Limit to a specific parent directory if needed?
-        # For this application, the user sets the root workspace.
-        # We assume the user has access to the file system.
-        # But to be safe, we can check if it exists or create it.
-
+        # We allow setting absolute paths here, but ensure directory creation
         case_dir_path.mkdir(parents=True, exist_ok=True)
         CASE_ROOT = str(case_dir_path)
         save_config({"CASE_ROOT": CASE_ROOT})
@@ -473,12 +469,11 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
         if not is_safe_script_name(case_name):
              return jsonify({"success": False, "message": "Invalid case name"}), 400
 
-        # Use globally set CASE_ROOT
         if not CASE_ROOT:
              return jsonify({"success": False, "message": "Case root not set"}), 500
 
-        # Validate path
-        full_path = validate_path(case_name, CASE_ROOT, allow_new=True)
+        # Use safe_join to create and validate the new case path
+        full_path = safe_join(CASE_ROOT, case_name)
 
         result = CaseManager.create_case_structure(full_path)
 
@@ -511,7 +506,7 @@ def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
              return jsonify({"success": False, "message": "No case name specified"}), 400
 
         # Validate case directory
-        case_dir = validate_path(case_name, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, case_name)
 
         result = GeometryManager.upload_stl(case_dir, file, file.filename)
         if result["success"]:
@@ -530,7 +525,7 @@ def api_list_geometry() -> Union[Response, Tuple[Response, int]]:
         if not case_name:
              return jsonify({"success": False, "message": "No case name specified"}), 400
 
-        case_dir = validate_path(case_name, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, case_name)
         result = GeometryManager.list_stls(case_dir)
 
         if result["success"]:
@@ -552,7 +547,7 @@ def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
         if not case_name or not filename:
             return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-        case_dir = validate_path(case_name, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, case_name)
         result = GeometryManager.delete_stl(case_dir, filename)
 
         if result["success"]:
@@ -577,9 +572,9 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
             return jsonify({"success": False, "message": "Missing parameters"}), 400
 
         # Validate case dir and filename inside it
-        case_dir = validate_path(case_name, CASE_ROOT)
-        # Assuming files are in constant/triSurface as managed by GeometryManager
-        file_path = validate_path(case_dir / "constant" / "triSurface" / filename, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, case_name)
+        # Using safe_join to construct deep path
+        file_path = safe_join(case_dir, "constant", "triSurface", filename)
 
         html_content = GeometryVisualizer.get_interactive_html(file_path, color, opacity)
 
@@ -602,8 +597,8 @@ def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
         if not case_name or not filename:
             return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-        case_dir = validate_path(case_name, CASE_ROOT)
-        file_path = validate_path(case_dir / "constant" / "triSurface" / filename, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, case_name)
+        file_path = safe_join(case_dir, "constant", "triSurface", filename)
 
         info = GeometryVisualizer.get_mesh_info(file_path)
         return jsonify(info)
@@ -625,7 +620,7 @@ def api_meshing_blockmesh_config() -> Union[Response, Tuple[Response, int]]:
         if not case_name:
              return jsonify({"success": False, "message": "No case name specified"}), 400
 
-        case_path = validate_path(case_name, CASE_ROOT)
+        case_path = safe_join(CASE_ROOT, case_name)
         result = MeshingRunner.configure_blockmesh(case_path, config)
 
         if result["success"]:
@@ -647,7 +642,7 @@ def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
         if not case_name:
              return jsonify({"success": False, "message": "No case name specified"}), 400
 
-        case_path = validate_path(case_name, CASE_ROOT)
+        case_path = safe_join(CASE_ROOT, case_name)
         result = MeshingRunner.configure_snappyhexmesh(case_path, config)
 
         if result["success"]:
@@ -672,7 +667,7 @@ def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
         if command not in ["blockMesh", "snappyHexMesh"]:
             return jsonify({"success": False, "message": "Invalid command"}), 400
 
-        case_path = validate_path(case_name, CASE_ROOT)
+        case_path = safe_join(CASE_ROOT, case_name)
         client = get_docker_client()
         user_config = get_docker_user_config()
 
@@ -885,18 +880,13 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         if not tutorial or not case_dir_str:
             return {"error": "Missing tutorial or caseDir"}, 400
 
-        # Validate case_dir
-        # We must ensure caseDir matches CASE_ROOT or is inside it?
-        # Usually it IS CASE_ROOT.
-        # But we accept it from client.
-        
         # Security: Validate paths
         try:
              validated_case_dir = validate_path(case_dir_str, CASE_ROOT)
              # Also ensure tutorial is valid subpath
-             validate_path(validated_case_dir / tutorial, CASE_ROOT)
+             safe_join(validated_case_dir, tutorial)
         except Exception as e:
-             return {"error": f"Invalid path: {e}"}, 400
+             return {"error": f"Invalid path"}, 400
 
         # Use valid path string for streaming generator
         valid_case_dir = str(validated_case_dir)
@@ -1002,11 +992,11 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                         for subline in decoded.splitlines():
                             yield subline + "<br>"
                 except Exception as e:
-                    yield f"[FOAMFlask] [Error] Failed to stream container logs: {e}<br>"
+                    yield f"[FOAMFlask] [Error] Failed to stream container logs.<br>"
 
             except Exception as e:
                 logger.error(f"Error running container: {e}", exc_info=True)
-                yield f"[FOAMFlask] [Error] Failed to start container: {e}<br>"
+                yield f"[FOAMFlask] [Error] Failed to start container.<br>"
                 return
 
             finally:
@@ -1038,7 +1028,8 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             return jsonify({"error": "No tutorial specified"}), 400
 
-        case_dir = validate_path(tutorial, CASE_ROOT)
+        # Safe join ensures we don't traverse out of CASE_ROOT
+        case_dir = safe_join(CASE_ROOT, tutorial)
         if not case_dir.exists():
             return jsonify({"error": "Case directory not found"}), 404
 
@@ -1059,7 +1050,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             return jsonify({"error": "No tutorial specified"}), 400
 
-        case_dir = validate_path(tutorial, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, tutorial)
         if not case_dir.exists():
             return jsonify({"error": "Case directory not found"}), 404
 
@@ -1081,7 +1072,7 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             return jsonify({"error": "No tutorial specified"}), 400
 
-        case_dir = validate_path(tutorial, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, tutorial)
         if not case_dir.exists():
             return jsonify({"error": "Case directory not found"}), 404
 
@@ -1103,7 +1094,7 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             return jsonify({"error": "No tutorial specified"}), 400
 
-        case_dir = validate_path(tutorial, CASE_ROOT)
+        case_dir = safe_join(CASE_ROOT, tutorial)
         if not case_dir.exists():
             return jsonify({"error": "Case directory not found"}), 404
 
@@ -1126,9 +1117,8 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             return jsonify({"error": "No tutorial specified"}), 400
 
-        # Validate tutorial path to ensure it is within CASE_ROOT
-        # mesh_visualizer.get_available_meshes takes strings, so we validate first
-        validate_path(tutorial, CASE_ROOT)
+        # Validate tutorial path
+        safe_join(CASE_ROOT, tutorial)
 
         mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial)
         return jsonify({"meshes": mesh_files})
@@ -1151,11 +1141,6 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
             return jsonify({"error": "No file path provided"}), 400
 
         # Validate file path
-        # file_path provided might be absolute or relative to CASE_ROOT?
-        # Typically frontend sends path from available_meshes which uses full path.
-        # We need to ensure it is within CASE_ROOT.
-
-        # If absolute path, validate_path with CASE_ROOT checks it's inside.
         validated_path = validate_path(file_path, CASE_ROOT)
 
         logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
@@ -1261,7 +1246,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
         validated_case_dir = validate_path(case_dir_str, CASE_ROOT)
         
         # Validate tutorial as subpath
-        validate_path(validated_case_dir / tutorial, CASE_ROOT)
+        safe_join(validated_case_dir, tutorial)
 
         def stream_foamtovtk_logs() -> Generator[str, None, None]:
             """Stream logs for foamToVTK conversion process.
@@ -1317,7 +1302,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
 
             except Exception as e:
                 logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-                yield f"[FOAMFlask] [Error] {e}<br>"
+                yield f"[FOAMFlask] [Error] An internal error occurred.<br>"
 
             finally:
                 if 'container' in locals():
@@ -1379,11 +1364,6 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
 
         # Validate paths
         case_dir = validate_path(case_dir_str, CASE_ROOT)
-
-        # Also check tutorial? Usually case_dir *is* the tutorial dir for this call or parent?
-        # The logic below iterates `case_dir.rglob("*")`. If case_dir is CASE_ROOT, that's heavy.
-        # But if `case_dir_str` was set to `CASE_ROOT/tutorial`, then it's fine.
-        # Let's assume input is correct but validated.
 
         logger.info(f"[FOAMFlask] [create_contour] Searching for VTK files in {case_dir}")
         vtk_files = []

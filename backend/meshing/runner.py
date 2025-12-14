@@ -7,6 +7,7 @@ import posixpath
 
 from .blockmesh import BlockMeshGenerator
 from .snappyhexmesh import SnappyHexMeshGenerator
+from backend.security import safe_join
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -28,7 +29,8 @@ class MeshingRunner:
             Dict with success status and message.
         """
         try:
-            # We assume case_path is validated by caller (app.py uses validate_path)
+            # We assume case_path is validated by caller (app.py) but pass it through if we were to traverse
+            # Here we just pass it to generator
 
             min_point = tuple(config.get("min_point", [-1, -1, -1]))
             max_point = tuple(config.get("max_point", [1, 1, 1]))
@@ -43,7 +45,7 @@ class MeshingRunner:
                 return {"success": False, "message": "Failed to generate blockMeshDict"}
         except Exception as e:
             logger.error(f"Error configuring blockMesh: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}
 
     @staticmethod
     def configure_snappyhexmesh(case_path: Path, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,7 +69,7 @@ class MeshingRunner:
                 return {"success": False, "message": "Failed to generate snappyHexMeshDict"}
         except Exception as e:
             logger.error(f"Error configuring snappyHexMesh: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}
 
     @staticmethod
     def run_meshing_command(
@@ -145,7 +147,9 @@ class MeshingRunner:
 
         except docker.errors.ContainerError as e:
             # Container exited with non-zero code
-            return {"success": False, "message": f"Command failed", "output": e.stderr.decode('utf-8') if e.stderr else str(e)}
+            # e.stderr can contain sensitive info? usually meshing output.
+            # We return it to display to user (as logs). This is intended behavior.
+            return {"success": False, "message": f"Command failed", "output": e.stderr.decode('utf-8') if e.stderr else "Unknown error"}
         except Exception as e:
             logger.error(f"Error running meshing command: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": "An internal error occurred."}

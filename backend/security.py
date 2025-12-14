@@ -2,7 +2,7 @@ import os
 import re
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 from werkzeug.utils import secure_filename as werkzeug_secure_filename
 
 logger = logging.getLogger("FOAMFlask")
@@ -23,38 +23,80 @@ def validate_path(
 
     Returns:
         The resolved Path object.
-
-    Raises:
-        ValueError: If base_dir is not provided.
-        PermissionError: If the path is outside the base directory.
-        FileNotFoundError: If the path does not exist (and allow_new is False).
     """
     if base_dir is None:
         raise ValueError("base_dir must be provided for path validation")
 
-    # Resolve base_dir to absolute path
-    base_path = Path(base_dir).resolve()
+    # Pre-validation: Check for traversal characters in the input string
+    str_path = str(path)
+    if ".." in str_path:
+        raise ValueError("Invalid path: traversal characters detected")
+
+    # Resolve base_dir
+    str_base = str(base_dir)
+    try:
+        abs_base = os.path.abspath(str_base)
+        real_base = os.path.realpath(abs_base)
+    except Exception as e:
+        raise ValueError(f"Invalid base path: {e}")
 
     # Resolve target path
-    candidate_path = Path(path)
-    if not candidate_path.is_absolute():
-        candidate_path = (base_path / candidate_path)
-
     try:
-        resolved_path = candidate_path.resolve()
-    except OSError as e:
+        if not os.path.isabs(str_path):
+            abs_path = os.path.abspath(os.path.join(real_base, str_path))
+        else:
+            abs_path = os.path.abspath(str_path)
+
+        real_path = os.path.realpath(abs_path)
+    except Exception as e:
         raise ValueError(f"Invalid path structure: {e}")
 
-    # Check if path starts with base_path
+    # Check common path
     try:
-        resolved_path.relative_to(base_path)
+        common = os.path.commonpath([real_base, real_path])
+        if os.path.normcase(common) != os.path.normcase(real_base):
+             raise PermissionError(f"Access denied: Path {real_path} is outside allowed directory {real_base}")
     except ValueError:
-        raise PermissionError(f"Access denied: Path {resolved_path} is outside allowed directory {base_path}")
+        raise PermissionError(f"Access denied: Path {real_path} is on a different drive than {real_base}")
 
-    if not allow_new and not resolved_path.exists():
-        raise FileNotFoundError(f"File not found: {resolved_path}")
+    if not allow_new and not os.path.exists(real_path):
+        raise FileNotFoundError(f"File not found: {real_path}")
 
-    return resolved_path
+    return Path(real_path)
+
+def safe_join(base: Union[str, Path], *paths: Union[str, Path]) -> Path:
+    """
+    Safely joins a base path with one or more path components, ensuring the result
+    is within the base directory.
+
+    Args:
+        base: The trusted base directory.
+        *paths: Path components to join.
+
+    Returns:
+        The validated Path object.
+    """
+    # 1. Join components to create candidate string
+    # We validate each component for basic safety first
+    for p in paths:
+        if ".." in str(p):
+             raise ValueError("Invalid path component: traversal detected")
+
+    # Join using os.path.join
+    try:
+        candidate = os.path.join(str(base), *[str(p) for p in paths])
+    except Exception as e:
+        raise ValueError(f"Error joining paths: {e}")
+
+    # 2. Validate the result against base
+    # We pass allow_new=True because we might be constructing a path for a new file
+    # or the caller will check existence later.
+    # Actually, validate_path raises FileNotFoundError if not allow_new.
+    # safe_join is often used for lookup. If we want to check existence, we can do it after.
+    # Let's default to allow_new=True to be permissive about existence (only enforcing security),
+    # and let the caller check .exists() if they need to read it.
+
+    return validate_path(candidate, base_dir=base, allow_new=True)
 
 def sanitize_filename(filename: str) -> str:
     """
@@ -89,7 +131,6 @@ def is_safe_command(command: str) -> bool:
         return False
 
     # Check for dangerous shell metacharacters
-    # Blocking < and > explicitly prevents the regex issue [0-9]+[<>]
     dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
     if any(char in command for char in dangerous_chars):
         return False
