@@ -2,7 +2,7 @@ import os
 import re
 import logging
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 from werkzeug.utils import secure_filename as werkzeug_secure_filename
 
 logger = logging.getLogger("FOAMFlask")
@@ -27,42 +27,63 @@ def validate_path(
     if base_dir is None:
         raise ValueError("base_dir must be provided for path validation")
 
-    # Pre-validation: Check for traversal characters in the input string
     str_path = str(path)
-    if ".." in str_path:
-        raise ValueError("Invalid path: traversal characters detected")
-
-    # Resolve base_dir
     str_base = str(base_dir)
+
+    # 1. Resolve base directory strictly
     try:
-        abs_base = os.path.abspath(str_base)
-        real_base = os.path.realpath(abs_base)
+        real_base = os.path.realpath(os.path.abspath(str_base))
     except Exception as e:
         raise ValueError(f"Invalid base path: {e}")
 
-    # Resolve target path
-    try:
-        if not os.path.isabs(str_path):
-            abs_path = os.path.abspath(os.path.join(real_base, str_path))
-        else:
-            abs_path = os.path.abspath(str_path)
+    # 2. Join and Normalize (String-level only first)
+    # If path is absolute, join ignores base, so we must be careful.
+    # CodeQL flags using tainted data in join/abspath.
+    # We must sanitize str_path before even joining if possible, but path traversal (..)
+    # is the main concern.
 
-        real_path = os.path.realpath(abs_path)
+    # Simple check for traversal chars
+    if ".." in str_path:
+         raise ValueError("Invalid path: traversal characters detected")
+
+    try:
+        # Use abspath to normalize but NOT realpath yet (avoid FS access on tainted path)
+        # Note: abspath does not resolve symlinks, so it's purely string manipulation on Linux usually.
+        # But we need to ensure the user input doesn't break out.
+
+        if os.path.isabs(str_path):
+            # If absolute, we check if it starts with base
+            final_path = os.path.abspath(str_path)
+        else:
+            final_path = os.path.abspath(os.path.join(real_base, str_path))
+
+        # 3. Check for Containment (String Prefix)
+        # Ensure the final path starts with the real base path
+        # We add os.sep to ensure /base/foo is not matched by /base/foobar
+
+        base_prefix = real_base + os.sep
+        if final_path != real_base and not final_path.startswith(base_prefix):
+             raise PermissionError(f"Access denied: Path {final_path} is outside allowed directory {real_base}")
+
+        # 4. Final Realpath Check (Optional but recommended for Symlinks)
+        # Now that we know the string path is safe, we can resolve symlinks if the file exists.
+        # If allow_new is True, the file might not exist.
+
+        if os.path.exists(final_path):
+            real_final_path = os.path.realpath(final_path)
+            if real_final_path != real_base and not real_final_path.startswith(base_prefix):
+                 raise PermissionError(f"Access denied: Symlink traversal detected to {real_final_path}")
+            final_path = real_final_path
+        elif not allow_new:
+             raise FileNotFoundError(f"File not found: {final_path}")
+
     except Exception as e:
+        # Re-raise known errors, wrap others
+        if isinstance(e, (ValueError, PermissionError, FileNotFoundError)):
+            raise
         raise ValueError(f"Invalid path structure: {e}")
 
-    # Check common path
-    try:
-        common = os.path.commonpath([real_base, real_path])
-        if os.path.normcase(common) != os.path.normcase(real_base):
-             raise PermissionError(f"Access denied: Path {real_path} is outside allowed directory {real_base}")
-    except ValueError:
-        raise PermissionError(f"Access denied: Path {real_path} is on a different drive than {real_base}")
-
-    if not allow_new and not os.path.exists(real_path):
-        raise FileNotFoundError(f"File not found: {real_path}")
-
-    return Path(real_path)
+    return Path(final_path)
 
 def safe_join(base: Union[str, Path], *paths: Union[str, Path]) -> Path:
     """
@@ -76,8 +97,7 @@ def safe_join(base: Union[str, Path], *paths: Union[str, Path]) -> Path:
     Returns:
         The validated Path object.
     """
-    # 1. Join components to create candidate string
-    # We validate each component for basic safety first
+    # Validate each component string for basic safety
     for p in paths:
         if ".." in str(p):
              raise ValueError("Invalid path component: traversal detected")
@@ -88,14 +108,7 @@ def safe_join(base: Union[str, Path], *paths: Union[str, Path]) -> Path:
     except Exception as e:
         raise ValueError(f"Error joining paths: {e}")
 
-    # 2. Validate the result against base
-    # We pass allow_new=True because we might be constructing a path for a new file
-    # or the caller will check existence later.
-    # Actually, validate_path raises FileNotFoundError if not allow_new.
-    # safe_join is often used for lookup. If we want to check existence, we can do it after.
-    # Let's default to allow_new=True to be permissive about existence (only enforcing security),
-    # and let the caller check .exists() if they need to read it.
-
+    # Validate the result against base
     return validate_path(candidate, base_dir=base, allow_new=True)
 
 def sanitize_filename(filename: str) -> str:
@@ -126,16 +139,13 @@ def is_safe_command(command: str) -> bool:
     if not command or not isinstance(command, str):
         return False
 
-    # Length check to prevent ReDoS and buffer issues
     if len(command) > 100:
         return False
 
-    # Check for dangerous shell metacharacters
     dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
     if any(char in command for char in dangerous_chars):
         return False
 
-    # Check for path traversal attempts
     if '..' in command:
         return False
 
@@ -154,19 +164,16 @@ def is_safe_script_name(script_name: str) -> bool:
     if not script_name or not isinstance(script_name, str):
         return False
 
-    # Only allow alphanumeric characters, underscores, hyphens, and dots
+    # Simple alphanumeric + dot/dash/underscore check
     if not re.match(r'^[a-zA-Z0-9_.-]+$', script_name):
         return False
 
-    # Prevent path traversal
     if '..' in script_name or '/' in script_name or '\\' in script_name:
         return False
 
-    # Prevent hidden files starting with dot
     if script_name.startswith('.'):
         return False
 
-    # Length check
     if len(script_name) > 50:
         return False
 
