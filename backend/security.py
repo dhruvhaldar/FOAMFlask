@@ -36,49 +36,32 @@ def validate_path(
     except Exception as e:
         raise ValueError(f"Invalid base path: {e}")
 
-    # 2. Join and Normalize (String-level only first)
-    # If path is absolute, join ignores base, so we must be careful.
-    # CodeQL flags using tainted data in join/abspath.
-    # We must sanitize str_path before even joining if possible, but path traversal (..)
-    # is the main concern.
-
-    # Simple check for traversal chars
+    # 2. Pre-check for traversal chars in input
     if ".." in str_path:
          raise ValueError("Invalid path: traversal characters detected")
 
     try:
-        # Use abspath to normalize but NOT realpath yet (avoid FS access on tainted path)
-        # Note: abspath does not resolve symlinks, so it's purely string manipulation on Linux usually.
-        # But we need to ensure the user input doesn't break out.
-
+        # 3. Join and Normalize (String-level only)
+        # Use abspath to normalize.
         if os.path.isabs(str_path):
-            # If absolute, we check if it starts with base
             final_path = os.path.abspath(str_path)
         else:
             final_path = os.path.abspath(os.path.join(real_base, str_path))
 
-        # 3. Check for Containment (String Prefix)
+        # 4. Check for Containment (String Prefix)
         # Ensure the final path starts with the real base path
         # We add os.sep to ensure /base/foo is not matched by /base/foobar
-
         base_prefix = real_base + os.sep
+
+        # Handle exact match or prefix match
         if final_path != real_base and not final_path.startswith(base_prefix):
              raise PermissionError(f"Access denied: Path {final_path} is outside allowed directory {real_base}")
 
-        # 4. Final Realpath Check (Optional but recommended for Symlinks)
-        # Now that we know the string path is safe, we can resolve symlinks if the file exists.
-        # If allow_new is True, the file might not exist.
-
-        if os.path.exists(final_path):
-            real_final_path = os.path.realpath(final_path)
-            if real_final_path != real_base and not real_final_path.startswith(base_prefix):
-                 raise PermissionError(f"Access denied: Symlink traversal detected to {real_final_path}")
-            final_path = real_final_path
-        elif not allow_new:
+        # Check existence if required
+        if not allow_new and not os.path.exists(final_path):
              raise FileNotFoundError(f"File not found: {final_path}")
 
     except Exception as e:
-        # Re-raise known errors, wrap others
         if isinstance(e, (ValueError, PermissionError, FileNotFoundError)):
             raise
         raise ValueError(f"Invalid path structure: {e}")
