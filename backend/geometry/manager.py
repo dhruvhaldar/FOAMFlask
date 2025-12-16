@@ -29,23 +29,24 @@ class GeometryManager:
             tri_surface_dir.mkdir(parents=True, exist_ok=True)
 
             safe_filename = secure_filename(filename)
-            if not safe_filename.lower().endswith(".stl"):
-                 return {"success": False, "message": "Only .stl files are allowed."}
+            allowed_extensions = (".stl", ".obj", ".gz")
+            if not any(safe_filename.lower().endswith(ext) for ext in allowed_extensions):
+                 return {"success": False, "message": "Only .stl, .obj, and .gz files are allowed."}
 
             filepath = tri_surface_dir / safe_filename
             file.save(str(filepath))
 
-            logger.info(f"Uploaded STL to {filepath}")
+            logger.info(f"Uploaded Geometry to {filepath}")
             return {"success": True, "message": "File uploaded successfully.", "filename": safe_filename}
 
         except Exception as e:
-            logger.error(f"Error uploading STL: {e}")
+            logger.error(f"Error uploading Geometry: {e}")
             return {"success": False, "message": str(e)}
 
     @staticmethod
     def list_stls(case_path: Union[str, Path]) -> Dict[str, Union[bool, List[str], str]]:
         """
-        List all STL files in the constant/triSurface directory.
+        List all geometry files in the constant/triSurface directory.
 
         Args:
             case_path: Path to the case directory.
@@ -60,7 +61,11 @@ class GeometryManager:
             if not tri_surface_dir.exists():
                 return {"success": True, "files": []}
 
-            files = [f.name for f in tri_surface_dir.iterdir() if f.is_file() and f.suffix.lower() == ".stl"]
+            # List .stl, .obj, and .gz files
+            files = [
+                f.name for f in tri_surface_dir.iterdir() 
+                if f.is_file() and f.suffix.lower() in [".stl", ".obj", ".gz"]
+            ]
             return {"success": True, "files": sorted(files)}
 
         except Exception as e:

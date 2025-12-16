@@ -11,6 +11,7 @@
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
 
 **Important**
+
 1. Currently only loading and execution of OpenFOAM tutorials (`$FOAM_TUTORIALS`) is supported. Creating custom cases is planned.
 2. Always edit files in `static/ts/` directory, never directly in `static/js/`. The `static/js/` files are overwritten during the build process.
 
@@ -34,18 +35,21 @@
 <summary><strong>Windows</strong></summary>
 
 ### Step 1: Clone the repository
+
 ```powershell
 git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
 ```
 
 ### Step 2: Install Node.js dependencies and build frontend
+
 ```powershell
 npm install
 npm run build
 ```
 
 ### Step 3: Create and activate Python virtual environment
+
 ```powershell
 mkdir environments
 python3 -m venv .\environments\my-python313-venv-win
@@ -53,25 +57,31 @@ python3 -m venv .\environments\my-python313-venv-win
 ```
 
 ### Step 4: Install Python dependencies
+
 ```powershell
 .\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 ### Step 5: Run the application
+
 ```powershell
 .\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
 ```
 
 ### Optional: Generate API Documentation
+
 Github-flavored Markdown is already generated under `docs` directory as `app.md`.
 
 To generate Python-related API documentation:
+
 ```powershell
 .\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
 ```
+
 (Note: Install pdoc first: `.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc`)
 
 ### Generate Frontend Documentation
+
 ```bash
 npm run docs
 ```
@@ -82,18 +92,21 @@ npm run docs
 <summary><strong>Linux/MacOS</strong></summary>
 
 ### Step 1: Clone the repository
+
 ```bash
 git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
 ```
 
 ### Step 2: Install Node.js dependencies and build frontend
+
 ```bash
 npm install
 npm run build
 ```
 
 ### Step 3: Create and activate Python virtual environment
+
 ```bash
 mkdir -p environments
 python3 -m venv ./environments/my-python313-venv-linux
@@ -101,46 +114,54 @@ source ./environments/my-python313-venv-linux/bin/activate
 ```
 
 ### Step 4: Install Python dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Step 5: Run the application
+
 ```bash
 python app.py
 ```
 
 ### Optional: Generate API Documentation
+
 Github-flavored Markdown is already generated under `docs` directory as `app.md`.
 
 To generate Python-related API documentation:
+
 ```bash
 ./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
 ```
+
 (Note: Install pdoc first: `./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc`)
 
 </details>
 
 ## Usage
+
 1. **Run the server (activate virtual environment first if using one)**:
+
 ```bash
 python app.py
 ```
+
 2. **Access the web interface**:
-Open your browser and navigate to `http://localhost:5000`.
+   Open your browser and navigate to `http://localhost:5000`.
 
 3. **Set a case directory**:
-Enter a path for your simulation cases.
-Click `Set Case Dir`.
+   Enter a path for your simulation cases.
+   Click `Set Case Dir`.
 
 4. **Set OpenFOAM root directory**:
-Enter a path for your OpenFOAM root directory.
-Click `Set OpenFOAM Root`.
+   Enter a path for your OpenFOAM root directory.
+   Click `Set OpenFOAM Root`.
 
 5. **Load a tutorial**:
-Select a tutorial from the dropdown.
-Click `Load Tutorial`.
-The tutorial will be copied to your selected case directory.
+   Select a tutorial from the dropdown.
+   Click `Load Tutorial`.
+   The tutorial will be copied to your selected case directory.
 
 6. **Run OpenFOAM commands**:
    Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
@@ -157,7 +178,6 @@ The tutorial will be copied to your selected case directory.
 
 > [!NOTE]
 > This section is intended for developers who wish to contribute to or modify FOAMFlask.
-
 
 ### Project Structure
 
@@ -201,6 +221,7 @@ FOAMFlask/
 ```
 
 ### Key Locations
+
 - **Backend Source**: `app.py` & `backend/`
 - **Frontend Source**: `static/ts/`
 - **Frontend Template**: `static/html/`
@@ -233,6 +254,7 @@ FOAMFlask/
 This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
 - **Backend**:
+
   - **Python 3.13+**: Core logic.
   - **Flask**: Lightweight WSGI web application framework.
   - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
@@ -240,6 +262,7 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
   - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
 - **Frontend**:
+
   - **TypeScript**: For type-safe, maintainable client-side code.
   - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
   - **TailwindCSS**: Utility-first CSS framework for styling.
@@ -257,16 +280,18 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
 
 **Issue Description**: Warning on the backend console:`WARNING:FOAMFlask:[FOAMFlask] get_tutorials called but Docker Desktop is not running`. Frontend shows empty drop down for `Load Tutorial`.
 
-**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed. 
+**Explanation**: This means the application is trying to access Docker Desktop but it's either not running or not installed.
 
 **Resolution**: Here's how to resolve this:
 
 1. Install Docker Desktop (if not already installed):
+
    - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
    - Follow the installation instructions for your operating system
    - This build was tested on 4.45.0 (203075)
 
 2. Start Docker Desktop
+
    - Launch Docker Desktop before running the FOAMFlask application
    - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
 
@@ -281,12 +306,15 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
 **Explanation**: The application needs to communicate with the Docker daemon, but your user does not have permission to access the Unix socket `/var/run/docker.sock`.
 
 **Resolution**:
+
 1. Add your user to the `docker` group:
+
    ```bash
    sudo usermod -aG docker $USER
    ```
 
 2. Apply the group changes:
+
    - **Method A (Temporary)**: Run `newgrp docker` in your current terminal.
    - **Method B (Permanent)**: Log out and log back in (recommended).
    - **Method C**: Restart your computer.
@@ -303,6 +331,7 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
 **Explanation**: By default, Docker containers run as root, so any files they write to the host system via bind mounts are owned by root.
 
 **Resolution**: FOAMFlask includes an automated startup check to handle this:
+
 1. On the first run, it performs a "dry run" by launching a container to write a test file.
 2. It attempts to delete this file.
 3. If deletion fails (Permission Denied), it detects the issue and automatically configures future containers to run with your current user ID (UID) and group ID (GID).
@@ -313,6 +342,7 @@ You will see a "System Check" modal on startup while this verification takes pla
 ### Startup Checks
 
 On the first run, FOAMFlask performs several checks to ensure your environment is correctly configured:
+
 1. **Docker Installation**: Checks if the Docker executable is in your system PATH.
 2. **Permissions**: Verifies that the current user can run Docker commands (without sudo).
 3. **Image Availability**: Checks if the required OpenFOAM Docker image exists.
@@ -324,10 +354,9 @@ On the first run, FOAMFlask performs several checks to ensure your environment i
 
 ## IMPORTANT: Docker Configuration
 
-The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux). 
+The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux).
 
-> [!CAUTION]
-> **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
+> [!CAUTION] > **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
 > The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
 > Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
@@ -340,21 +369,24 @@ FOAMFlask includes a comprehensive test suite using pytest. The test suite inclu
 ### Running Tests
 
 1. **Install test dependencies** (if not already installed):
+
    ```bash
    pip install -r requirements.txt
    ```
 
 2. **Run all tests** with coverage:
+
    ```bash
    # Run all tests with coverage
    pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
    ```
 
 3. **Run specific test files** or individual tests:
+
    ```bash
    # Run a specific test file
    pytest test/test_app.py -v
-   
+
    # Run a specific test function
    pytest test/test_app.py::test_index_route -v
    ```
@@ -380,6 +412,7 @@ pytest --cov=app --cov=backend --cov-report=xml
 ```
 
 **Coverage Reports**:
+
 - HTML report will be generated in the `htmlcov` directory
 - Open `htmlcov/index.html` in your browser to view the detailed coverage report
 - The terminal report shows which lines are missing coverage
@@ -424,15 +457,12 @@ pytest -k "test_name_pattern"
 
 ---
 
----
-
 ## Screenshots
-![FOAMFlask Lander](docs/images/foamflask_lander.png)
+
+![FOAMFlask Geometry](docs/images/foamflask_geometry.png)
 
 ---
 
 ## License
 
 FOAMFlask is released under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html) License.
-
----
