@@ -840,6 +840,8 @@ const toggleAeroPlots = (): void => {
 const startPlotUpdates = (): void => {
   if (plotUpdateInterval) return;
   plotUpdateInterval = setInterval(() => {
+    // ⚡ Bolt Optimization: Pause polling when tab is hidden to save resources
+    if (document.hidden) return;
     if (!plotsInViewport) return;
     if (!isUpdatingPlots) updatePlots();
     else pendingPlotUpdate = true;
@@ -1888,6 +1890,17 @@ const init = () => {
 
   const loadTutorialBtn = document.getElementById('loadTutorialBtn');
   if (loadTutorialBtn) loadTutorialBtn.addEventListener('click', loadTutorial);
+
+  // ⚡ Bolt Optimization: Resume updates immediately when tab becomes visible
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && plotsVisible && plotsInViewport) {
+      if (!isUpdatingPlots) {
+        updatePlots();
+      } else {
+        pendingPlotUpdate = true;
+      }
+    }
+  });
 };
 
 if (document.readyState === 'loading') {
