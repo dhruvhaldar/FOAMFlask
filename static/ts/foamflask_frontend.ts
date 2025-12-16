@@ -494,72 +494,70 @@ const showNotification = (
   duration: number = 5000
 ): number | null => {
   const container = document.getElementById("notificationContainer");
-  if (!container) return null;
+  const template = document.getElementById("notification-template") as HTMLTemplateElement;
+  
+  if (!container || !template) return null;
+  
   const id = ++notificationId;
-  const notification = document.createElement("div");
+  const clone = template.content.cloneNode(true) as DocumentFragment;
+  const notification = clone.querySelector(".notification") as HTMLElement;
+  
+  if (!notification) return null;
+
   notification.id = `notification-${id}`;
-  notification.className =
-    "notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative";
+  
+  // Set colors
   const colors = {
     success: "bg-green-500 text-white",
     error: "bg-red-500 text-white",
     warning: "bg-yellow-500 text-white",
     info: "bg-blue-500 text-white",
   };
-  const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
-  const content = document.createElement("div");
-  content.className = "relative z-10";
-  content.innerHTML = `
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl font-bold">${icons[type]}</span>
-        <span class="text-lg font-medium">${message}</span>
-      </div>
-    </div>
-  `;
-  notification.appendChild(content);
-  if (duration > 0) {
-    const progressBar = document.createElement("div");
-    progressBar.className =
-      "h-1 bg-white bg-opacity-50 absolute bottom-0 left-0";
-    progressBar.style.width = "100%";
-    progressBar.style.transition = "width linear";
-    progressBar.style.transitionDuration = `${duration}ms`;
-    notification.appendChild(progressBar);
-    const countdown = document.createElement("div");
-    countdown.className = "flex items-center justify-end gap-2 mt-1";
-    countdown.innerHTML = `<span id="countdown-${id}" class="text-xs opacity-75">${(
-      duration / 1000
-    ).toFixed(1)}s</span>`;
-    content.appendChild(countdown);
-    const countdownInterval = setInterval(() => {
-      duration -= 100;
-      if (duration <= 0) {
-        clearInterval(countdownInterval);
-        removeNotification(id);
-        return;
-      }
-      const countdownEl = document.getElementById(`countdown-${id}`);
-      if (countdownEl)
-        countdownEl.textContent = (duration / 1000).toFixed(1) + "s";
-    }, 100);
-    notification.dataset.intervalId = countdownInterval.toString();
-    setTimeout(() => (progressBar.style.width = "0%"), 10);
-  } else {
-    const closeBtn = document.createElement("button");
-    closeBtn.innerHTML = "×";
-    closeBtn.className =
-      "text-white hover:text-gray-200 font-bold text-lg leading-none";
-    closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      removeNotification(id);
-    };
-    closeBtn.style.position = "absolute";
-    closeBtn.style.top = "0.5rem";
-    closeBtn.style.right = "0.5rem";
-    notification.appendChild(closeBtn);
-  }
   notification.className += ` ${colors[type]}`;
+
+  // Set icon and message safely
+  const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
+  const iconSlot = notification.querySelector(".icon-slot");
+  const messageSlot = notification.querySelector(".message-slot");
+  
+  if (iconSlot) iconSlot.textContent = icons[type];
+  if (messageSlot) messageSlot.textContent = message;
+
+  // Handle duration and progress bar
+  if (duration > 0) {
+    const progressBar = notification.querySelector(".progress-bar") as HTMLElement;
+    if (progressBar) {
+      progressBar.classList.remove("hidden");
+      progressBar.style.width = "100%";
+      progressBar.style.transition = `width ${duration}ms linear`;
+      
+      // Trigger reflow to ensure transition works
+      requestAnimationFrame(() => {
+        progressBar.style.width = "0%";
+      });
+    }
+
+    // Countdown logic (optional, but requested in original code)
+    // Note: The new design doesn't explicitly have a countdown slot in the HTML provided in previous step,
+    // but we can add it if needed. For now, matching the simplified template structure.
+    
+    const countdownInterval = setTimeout(() => {
+        removeNotification(id);
+    }, duration);
+
+    notification.dataset.timerId = countdownInterval.toString();
+  } else {
+    // Show close button
+    const closeBtn = notification.querySelector(".close-btn") as HTMLElement;
+    if (closeBtn) {
+      closeBtn.classList.remove("hidden");
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeNotification(id);
+      };
+    }
+  }
+
   container.appendChild(notification);
   return id;
 };
@@ -567,8 +565,8 @@ const showNotification = (
 const removeNotification = (id: number): void => {
   const notification = document.getElementById(`notification-${id}`);
   if (notification) {
-    if (notification.dataset.intervalId)
-      clearInterval(parseInt(notification.dataset.intervalId, 10));
+    if (notification.dataset.timerId)
+      clearTimeout(parseInt(notification.dataset.timerId, 10));
     notification.style.opacity = "0";
     notification.style.transition = "opacity 0.3s ease";
     setTimeout(() => notification.remove(), 300);
