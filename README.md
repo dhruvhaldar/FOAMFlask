@@ -195,26 +195,29 @@ FOAMFlask/
 │ ├── ts/
 │ │ └── foamflask_frontend.ts # TypeScript source code
 │ ├── js/
-│ │ └── foamflask_frontend.js # Compiled JavaScript (for browser)
+│ │ ├── foamflask_frontend.js # Compiled JavaScript (for browser)
+│ │ └── frontend/
+│ │     └── isosurface.js # PyVista integration
 │ ├── js-build/
 │ │ └── foamflask_frontend.js # TypeScript compiler output
-│ └── js/
-│   └── frontend/
-│       └── isosurface.js # PyVista integration
 ├── backend/
-│   ├── mesh/
-│   │   └── mesher.py # Mesh generation utilities
-│   ├── plots/
-│   │   └── realtime_plots.py # Real-time plotting backend
-│   └── post/
-│       └── isosurface.py # Post-processing utilities
+│ ├── geometry/
+│ │ └── manager.py # Geometry management utilities
+│ ├── mesh/
+│ │ └── mesher.py # Mesh generation utilities
+│ ├── plots/
+│ │ └── realtime_plots.py # Real-time plotting backend
+│ ├── post/
+│ │ └── isosurface.py # Post-processing utilities
+│ ├── verification/
+│ │ └── verify_changes.py # Verification utilities
 ├── test/
-│   ├── check_coverage.py # Code coverage analysis script
-│   ├── check_docstrings.py # Docstring coverage checker
-│   ├── docker_test.py # Docker functionality tests
-│   ├── pyvista_test.py # PyVista integration tests
-│   ├── foamlib_test.py # FOAM library tests
-│   └── bike.vtp # Test VTK file
+│ ├── check_coverage.py # Code coverage analysis script
+│ ├── check_docstrings.py # Docstring coverage checker
+│ ├── docker_test.py # Docker functionality tests
+│ ├── pyvista_test.py # PyVista integration tests
+│ ├── foamlib_test.py # FOAM library tests
+│ └── bike.vtp # Test VTK file
 ├── docs/ # Generated documentation
 ├── environments/ # Python virtual environments
 └── README.md # This file
