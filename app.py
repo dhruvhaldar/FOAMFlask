@@ -628,9 +628,21 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     if not case_name or not filename:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+    # Sanitize inputs
+    case_name = secure_filename(case_name)
+    filename = secure_filename(filename)
 
-    html_content = GeometryVisualizer.get_interactive_html(file_path, color, opacity)
+    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+    
+    # Security: Ensure resolved path is within valid directories
+    resolved_path = file_path.resolve()
+    base_path = Path(CASE_ROOT).resolve()
+    
+    if not str(resolved_path).startswith(str(base_path)):
+        logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}, Base: {base_path}")
+        return jsonify({"success": False, "message": "Access denied"}), 400
+
+    html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity)
 
     if html_content:
         return Response(html_content, mimetype="text/html")
@@ -647,9 +659,21 @@ def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
     if not case_name or not filename:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+    # Sanitize inputs
+    case_name = secure_filename(case_name)
+    filename = secure_filename(filename)
 
-    info = GeometryVisualizer.get_mesh_info(file_path)
+    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+    
+    # Security: Ensure resolved path is within valid directories
+    resolved_path = file_path.resolve()
+    base_path = Path(CASE_ROOT).resolve()
+    
+    if not str(resolved_path).startswith(str(base_path)):
+        logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}, Base: {base_path}")
+        return jsonify({"success": False, "message": "Access denied"}), 400
+
+    info = GeometryVisualizer.get_mesh_info(resolved_path)
     return jsonify(info)
 
 
