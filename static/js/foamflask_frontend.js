@@ -752,6 +752,77 @@ const runCommand = async (cmd) => {
         showNotification("Error running command", "error");
     }
 };
+// Realtime Plotting Functions
+const togglePlots = () => {
+    plotsVisible = !plotsVisible;
+    const container = document.getElementById("plotsContainer");
+    const btn = document.getElementById("togglePlotsBtn");
+    const aeroBtn = document.getElementById("toggleAeroBtn");
+    if (plotsVisible) {
+        container?.classList.remove("hidden");
+        if (btn)
+            btn.textContent = "Hide Plots";
+        aeroBtn?.classList.remove("hidden");
+        startPlotUpdates();
+        setupIntersectionObserver();
+    }
+    else {
+        container?.classList.add("hidden");
+        if (btn)
+            btn.textContent = "Show Plots";
+        aeroBtn?.classList.add("hidden");
+        stopPlotUpdates();
+    }
+};
+const setupIntersectionObserver = () => {
+    const plotsContainer = document.getElementById("plotsContainer");
+    if (!plotsContainer || plotsContainer.dataset.observerSetup)
+        return;
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            plotsInViewport = entry.isIntersecting;
+        });
+    }, { threshold: 0.1, rootMargin: "50px" });
+    observer.observe(plotsContainer);
+    plotsContainer.dataset.observerSetup = "true";
+};
+const toggleAeroPlots = () => {
+    aeroVisible = !aeroVisible;
+    const container = document.getElementById("aeroContainer");
+    const btn = document.getElementById("toggleAeroBtn");
+    if (aeroVisible) {
+        container?.classList.remove("hidden");
+        if (btn)
+            btn.textContent = "Hide Aero Plots";
+        updateAeroPlots();
+    }
+    else {
+        container?.classList.add("hidden");
+        if (btn)
+            btn.textContent = "Show Aero Plots";
+    }
+};
+const startPlotUpdates = () => {
+    if (plotUpdateInterval)
+        return;
+    plotUpdateInterval = setInterval(() => {
+        // ⚡ Bolt Optimization: Pause polling when tab is hidden to save resources
+        if (document.hidden)
+            return;
+        if (!plotsInViewport)
+            return;
+        if (!isUpdatingPlots)
+            updatePlots();
+        else
+            pendingPlotUpdate = true;
+    }, 2000);
+};
+const stopPlotUpdates = () => {
+    if (plotUpdateInterval) {
+        clearInterval(plotUpdateInterval);
+        plotUpdateInterval = null;
+    }
+};
 const updateResidualsPlot = async (tutorial) => {
     try {
         const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
@@ -1698,6 +1769,17 @@ const init = () => {
     const loadTutorialBtn = document.getElementById('loadTutorialBtn');
     if (loadTutorialBtn)
         loadTutorialBtn.addEventListener('click', loadTutorial);
+    // ⚡ Bolt Optimization: Resume updates immediately when tab becomes visible
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && plotsVisible && plotsInViewport) {
+            if (!isUpdatingPlots) {
+                updatePlots();
+            }
+            else {
+                pendingPlotUpdate = true;
+            }
+        }
+    });
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

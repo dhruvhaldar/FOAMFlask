@@ -5,6 +5,8 @@ from typing import Optional, Union, Dict, Any
 import multiprocessing
 import tempfile
 import os
+import gzip
+import shutil
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -13,10 +15,21 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
     Helper function to be run in a separate process to generate the HTML.
     This avoids signal handling issues with trame/aiohttp in Flask threads.
     """
+    temp_read_path = None
     try:
-        mesh = pv.read(file_path)
+        read_path = file_path
+        if file_path.lower().endswith(".gz"):
+             # Decompress to temporary file
+             suffix = ".obj" if ".obj" in file_path.lower() else ".stl" # Simple heuristic
+             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                 with gzip.open(file_path, "rb") as f_in:
+                     shutil.copyfileobj(f_in, tmp)
+                 temp_read_path = tmp.name
+                 read_path = temp_read_path
+
+        mesh = pv.read(read_path)
         plotter = pv.Plotter(notebook=False, off_screen=True)
-        plotter.add_mesh(mesh, color=color, opacity=opacity, show_edges=True)
+        plotter.add_mesh(mesh, color=color, opacity=opacity, show_edges=False)
         plotter.show_grid()
         plotter.show_axes()
         plotter.camera_position = 'iso'
@@ -28,6 +41,12 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         # Ensure failure is detectable
         if os.path.exists(output_path):
             os.remove(output_path)
+    finally:
+        if temp_read_path and os.path.exists(temp_read_path):
+            try:
+                os.remove(temp_read_path)
+            except:
+                pass
 
 class GeometryVisualizer:
     """Visualizes geometry files (STL) using PyVista."""
@@ -95,25 +114,43 @@ class GeometryVisualizer:
 
     @staticmethod
     def get_mesh_info(file_path: Union[str, Path]) -> Dict[str, Any]:
-         """
-         Get basic information about the STL mesh (bounds, center, etc.)
-         """
-         try:
+        """
+        Get basic information about the STL mesh (bounds, center, etc.)
+        """
+        try:
             path = Path(file_path).resolve()
             if not path.exists():
                 return {"success": False, "error": "File not found"}
 
-            mesh = pv.read(str(path))
-            bounds = mesh.bounds
-            center = mesh.center
+            read_path = str(path)
+            temp_read_path = None
+            
+            try:
+                if read_path.lower().endswith(".gz"):
+                    suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
+                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                        with gzip.open(read_path, "rb") as f_in:
+                            shutil.copyfileobj(f_in, tmp)
+                        temp_read_path = tmp.name
+                        read_path = temp_read_path
 
-            return {
-                "success": True,
-                "bounds": bounds,
-                "center": center,
-                "n_points": mesh.n_points,
-                "n_cells": mesh.n_cells
-            }
-         except Exception as e:
-             logger.error(f"Error getting mesh info: {e}")
-             return {"success": False, "error": str(e)}
+                mesh = pv.read(read_path)
+                bounds = mesh.bounds
+                center = mesh.center
+
+                return {
+                    "success": True,
+                    "bounds": bounds,
+                    "center": center,
+                    "n_points": mesh.n_points,
+                    "n_cells": mesh.n_cells
+                }
+            finally:
+                if temp_read_path and os.path.exists(temp_read_path):
+                    try:
+                        os.remove(temp_read_path)
+                    except:
+                        pass
+        except Exception as e:
+            logger.error(f"Error getting mesh info: {e}")
+            return {"success": False, "error": str(e)}
