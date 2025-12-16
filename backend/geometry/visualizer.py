@@ -10,6 +10,8 @@ import shutil
 
 logger = logging.getLogger("FOAMFlask")
 
+ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
+
 def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float):
     """
     Helper function to be run in a separate process to generate the HTML.
@@ -66,6 +68,19 @@ class GeometryVisualizer:
         """
         try:
             path = Path(file_path).resolve()
+            
+            # Security check: Ensure file extension is allowed
+            suffixes = path.suffixes
+            # Handle .obj.gz case
+            if len(suffixes) >= 2 and suffixes[-2] + suffixes[-1] == '.obj.gz':
+                ext = '.obj.gz'
+            else:
+                ext = path.suffix.lower()
+
+            if ext not in ALLOWED_EXTENSIONS:
+                logger.error(f"Security: Invalid file extension for geometry visualizer: {ext}")
+                return None
+
             if not path.exists():
                 logger.error(f"STL file not found: {path}")
                 return None
@@ -119,6 +134,18 @@ class GeometryVisualizer:
         """
         try:
             path = Path(file_path).resolve()
+
+            # Security check: Ensure file extension is allowed
+            suffixes = path.suffixes
+            # Handle .obj.gz case
+            if len(suffixes) >= 2 and suffixes[-2] + suffixes[-1] == '.obj.gz':
+                ext = '.obj.gz'
+            else:
+                ext = path.suffix.lower()
+
+            if ext not in ALLOWED_EXTENSIONS:
+                 return {"success": False, "error": "Invalid file extension"}
+
             if not path.exists():
                 return {"success": False, "error": "File not found"}
 
