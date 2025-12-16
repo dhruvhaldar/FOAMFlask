@@ -616,15 +616,13 @@ def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
     else:
         return jsonify(result), 500
 
-@app.route("/api/geometry/view", methods=["POST"])
-def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
-    """Get interactive HTML viewer for an STL."""
-    data = request.get_json()
-    case_name = data.get("caseName")
-    filename = data.get("filename")
-    color = data.get("color", "lightblue")
-    opacity = data.get("opacity", 1.0)
+def validate_geometry_path(case_name: str, filename: str) -> Union[Path, Tuple[Response, int]]:
+    """
+    Validate and resolve geometry file path with security checks.
 
+    Returns:
+        Resolved Path object or error response tuple.
+    """
     if not case_name or not filename:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
@@ -638,9 +636,26 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     resolved_path = file_path.resolve()
     base_path = Path(CASE_ROOT).resolve()
     
-    if not str(resolved_path).startswith(str(base_path)):
+    if not resolved_path.is_relative_to(base_path):
         logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}, Base: {base_path}")
         return jsonify({"success": False, "message": "Access denied"}), 400
+    
+    return resolved_path
+
+@app.route("/api/geometry/view", methods=["POST"])
+def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Get interactive HTML viewer for an STL."""
+    data = request.get_json()
+    case_name = data.get("caseName")
+    filename = data.get("filename")
+    color = data.get("color", "lightblue")
+    opacity = data.get("opacity", 1.0)
+
+    path_or_error = validate_geometry_path(case_name, filename)
+    if isinstance(path_or_error, tuple):
+        return path_or_error
+    
+    resolved_path = path_or_error
 
     html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity)
 
@@ -656,22 +671,11 @@ def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
     case_name = data.get("caseName")
     filename = data.get("filename")
 
-    if not case_name or not filename:
-        return jsonify({"success": False, "message": "Missing parameters"}), 400
-
-    # Sanitize inputs
-    case_name = secure_filename(case_name)
-    filename = secure_filename(filename)
-
-    file_path = Path(CASE_ROOT) / case_name / "constant" / "triSurface" / filename
+    path_or_error = validate_geometry_path(case_name, filename)
+    if isinstance(path_or_error, tuple):
+        return path_or_error
     
-    # Security: Ensure resolved path is within valid directories
-    resolved_path = file_path.resolve()
-    base_path = Path(CASE_ROOT).resolve()
-    
-    if not str(resolved_path).startswith(str(base_path)):
-        logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}, Base: {base_path}")
-        return jsonify({"success": False, "message": "Access denied"}), 400
+    resolved_path = path_or_error
 
     info = GeometryVisualizer.get_mesh_info(resolved_path)
     return jsonify(info)
