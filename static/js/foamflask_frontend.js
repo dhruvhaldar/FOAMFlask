@@ -1193,8 +1193,27 @@ const loadGeometryView = async () => {
         const info = await res.json();
         if (info.success) {
             const div = document.getElementById("geometryInfoContent");
-            if (div)
-                div.innerHTML = `Bounds: [${info.bounds.join(", ")}]`;
+            if (div) {
+                const b = info.bounds;
+                const fmt = (n) => n.toFixed(3);
+                const dx = (b[1] - b[0]).toFixed(3);
+                const dy = (b[3] - b[2]).toFixed(3);
+                const dz = (b[5] - b[4]).toFixed(3);
+                const setText = (id, text) => {
+                    const el = document.getElementById(id);
+                    if (el)
+                        el.textContent = text;
+                };
+                setText("geo-bound-x-min", fmt(b[0]));
+                setText("geo-bound-x-max", fmt(b[1]));
+                setText("geo-bound-x-len", dx);
+                setText("geo-bound-y-min", fmt(b[2]));
+                setText("geo-bound-y-max", fmt(b[3]));
+                setText("geo-bound-y-len", dy);
+                setText("geo-bound-z-min", fmt(b[4]));
+                setText("geo-bound-z-max", fmt(b[5]));
+                setText("geo-bound-z-len", dz);
+            }
             document.getElementById("geometryInfo")?.classList.remove("hidden");
         }
     }

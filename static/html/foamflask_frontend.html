@@ -346,7 +346,56 @@
           <!-- Info Panel -->
           <div id="geometryInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
             <h3 class="font-semibold text-blue-900 mb-2">Geometry Info</h3>
-            <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1"></div>
+            <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1">
+              <div class="mt-2 border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
+                <div class="bg-indigo-50 px-3 py-2 border-b border-indigo-100 flex justify-between items-center">
+                  <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Geometry Bounds</span>
+                  <span class="text-[10px] bg-white text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">World
+                    Coords</span>
+                </div>
+                <div class="p-2 space-y-1.5">
+                  <!-- X Axis -->
+                  <div class="flex items-center text-xs">
+                    <div class="w-4 flex-shrink-0 font-bold text-red-500">X</div>
+                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
+                      <span class="text-gray-400">min</span> <span id="geo-bound-x-min"></span> <span
+                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                        id="geo-bound-x-max"></span>
+                    </div>
+                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      title="Length">
+                      Δ <span id="geo-bound-x-len"></span>
+                    </div>
+                  </div>
+                  <!-- Y Axis -->
+                  <div class="flex items-center text-xs">
+                    <div class="w-4 flex-shrink-0 font-bold text-green-500">Y</div>
+                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
+                      <span class="text-gray-400">min</span> <span id="geo-bound-y-min"></span> <span
+                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                        id="geo-bound-y-max"></span>
+                    </div>
+                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      title="Length">
+                      Δ <span id="geo-bound-y-len"></span>
+                    </div>
+                  </div>
+                  <!-- Z Axis -->
+                  <div class="flex items-center text-xs">
+                    <div class="w-4 flex-shrink-0 font-bold text-blue-500">Z</div>
+                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
+                      <span class="text-gray-400">min</span> <span id="geo-bound-z-min"></span> <span
+                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                        id="geo-bound-z-max"></span>
+                    </div>
+                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      title="Length">
+                      Δ <span id="geo-bound-z-len"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
