@@ -821,7 +821,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
         return docker_unavailable_response()
 
     bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
-    container_run_path = "/tmp/FOAM_Run"
+    container_run_path = "/tmp/FOAM_Run" # nosec B108
     container_case_path = posixpath.join(container_run_path, tutorial)
 
     # Convert Windows paths to POSIX style for Docker
@@ -888,12 +888,12 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
                 container.reload()
                 if container.status == "running":
                     container.kill()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[FOAMFlask] Error killing container: {e}")
             try:
                 container.remove()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[FOAMFlask] Error removing container: {e}")
 
 
 @app.route("/run", methods=["POST"])
@@ -935,7 +935,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             return
 
         container_case_path = posixpath.join(
-            "/tmp/FOAM_Run", tutorial
+            "/tmp/FOAM_Run", tutorial # nosec B108
         )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
@@ -945,7 +945,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         volumes = {
             host_path_str: {
-                "bind": "/tmp/FOAM_Run",
+                "bind": "/tmp/FOAM_Run", # nosec B108
                 "mode": "rw",
             }
         }
@@ -1343,7 +1343,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             return
 
         container_case_path = posixpath.join(
-            "/tmp/FOAM_Run", tutorial
+            "/tmp/FOAM_Run", tutorial # nosec B108
         )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
@@ -1353,7 +1353,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
 
         volumes = {
             host_path_str: {
-                "bind": "/tmp/FOAM_Run",
+                "bind": "/tmp/FOAM_Run", # nosec B108
                 "mode": "rw",
             }
         }
@@ -1396,8 +1396,8 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             if 'container' in locals():
                 try:
                     container.kill()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"[FOAMFlask] Error killing container: {e}")
                 try:
                     container.remove()
                 except Exception:
@@ -1695,7 +1695,7 @@ def main() -> None:
     # but re-running is safe.
     threading.Thread(target=run_startup_check, daemon=True).start()
 
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host=os.environ.get("FLASK_HOST", "127.0.0.1"), port=5000, debug=False)
 
 
 if __name__ == "__main__":
