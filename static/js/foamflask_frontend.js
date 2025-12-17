@@ -793,13 +793,17 @@ const updateResidualsPlot = async (tutorial) => {
         console.error("FOAMFlask Error updating residuals", error);
     }
 };
-const updateAeroPlots = async () => {
+const updateAeroPlots = async (preFetchedData) => {
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial)
         return;
     try {
-        const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
-        const data = await response.json();
+        let data = preFetchedData;
+        // ⚡ Bolt Optimization: Use pre-fetched data if available to save a network request
+        if (!data) {
+            const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+            data = await response.json();
+        }
         if (data.error)
             return;
         // Cp plot
@@ -1076,8 +1080,9 @@ const updatePlots = async () => {
         }
         // Update residuals and aero plots in parallel
         const updatePromises = [updateResidualsPlot(selectedTutorial)];
+        // ⚡ Bolt Optimization: Pass the already fetched data to avoid redundant request
         if (aeroVisible)
-            updatePromises.push(updateAeroPlots());
+            updatePromises.push(updateAeroPlots(data));
         await Promise.allSettled(updatePromises);
         // After all plots are updated
         if (isFirstPlotLoad) {

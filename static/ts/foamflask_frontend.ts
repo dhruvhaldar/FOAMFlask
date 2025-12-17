@@ -919,16 +919,22 @@ const updateResidualsPlot = async (tutorial: string): Promise<void> => {
   }
 };
 
-const updateAeroPlots = async (): Promise<void> => {
+const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
   const selectedTutorial = (
     document.getElementById("tutorialSelect") as HTMLSelectElement
   )?.value;
   if (!selectedTutorial) return;
   try {
-    const response = await fetch(
-      `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
-    );
-    const data = await response.json() as PlotData;
+    let data = preFetchedData;
+
+    // ⚡ Bolt Optimization: Use pre-fetched data if available to save a network request
+    if (!data) {
+      const response = await fetch(
+        `/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`
+      );
+      data = await response.json() as PlotData;
+    }
+
     if (data.error) return;
 
     // Cp plot
@@ -1258,7 +1264,8 @@ const updatePlots = async (): Promise<void> => {
 
     // Update residuals and aero plots in parallel
     const updatePromises = [updateResidualsPlot(selectedTutorial)];
-    if (aeroVisible) updatePromises.push(updateAeroPlots());
+    // ⚡ Bolt Optimization: Pass the already fetched data to avoid redundant request
+    if (aeroVisible) updatePromises.push(updateAeroPlots(data));
     await Promise.allSettled(updatePromises);
 
     // After all plots are updated
