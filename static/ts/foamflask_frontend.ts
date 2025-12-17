@@ -1899,6 +1899,32 @@ const init = () => {
       }
     }
   });
+
+  // Persist Tutorial Selection
+  const tutorialSelect = document.getElementById('tutorialSelect') as HTMLSelectElement;
+  if (tutorialSelect) {
+      // Restore
+      const savedTutorial = localStorage.getItem('lastSelectedTutorial');
+      if (savedTutorial) {
+          // Check if option exists
+          let exists = false;
+          for (let i = 0; i < tutorialSelect.options.length; i++) {
+              if (tutorialSelect.options[i].value === savedTutorial) {
+                  exists = true;
+                  break;
+              }
+          }
+          if (exists) {
+              tutorialSelect.value = savedTutorial;
+          }
+      }
+
+      // Save on change
+      tutorialSelect.addEventListener('change', (e: Event) => {
+          const target = e.target as HTMLSelectElement;
+          localStorage.setItem('lastSelectedTutorial', target.value);
+      });
+  }
 };
 
 if (document.readyState === 'loading') {
