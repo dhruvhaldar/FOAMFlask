@@ -144,7 +144,7 @@ def check_docker_permissions(
     # Generate a unique test file name
     test_filename = f".permission_test_{uuid.uuid4().hex}"
     host_test_file = case_dir_path / test_filename
-    container_run_path = "/tmp/foam_flask_check"
+    container_run_path = "/tmp/foam_flask_check" # nosec B108
 
     # Volume mapping
     volumes = {

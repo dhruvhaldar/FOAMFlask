@@ -47,7 +47,7 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         if temp_read_path and os.path.exists(temp_read_path):
             try:
                 os.remove(temp_read_path)
-            except:
+            except OSError:
                 pass
 
 class GeometryVisualizer:
@@ -176,7 +176,7 @@ class GeometryVisualizer:
                 if temp_read_path and os.path.exists(temp_read_path):
                     try:
                         os.remove(temp_read_path)
-                    except:
+                    except OSError:
                         pass
         except Exception as e:
             logger.error(f"Error getting mesh info: {e}")

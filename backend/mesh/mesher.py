@@ -277,7 +277,7 @@ class MeshVisualizer:
                 # Clean up temporary file
                 try:
                     tmp_path.unlink()
-                except Exception:
+                except OSError:
                     pass
 
                 return html_content
