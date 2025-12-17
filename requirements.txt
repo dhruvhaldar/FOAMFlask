@@ -22,7 +22,6 @@ decorator==5.2.1
 docker==7.1.0
 execnet==2.1.2
 executing==2.2.1
-fire==0.7.1
 Flask==3.1.2
 fonttools==4.60.2
 frozenlist==1.8.0
@@ -54,7 +53,6 @@ more-itertools==10.8.0
 msgpack==1.1.2
 multidict==6.7.0
 mypy_extensions==1.1.0
-narwhals==2.14.0
 nest-asyncio==1.6.0
 netCDF4==1.7.3
 numpy==2.3.4
