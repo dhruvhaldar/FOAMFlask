@@ -461,8 +461,12 @@ class IsosurfaceVisualizer:
                 # Clean up temporary file
                 try:
                     os.unlink(tmp_path)
-                except Exception:
-                    pass
+                except OSError as e:
+                    logger.warning(
+                        f"[FOAMFlask] [IsosurfaceVisualizer] "
+                        f"[get_interactive_html] "
+                        f"Error cleaning up temporary file: {str(e)}"
+                    )
 
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
@@ -593,8 +597,8 @@ class IsosurfaceVisualizer:
                 logger.info(
                     "[FOAMFlask] [IsosurfaceVisualizer] " "Cleaned up plotter resources"
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[FOAMFlask] [IsosurfaceVisualizer] Error during cleanup: {e}")
 
 
 # Global instance for use as a singleton

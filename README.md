@@ -363,6 +363,21 @@ The application uses specific bind mount paths to ensure compatibility with diff
 > The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
 > Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
+> [!NOTE] > **Security Suppression**: You may see `# nosec B108` comments in the code near these paths. This is required to suppress Bandit security warnings because `/tmp` is a hardcoded path, which is flagged by default but is safe and intentional in this Docker container context.
+
+### Network Binding
+
+By default, the application binds to `0.0.0.0` (all interfaces) to ensure it is accessible when running inside a container.
+
+To change this behavior (e.g., for local development security), you can set the `FLASK_HOST` environment variable:
+
+- **Container/Public Access (Default)**: `FLASK_HOST=0.0.0.0`
+- **Localhost Only (Secure)**: `FLASK_HOST=127.0.0.1`
+
+On startup, the application logs the listening address: `FOAMFlask listening on: {host}:{port}`
+
+> [!NOTE] > **Security Suppression**: You may see `# nosec B104` in `app.py`. This suppresses the Bandit warning for binding to all interfaces, which is intentional for the containerized deployment strategy.
+
 ---
 
 ## Testing

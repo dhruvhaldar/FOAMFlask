@@ -84,7 +84,7 @@ class MeshingRunner:
                  return {"success": False, "message": "Docker client not available"}
 
             # Setup paths
-            container_run_path = "/tmp/FOAM_Run"
+            container_run_path = "/tmp/FOAM_Run" # nosec B108
 
             case_name = case_path.name
             container_case_path = posixpath.join(container_run_path, case_name)
