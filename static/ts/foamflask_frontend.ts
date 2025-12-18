@@ -604,14 +604,27 @@ const fetchWithCache = async <T = any>(
 // Logging
 const appendOutput = (message: string, type: string): void => {
   outputBuffer.push({ message, type });
-  if (outputFlushTimer) clearTimeout(outputFlushTimer);
-  outputFlushTimer = setTimeout(flushOutputBuffer, 16);
+  // ⚡ Bolt Optimization: Throttle updates to ~30fps (32ms) instead of debouncing
+  if (!outputFlushTimer) {
+    outputFlushTimer = setTimeout(flushOutputBuffer, 32);
+  }
 };
 
 const flushOutputBuffer = (): void => {
-  if (outputBuffer.length === 0) return;
+  if (outputBuffer.length === 0) {
+    outputFlushTimer = null;
+    return;
+  }
   const container = document.getElementById("output");
-  if (!container) return;
+  if (!container) {
+    outputFlushTimer = null;
+    return;
+  }
+
+  // ⚡ Bolt Optimization: Check scroll position BEFORE appending to avoid layout thrashing
+  // Check if user is near bottom (within 50px tolerance)
+  const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 50;
+
   const fragment = document.createDocumentFragment();
   outputBuffer.forEach(({ message, type }) => {
     const line = document.createElement("div");
@@ -623,9 +636,16 @@ const flushOutputBuffer = (): void => {
     line.textContent = message;
     fragment.appendChild(line);
   });
+
   container.appendChild(fragment);
-  container.scrollTop = container.scrollHeight;
+
+  // Only force scroll if user was already at the bottom
+  if (isAtBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+
   outputBuffer.length = 0;
+  outputFlushTimer = null;
 
   // Save to LocalStorage (Debounced)
   saveLogDebounced();
