@@ -1474,8 +1474,59 @@ const runMeshingCommand = async (cmd: string) => {
 };
 
 // Visualizer
+const runFoamToVTK = async () => {
+  if (!activeCase) {
+    showNotification("Please select a case first", "warning");
+    return;
+  }
+
+  showNotification("Running foamToVTK...", "info");
+
+  try {
+    const response = await fetch("/run_foamtovtk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tutorial: activeCase, caseDir: caseDir }) // passing caseDir global var
+    });
+
+    if (!response.ok) throw new Error("Failed to start foamToVTK");
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    const read = async () => {
+      const { done, value } = (await reader?.read()) || { done: true, value: undefined };
+      if (done) {
+        showNotification("foamToVTK completed", "success");
+        flushOutputBuffer();
+        refreshMeshList();
+        return;
+      }
+
+      const text = decoder.decode(value);
+      text.split("\n").forEach(line => {
+        if (line.trim()) {
+           // Simply append to output, maybe parse for errors if needed
+           const type = /error/i.test(line) ? "stderr" : "stdout";
+           appendOutput(line, "stdout");
+        }
+      });
+      await read();
+    };
+    await read();
+
+  } catch (e) {
+    console.error(e);
+    showNotification("Error running foamToVTK", "error");
+  }
+};
+
+
 const refreshMeshList = async () => {
-  if (!activeCase) return;
+  if (!activeCase) {
+    showNotification("No active case selected to list meshes", "warning", 3000);
+    return;
+  }
   try {
     const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
     const data = await res.json();
@@ -1487,7 +1538,10 @@ const refreshMeshList = async () => {
         opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
       });
     }
-  } catch (e) { }
+  } catch (e) {
+    console.error("Error refreshing mesh list:", e);
+    showNotification("Failed to refresh mesh list", "error");
+  }
 };
 
 const loadMeshVisualization = async () => {
@@ -1880,6 +1934,7 @@ window.onload = async () => {
 (window as any).refreshMeshList = refreshMeshList;
 (window as any).loadMeshVisualization = loadMeshVisualization;
 (window as any).updateMeshView = updateMeshView;
+(window as any).runFoamToVTK = runFoamToVTK;
 (window as any).refreshPostList = refreshPostList;
 (window as any).toggleAeroPlots = toggleAeroPlots;
 (window as any).runCommand = runCommand;
