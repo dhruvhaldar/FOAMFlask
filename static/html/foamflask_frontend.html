@@ -179,7 +179,7 @@
       <!-- Progress Bar -->
       <div class="progress-bar h-1 bg-white bg-opacity-50 absolute bottom-0 left-0 hidden"></div>
       <!-- Close Button -->
-      <button class="close-btn text-white hover:text-gray-200 font-bold text-lg leading-none absolute top-2 right-2 hidden">×</button>
+      <button class="close-btn text-white hover:text-gray-200 font-bold text-lg leading-none absolute top-2 right-2 hidden" aria-label="Close notification">×</button>
     </div>
   </template>
 
@@ -257,7 +257,7 @@
           <p class="text-sm text-gray-500 mb-3">Create a blank case structure (0, constant, system).</p>
           <div class="flex flex-col gap-3">
             <input type="text" id="newCaseName" placeholder="Case Name (e.g. my_case)"
-              class="border border-gray-300 rounded px-3 py-2">
+              class="border border-gray-300 rounded px-3 py-2" aria-label="New Case Name">
             <button onclick="createNewCase()"
               class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium transition-colors">
               Create Case
@@ -270,7 +270,7 @@
           <h3 class="text-lg font-bold mb-3 text-gray-800">Import Tutorial</h3>
           <p class="text-sm text-gray-500 mb-3">Copy an OpenFOAM tutorial to your workspace.</p>
           <div class="flex flex-col gap-3">
-            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm">
+            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm" aria-label="Select Tutorial">
               {{ options|safe }}
             </select>
             <button id="loadTutorialBtn"
@@ -303,7 +303,7 @@
             <input type="text" id="dockerImage" name="dockerImage"
               class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
-              class="border border-gray-300 rounded px-3 py-2 w-24" />
+              class="border border-gray-300 rounded px-3 py-2 w-24" aria-label="OpenFOAM Version" />
             <button type="button" onclick="setDockerConfig(
                   document.getElementById('dockerImage').value,
                   document.getElementById('openfoamVersion').value
@@ -455,8 +455,8 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Bounds (Min / Max)</label>
                 <div class="grid grid-cols-2 gap-2">
-                  <input type="text" id="bmMin" placeholder="-1 -1 -1" class="border rounded px-2 py-1 text-sm">
-                  <input type="text" id="bmMax" placeholder="1 1 1" class="border rounded px-2 py-1 text-sm">
+                  <input type="text" id="bmMin" placeholder="-1 -1 -1" class="border rounded px-2 py-1 text-sm" aria-label="BlockMesh Min Bounds">
+                  <input type="text" id="bmMax" placeholder="1 1 1" class="border rounded px-2 py-1 text-sm" aria-label="BlockMesh Max Bounds">
                 </div>
                 <button onclick="fillBoundsFromGeometry()" class="text-xs text-blue-600 hover:underline mt-1">
                   Auto-fill from selected Geometry
@@ -593,10 +593,10 @@
                     <label class="block text-xs font-medium text-gray-700">Refinement Level (Min / Max)</label>
                     <div class="flex items-center gap-2">
                       <input type="number" id="shmObjRefMin" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()">
+                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()" aria-label="Min Refinement Level">
                       <span class="text-gray-500">-</span>
                       <input type="number" id="shmObjRefMax" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()">
+                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()" aria-label="Max Refinement Level">
                     </div>
                   </div>
                   <div>
@@ -1117,11 +1117,11 @@
               <div class="grid grid-cols-2 gap-2 w-full">
                 <div class="w-full">
                   <input type="number" id="rangeMin" placeholder="Min"
-                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34">
+                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34" aria-label="Scalar Field Range Minimum">
                 </div>
                 <div class="w-full">
                   <input type="number" id="rangeMax" placeholder="Max"
-                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177">
+                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177" aria-label="Scalar Field Range Maximum">
                 </div>
               </div>
               <button id="RangeBtn"
