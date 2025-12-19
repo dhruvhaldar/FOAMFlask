@@ -27,14 +27,17 @@ class OpenFOAMFieldParser:
         """Get all time directories sorted numerically."""
         time_dirs = []
         try:
-            for item in self.case_dir.iterdir():
-                if item.is_dir():
-                    try:
-                        # Check if directory name is a number
-                        float(item.name)
-                        time_dirs.append(item.name)
-                    except ValueError:
-                        continue
+            # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
+            # This avoids extra stat() calls and is significantly faster for large directories.
+            with os.scandir(str(self.case_dir)) as entries:
+                for entry in entries:
+                    if entry.is_dir():
+                        try:
+                            # Check if directory name is a number
+                            float(entry.name)
+                            time_dirs.append(entry.name)
+                        except ValueError:
+                            continue
         except OSError as e:
             logger.error(f"Error listing directories in {self.case_dir}: {e}")
             return []
