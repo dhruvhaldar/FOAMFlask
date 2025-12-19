@@ -725,6 +725,32 @@ const loadTutorial = async (): Promise<void> => {
   } catch (e) { showNotification("Failed to load tutorial", "error"); }
 };
 
+// Toggle Section Visibility
+const toggleSection = (id: string): void => {
+  const section = document.getElementById(id);
+  const toggleIcon = document.getElementById(`${id}Toggle`);
+
+  if (!section || !toggleIcon) return;
+
+  const isHidden = section.classList.contains("hidden");
+
+  if (isHidden) {
+    section.classList.remove("hidden");
+    toggleIcon.textContent = "▼";
+    toggleIcon.classList.remove("-rotate-90");
+    // If it's a button (accessible version), update aria-expanded
+    const toggleBtn = toggleIcon.parentElement?.tagName === "BUTTON" ? toggleIcon.parentElement : null;
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+  } else {
+    section.classList.add("hidden");
+    toggleIcon.textContent = "▶";
+    toggleIcon.classList.add("-rotate-90");
+    // If it's a button (accessible version), update aria-expanded
+    const toggleBtn = toggleIcon.parentElement?.tagName === "BUTTON" ? toggleIcon.parentElement : null;
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+  }
+};
+
 // Case Management
 const refreshCaseList = async () => {
   try {
@@ -1950,6 +1976,7 @@ window.onload = async () => {
 (window as any).runPostOperation = runPostOperation;
 (window as any).copyLogToClipboard = copyLogToClipboard;
 (window as any).togglePlots = togglePlots;
+(window as any).toggleSection = toggleSection;
 
 
 const init = () => {

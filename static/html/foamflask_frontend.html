@@ -445,11 +445,11 @@
 
         <!-- BlockMesh Config -->
         <div class="border border-gray-200 rounded-lg p-4 shadow-sm bg-gray-50">
-          <h3 class="text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center cursor-pointer"
-            onclick="toggleSection('blockMeshSection')">
+          <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
             <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Foundation</span></span>
-            <span id="blockMeshSectionToggle" class="text-sm">▼</span>
-          </h3>
+            <span id="blockMeshSectionToggle" class="text-sm transition-transform duration-200">▼</span>
+          </button>
           <div id="blockMeshSection" class="block space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -463,11 +463,11 @@
                 </button>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700">Cells (x y z)</label>
+                <label for="bmCells" class="block text-sm font-medium text-gray-700">Cells (x y z)</label>
                 <input type="text" id="bmCells" value="20 20 20" class="border rounded px-2 py-1 text-sm w-full">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700">Grading (x y z)</label>
+                <label for="bmGrading" class="block text-sm font-medium text-gray-700">Grading (x y z)</label>
                 <input type="text" id="bmGrading" value="1 1 1" class="border rounded px-2 py-1 text-sm w-full">
               </div>
             </div>
@@ -512,7 +512,7 @@
                   </label>
                 </div>
                 <div class="mt-3">
-                  <label class="block text-sm font-medium text-gray-700">Location In Mesh (x y z)</label>
+                  <label for="shmLocation" class="block text-sm font-medium text-gray-700">Location In Mesh (x y z)</label>
                   <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
                     placeholder="e.g. 0.1 0.1 0.1">
                 </div>
@@ -529,12 +529,12 @@
                     <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Mesh Quality</h5>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
-                        <label class="block text-xs text-gray-600">Max Non-Ortho</label>
+                        <label for="shmMaxNonOrtho" class="block text-xs text-gray-600">Max Non-Ortho</label>
                         <input type="number" id="shmMaxNonOrtho" value="65"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label class="block text-xs text-gray-600">Min Triangle Twist</label>
+                        <label for="shmMinTriangleTwist" class="block text-xs text-gray-600">Min Triangle Twist</label>
                         <input type="number" id="shmMinTriangleTwist" value="-1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
@@ -546,22 +546,22 @@
                     <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Layer Addition Global</h5>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
-                        <label class="block text-xs text-gray-600">Feature Angle</label>
+                        <label for="shmLayerFeatureAngle" class="block text-xs text-gray-600">Feature Angle</label>
                         <input type="number" id="shmLayerFeatureAngle" value="130"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label class="block text-xs text-gray-600">Expansion Ratio</label>
+                        <label for="shmExpansionRatio" class="block text-xs text-gray-600">Expansion Ratio</label>
                         <input type="number" id="shmExpansionRatio" value="1.2" step="0.1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label class="block text-xs text-gray-600">Final Thickness</label>
+                        <label for="shmFinalThickness" class="block text-xs text-gray-600">Final Thickness</label>
                         <input type="number" id="shmFinalThickness" value="0.3" step="0.1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label class="block text-xs text-gray-600">Min Thickness</label>
+                        <label for="shmMinThickness" class="block text-xs text-gray-600">Min Thickness</label>
                         <input type="number" id="shmMinThickness" value="0.1" step="0.01"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
@@ -600,7 +600,7 @@
                     </div>
                   </div>
                   <div>
-                    <label class="block text-xs font-medium text-gray-700">Number of Surface Layers</label>
+                    <label for="shmObjLayers" class="block text-xs font-medium text-gray-700">Number of Surface Layers</label>
                     <input type="number" id="shmObjLayers" min="0" max="10"
                       class="border rounded px-2 py-1 text-sm w-full" onchange="updateShmObjectConfig()">
                     <p class="text-xs text-gray-500 mt-1">Requires "Add Layers" to be enabled globally.</p>
