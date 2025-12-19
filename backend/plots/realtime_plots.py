@@ -17,6 +17,18 @@ logger = logging.getLogger("FOAMFlask")
 # Structure: { "file_path_str": (mtime, parsed_value) }
 _FILE_CACHE: Dict[str, Tuple[float, Any]] = {}
 
+# Structure: { "log_path_str": (mtime, size, residuals_data) }
+_RESIDUALS_CACHE: Dict[str, Tuple[float, int, Dict[str, List[float]]]] = {}
+
+# Pre-compiled regex patterns
+# Matches "Time = <number>"
+TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+
+# Matches "<field> ... Initial residual = <number>"
+# We use a single regex to capture field name and value to avoid 7 passes per line
+# Captures group 1: field name, group 2: value
+RESIDUAL_REGEX = re.compile(r"(Ux|Uy|Uz|p|k|epsilon|omega).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
 
@@ -348,40 +360,56 @@ class OpenFOAMFieldParser:
     def get_residuals_from_log(self, log_file: str = "log.foamRun") -> Dict[str, List[float]]:
         """Parse residuals from OpenFOAM log file."""
         log_path = self.case_dir / log_file
+        path_str = str(log_path)
+
         if not log_path.exists():
             return {}
 
-        residuals: Dict[str, List[float]] = {
-            "time": [],
-            "Ux": [],
-            "Uy": [],
-            "Uz": [],
-            "p": [],
-            "k": [],
-            "epsilon": [],
-            "omega": [],
-        }
-
         try:
+            stat = log_path.stat()
+            mtime = stat.st_mtime
+            size = stat.st_size
+
+            # ⚡ Bolt Optimization: Check cache first
+            if path_str in _RESIDUALS_CACHE:
+                cached_mtime, cached_size, cached_data = _RESIDUALS_CACHE[path_str]
+                if cached_mtime == mtime and cached_size == size:
+                    return cached_data
+
+            residuals: Dict[str, List[float]] = {
+                "time": [],
+                "Ux": [],
+                "Uy": [],
+                "Uz": [],
+                "p": [],
+                "k": [],
+                "epsilon": [],
+                "omega": [],
+            }
+
             with log_path.open("r", encoding="utf-8") as f:
                 for line in f:
-                    time_match = re.search(
-                        r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", line
-                    )
+                    # Optimized time matching
+                    time_match = TIME_REGEX.search(line)
                     if time_match:
                         current_time = float(time_match.group(1))
                         residuals["time"].append(current_time)
 
-                    for field in ["Ux", "Uy", "Uz", "p", "k", "epsilon", "omega"]:
-                        residual_match = re.search(
-                            rf"{field}.*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
-                            line,
-                        )
-                        if residual_match and residuals["time"]:
-                            residuals[field].append(float(residual_match.group(1)))
+                    # Optimized residual matching
+                    # Matches any of the fields in one pass
+                    residual_match = RESIDUAL_REGEX.search(line)
+                    if residual_match and residuals["time"]:
+                        field = residual_match.group(1)
+                        value = float(residual_match.group(2))
+                        if field in residuals:
+                            residuals[field].append(value)
+
+            # Update cache
+            _RESIDUALS_CACHE[path_str] = (mtime, size, residuals)
 
         except Exception as e:
             logger.error(f"Error parsing log file: {e}")
+            return {}
 
         return residuals
 
