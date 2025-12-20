@@ -2,5 +2,7 @@
     "git.ignoreLimitWarning": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
-    }
+    },
+    "editor.fontFamily": "'Google Sans Code', 'monospace', monospace",
+    "editor.wordWrap": "on"
 }
