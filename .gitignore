@@ -12,6 +12,7 @@ static/js-build/
 # Local configuration
 case_config.json
 /run_folder
+/tutorial_cases
 app.log
 environments/
 .coverage
