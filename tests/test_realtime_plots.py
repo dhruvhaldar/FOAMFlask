@@ -164,3 +164,49 @@ def test_get_available_fields(tmp_path):
     assert "p" in fields
     assert "U" in fields
     assert ".hidden" not in fields
+
+def test_get_residuals_from_log_incremental(tmp_path):
+    log_file = tmp_path / "log.foamRun"
+    parser = OpenFOAMFieldParser(tmp_path)
+
+    # Chunk 1
+    chunk1 = "Time = 1\nSolving for Ux, Initial residual = 0.1\n"
+    log_file.write_text(chunk1)
+
+    # First call
+    res1 = parser.get_residuals_from_log("log.foamRun")
+    assert res1["time"] == [1.0]
+    assert res1["Ux"] == [0.1]
+
+    # Chunk 2 (Append)
+    chunk2 = "Time = 2\nSolving for Ux, Initial residual = 0.05\n"
+    with open(log_file, "a") as f:
+        f.write(chunk2)
+
+    # Second call
+    res2 = parser.get_residuals_from_log("log.foamRun")
+    assert res2["time"] == [1.0, 2.0]
+    assert res2["Ux"] == [0.1, 0.05]
+
+def test_get_residuals_from_log_incremental(tmp_path):
+    log_file = tmp_path / "log.foamRun"
+    parser = OpenFOAMFieldParser(tmp_path)
+
+    # Chunk 1
+    chunk1 = "Time = 1\nSolving for Ux, Initial residual = 0.1\n"
+    log_file.write_text(chunk1)
+
+    # First call
+    res1 = parser.get_residuals_from_log("log.foamRun")
+    assert res1["time"] == [1.0]
+    assert res1["Ux"] == [0.1]
+
+    # Chunk 2 (Append)
+    chunk2 = "Time = 2\nSolving for Ux, Initial residual = 0.05\n"
+    with open(log_file, "a") as f:
+        f.write(chunk2)
+
+    # Second call
+    res2 = parser.get_residuals_from_log("log.foamRun")
+    assert res2["time"] == [1.0, 2.0]
+    assert res2["Ux"] == [0.1, 0.05]

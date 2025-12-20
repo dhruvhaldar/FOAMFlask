@@ -17,8 +17,9 @@ logger = logging.getLogger("FOAMFlask")
 # Structure: { "file_path_str": (mtime, parsed_value) }
 _FILE_CACHE: Dict[str, Tuple[float, Any]] = {}
 
-# Structure: { "log_path_str": (mtime, size, residuals_data) }
-_RESIDUALS_CACHE: Dict[str, Tuple[float, int, Dict[str, List[float]]]] = {}
+# Structure: { "log_path_str": (mtime, size, offset, residuals_data) }
+# ⚡ Bolt Optimization: Added offset to support incremental reading
+_RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, List[float]]]] = {}
 
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
@@ -361,7 +362,7 @@ class OpenFOAMFieldParser:
         return (p_field - p_inf) / q_inf if q_inf != 0 else 0.0
 
     def get_residuals_from_log(self, log_file: str = "log.foamRun") -> Dict[str, List[float]]:
-        """Parse residuals from OpenFOAM log file."""
+        """Parse residuals from OpenFOAM log file incrementally."""
         log_path = self.case_dir / log_file
         path_str = str(log_path)
 
@@ -373,12 +374,7 @@ class OpenFOAMFieldParser:
             mtime = stat.st_mtime
             size = stat.st_size
 
-            # ⚡ Bolt Optimization: Check cache first
-            if path_str in _RESIDUALS_CACHE:
-                cached_mtime, cached_size, cached_data = _RESIDUALS_CACHE[path_str]
-                if cached_mtime == mtime and cached_size == size:
-                    return cached_data
-
+            start_offset = 0
             residuals: Dict[str, List[float]] = {
                 "time": [],
                 "Ux": [],
@@ -390,8 +386,45 @@ class OpenFOAMFieldParser:
                 "omega": [],
             }
 
+            # ⚡ Bolt Optimization: Check cache first for incremental update
+            if path_str in _RESIDUALS_CACHE:
+                cached_mtime, cached_size, cached_offset, cached_data = _RESIDUALS_CACHE[path_str]
+
+                # Case 1: File unchanged
+                if cached_mtime == mtime and cached_size == size:
+                    return cached_data
+
+                # Case 2: File grew (append) - Reuse cached data and offset
+                if size > cached_size and cached_size > 0:
+                    start_offset = cached_offset
+                    residuals = cached_data # Reference to existing mutable dict
+
+                # Case 3: File shrank or reset - Start over (defaults apply)
+
+            new_offset = start_offset
+
             with log_path.open("r", encoding="utf-8") as f:
-                for line in f:
+                if start_offset > 0:
+                    f.seek(start_offset)
+
+                # ⚡ Bolt Optimization: Read only new lines
+                # Using readline() loop to ensure correct tell() behavior in text mode
+                while True:
+                    # Record start of line position
+                    pos_before = f.tell()
+                    line = f.readline()
+
+                    if not line:
+                        break
+
+                    # Safety check: If line is partial (no newline) at EOF, don't process it yet.
+                    # Wait for the next flush to complete the line.
+                    if not line.endswith('\n'):
+                        # Do not advance offset past this partial line
+                        new_offset = pos_before
+                        break
+
+                    # Process complete line
                     # Optimized time matching
                     time_match = TIME_REGEX.search(line)
                     if time_match:
@@ -399,7 +432,6 @@ class OpenFOAMFieldParser:
                         residuals["time"].append(current_time)
 
                     # Optimized residual matching
-                    # Matches any of the fields in one pass
                     residual_match = RESIDUAL_REGEX.search(line)
                     if residual_match and residuals["time"]:
                         field = residual_match.group(1)
@@ -407,11 +439,17 @@ class OpenFOAMFieldParser:
                         if field in residuals:
                             residuals[field].append(value)
 
+                    # Update offset to after this successfully processed line
+                    new_offset = f.tell()
+
             # Update cache
-            _RESIDUALS_CACHE[path_str] = (mtime, size, residuals)
+            _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
 
         except Exception as e:
             logger.error(f"Error parsing log file: {e}")
+            # On error, clear cache entry to force fresh read next time
+            if path_str in _RESIDUALS_CACHE:
+                del _RESIDUALS_CACHE[path_str]
             return {}
 
         return residuals
