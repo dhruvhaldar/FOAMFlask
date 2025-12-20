@@ -25,7 +25,7 @@ Why these choices matter
 
 ## Developer workflows & gotchas
 - Running cases: `POST /load_tutorial` copies tutorials into the configured case root (via container). `POST /run` streams container logs as HTML lines (each line yielded with `<br>`). Preserve streaming behavior when editing.
-- Log capture: `monitor_foamrun_log()` watches for `log.FoamRun` and writes `foamrun_logs.txt` and an in-memory `foamrun_logs` dict — tests or edits that change file naming/locations must update this watcher.
+- Log capture: `monitor_foamrun_log()` watches for `log.foamRun` and writes `foamrun_logs.txt` and an in-memory `foamrun_logs` dict — tests or edits that change file naming/locations must update this watcher.
 - Docker usage: code uses `docker.from_env()` and `containers.run(...)` (see `app.py`). Containers are run detached or streamed; ensure proper cleanup (kill/remove) like the current code does.
 - Windows path handling: `app.py` normalizes host paths for Docker (`Path(...).as_posix()`); follow the same pattern in new code that maps volumes.
 - Global singletons: modules instantiate global handler objects at module-level (e.g. `mesh_visualizer`, `isosurface_visualizer`). Avoid re-instantiating those unless intentional — many endpoints expect a module-level instance.

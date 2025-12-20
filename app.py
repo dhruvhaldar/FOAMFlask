@@ -390,13 +390,13 @@ foamrun_logs = {}  # { "<tutorial_name>": "<log content>" }
 
 
 def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
-    """Watch for log.FoamRun, capture it in foamrun_logs and write to a file.
+    """Watch for log.foamRun, capture it in foamrun_logs and write to a file.
 
     Args:
         tutorial: The name of the tutorial.
         case_dir: The path to the case directory.
     """
-    host_log_path = Path(case_dir) / tutorial / "log.FoamRun"
+    host_log_path = Path(case_dir) / tutorial / "log.foamRun"
     output_file = Path(case_dir) / tutorial / "foamrun_logs.txt"
 
     # Configuration
@@ -411,7 +411,7 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
                 foamrun_logs[tutorial] = log_content
                 output_file.write_text(log_content, encoding="utf-8")
                 logger.info(
-                    "[FOAMFlask] Captured log.FoamRun for tutorial '%s' "
+                    "[FOAMFlask] Captured log.foamRun for tutorial '%s' "
                     "and wrote to %s",
                     tutorial,
                     output_file,
@@ -424,7 +424,7 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
         time.sleep(interval)
         elapsed += interval
 
-    logger.warning("[FOAMFlask] Timeout: log.FoamRun not found for '%s'", tutorial)
+    logger.warning("[FOAMFlask] Timeout: log.foamRun not found for '%s'", tutorial)
 
 
 # --- Routes ---

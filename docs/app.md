@@ -770,7 +770,7 @@ def load_tutorial():
 ---
 
 ### monitor_foamrun_log
-- Description: Watch for `log.FoamRun` in the case directory, capture it to an in-memory dictionary (`foamrun_logs`) and write to `foamrun_logs.txt`.
+- Description: Watch for `log.foamRun` in the case directory, capture it to an in-memory dictionary (`foamrun_logs`) and write to `foamrun_logs.txt`.
 - Args:
   - `tutorial` (str)
   - `case_dir` (str)
@@ -779,12 +779,12 @@ Source:
 ```python
 def monitor_foamrun_log(tutorial, case_dir):
     """
-    Watch for log.FoamRun, capture it in foamrun_logs and write it to a file.
+    Watch for log.foamRun, capture it in foamrun_logs and write it to a file.
     """
     import pathlib
     import time
 
-    host_log_path = pathlib.Path(case_dir) / tutorial / "log.FoamRun"
+    host_log_path = pathlib.Path(case_dir) / tutorial / "log.foamRun"
     output_file = pathlib.Path(case_dir) / tutorial / "foamrun_logs.txt"
 
     timeout = 300  # seconds max wait
@@ -799,7 +799,7 @@ def monitor_foamrun_log(tutorial, case_dir):
             # Write to file
             try:
                 output_file.write_text(log_content)
-                logger.info(f"[FOAMFlask] Captured log.FoamRun for tutorial '{tutorial}' and wrote to {output_file}")
+                logger.info(f"[FOAMFlask] Captured log.foamRun for tutorial '{tutorial}' and wrote to {output_file}")
             except Exception as e:
                 logger.error(f"[FOAMFlask] Could not write foamrun_logs to file: {e}")
 
@@ -808,7 +808,7 @@ def monitor_foamrun_log(tutorial, case_dir):
         time.sleep(interval)
         elapsed += interval
 
-    logger.warning(f"[FOAMFlask] Timeout: log.FoamRun not found for '{tutorial}'")
+    logger.warning(f"[FOAMFlask] Timeout: log.foamRun not found for '{tutorial}'")
 ```
 
 ---

@@ -122,7 +122,7 @@ pip install -r requirements.txt
 ### Step 5: Run the application
 
 ```bash
-python app.py
+python -m app 2>&1 | tee app.log
 ```
 
 ### Optional: Generate API Documentation
