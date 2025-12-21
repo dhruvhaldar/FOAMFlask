@@ -100,10 +100,15 @@ class OpenFOAMFieldParser:
             
         return None
 
-    def parse_scalar_field(self, field_path: Path) -> Optional[float]:
+    def parse_scalar_field(self, field_path: Path, check_mtime: bool = True) -> Optional[float]:
         """Parse a scalar field file and return average value with caching."""
         path_str = str(field_path)
         try:
+            # ⚡ Bolt Optimization: Skip stat() for historical files
+            # If check_mtime is False and we have it in cache, return immediately
+            if not check_mtime and path_str in _FILE_CACHE:
+                return _FILE_CACHE[path_str][1]
+
             # Check modification time
             mtime = field_path.stat().st_mtime
             
@@ -167,10 +172,14 @@ class OpenFOAMFieldParser:
             logger.error(f"Error parsing scalar field {field_path}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Path) -> Tuple[float, float, float]:
+    def parse_vector_field(self, field_path: Path, check_mtime: bool = True) -> Tuple[float, float, float]:
         """Parse a vector field file and return average components with caching."""
         path_str = str(field_path)
         try:
+            # ⚡ Bolt Optimization: Skip stat() for historical files
+            if not check_mtime and path_str in _FILE_CACHE:
+                return _FILE_CACHE[path_str][1]
+
             # Check modification time
             mtime = field_path.stat().st_mtime
             
@@ -322,18 +331,29 @@ class OpenFOAMFieldParser:
             data['U_mag'] = []
 
         # 3. Iterate time steps and parse
+        latest_time = time_dirs[-1] if time_dirs else None
+
         for time_dir in time_dirs:
             time_path = self.case_dir / time_dir
             time_val = float(time_dir)
             
+            # ⚡ Bolt Optimization: Only check mtime for the latest time step
+            # Historical time steps are assumed immutable
+            is_latest = (time_dir == latest_time)
+
             data["time"].append(time_val)
 
             # Parse scalars
             for field in scalar_fields:
                 field_path = time_path / field
+                path_str = str(field_path)
                 val = 0.0
-                if field_path.exists():
-                    v = self.parse_scalar_field(field_path)
+
+                # ⚡ Bolt Optimization: Check cache first to avoid exists() stat call
+                if not is_latest and path_str in _FILE_CACHE:
+                    val = _FILE_CACHE[path_str][1]
+                elif field_path.exists():
+                    v = self.parse_scalar_field(field_path, check_mtime=is_latest)
                     if v is not None:
                         val = v
                 data[field].append(val)
@@ -341,9 +361,16 @@ class OpenFOAMFieldParser:
             # Parse U
             if has_U:
                 u_path = time_path / "U"
+                path_str = str(u_path)
                 ux, uy, uz = 0.0, 0.0, 0.0
-                if u_path.exists():
-                    ux, uy, uz = self.parse_vector_field(u_path)
+
+                # ⚡ Bolt Optimization: Check cache first to avoid exists() stat call
+                if not is_latest and path_str in _FILE_CACHE:
+                     val_vec = _FILE_CACHE[path_str][1]
+                     if isinstance(val_vec, tuple) and len(val_vec) == 3:
+                        ux, uy, uz = val_vec
+                elif u_path.exists():
+                    ux, uy, uz = self.parse_vector_field(u_path, check_mtime=is_latest)
                 
                 data["Ux"].append(ux)
                 data["Uy"].append(uy)
