@@ -127,6 +127,33 @@ def is_safe_script_name(script_name: str) -> bool:
     return True
 
 
+def validate_safe_path(file_path: str) -> Union[Path, None]:
+    """
+    Validate that the given file path is within the CASE_ROOT directory.
+
+    Args:
+        file_path: The file path to validate.
+
+    Returns:
+        The resolved Path object if safe, or None if unsafe.
+    """
+    try:
+        if not file_path:
+            return None
+
+        resolved_path = Path(file_path).resolve()
+        base_path = Path(CASE_ROOT).resolve()
+
+        if not resolved_path.is_relative_to(base_path):
+            logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}")
+            return None
+
+        return resolved_path
+    except Exception as e:
+        logger.error(f"Error validating path: {e}")
+        return None
+
+
 def load_config() -> Dict[str, str]:
     """Load configuration from case_config.json with sensible defaults.
 
@@ -1205,9 +1232,15 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
 
+    # Security Check: Ensure file_path is within CASE_ROOT
+    resolved_path = validate_safe_path(file_path)
+    if not resolved_path:
+        return jsonify({"error": "Access denied or invalid path"}), 403
+
     try:
         logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
-        mesh_info = mesh_visualizer.load_mesh(file_path)
+        # Convert Path back to string for compatibility
+        mesh_info = mesh_visualizer.load_mesh(str(resolved_path))
 
         if for_contour:
             logger.info(
@@ -1255,6 +1288,11 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
 
+    # Security Check: Ensure file_path is within CASE_ROOT
+    resolved_path = validate_safe_path(file_path)
+    if not resolved_path:
+        return jsonify({"error": "Access denied or invalid path"}), 403
+
     try:
         # Add delay for first call
         if not hasattr(api_mesh_screenshot, "_has_been_called"):
@@ -1262,7 +1300,7 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
             api_mesh_screenshot._has_been_called = True
 
         img_str = mesh_visualizer.get_mesh_screenshot(
-            file_path, width, height, show_edges, color, camera_position
+            str(resolved_path), width, height, show_edges, color, camera_position
         )
 
         if img_str:
@@ -1298,12 +1336,17 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
 
+    # Security Check: Ensure file_path is within CASE_ROOT
+    resolved_path = validate_safe_path(file_path)
+    if not resolved_path:
+        return jsonify({"error": "Access denied or invalid path"}), 403
+
     try:
         # Add a small delay to prevent race conditions
         time.sleep(2)  # 2 second delay
 
         html_content = mesh_visualizer.get_interactive_viewer_html(
-            file_path, show_edges, color
+            str(resolved_path), show_edges, color
         )
 
         if html_content:
