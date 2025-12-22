@@ -127,6 +127,35 @@ def is_safe_script_name(script_name: str) -> bool:
     return True
 
 
+def validate_safe_path(base_dir: str, relative_path: str) -> Path:
+    """
+    Validate and resolve a path to ensure it remains within the base directory.
+
+    Args:
+        base_dir: The authorized base directory (e.g. CASE_ROOT)
+        relative_path: The user-provided path component
+
+    Returns:
+        The resolved Path object
+
+    Raises:
+        ValueError: If path traversal is detected or path is invalid
+    """
+    if not relative_path:
+        raise ValueError("No path specified")
+
+    base = Path(base_dir).resolve()
+    # Resolve the target path. Note: (base / relative).resolve() handles '..'
+    target = (base / relative_path).resolve()
+
+    # Check if the resolved target starts with the resolved base path
+    if not target.is_relative_to(base):
+        logger.warning(f"Security: Path traversal attempt blocked. Path: {target}, Base: {base}")
+        raise ValueError("Access denied: Invalid path")
+
+    return target
+
+
 def load_config() -> Dict[str, str]:
     """Load configuration from case_config.json with sensible defaults.
 
@@ -1061,7 +1090,11 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1089,7 +1122,11 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1118,7 +1155,11 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1147,7 +1188,11 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1177,9 +1222,14 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
+        # Validate that the tutorial path is safe
+        validate_safe_path(CASE_ROOT, tutorial)
+
         # mesh_visualizer expects strings for paths currently
         mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial)
         return jsonify({"meshes": mesh_files})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Error getting available meshes: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
