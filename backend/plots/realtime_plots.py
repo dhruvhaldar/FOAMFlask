@@ -21,6 +21,9 @@ _FILE_CACHE: Dict[str, Tuple[float, Any]] = {}
 # ⚡ Bolt Optimization: Added offset to support incremental reading
 _RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, List[float]]]] = {}
 
+# Structure: { "file_path_str": (mtime, field_type) }
+_FIELD_TYPE_CACHE: Dict[str, Tuple[float, Optional[str]]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -62,16 +65,29 @@ class OpenFOAMFieldParser:
         Determine if a file is a volScalarField or volVectorField by reading the header.
         Returns 'scalar', 'vector', or None.
         """
+        path_str = str(field_path)
         try:
+            # ⚡ Bolt Optimization: Cache field type based on mtime to avoid repetitive file opens
+            # stat() is cheaper than open() + read()
+            mtime = field_path.stat().st_mtime
+
+            if path_str in _FIELD_TYPE_CACHE:
+                cached_mtime, cached_type = _FIELD_TYPE_CACHE[path_str]
+                if cached_mtime == mtime:
+                    return cached_type
+
             # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
             with field_path.open("r", encoding="utf-8") as f:
                 header = f.read(2048)
             
+            field_type = None
             if re.search(r"class\s+volScalarField;", header):
-                return "scalar"
+                field_type = "scalar"
             elif re.search(r"class\s+volVectorField;", header):
-                return "vector"
-            return None
+                field_type = "vector"
+
+            _FIELD_TYPE_CACHE[path_str] = (mtime, field_type)
+            return field_type
         except Exception:
             return None
 
