@@ -118,6 +118,21 @@ const getErrorMessage = (error: unknown): string => {
   return typeof error === "string" ? error : "Unknown error";
 };
 
+// Clear Console Log
+const clearLog = (): void => {
+  const outputDiv = document.getElementById("output");
+  if (outputDiv) {
+    outputDiv.innerHTML = "";
+    try {
+      localStorage.removeItem(CONSOLE_LOG_KEY);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+    outputBuffer.length = 0; // Clear buffer
+    showNotification("Console log cleared", "info", 2000);
+  }
+};
+
 // Copy Console Log to Clipboard
 const copyLogToClipboard = (): void => {
   const outputDiv = document.getElementById("output");
@@ -2047,6 +2062,7 @@ window.onload = async () => {
 (window as any).downloadPlotAsPNG = downloadPlotAsPNG;
 (window as any).showNotification = showNotification;
 (window as any).runPostOperation = runPostOperation;
+(window as any).clearLog = clearLog;
 (window as any).copyLogToClipboard = copyLogToClipboard;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
