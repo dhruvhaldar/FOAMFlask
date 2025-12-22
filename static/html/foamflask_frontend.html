@@ -344,7 +344,7 @@
 
           <!-- Geometry List -->
           <div class="flex flex-col gap-2 mt-4">
-            <label class="text-sm font-medium">Available Geometries</label>
+            <label for="geometrySelect" class="text-sm font-medium">Available Geometries</label>
             <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full" size="5">
               <!-- Populated by JS -->
             </select>
@@ -731,7 +731,7 @@
                 </button>
               </div>
 
-              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full" aria-label="Select Mesh File">
                 <option value="">-- Select a mesh file --</option>
               </select>
               <button id="loadMeshBtn" onclick="loadMeshVisualization()"
@@ -1033,7 +1033,7 @@
 
             <!-- VTK File Selection -->
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium">Select VTK File</label>
+              <label for="vtkFileSelect" class="text-sm font-medium">Select VTK File</label>
               <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
                 <option value="">-- Select a VTK file --</option>
               </select>
@@ -1081,7 +1081,7 @@
 
             <!-- Scalar Field Selection -->
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium">Scalar Field</label>
+              <label for="scalarField" class="text-sm font-medium">Scalar Field</label>
               <select id="scalarField"
                 class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-blue-500 [&_.cell-data-option]:text-green-500">
                 <style>
@@ -1102,7 +1102,7 @@
 
             <!-- Color Map Selection -->
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium">Color Map</label>
+              <label for="colorMap" class="text-sm font-medium">Color Map</label>
               <select id="colorMap" class="border border-gray-300 rounded px-3 py-2">
                 <option value="viridis">Viridis</option>
                 <option value="plasma">Plasma</option>
