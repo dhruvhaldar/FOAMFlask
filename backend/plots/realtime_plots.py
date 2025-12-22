@@ -24,6 +24,9 @@ _RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, List[float]]]] = {}
 # Structure: { "file_path_str": (mtime, field_type) }
 _FIELD_TYPE_CACHE: Dict[str, Tuple[float, Optional[str]]] = {}
 
+# Structure: { "case_dir_path": (mtime, [time_dirs]) }
+_TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -41,11 +44,20 @@ class OpenFOAMFieldParser:
 
     def get_time_directories(self) -> List[str]:
         """Get all time directories sorted numerically."""
-        time_dirs = []
+        path_str = str(self.case_dir)
         try:
+            # ⚡ Bolt Optimization: Cache directory listing based on mtime
+            # Only rescan if the directory modification time has changed
+            mtime = self.case_dir.stat().st_mtime
+            if path_str in _TIME_DIRS_CACHE:
+                cached_mtime, cached_dirs = _TIME_DIRS_CACHE[path_str]
+                if cached_mtime == mtime:
+                    return cached_dirs
+
+            time_dirs = []
             # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
             # This avoids extra stat() calls and is significantly faster for large directories.
-            with os.scandir(str(self.case_dir)) as entries:
+            with os.scandir(path_str) as entries:
                 for entry in entries:
                     if entry.is_dir():
                         try:
@@ -54,11 +66,14 @@ class OpenFOAMFieldParser:
                             time_dirs.append(entry.name)
                         except ValueError:
                             continue
+
+            sorted_dirs = sorted(time_dirs, key=float)
+            _TIME_DIRS_CACHE[path_str] = (mtime, sorted_dirs)
+            return sorted_dirs
+
         except OSError as e:
             logger.error(f"Error listing directories in {self.case_dir}: {e}")
             return []
-
-        return sorted(time_dirs, key=float)
 
     def _get_field_type(self, field_path: Path) -> Optional[str]:
         """
