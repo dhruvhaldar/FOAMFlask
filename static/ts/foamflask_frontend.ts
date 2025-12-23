@@ -1855,6 +1855,7 @@ async function toggleInteractiveMode(): Promise<void> {
       // Hide camera position control (not needed in interactive mode)
       cameraControl.parentElement?.classList.add("hidden");
       updateBtn.classList.add("hidden");
+      document.getElementById("interactiveModeHint")?.classList.remove("hidden");
 
       showNotification(
         "Interactive mode enabled - Use mouse to rotate, zoom, and pan",
@@ -1883,7 +1884,9 @@ async function toggleInteractiveMode(): Promise<void> {
       toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
       toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
       cameraControl.parentElement?.classList.remove("hidden");
+      cameraControl.parentElement?.classList.remove("hidden");
       updateBtn.classList.remove("hidden");
+      document.getElementById("interactiveModeHint")?.classList.add("hidden");
       meshInteractive.classList.add("hidden");
       meshImage.classList.remove("hidden");
     }
@@ -1900,6 +1903,7 @@ async function toggleInteractiveMode(): Promise<void> {
     // Show camera position control again
     cameraControl.parentElement?.classList.remove("hidden");
     updateBtn.classList.remove("hidden");
+    document.getElementById("interactiveModeHint")?.classList.add("hidden");
 
     showNotification("Switched to static mode", "info", 2000);
   }
