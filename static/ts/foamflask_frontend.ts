@@ -1770,39 +1770,20 @@ function displayMeshInfo(meshInfo: {
   meshInfoDiv.classList.remove("hidden");
 }
 
-async function toggleInteractiveMode(): Promise<void> {
-  if (!currentMeshPath) {
-    showNotification("Please load a mesh first", "warning");
-    return;
-  }
+async function refreshInteractiveViewer(successMessage: string = "Interactive mode enabled"): Promise<void> {
+    const meshInteractive = document.getElementById(
+      "meshInteractive"
+    ) as HTMLIFrameElement | null;
+    const meshImage = document.getElementById(
+      "meshImage"
+    ) as HTMLImageElement | null;
+    const meshPlaceholder = document.getElementById("meshPlaceholder");
+    const toggleBtn = document.getElementById("toggleInteractiveBtn");
+    const cameraControl = document.getElementById("cameraPosition");
+    const updateBtn = document.getElementById("updateViewBtn");
 
-  const meshImage = document.getElementById(
-    "meshImage"
-  ) as HTMLImageElement | null;
-  const meshInteractive = document.getElementById(
-    "meshInteractive"
-  ) as HTMLIFrameElement | null;
-  const meshPlaceholder = document.getElementById("meshPlaceholder");
-  const toggleBtn = document.getElementById("toggleInteractiveBtn");
-  const cameraControl = document.getElementById("cameraPosition");
-  const updateBtn = document.getElementById("updateViewBtn");
+    if (!meshInteractive || !meshImage || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn) return;
 
-  if (
-    !meshImage ||
-    !meshInteractive ||
-    !meshPlaceholder ||
-    !toggleBtn ||
-    !cameraControl ||
-    !updateBtn
-  ) {
-    showNotification("Required mesh elements not found", "error");
-    return;
-  }
-
-  isInteractiveMode = !isInteractiveMode;
-
-  if (isInteractiveMode) {
-    // Switch to interactive mode
     showNotification("Loading interactive viewer...", "info");
 
     try {
@@ -1815,7 +1796,6 @@ async function toggleInteractiveMode(): Promise<void> {
 
       if (!showEdgesInput || !colorInput) {
         showNotification("Required mesh controls not found", "error");
-        isInteractiveMode = false;
         return;
       }
 
@@ -1858,7 +1838,7 @@ async function toggleInteractiveMode(): Promise<void> {
       document.getElementById("interactiveModeHint")?.classList.remove("hidden");
 
       showNotification(
-        "Interactive mode enabled - Use mouse to rotate, zoom, and pan",
+        successMessage,
         "success",
         8000
       );
@@ -1884,12 +1864,53 @@ async function toggleInteractiveMode(): Promise<void> {
       toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
       toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
       cameraControl.parentElement?.classList.remove("hidden");
-      cameraControl.parentElement?.classList.remove("hidden");
       updateBtn.classList.remove("hidden");
       document.getElementById("interactiveModeHint")?.classList.add("hidden");
       meshInteractive.classList.add("hidden");
       meshImage.classList.remove("hidden");
     }
+}
+
+async function onMeshParamChange(): Promise<void> {
+  if (isInteractiveMode) {
+    await refreshInteractiveViewer("Interactive mode updated");
+  }
+}
+
+async function toggleInteractiveMode(): Promise<void> {
+  if (!currentMeshPath) {
+    showNotification("Please load a mesh first", "warning");
+    return;
+  }
+
+  const meshImage = document.getElementById(
+    "meshImage"
+  ) as HTMLImageElement | null;
+  const meshInteractive = document.getElementById(
+    "meshInteractive"
+  ) as HTMLIFrameElement | null;
+  const meshPlaceholder = document.getElementById("meshPlaceholder");
+  const toggleBtn = document.getElementById("toggleInteractiveBtn");
+  const cameraControl = document.getElementById("cameraPosition");
+  const updateBtn = document.getElementById("updateViewBtn");
+
+  if (
+    !meshImage ||
+    !meshInteractive ||
+    !meshPlaceholder ||
+    !toggleBtn ||
+    !cameraControl ||
+    !updateBtn
+  ) {
+    showNotification("Required mesh elements not found", "error");
+    return;
+  }
+
+  isInteractiveMode = !isInteractiveMode;
+
+  if (isInteractiveMode) {
+    // Switch to interactive mode
+    await refreshInteractiveViewer("Interactive mode enabled");
   } else {
     // Switch back to static mode
     meshInteractive.classList.add("hidden");
@@ -2159,6 +2180,17 @@ const init = () => {
           const target = e.target as HTMLSelectElement;
           localStorage.setItem('lastSelectedTutorial', target.value);
       });
+  }
+
+  // Interactive Mode Event Listeners
+  const meshColorSelect = document.getElementById("meshColor");
+  if (meshColorSelect) {
+    meshColorSelect.addEventListener("change", onMeshParamChange);
+  }
+
+  const showEdgesCheck = document.getElementById("showEdges");
+  if (showEdgesCheck) {
+    showEdgesCheck.addEventListener("change", onMeshParamChange);
   }
 };
 

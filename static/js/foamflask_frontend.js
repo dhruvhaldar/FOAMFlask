@@ -1555,6 +1555,81 @@ function displayMeshInfo(meshInfo) {
     }
     meshInfoDiv.classList.remove("hidden");
 }
+async function refreshInteractiveViewer(successMessage = "Interactive mode enabled") {
+    const meshInteractive = document.getElementById("meshInteractive");
+    const meshImage = document.getElementById("meshImage");
+    const meshPlaceholder = document.getElementById("meshPlaceholder");
+    const toggleBtn = document.getElementById("toggleInteractiveBtn");
+    const cameraControl = document.getElementById("cameraPosition");
+    const updateBtn = document.getElementById("updateViewBtn");
+    if (!meshInteractive || !meshImage || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn)
+        return;
+    showNotification("Loading interactive viewer...", "info");
+    try {
+        const showEdgesInput = document.getElementById("showEdges");
+        const colorInput = document.getElementById("meshColor");
+        if (!showEdgesInput || !colorInput) {
+            showNotification("Required mesh controls not found", "error");
+            return;
+        }
+        const showEdges = showEdgesInput.checked;
+        const color = colorInput.value;
+        // Fetch interactive viewer HTML
+        const response = await fetch("/api/mesh_interactive", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                file_path: currentMeshPath,
+                show_edges: showEdges,
+                color: color,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const html = await response.text();
+        // Hide static image, show iframe
+        meshImage.classList.add("hidden");
+        meshPlaceholder.classList.add("hidden");
+        meshInteractive.classList.remove("hidden");
+        // Load HTML into iframe using srcdoc
+        meshInteractive.srcdoc = html;
+        // Update button text
+        toggleBtn.textContent = "Static Mode";
+        toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
+        toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
+        // Hide camera position control (not needed in interactive mode)
+        cameraControl.parentElement?.classList.add("hidden");
+        updateBtn.classList.add("hidden");
+        document.getElementById("interactiveModeHint")?.classList.remove("hidden");
+        showNotification(successMessage, "success", 8000);
+    }
+    catch (error) {
+        console.error("[FOAMFlask] Error loading interactive viewer:", error);
+        const errorMessage = error instanceof Error
+            ? error.name === "AbortError"
+                ? "Loading was cancelled or timed out"
+                : error.message
+            : "Failed to load interactive viewer";
+        showNotification(`Failed to load interactive viewer: ${errorMessage}`, "error");
+        // Reset to static mode
+        isInteractiveMode = false;
+        // Safely update UI elements if they exist
+        toggleBtn.textContent = "Interactive Mode";
+        toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
+        toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
+        cameraControl.parentElement?.classList.remove("hidden");
+        updateBtn.classList.remove("hidden");
+        document.getElementById("interactiveModeHint")?.classList.add("hidden");
+        meshInteractive.classList.add("hidden");
+        meshImage.classList.remove("hidden");
+    }
+}
+async function onMeshParamChange() {
+    if (isInteractiveMode) {
+        await refreshInteractiveViewer("Interactive mode updated");
+    }
+}
 async function toggleInteractiveMode() {
     if (!currentMeshPath) {
         showNotification("Please load a mesh first", "warning");
@@ -1578,68 +1653,7 @@ async function toggleInteractiveMode() {
     isInteractiveMode = !isInteractiveMode;
     if (isInteractiveMode) {
         // Switch to interactive mode
-        showNotification("Loading interactive viewer...", "info");
-        try {
-            const showEdgesInput = document.getElementById("showEdges");
-            const colorInput = document.getElementById("meshColor");
-            if (!showEdgesInput || !colorInput) {
-                showNotification("Required mesh controls not found", "error");
-                isInteractiveMode = false;
-                return;
-            }
-            const showEdges = showEdgesInput.checked;
-            const color = colorInput.value;
-            // Fetch interactive viewer HTML
-            const response = await fetch("/api/mesh_interactive", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    file_path: currentMeshPath,
-                    show_edges: showEdges,
-                    color: color,
-                }),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const html = await response.text();
-            // Hide static image, show iframe
-            meshImage.classList.add("hidden");
-            meshPlaceholder.classList.add("hidden");
-            meshInteractive.classList.remove("hidden");
-            // Load HTML into iframe using srcdoc
-            meshInteractive.srcdoc = html;
-            // Update button text
-            toggleBtn.textContent = "Static Mode";
-            toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
-            toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
-            // Hide camera position control (not needed in interactive mode)
-            cameraControl.parentElement?.classList.add("hidden");
-            updateBtn.classList.add("hidden");
-            document.getElementById("interactiveModeHint")?.classList.remove("hidden");
-            showNotification("Interactive mode enabled - Use mouse to rotate, zoom, and pan", "success", 8000);
-        }
-        catch (error) {
-            console.error("[FOAMFlask] Error loading interactive viewer:", error);
-            const errorMessage = error instanceof Error
-                ? error.name === "AbortError"
-                    ? "Loading was cancelled or timed out"
-                    : error.message
-                : "Failed to load interactive viewer";
-            showNotification(`Failed to load interactive viewer: ${errorMessage}`, "error");
-            // Reset to static mode
-            isInteractiveMode = false;
-            // Safely update UI elements if they exist
-            toggleBtn.textContent = "Interactive Mode";
-            toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
-            toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
-            cameraControl.parentElement?.classList.remove("hidden");
-            cameraControl.parentElement?.classList.remove("hidden");
-            updateBtn.classList.remove("hidden");
-            document.getElementById("interactiveModeHint")?.classList.add("hidden");
-            meshInteractive.classList.add("hidden");
-            meshImage.classList.remove("hidden");
-        }
+        await refreshInteractiveViewer("Interactive mode enabled");
     }
     else {
         // Switch back to static mode
@@ -1897,6 +1911,15 @@ const init = () => {
             const target = e.target;
             localStorage.setItem('lastSelectedTutorial', target.value);
         });
+    }
+    // Interactive Mode Event Listeners
+    const meshColorSelect = document.getElementById("meshColor");
+    if (meshColorSelect) {
+        meshColorSelect.addEventListener("change", onMeshParamChange);
+    }
+    const showEdgesCheck = document.getElementById("showEdges");
+    if (showEdgesCheck) {
+        showEdgesCheck.addEventListener("change", onMeshParamChange);
     }
 };
 if (document.readyState === 'loading') {
