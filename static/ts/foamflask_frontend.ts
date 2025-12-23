@@ -846,7 +846,7 @@ const runCommand = async (cmd: string): Promise<void> => {
     const read = async () => {
       const { done, value } = (await reader?.read()) || { done: true, value: undefined };
       if (done) {
-        showNotification("Done", "success");
+        showNotification("Simulation completed successfully", "success");
         flushOutputBuffer();
         return;
       }
@@ -1546,7 +1546,7 @@ const runMeshingCommand = async (cmd: string) => {
     const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
     const data = await res.json();
     if (data.success) {
-      showNotification("Done", "success");
+      showNotification("Meshing completed successfully", "success");
       const div = document.getElementById("meshingOutput");
       if (div) div.innerText += `\n${data.output}`;
     }

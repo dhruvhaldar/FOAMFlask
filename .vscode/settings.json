@@ -3,6 +3,6 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
-    "editor.fontFamily": "'Google Sans Code', 'monospace', monospace",
+    "editor.fontFamily": "'Google Sans Code SemiBold', 'monospace', monospace",
     "editor.wordWrap": "on"
 }

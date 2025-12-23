@@ -822,7 +822,10 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
 
     bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
     container_run_path = "/tmp/FOAM_Run" # nosec B108
-    container_case_path = posixpath.join(container_run_path, tutorial)
+    
+    # Flatten structure: use only the leaf name of the tutorial for the local case directory
+    tutorial_name = posixpath.basename(tutorial)
+    container_case_path = posixpath.join(container_run_path, tutorial_name)
 
     # Convert Windows paths to POSIX style for Docker
     host_path = Path(CASE_ROOT).resolve()
@@ -934,18 +937,36 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             )
             return
 
-        container_case_path = posixpath.join(
-            "/tmp/FOAM_Run", tutorial # nosec B108
-        )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
         # Convert Windows path to POSIX for Docker volumes
         host_path = Path(case_dir).resolve()
         host_path_str = host_path.as_posix() if platform.system() == "Windows" else str(host_path)
 
+        # DEBUG: Check if we are pointing to the case itself or its parent
+        tutorial_name = Path(tutorial).name
+        # If case_dir ends with the tutorial name, we assume it IS the case directory
+        is_direct_case_path = host_path.name == tutorial_name
+
+        logger.info(f"[FOAMFlask] run_case: tutorial='{tutorial}', case_dir='{case_dir}'")
+        logger.info(f"[FOAMFlask] run_case: is_direct_case_path={is_direct_case_path}")
+
+        if is_direct_case_path:
+             # Mount the case directory directly to /tmp/FOAM_Run
+             # So inside container: /tmp/FOAM_Run contains the case files (0, constant, system) directly
+             container_bind_path = "/tmp/FOAM_Run"
+             container_case_path = "/tmp/FOAM_Run" # Working dir is the mount point
+        else:
+             # Mount the parent directory (presumably) so tutorial structure is preserved
+             # e.g. /tmp/FOAM_Run/tutorial/case
+             container_bind_path = "/tmp/FOAM_Run"
+             container_case_path = posixpath.join("/tmp/FOAM_Run", tutorial_name) # nosec B108
+
+        logger.info(f"[FOAMFlask] run_case: container_case_path='{container_case_path}'")
+
         volumes = {
             host_path_str: {
-                "bind": "/tmp/FOAM_Run", # nosec B108
+                "bind": container_bind_path, # nosec B108
                 "mode": "rw",
             }
         }
@@ -1061,7 +1082,8 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    tutorial_name = posixpath.basename(tutorial)
+    case_dir = Path(CASE_ROOT) / tutorial_name
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1089,7 +1111,8 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    tutorial_name = posixpath.basename(tutorial)
+    case_dir = Path(CASE_ROOT) / tutorial_name
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1118,7 +1141,8 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    tutorial_name = posixpath.basename(tutorial)
+    case_dir = Path(CASE_ROOT) / tutorial_name
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1147,7 +1171,8 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    case_dir = Path(CASE_ROOT) / tutorial
+    tutorial_name = posixpath.basename(tutorial)
+    case_dir = Path(CASE_ROOT) / tutorial_name
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1178,7 +1203,8 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
 
     try:
         # mesh_visualizer expects strings for paths currently
-        mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial)
+        tutorial_name = posixpath.basename(tutorial)
+        mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial_name)
         return jsonify({"meshes": mesh_files})
     except Exception as e:
         logger.error(f"Error getting available meshes: {e}", exc_info=True)
@@ -1342,18 +1368,36 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             yield "[FOAMFlask] [Error] Docker daemon not available. Please start Docker Desktop and try again.<br>"
             return
 
-        container_case_path = posixpath.join(
-            "/tmp/FOAM_Run", tutorial # nosec B108
-        )
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
 
         # Convert Windows path to POSIX for Docker volumes
         host_path = Path(case_dir).resolve()
         host_path_str = host_path.as_posix() if platform.system() == "Windows" else str(host_path)
 
+        # DEBUG: Check if we are pointing to the case itself or its parent
+        tutorial_name = Path(tutorial).name
+        # If case_dir ends with the tutorial name, we assume it IS the case directory
+        is_direct_case_path = host_path.name == tutorial_name
+
+        logger.info(f"[FOAMFlask] run_foamtovtk: tutorial='{tutorial}', case_dir='{case_dir}'")
+        logger.info(f"[FOAMFlask] run_foamtovtk: is_direct_case_path={is_direct_case_path}")
+
+        if is_direct_case_path:
+             # Mount the case directory directly to /tmp/FOAM_Run
+             # So inside container: /tmp/FOAM_Run contains the case files (0, constant, system) directly
+             container_bind_path = "/tmp/FOAM_Run"
+             container_case_path = "/tmp/FOAM_Run" # Working dir is the mount point
+        else:
+             # Mount the parent directory (presumably) so tutorial structure is preserved
+             # e.g. /tmp/FOAM_Run/tutorial/case
+             container_bind_path = "/tmp/FOAM_Run"
+             container_case_path = posixpath.join("/tmp/FOAM_Run", tutorial_name) # nosec B108
+
+        logger.info(f"[FOAMFlask] run_foamtovtk: container_case_path='{container_case_path}'")
+
         volumes = {
             host_path_str: {
-                "bind": "/tmp/FOAM_Run", # nosec B108
+                "bind": container_bind_path, # nosec B108
                 "mode": "rw",
             }
         }
