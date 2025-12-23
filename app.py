@@ -23,6 +23,7 @@ import docker
 from docker import DockerClient
 from docker.errors import DockerException
 from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
+from markupsafe import escape
 from werkzeug.utils import secure_filename
 
 # Local application imports
@@ -1021,9 +1022,9 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 for line in container.logs(stream=True):
                     decoded = line.decode(errors="ignore")
                     for subline in decoded.splitlines():
-                        yield subline + "<br>"
+                        yield f"{escape(subline)}<br>"
             except Exception as e:
-                yield f"[FOAMFlask] [Error] Failed to stream container logs: {e}<br>"
+                yield f"[FOAMFlask] [Error] Failed to stream container logs: {escape(str(e))}<br>"
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
@@ -1386,11 +1387,11 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             for line in container.logs(stream=True):
                 decoded = line.decode(errors="ignore")
                 for subline in decoded.splitlines():
-                    yield subline + "<br>"
+                    yield f"{escape(subline)}<br>"
 
         except Exception as e:
             logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] {e}<br>"
+            yield f"[FOAMFlask] [Error] {escape(str(e))}<br>"
 
         finally:
             if 'container' in locals():
