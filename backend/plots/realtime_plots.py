@@ -147,16 +147,26 @@ class OpenFOAMFieldParser:
             if not check_mtime and path_str in _FILE_CACHE:
                 return _FILE_CACHE[path_str][1]
 
-            # Check modification time
-            mtime = field_path.stat().st_mtime
+            # ⚡ Bolt Optimization: Skip stat() if not required (historical data)
+            mtime = 0.0
+            if check_mtime:
+                try:
+                    mtime = field_path.stat().st_mtime
+                except OSError:
+                    # File might not exist
+                    return None
             
-            # Return cached if valid
-            if path_str in _FILE_CACHE:
+            # Return cached if valid (only if we checked mtime)
+            if check_mtime and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
                 if cached_mtime == mtime:
                     return cached_val
 
-            content = field_path.read_text(encoding="utf-8")
+            try:
+                content = field_path.read_text(encoding="utf-8")
+            except (FileNotFoundError, OSError):
+                return None
+
             val = None
 
             # Regex for nonuniform
@@ -218,16 +228,25 @@ class OpenFOAMFieldParser:
             if not check_mtime and path_str in _FILE_CACHE:
                 return _FILE_CACHE[path_str][1]
 
-            # Check modification time
-            mtime = field_path.stat().st_mtime
+            # ⚡ Bolt Optimization: Skip stat() if not required (historical data)
+            mtime = 0.0
+            if check_mtime:
+                try:
+                    mtime = field_path.stat().st_mtime
+                except OSError:
+                    return 0.0, 0.0, 0.0
             
-            # Return cached if valid
-            if path_str in _FILE_CACHE:
+            # Return cached if valid (only if we checked mtime)
+            if check_mtime and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
                 if cached_mtime == mtime:
                     return cached_val
 
-            content = field_path.read_text(encoding="utf-8")
+            try:
+                content = field_path.read_text(encoding="utf-8")
+            except (FileNotFoundError, OSError):
+                return 0.0, 0.0, 0.0
+
             val = (0.0, 0.0, 0.0)
 
             # Regex for nonuniform
@@ -390,7 +409,8 @@ class OpenFOAMFieldParser:
                 # ⚡ Bolt Optimization: Check cache first to avoid exists() stat call
                 if not is_latest and path_str in _FILE_CACHE:
                     val = _FILE_CACHE[path_str][1]
-                elif field_path.exists():
+                else:
+                    # ⚡ Bolt Optimization: Skip exists() check, handle missing file in parser
                     v = self.parse_scalar_field(field_path, check_mtime=is_latest)
                     if v is not None:
                         val = v
@@ -407,7 +427,8 @@ class OpenFOAMFieldParser:
                      val_vec = _FILE_CACHE[path_str][1]
                      if isinstance(val_vec, tuple) and len(val_vec) == 3:
                         ux, uy, uz = val_vec
-                elif u_path.exists():
+                else:
+                    # ⚡ Bolt Optimization: Skip exists() check, handle missing file in parser
                     ux, uy, uz = self.parse_vector_field(u_path, check_mtime=is_latest)
                 
                 data["Ux"].append(ux)
