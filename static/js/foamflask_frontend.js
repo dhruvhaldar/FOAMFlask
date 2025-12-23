@@ -11,6 +11,21 @@ const getErrorMessage = (error) => {
         return error.message;
     return typeof error === "string" ? error : "Unknown error";
 };
+// Clear Console Log
+const clearLog = () => {
+    const outputDiv = document.getElementById("output");
+    if (outputDiv) {
+        outputDiv.innerHTML = "";
+        try {
+            localStorage.removeItem(CONSOLE_LOG_KEY);
+        }
+        catch (e) {
+            // Ignore local storage errors
+        }
+        outputBuffer.length = 0; // Clear buffer
+        showNotification("Console log cleared", "info", 2000);
+    }
+};
 // Copy Console Log to Clipboard
 const copyLogToClipboard = () => {
     const outputDiv = document.getElementById("output");
@@ -1791,6 +1806,7 @@ window.generateContours = generateContoursFn;
 window.downloadPlotAsPNG = downloadPlotAsPNG;
 window.showNotification = showNotification;
 window.runPostOperation = runPostOperation;
+window.clearLog = clearLog;
 window.copyLogToClipboard = copyLogToClipboard;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
