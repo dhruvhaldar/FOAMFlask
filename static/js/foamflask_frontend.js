@@ -429,16 +429,13 @@ const showNotification = (message, type, duration = 5000) => {
         notification.dataset.timerId = countdownInterval.toString();
         notification.dataset.fadeTimerId = fadeTimer.toString();
     }
-    else {
-        // Show close button
-        const closeBtn = notification.querySelector(".close-btn");
-        if (closeBtn) {
-            closeBtn.classList.remove("hidden");
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                removeNotification(id);
-            };
-        }
+    // Setup close button for all notifications
+    const closeBtn = notification.querySelector(".close-btn");
+    if (closeBtn) {
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeNotification(id);
+        };
     }
     container.appendChild(notification);
     return id;

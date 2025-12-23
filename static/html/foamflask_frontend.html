@@ -167,7 +167,7 @@
 <body class="bg-gray-50 text-gray-800 min-h-screen">
 
   <!-- Notification Container -->
-  <div id="notificationContainer" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+  <div id="notificationContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
   </div>
 
   <template id="notification-template">
@@ -175,6 +175,8 @@
       <div class="relative z-10">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
+            <!-- Close Button -->
+            <button class="close-btn text-white/80 hover:text-white font-bold text-lg leading-none mr-1" aria-label="Close notification">×</button>
             <span class="text-2xl font-bold icon-slot"></span>
             <span class="text-lg font-medium message-slot"></span>
           </div>
@@ -182,8 +184,7 @@
       </div>
       <!-- Progress Bar -->
       <div class="progress-bar h-1 bg-white bg-opacity-50 absolute bottom-0 left-0 hidden"></div>
-      <!-- Close Button -->
-      <button class="close-btn text-white hover:text-gray-200 font-bold text-lg leading-none absolute top-2 right-2 hidden" aria-label="Close notification">×</button>
+
     </div>
   </template>
 
