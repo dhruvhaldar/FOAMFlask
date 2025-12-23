@@ -118,6 +118,21 @@ const getErrorMessage = (error: unknown): string => {
   return typeof error === "string" ? error : "Unknown error";
 };
 
+// Clear Console Log
+const clearLog = (): void => {
+  const outputDiv = document.getElementById("output");
+  if (outputDiv) {
+    outputDiv.innerHTML = "";
+    try {
+      localStorage.removeItem(CONSOLE_LOG_KEY);
+    } catch (e) {
+      // Ignore local storage errors
+    }
+    outputBuffer.length = 0; // Clear buffer
+    showNotification("Console log cleared", "info", 2000);
+  }
+};
+
 // Copy Console Log to Clipboard
 const copyLogToClipboard = (): void => {
   const outputDiv = document.getElementById("output");
@@ -829,13 +844,23 @@ const createNewCase = async () => {
   }
 };
 
-const runCommand = async (cmd: string): Promise<void> => {
+const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> => {
   if (!cmd) { showNotification("No command specified", "error"); return; }
 
   // Use tutorial select if activeCase is not set, or prefer tutorial select for "Run" tab
   const selectedTutorial = (document.getElementById("tutorialSelect") as HTMLSelectElement)?.value || activeCase;
 
   if (!selectedTutorial) { showNotification("Select case and command", "error"); return; }
+
+  let originalText = "";
+  const btn = btnElement as HTMLButtonElement;
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
+  }
 
   try {
     showNotification(`Running ${cmd}...`, "info");
@@ -863,6 +888,12 @@ const runCommand = async (cmd: string): Promise<void> => {
   } catch (e) {
     console.error(e);
     showNotification("Error running command", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalText;
+    }
   }
 };
 
@@ -2047,6 +2078,7 @@ window.onload = async () => {
 (window as any).downloadPlotAsPNG = downloadPlotAsPNG;
 (window as any).showNotification = showNotification;
 (window as any).runPostOperation = runPostOperation;
+(window as any).clearLog = clearLog;
 (window as any).copyLogToClipboard = copyLogToClipboard;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;

@@ -11,6 +11,21 @@ const getErrorMessage = (error) => {
         return error.message;
     return typeof error === "string" ? error : "Unknown error";
 };
+// Clear Console Log
+const clearLog = () => {
+    const outputDiv = document.getElementById("output");
+    if (outputDiv) {
+        outputDiv.innerHTML = "";
+        try {
+            localStorage.removeItem(CONSOLE_LOG_KEY);
+        }
+        catch (e) {
+            // Ignore local storage errors
+        }
+        outputBuffer.length = 0; // Clear buffer
+        showNotification("Console log cleared", "info", 2000);
+    }
+};
 // Copy Console Log to Clipboard
 const copyLogToClipboard = () => {
     const outputDiv = document.getElementById("output");
@@ -684,7 +699,7 @@ const createNewCase = async () => {
         }
     }
 };
-const runCommand = async (cmd) => {
+const runCommand = async (cmd, btnElement) => {
     if (!cmd) {
         showNotification("No command specified", "error");
         return;
@@ -694,6 +709,14 @@ const runCommand = async (cmd) => {
     if (!selectedTutorial) {
         showNotification("Select case and command", "error");
         return;
+    }
+    let originalText = "";
+    const btn = btnElement;
+    if (btn) {
+        originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
     }
     try {
         showNotification(`Running ${cmd}...`, "info");
@@ -723,6 +746,13 @@ const runCommand = async (cmd) => {
     catch (e) {
         console.error(e);
         showNotification("Error running command", "error");
+    }
+    finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute("aria-busy");
+            btn.innerHTML = originalText;
+        }
     }
 };
 // Realtime Plotting Functions
@@ -1791,6 +1821,7 @@ window.generateContours = generateContoursFn;
 window.downloadPlotAsPNG = downloadPlotAsPNG;
 window.showNotification = showNotification;
 window.runPostOperation = runPostOperation;
+window.clearLog = clearLog;
 window.copyLogToClipboard = copyLogToClipboard;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;

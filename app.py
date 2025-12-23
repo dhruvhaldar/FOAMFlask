@@ -23,6 +23,7 @@ import docker
 from docker import DockerClient
 from docker.errors import DockerException
 from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
+from markupsafe import escape
 from werkzeug.utils import secure_filename
 
 # Local application imports
@@ -125,6 +126,35 @@ def is_safe_script_name(script_name: str) -> bool:
         return False
     
     return True
+
+
+def validate_safe_path(base_dir: str, relative_path: str) -> Path:
+    """
+    Validate and resolve a path to ensure it remains within the base directory.
+
+    Args:
+        base_dir: The authorized base directory (e.g. CASE_ROOT)
+        relative_path: The user-provided path component
+
+    Returns:
+        The resolved Path object
+
+    Raises:
+        ValueError: If path traversal is detected or path is invalid
+    """
+    if not relative_path:
+        raise ValueError("No path specified")
+
+    base = Path(base_dir).resolve()
+    # Resolve the target path. Note: (base / relative).resolve() handles '..'
+    target = (base / relative_path).resolve()
+
+    # Check if the resolved target starts with the resolved base path
+    if not target.is_relative_to(base):
+        logger.warning(f"Security: Path traversal attempt blocked. Path: {target}, Base: {base}")
+        raise ValueError("Access denied: Invalid path")
+
+    return target
 
 
 def load_config() -> Dict[str, str]:
@@ -1042,9 +1072,9 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 for line in container.logs(stream=True):
                     decoded = line.decode(errors="ignore")
                     for subline in decoded.splitlines():
-                        yield subline + "<br>"
+                        yield f"{escape(subline)}<br>"
             except Exception as e:
-                yield f"[FOAMFlask] [Error] Failed to stream container logs: {e}<br>"
+                yield f"[FOAMFlask] [Error] Failed to stream container logs: {escape(str(e))}<br>"
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
@@ -1082,8 +1112,11 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    tutorial_name = posixpath.basename(tutorial)
-    case_dir = Path(CASE_ROOT) / tutorial_name
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1111,8 +1144,11 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    tutorial_name = posixpath.basename(tutorial)
-    case_dir = Path(CASE_ROOT) / tutorial_name
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1141,8 +1177,11 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    tutorial_name = posixpath.basename(tutorial)
-    case_dir = Path(CASE_ROOT) / tutorial_name
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1171,8 +1210,11 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"error": "No tutorial specified"}), 400
 
-    tutorial_name = posixpath.basename(tutorial)
-    case_dir = Path(CASE_ROOT) / tutorial_name
+    try:
+        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not case_dir.exists():
         return jsonify({"error": "Case directory not found"}), 404
 
@@ -1202,10 +1244,15 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
+        # Validate that the tutorial path is safe
+        validate_safe_path(CASE_ROOT, tutorial)
+
         # mesh_visualizer expects strings for paths currently
         tutorial_name = posixpath.basename(tutorial)
         mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial_name)
         return jsonify({"meshes": mesh_files})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Error getting available meshes: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -1430,11 +1477,11 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             for line in container.logs(stream=True):
                 decoded = line.decode(errors="ignore")
                 for subline in decoded.splitlines():
-                    yield subline + "<br>"
+                    yield f"{escape(subline)}<br>"
 
         except Exception as e:
             logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] {e}<br>"
+            yield f"[FOAMFlask] [Error] {escape(str(e))}<br>"
 
         finally:
             if 'container' in locals():
