@@ -1591,8 +1591,19 @@ const generateSnappyHexMeshDict = async () => {
   } catch (e) { }
 };
 
-const runMeshingCommand = async (cmd: string) => {
+const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
   if (!activeCase) return;
+
+  const btn = btnElement as HTMLButtonElement | undefined;
+  let originalText = "";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
+  }
+
   showNotification(`Running ${cmd}`, "info");
   try {
     const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
@@ -1602,14 +1613,32 @@ const runMeshingCommand = async (cmd: string) => {
       const div = document.getElementById("meshingOutput");
       if (div) div.innerText += `\n${data.output}`;
     }
-  } catch (e) { }
+  } catch (e) {
+    showNotification("Meshing failed", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalText;
+    }
+  }
 };
 
 // Visualizer
-const runFoamToVTK = async () => {
+const runFoamToVTK = async (btnElement?: HTMLElement) => {
   if (!activeCase) {
     showNotification("Please select a case first", "warning");
     return;
+  }
+
+  const btn = btnElement as HTMLButtonElement | undefined;
+  let originalText = "";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
   }
 
   showNotification("Running foamToVTK...", "info");
@@ -1650,6 +1679,12 @@ const runFoamToVTK = async () => {
   } catch (e) {
     console.error(e);
     showNotification("Error running foamToVTK", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalText;
+    }
   }
 };
 

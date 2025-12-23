@@ -481,7 +481,7 @@
                 class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm">
                 Generate blockMeshDict
               </button>
-              <button onclick="runMeshingCommand('blockMesh')"
+              <button id="runBlockMeshBtn" onclick="runMeshingCommand('blockMesh', this)"
                 class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
                 Run blockMesh
               </button>
@@ -625,7 +625,7 @@
               class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium">
               Generate snappyHexMeshDict
             </button>
-            <button onclick="runMeshingCommand('snappyHexMesh')"
+            <button id="runSnappyHexMeshBtn" onclick="runMeshingCommand('snappyHexMesh', this)"
               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">
               Run snappyHexMesh
             </button>
@@ -738,7 +738,7 @@
 
               <!-- Buttons are Hidden when Mesh files have been found/loaded-->
               <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
-                <button onclick="runFoamToVTK()"
+                <button onclick="runFoamToVTK(this)"
                   class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
                   Generate VTK files (foamToVTK)
                 </button>
