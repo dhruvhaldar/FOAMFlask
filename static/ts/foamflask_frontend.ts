@@ -508,6 +508,12 @@ const showNotification = (
   type: "success" | "error" | "warning" | "info",
   duration: number = 5000
 ): number | null => {
+  // If a notification with the same message already exists, do not show another one
+  // This prevents spamming the user with the same message
+  if (document.querySelector(`.notification .message-slot[data-message="${message}"]`)) {
+    return null;
+  }
+  
   const container = document.getElementById("notificationContainer");
   const template = document.getElementById("notification-template") as HTMLTemplateElement;
   
@@ -536,7 +542,11 @@ const showNotification = (
   const messageSlot = notification.querySelector(".message-slot");
   
   if (iconSlot) iconSlot.textContent = icons[type];
-  if (messageSlot) messageSlot.textContent = message;
+  if (messageSlot) {
+    messageSlot.textContent = message;
+    // Add data attribute to help with duplicate detection
+    messageSlot.setAttribute("data-message", message);
+  }
 
   // Handle duration and progress bar
   if (duration > 0) {
@@ -552,15 +562,22 @@ const showNotification = (
       });
     }
 
-    // Countdown logic (optional, but requested in original code)
-    // Note: The new design doesn't explicitly have a countdown slot in the HTML provided in previous step,
-    // but we can add it if needed. For now, matching the simplified template structure.
+    // Countdown logic
+    // Add fade-out class 300ms before removal
+    const fadeTime = Math.max(0, duration - 300);
     
+    // Timer for fade out animation
+    const fadeTimer = setTimeout(() => {
+        notification.classList.add("fade-out");
+    }, fadeTime);
+
+    // Timer for actual removal
     const countdownInterval = setTimeout(() => {
         removeNotification(id);
     }, duration);
 
     notification.dataset.timerId = countdownInterval.toString();
+    notification.dataset.fadeTimerId = fadeTimer.toString();
   } else {
     // Show close button
     const closeBtn = notification.querySelector(".close-btn") as HTMLElement;
@@ -582,8 +599,13 @@ const removeNotification = (id: number): void => {
   if (notification) {
     if (notification.dataset.timerId)
       clearTimeout(parseInt(notification.dataset.timerId, 10));
-    notification.style.opacity = "0";
-    notification.style.transition = "opacity 0.3s ease";
+    if (notification.dataset.fadeTimerId)
+      clearTimeout(parseInt(notification.dataset.fadeTimerId, 10));
+    
+    // Ensure fade-out class is present for manual dismissals
+    notification.classList.add("fade-out");
+    
+    // Wait for animation then remove
     setTimeout(() => notification.remove(), 300);
   }
 };
