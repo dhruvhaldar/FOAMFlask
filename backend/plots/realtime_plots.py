@@ -24,6 +24,10 @@ _RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, List[float]]]] = {}
 # Structure: { "file_path_str": (mtime, field_type) }
 _FIELD_TYPE_CACHE: Dict[str, Tuple[float, Optional[str]]] = {}
 
+# Structure: { "case_dir_str": (mtime, time_dirs_list) }
+# ⚡ Bolt Optimization: Cache directory listing to avoid repeated scandir and sort
+_TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -41,6 +45,22 @@ class OpenFOAMFieldParser:
 
     def get_time_directories(self) -> List[str]:
         """Get all time directories sorted numerically."""
+        # Use resolved absolute path for cache key
+        try:
+            path_str = str(self.case_dir.resolve())
+            stat = self.case_dir.stat()
+            current_mtime = stat.st_mtime
+        except OSError as e:
+            logger.error(f"Error accessing case directory {self.case_dir}: {e}")
+            return []
+
+        # ⚡ Bolt Optimization: Check cache first
+        # Directory mtime changes when a subdirectory is added/removed
+        if path_str in _TIME_DIRS_CACHE:
+            cached_mtime, cached_dirs = _TIME_DIRS_CACHE[path_str]
+            if cached_mtime == current_mtime:
+                return cached_dirs
+
         time_dirs = []
         try:
             # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
@@ -58,7 +78,12 @@ class OpenFOAMFieldParser:
             logger.error(f"Error listing directories in {self.case_dir}: {e}")
             return []
 
-        return sorted(time_dirs, key=float)
+        sorted_dirs = sorted(time_dirs, key=float)
+
+        # Update cache
+        _TIME_DIRS_CACHE[path_str] = (current_mtime, sorted_dirs)
+
+        return sorted_dirs
 
     def _get_field_type(self, field_path: Path) -> Optional[str]:
         """
