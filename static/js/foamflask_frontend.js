@@ -1485,8 +1485,22 @@ const loadMeshVisualization = async () => {
 const updateMeshView = async () => {
     if (!currentMeshPath)
         return;
+    const showEdges = document.getElementById("showEdges")?.checked ?? true;
+    const color = document.getElementById("meshColor")?.value ?? "lightblue";
+    const cameraPosition = document.getElementById("cameraPosition")?.value || null;
     try {
-        const res = await fetch("/api/mesh_screenshot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_path: currentMeshPath, width: 800, height: 600 }) });
+        const res = await fetch("/api/mesh_screenshot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                file_path: currentMeshPath,
+                width: 800,
+                height: 600,
+                show_edges: showEdges,
+                color: color,
+                camera_position: cameraPosition
+            })
+        });
         const data = await res.json();
         if (data.success) {
             document.getElementById("meshImage").src = `data:image/png;base64,${data.image}`;
@@ -1600,7 +1614,7 @@ async function toggleInteractiveMode() {
             toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
             toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
             // Hide camera position control (not needed in interactive mode)
-            cameraControl.classList.add("hidden");
+            cameraControl.parentElement?.classList.add("hidden");
             updateBtn.classList.add("hidden");
             showNotification("Interactive mode enabled - Use mouse to rotate, zoom, and pan", "success", 8000);
         }
@@ -1618,7 +1632,7 @@ async function toggleInteractiveMode() {
             toggleBtn.textContent = "Interactive Mode";
             toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
             toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
-            cameraControl.classList.remove("hidden");
+            cameraControl.parentElement?.classList.remove("hidden");
             updateBtn.classList.remove("hidden");
             meshInteractive.classList.add("hidden");
             meshImage.classList.remove("hidden");
@@ -1633,7 +1647,7 @@ async function toggleInteractiveMode() {
         toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
         toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
         // Show camera position control again
-        cameraControl.classList.remove("hidden");
+        cameraControl.parentElement?.classList.remove("hidden");
         updateBtn.classList.remove("hidden");
         showNotification("Switched to static mode", "info", 2000);
     }
