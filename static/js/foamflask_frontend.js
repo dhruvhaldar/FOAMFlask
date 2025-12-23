@@ -1492,6 +1492,8 @@ const updateMeshView = async () => {
             document.getElementById("meshImage").src = `data:image/png;base64,${data.image}`;
             document.getElementById("meshImage")?.classList.remove("hidden");
             document.getElementById("meshPlaceholder")?.classList.add("hidden");
+            document.getElementById("meshControls")?.classList.remove("hidden");
+            document.getElementById("meshActionButtons")?.classList.add("hidden");
         }
     }
     catch (e) { }
