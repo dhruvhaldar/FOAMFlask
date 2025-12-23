@@ -1113,7 +1113,8 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
-        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+        tutorial_name = posixpath.basename(tutorial)
+        case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -1145,7 +1146,8 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
-        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+        tutorial_name = posixpath.basename(tutorial)
+        case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -1178,7 +1180,8 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
-        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+        tutorial_name = posixpath.basename(tutorial)
+        case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -1211,7 +1214,8 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No tutorial specified"}), 400
 
     try:
-        case_dir = validate_safe_path(CASE_ROOT, tutorial)
+        tutorial_name = posixpath.basename(tutorial)
+        case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
