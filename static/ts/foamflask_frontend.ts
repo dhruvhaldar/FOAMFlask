@@ -444,6 +444,7 @@ const switchPage = (pageName: string): void => {
     if (navButton) {
       navButton.classList.remove("bg-blue-500", "text-white");
       navButton.classList.add("text-gray-700", "hover:bg-gray-100");
+      navButton.removeAttribute("aria-current");
     }
   });
 
@@ -453,6 +454,7 @@ const switchPage = (pageName: string): void => {
   if (selectedNav) {
     selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
     selectedNav.classList.add("bg-blue-500", "text-white");
+    selectedNav.setAttribute("aria-current", "page");
   }
 
   // Auto-refresh lists based on page

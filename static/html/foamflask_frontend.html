@@ -196,7 +196,7 @@
           <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
         </div>
         <div class="flex space-x-1">
-          <button id="nav-setup"
+          <button id="nav-setup" aria-current="page"
             class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
             Setup
           </button>
@@ -1198,7 +1198,7 @@
 
             <!-- Number of Isosurfaces -->
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium">Number of Isosurfaces <span
+              <label for="numIsosurfaces" class="text-sm font-medium">Number of Isosurfaces <span
                   class="text-gray-500">(Optional)</span></label>
               <input type="number" id="numIsosurfaces" placeholder="Leave empty for default (10)" min="1" max="40"
                 class="border border-gray-300 rounded px-3 py-2">
