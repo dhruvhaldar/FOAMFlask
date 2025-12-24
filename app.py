@@ -1283,8 +1283,14 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No file path provided"}), 400
 
     try:
+        # Security: Validate path is within CASE_ROOT
+        try:
+            validated_path = validate_safe_path(CASE_ROOT, file_path)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+
         logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
-        mesh_info = mesh_visualizer.load_mesh(file_path)
+        mesh_info = mesh_visualizer.load_mesh(validated_path)
 
         if for_contour:
             logger.info(
@@ -1333,13 +1339,19 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No file path provided"}), 400
 
     try:
+        # Security: Validate path is within CASE_ROOT
+        try:
+            validated_path = validate_safe_path(CASE_ROOT, file_path)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+
         # Add delay for first call
         if not hasattr(api_mesh_screenshot, "_has_been_called"):
             time.sleep(4)  # 4 second delay for first call
             api_mesh_screenshot._has_been_called = True
 
         img_str = mesh_visualizer.get_mesh_screenshot(
-            file_path, width, height, show_edges, color, camera_position
+            validated_path, width, height, show_edges, color, camera_position
         )
 
         if img_str:
@@ -1376,11 +1388,17 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "No file path provided"}), 400
 
     try:
+        # Security: Validate path is within CASE_ROOT
+        try:
+            validated_path = validate_safe_path(CASE_ROOT, file_path)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+
         # Add a small delay to prevent race conditions
         time.sleep(2)  # 2 second delay
 
         html_content = mesh_visualizer.get_interactive_viewer_html(
-            file_path, show_edges, color
+            validated_path, show_edges, color
         )
 
         if html_content:
