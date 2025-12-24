@@ -241,7 +241,7 @@
         <p class="text-sm text-blue-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
         <div class="flex flex-col sm:flex-row gap-2 items-center">
-          <select id="caseSelect" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium"
+          <select id="caseSelect" aria-label="Select Active Case" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium"
             onchange="selectCase(this.value)">
             <option value="">-- Select a Case --</option>
           </select>
@@ -294,7 +294,7 @@
         <div class="mt-4 space-y-4 pl-2">
           <!-- Case Directory -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label class="w-32 font-medium text-gray-700">Case Root:</label>
+            <label for="caseDir" class="w-32 font-medium text-gray-700">Case Root:</label>
             <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <button type="button" onclick="setCase()"
               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
@@ -304,7 +304,7 @@
 
           <!-- Docker Config -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label class="w-32 font-medium text-gray-700">Docker Image:</label>
+            <label for="dockerImage" class="w-32 font-medium text-gray-700">Docker Image:</label>
             <input type="text" id="dockerImage" name="dockerImage"
               class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
@@ -581,7 +581,7 @@
               <h4 class="font-medium text-gray-800">Object Settings</h4>
 
               <div class="flex flex-col gap-2 h-48">
-                <label class="text-sm text-gray-600">Loaded Geometry Objects</label>
+                <label for="shmObjectList" class="text-sm text-gray-600">Loaded Geometry Objects</label>
                 <select id="shmObjectList" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full" size="5"
                   onchange="selectShmObject()">
                   <!-- Populated by JS -->
