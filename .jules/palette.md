@@ -5,3 +5,7 @@
 ## 2024-05-23 - [Lockfile Caution]
 **Learning:** Running `pnpm install` in an npm-based project (with `package-lock.json`) generates a `pnpm-lock.yaml`. This should not be committed unless the intent is to switch package managers.
 **Action:** Always delete generated lockfiles if not explicitly migrating package managers.
+
+## 2025-02-17 - [Disconnected Labels]
+**Learning:** Found a pattern of labels visually positioned near inputs but programmatically disconnected (missing `for` attributes), making forms inaccessible to screen reader users who can't see the visual layout.
+**Action:** Systematically check all `<label>` elements during code review to ensure they have a corresponding `for` attribute matching an input's `id`.
