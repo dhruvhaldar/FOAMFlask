@@ -559,7 +559,13 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
         if not CASE_ROOT:
              return jsonify({"success": False, "message": "Case root not set"}), 500
 
-        full_path = Path(CASE_ROOT) / case_name
+        try:
+            # Security: Validate path is within CASE_ROOT
+            # validate_safe_path resolves the path, checking for traversal
+            full_path = validate_safe_path(CASE_ROOT, case_name)
+        except ValueError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+
         result = CaseManager.create_case_structure(full_path)
 
         if result["success"]:
