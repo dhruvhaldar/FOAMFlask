@@ -528,6 +528,13 @@ const showNotification = (
   if (!notification) return null;
 
   notification.id = `notification-${id}`;
+
+  // Set ARIA role for accessibility
+  if (type === "error" || type === "warning") {
+    notification.setAttribute("role", "alert");
+  } else {
+    notification.setAttribute("role", "status");
+  }
   
   // Set colors
   const colors = {
