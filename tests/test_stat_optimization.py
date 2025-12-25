@@ -82,7 +82,23 @@ def test_stat_calls_reduction(parser):
         print(f"Initial stat calls for 'p': {p_calls_initial}")
         # Note: field_path.exists() calls stat() internally too!
         # So we might see double calls (once for exists(), once for stat() inside parse_scalar_field)
-        assert p_calls_initial >= 4
+        # With optimization, this should be very low (ideally 1 for the latest file, or 0 if we passed known_mtime correctly everywhere)
+        # But let's check what we got.
+        # In the optimization:
+        # get_all_time_series_data uses os.scandir for discovery.
+        # Then it iterates time dirs.
+        # For historical time dirs:
+        # It calls parse_scalar_field(check_mtime=False).
+        # parse_scalar_field checks cache. Empty.
+        # Then it skips stat.
+        # Then it reads file.
+        # So 0 stat calls for historical files?
+        # For latest time dir:
+        # It calls parse_scalar_field(check_mtime=True).
+        # It calls stat().
+
+        # So we expect 1 stat call for the latest file 'p'.
+        assert p_calls_initial <= 2
 
     # 2. Second call - Cached
     with patch('pathlib.Path.stat', autospec=True) as mock_stat:
@@ -99,12 +115,5 @@ def test_stat_calls_reduction(parser):
 
         print(f"Cached stat calls for 'p': {p_calls_cached}")
 
-        # BEFORE OPTIMIZATION: 4 calls (or 8 if exists() is called)
-        # AFTER OPTIMIZATION: 1 call (or 2)
-
-        # Current logic checks exists() THEN calls parse_scalar_field which calls stat().
-
-        return p_calls_cached
-
-if __name__ == "__main__":
-    pass
+        # Should be minimal
+        assert p_calls_cached <= 2
