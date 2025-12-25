@@ -82,16 +82,22 @@ class OpenFOAMFieldParser:
 
         return sorted_dirs
 
-    def _get_field_type(self, field_path: Path) -> Optional[str]:
+    def _get_field_type(self, field_entry: Union[Path, os.DirEntry]) -> Optional[str]:
         """
         Determine if a file is a volScalarField or volVectorField by reading the header.
         Returns 'scalar', 'vector', or None.
+        Accepts Path or os.DirEntry for optimization.
         """
-        path_str = str(field_path)
         try:
-            # ⚡ Bolt Optimization: Cache field type based on mtime to avoid repetitive file opens
-            # stat() is cheaper than open() + read()
-            mtime = field_path.stat().st_mtime
+            # ⚡ Bolt Optimization: Accept DirEntry to avoid extra stat() call
+            if isinstance(field_entry, os.DirEntry):
+                path_str = field_entry.path
+                mtime = field_entry.stat().st_mtime
+                field_path = Path(path_str)
+            else:
+                field_path = field_entry
+                path_str = str(field_path)
+                mtime = field_path.stat().st_mtime
 
             if path_str in _FIELD_TYPE_CACHE:
                 cached_mtime, cached_type = _FIELD_TYPE_CACHE[path_str]
@@ -138,7 +144,7 @@ class OpenFOAMFieldParser:
             
         return None
 
-    def parse_scalar_field(self, field_path: Path, check_mtime: bool = True) -> Optional[float]:
+    def parse_scalar_field(self, field_path: Path, check_mtime: bool = True, known_mtime: Optional[float] = None) -> Optional[float]:
         """Parse a scalar field file and return average value with caching."""
         path_str = str(field_path)
         try:
@@ -147,17 +153,19 @@ class OpenFOAMFieldParser:
             if not check_mtime and path_str in _FILE_CACHE:
                 return _FILE_CACHE[path_str][1]
 
-            # ⚡ Bolt Optimization: Skip stat() if not required (historical data)
+            # ⚡ Bolt Optimization: Skip stat() if not required (historical data) or provided
             mtime = 0.0
-            if check_mtime:
+            if known_mtime is not None:
+                mtime = known_mtime
+            elif check_mtime:
                 try:
                     mtime = field_path.stat().st_mtime
                 except OSError:
                     # File might not exist
                     return None
             
-            # Return cached if valid (only if we checked mtime)
-            if check_mtime and path_str in _FILE_CACHE:
+            # Return cached if valid (only if we checked mtime or have known mtime)
+            if (check_mtime or known_mtime is not None) and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
                 if cached_mtime == mtime:
                     return cached_val
@@ -220,7 +228,7 @@ class OpenFOAMFieldParser:
             logger.error(f"Error parsing scalar field {field_path}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Path, check_mtime: bool = True) -> Tuple[float, float, float]:
+    def parse_vector_field(self, field_path: Path, check_mtime: bool = True, known_mtime: Optional[float] = None) -> Tuple[float, float, float]:
         """Parse a vector field file and return average components with caching."""
         path_str = str(field_path)
         try:
@@ -228,16 +236,18 @@ class OpenFOAMFieldParser:
             if not check_mtime and path_str in _FILE_CACHE:
                 return _FILE_CACHE[path_str][1]
 
-            # ⚡ Bolt Optimization: Skip stat() if not required (historical data)
+            # ⚡ Bolt Optimization: Skip stat() if not required (historical data) or provided
             mtime = 0.0
-            if check_mtime:
+            if known_mtime is not None:
+                mtime = known_mtime
+            elif check_mtime:
                 try:
                     mtime = field_path.stat().st_mtime
                 except OSError:
                     return 0.0, 0.0, 0.0
             
-            # Return cached if valid (only if we checked mtime)
-            if check_mtime and path_str in _FILE_CACHE:
+            # Return cached if valid (only if we checked mtime or have known mtime)
+            if (check_mtime or known_mtime is not None) and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
                 if cached_mtime == mtime:
                     return cached_val
@@ -330,21 +340,24 @@ class OpenFOAMFieldParser:
         data: Dict[str, Any] = {"time": float(latest_time)}
         
         try:
-            for item in time_path.iterdir():
-                if item.is_file() and not item.name.startswith("."):
-                    field_type = self._get_field_type(item)
-                    
-                    if field_type == "scalar":
-                        val = self.parse_scalar_field(item)
-                        if val is not None:
-                            data[item.name] = val
-                    
-                    elif field_type == "vector" and item.name == "U":
-                        ux, uy, uz = self.parse_vector_field(item)
-                        data["Ux"] = ux
-                        data["Uy"] = uy
-                        data["Uz"] = uz
-                        data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
+            # ⚡ Bolt Optimization: Use os.scandir to avoid creating Path objects and redundant stat()
+            with os.scandir(str(time_path)) as entries:
+                for entry in entries:
+                    if entry.is_file() and not entry.name.startswith("."):
+                        field_type = self._get_field_type(entry)
+
+                        if field_type == "scalar":
+                            # Pass mtime from entry to avoid re-stat
+                            val = self.parse_scalar_field(Path(entry.path), known_mtime=entry.stat().st_mtime)
+                            if val is not None:
+                                data[entry.name] = val
+
+                        elif field_type == "vector" and entry.name == "U":
+                             ux, uy, uz = self.parse_vector_field(Path(entry.path), known_mtime=entry.stat().st_mtime)
+                             data["Ux"] = ux
+                             data["Uy"] = uy
+                             data["Uz"] = uz
+                             data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
                         
         except Exception as e:
             logger.error(f"Error scanning fields in {time_path}: {e}")
@@ -365,13 +378,15 @@ class OpenFOAMFieldParser:
         has_U = False
         
         try:
-            for item in latest_time_path.iterdir():
-                if item.is_file() and not item.name.startswith("."):
-                    field_type = self._get_field_type(item)
-                    if field_type == "scalar":
-                        scalar_fields.append(item.name)
-                    elif field_type == "vector" and item.name == "U":
-                        has_U = True
+            # ⚡ Bolt Optimization: Use os.scandir for field discovery
+            with os.scandir(str(latest_time_path)) as entries:
+                for entry in entries:
+                    if entry.is_file() and not entry.name.startswith("."):
+                        field_type = self._get_field_type(entry)
+                        if field_type == "scalar":
+                            scalar_fields.append(entry.name)
+                        elif field_type == "vector" and entry.name == "U":
+                            has_U = True
             
         except Exception as e:
             logger.error(f"Error discovering fields: {e}")
@@ -558,9 +573,10 @@ def get_available_fields(case_dir: str) -> List[str]:
 
     fields = []
     try:
-        for item in time_path.iterdir():
-            if item.is_file() and not item.name.startswith("."):
-                fields.append(item.name)
+        with os.scandir(str(time_path)) as entries:
+            for entry in entries:
+                if entry.is_file() and not entry.name.startswith("."):
+                    fields.append(entry.name)
     except OSError as e:
         logger.error(f"Error listing fields in {time_path}: {e}")
         return []
