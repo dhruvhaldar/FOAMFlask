@@ -260,14 +260,19 @@
         <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-bold mb-3 text-gray-800">Create New Case</h3>
           <p class="text-sm text-gray-500 mb-3">Create a blank case structure (0, constant, system).</p>
-          <div class="flex flex-col gap-3">
-            <input type="text" id="newCaseName" placeholder="Case Name (e.g. my_case)"
-              class="border border-gray-300 rounded px-3 py-2" aria-label="New Case Name">
-            <button id="createCaseBtn" onclick="createNewCase()"
-              class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2">
+          <form class="flex flex-col gap-3" onsubmit="event.preventDefault(); createNewCase()">
+            <div class="flex flex-col gap-1">
+              <label for="newCaseName" class="text-sm font-medium text-gray-700">
+                Case Name <span class="text-red-500" title="Required">*</span>
+              </label>
+              <input type="text" id="newCaseName" placeholder="e.g. my_case" required
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-shadow">
+            </div>
+            <button type="submit" id="createCaseBtn"
+              class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2">
               Create Case
             </button>
-          </div>
+          </form>
         </div>
 
         <!-- Import Tutorial -->
