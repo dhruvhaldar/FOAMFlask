@@ -386,6 +386,13 @@ const showNotification = (message, type, duration = 5000) => {
     if (!notification)
         return null;
     notification.id = `notification-${id}`;
+    // Set ARIA role for accessibility
+    if (type === "error" || type === "warning") {
+        notification.setAttribute("role", "alert");
+    }
+    else {
+        notification.setAttribute("role", "status");
+    }
     // Set colors
     const colors = {
         success: "bg-green-500 text-white",
