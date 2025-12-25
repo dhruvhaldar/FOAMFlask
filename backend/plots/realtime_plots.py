@@ -67,15 +67,18 @@ class OpenFOAMFieldParser:
                     if entry.is_dir():
                         try:
                             # Check if directory name is a number
-                            float(entry.name)
-                            time_dirs.append(entry.name)
+                            # ⚡ Bolt Optimization: Store float value to avoid redundant conversions during sort
+                            val = float(entry.name)
+                            time_dirs.append((val, entry.name))
                         except ValueError:
                             continue
         except OSError as e:
             logger.error(f"Error listing directories in {self.case_dir}: {e}")
             return []
 
-        sorted_dirs = sorted(time_dirs, key=float)
+        # Sort based on pre-calculated float value
+        time_dirs.sort(key=lambda x: x[0])
+        sorted_dirs = [x[1] for x in time_dirs]
 
         # Update cache
         _TIME_DIRS_CACHE[path_str] = (mtime, sorted_dirs)
