@@ -69,7 +69,8 @@ def is_safe_command(command: str) -> bool:
         return False
     
     # Check for dangerous shell metacharacters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    # Added: \n, \r (newline injection), { } [ ] (brace expansion/globbing)
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '\n', '\r', '{', '}', '[', ']']
     if any(char in command for char in dangerous_chars):
         return False
     
