@@ -109,13 +109,24 @@ interface PlotTrace {
 type CameraView = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 // Utility functions
-const getElement = <T extends HTMLElement>(id: string): T | null => {
+export const getElement = <T extends HTMLElement>(id: string): T | null => {
+  if (typeof document === 'undefined') return null; // Guard for Node env in tests
   return document.getElementById(id) as T | null;
 };
 
-const getErrorMessage = (error: unknown): string => {
+export const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return typeof error === "string" ? error : "Unknown error";
+};
+
+// Exporting helper functions for testing purposes
+export const formatDate = (timestamp: number): string => {
+  return new Date(timestamp).toLocaleString();
+};
+
+export const isSafeCommand = (cmd: string): boolean => {
+  const dangerousPatterns = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%'];
+  return !dangerousPatterns.some(char => cmd.includes(char));
 };
 
 // Clear Console Log

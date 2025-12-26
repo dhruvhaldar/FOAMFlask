@@ -451,6 +451,22 @@ test/
 3. Follow the existing test patterns for consistency
 4. Include docstrings explaining what each test verifies
 
+### Frontend Testing
+
+The frontend is tested using **Vitest** for unit tests and **Playwright** for end-to-end (E2E) tests.
+
+#### Running Frontend Tests
+
+```bash
+# Run unit tests (Vitest)
+npm run test:unit
+
+# Run E2E tests (Playwright)
+npm run test:e2e
+```
+
+**Note:** E2E tests run in a headless browser environment and verify the DOM structure, accessibility, and UI interactions using the local HTML file (`static/html/foamflask_frontend.html`).
+
 ### Test Coverage Commands Reference
 
 ```bash

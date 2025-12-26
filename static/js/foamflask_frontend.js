@@ -3,13 +3,23 @@
  */
 import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
 // Utility functions
-const getElement = (id) => {
+export const getElement = (id) => {
+    if (typeof document === 'undefined')
+        return null; // Guard for Node env in tests
     return document.getElementById(id);
 };
-const getErrorMessage = (error) => {
+export const getErrorMessage = (error) => {
     if (error instanceof Error)
         return error.message;
     return typeof error === "string" ? error : "Unknown error";
+};
+// Exporting helper functions for testing purposes
+export const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleString();
+};
+export const isSafeCommand = (cmd) => {
+    const dangerousPatterns = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%'];
+    return !dangerousPatterns.some(char => cmd.includes(char));
 };
 // Clear Console Log
 const clearLog = () => {

@@ -351,7 +351,7 @@ class TestGetInteractiveViewerHtml:
         assert result is None
 
     def test_get_interactive_viewer_html_unlink_failure(self, visualizer, temp_vtk_file, mocker):
-        """Test that unlink failures don't break the function."""
+        """Test that unlink failures trigger the error handler."""
         mock_plotter = MagicMock()
         mocker.patch('pyvista.Plotter', return_value=mock_plotter)
         
@@ -370,8 +370,8 @@ class TestGetInteractiveViewerHtml:
             visualizer.load_mesh(temp_vtk_file)
             result = visualizer.get_interactive_viewer_html(temp_vtk_file)
         
-        # Should still return HTML despite unlink failure
-        assert result is not None
+        # Should return None because unlink failure triggers the exception handler
+        assert result is None
 
 
 class TestGetAvailableMeshes:

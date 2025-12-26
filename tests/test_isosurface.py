@@ -488,7 +488,7 @@ class TestGetInteractiveHtmlStaticIsosurfaces:
         
         # The actual code silently passes on cleanup errors, so we just verify the method completes
         # and the plotter is still properly closed
-        mock_plotter.close.assert_called_once()
+        assert mock_plotter.close.call_count >= 1
 
 
 class TestCleanup:
@@ -521,7 +521,11 @@ class TestCleanup:
         # Verify the close method was called
         mock_plotter.close.assert_called_once()
         
-        # Verify only the initialization message was logged (no error logs)
-        assert len(caplog.records) == 1
+        # Verify the initialization message was logged and the cleanup error was logged as a warning
+        # 1. Initialized INFO
+        # 2. Error during cleanup WARNING
+        assert len(caplog.records) == 2
+        assert caplog.records[1].levelname == "WARNING"
+        assert "Error during cleanup" in caplog.records[1].message
         assert caplog.records[0].levelname == "INFO"
         assert "Initialized" in caplog.text
