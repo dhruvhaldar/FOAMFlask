@@ -166,6 +166,11 @@
 
 <body class="bg-gray-50 text-gray-800 min-h-screen">
 
+  <!-- Skip to content link -->
+  <a href="#main-content" class="fixed top-2 left-2 z-[100] bg-blue-600 text-white px-4 py-2 rounded shadow-lg transform -translate-y-full focus:translate-y-0 transition-transform duration-200 font-medium border-2 border-white">
+    Skip to main content
+  </a>
+
   <!-- Notification Container -->
   <div id="notificationContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
   </div>
@@ -230,7 +235,7 @@
   </nav>
 
   <!-- Main Content Area -->
-  <div class="px-4 py-2 sm:px-6">
+  <div id="main-content" class="px-4 py-2 sm:px-6 scroll-mt-20">
 
     <!-- Setup Page -->
     <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">

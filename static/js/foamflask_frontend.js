@@ -1260,8 +1260,14 @@ const uploadGeometry = async () => {
     const input = document.getElementById("geometryUpload");
     const btn = document.getElementById("uploadGeometryBtn");
     const file = input?.files?.[0];
-    if (!file || !activeCase)
+    if (!activeCase) {
+        showNotification("Please select a case first", "warning");
         return;
+    }
+    if (!file) {
+        showNotification("Please select a file to upload", "warning");
+        return;
+    }
     // UX: Loading state
     const originalText = btn ? btn.innerHTML : "Upload";
     if (btn) {
@@ -1292,8 +1298,12 @@ const uploadGeometry = async () => {
 };
 const deleteGeometry = async () => {
     const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
+    if (!activeCase)
         return;
+    if (!filename) {
+        showNotification("Please select a geometry to delete", "warning");
+        return;
+    }
     if (!confirm("Delete?"))
         return;
     try {
@@ -1306,8 +1316,12 @@ const deleteGeometry = async () => {
 };
 const loadGeometryView = async () => {
     const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
+    if (!activeCase)
         return;
+    if (!filename) {
+        showNotification("Please select a geometry to view", "warning");
+        return;
+    }
     showNotification("Loading...", "info");
     try {
         const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
@@ -1515,8 +1529,10 @@ const refreshMeshList = async () => {
 const loadMeshVisualization = async () => {
     const path = document.getElementById("meshSelect")?.value;
     const btn = document.getElementById("loadMeshBtn");
-    if (!path)
+    if (!path) {
+        showNotification("Please select a mesh file to load", "warning");
         return;
+    }
     // UX: Loading state
     const originalText = btn ? btn.innerHTML : "Load Mesh";
     if (btn) {
