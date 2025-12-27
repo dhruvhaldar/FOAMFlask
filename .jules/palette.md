@@ -9,3 +9,7 @@
 ## 2025-02-17 - [Disconnected Labels]
 **Learning:** Found a pattern of labels visually positioned near inputs but programmatically disconnected (missing `for` attributes), making forms inaccessible to screen reader users who can't see the visual layout.
 **Action:** Systematically check all `<label>` elements during code review to ensure they have a corresponding `for` attribute matching an input's `id`.
+
+## 2025-02-17 - [Tooltip Accessibility]
+**Learning:** Tooltips implemented with only `hover` states are inaccessible to keyboard users and screen readers. Information hidden in these tooltips is effectively invisible to a segment of users.
+**Action:** Use focusable elements (like `<button>`) for tooltip triggers, ensure `focus` visibility, and link the tooltip text using `aria-describedby` or `role="tooltip"`.
