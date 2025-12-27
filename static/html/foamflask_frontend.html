@@ -301,8 +301,8 @@
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="caseDir" class="w-32 font-medium text-gray-700">Case Root:</label>
             <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" />
-            <button type="button" onclick="setCase()"
-              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+            <button type="button" onclick="setCase(this)"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[100px]">
               Set Root
             </button>
           </div>
@@ -316,8 +316,9 @@
               class="border border-gray-300 rounded px-3 py-2 w-24" aria-label="OpenFOAM Version" />
             <button type="button" onclick="setDockerConfig(
                   document.getElementById('dockerImage').value,
-                  document.getElementById('openfoamVersion').value
-                )" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                  document.getElementById('openfoamVersion').value,
+                  this
+                )" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[90px]">
               Update
             </button>
           </div>
