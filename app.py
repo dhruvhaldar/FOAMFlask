@@ -70,6 +70,9 @@ def is_safe_command(command: str) -> bool:
     
     # Check for dangerous shell metacharacters
     dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    # Add newline characters to prevent command injection
+    dangerous_chars.extend(['\n', '\r'])
+
     if any(char in command for char in dangerous_chars):
         return False
     
@@ -458,6 +461,18 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
 
 
 # --- Routes ---
+@app.after_request
+def set_security_headers(response: Response) -> Response:
+    """
+    Set security headers for all responses.
+    """
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 @app.route("/")
 def index() -> str:
     """Render the index page with available tutorials.
@@ -466,7 +481,8 @@ def index() -> str:
         Rendered HTML template with tutorials and case root.
     """
     tutorials = get_tutorials()
-    options_html = "\n".join(f'<option value="{t}">{t}</option>' for t in tutorials)
+    # Use escape to prevent XSS in option values
+    options_html = "\n".join(f'<option value="{escape(t)}">{escape(t)}</option>' for t in tutorials)
     return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
 
 
