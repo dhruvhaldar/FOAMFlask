@@ -33,6 +33,10 @@ _TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
 # ⚡ Bolt Optimization: Cache accumulated time series data to avoid rebuilding lists
 _TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
 
+# Structure: { "dir_path_str": (mtime, scalar_fields, has_U, all_files) }
+# ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
+_DIR_SCAN_CACHE: Dict[str, Tuple[float, List[str], bool, List[str]]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -126,6 +130,48 @@ class OpenFOAMFieldParser:
             return field_type
         except Exception:
             return None
+
+    def _scan_time_dir(self, time_path: Path) -> Tuple[List[str], bool, List[str]]:
+        """
+        Scan a time directory and categorize fields.
+        Returns: (scalar_fields, has_U, all_files)
+        Cached based on directory mtime.
+        """
+        path_str = str(time_path)
+        try:
+            mtime = time_path.stat().st_mtime
+
+            # ⚡ Bolt Optimization: Check cache first
+            if path_str in _DIR_SCAN_CACHE:
+                cached_mtime, scalar_fields, has_U, all_files = _DIR_SCAN_CACHE[path_str]
+                if cached_mtime == mtime:
+                    return scalar_fields, has_U, all_files
+
+            scalar_fields = []
+            has_U = False
+            all_files = []
+
+            with os.scandir(path_str) as entries:
+                for entry in entries:
+                    if entry.is_file() and not entry.name.startswith("."):
+                        all_files.append(entry.name)
+
+                        field_type = self._get_field_type(entry)
+                        if field_type == "scalar":
+                            scalar_fields.append(entry.name)
+                        elif field_type == "vector" and entry.name == "U":
+                            has_U = True
+
+            # Sort for consistency
+            scalar_fields.sort()
+            all_files.sort()
+
+            _DIR_SCAN_CACHE[path_str] = (mtime, scalar_fields, has_U, all_files)
+            return scalar_fields, has_U, all_files
+
+        except OSError as e:
+            logger.error(f"Error scanning time directory {time_path}: {e}")
+            return [], False, []
 
     def _resolve_variable(self, content: str, var_name: str) -> Optional[str]:
         """
@@ -349,6 +395,8 @@ class OpenFOAMFieldParser:
         
         try:
             # ⚡ Bolt Optimization: Use os.scandir to avoid creating Path objects and redundant stat()
+            # Note: We do NOT use _scan_time_dir here because we need the DirEntry objects
+            # to pass mtime to parse_* methods efficiently.
             with os.scandir(str(time_path)) as entries:
                 for entry in entries:
                     if entry.is_file() and not entry.name.startswith("."):
@@ -428,21 +476,9 @@ class OpenFOAMFieldParser:
         # We assume fields are consistent across time steps.
         # We use the latest time step for discovery.
         latest_time_path = self.case_dir / latest_time
-        scalar_fields = []
-        has_U = False
         
-        try:
-            with os.scandir(str(latest_time_path)) as entries:
-                for entry in entries:
-                    if entry.is_file() and not entry.name.startswith("."):
-                        field_type = self._get_field_type(entry)
-                        if field_type == "scalar":
-                            scalar_fields.append(entry.name)
-                        elif field_type == "vector" and entry.name == "U":
-                            has_U = True
-        except Exception as e:
-            logger.error(f"Error discovering fields: {e}")
-            return {}
+        # ⚡ Bolt Optimization: Use cached scanning for field discovery
+        scalar_fields, has_U, _ = self._scan_time_dir(latest_time_path)
 
         # Initialize cached_data if empty
         if not cached_data:
@@ -610,19 +646,20 @@ class OpenFOAMFieldParser:
                     return residuals
 
                 # Check for complete lines
-                # We need to find the last newline byte (0x0A)
+                # We need a newline at the end of the valid chunk.
+                # However, chunk may not end with newline if write is partial.
+                # We should only process up to the last newline.
                 last_newline = chunk.rfind(b'\n')
 
                 if last_newline == -1:
                     # No complete lines found in the new chunk.
                     # Do not advance offset, do not process partial data.
-                    # This waits for the line to complete in the next poll.
                     pass
                 else:
-                    # Slice valid data up to the last newline (inclusive)
+                    # Slice valid data
                     valid_chunk = chunk[:last_newline+1]
 
-                    # Update offset based on bytes processed
+                    # Update offset
                     new_offset = start_offset + len(valid_chunk)
 
                     # Decode and process lines
@@ -671,14 +708,8 @@ def get_available_fields(case_dir: str) -> List[str]:
     latest_time = time_dirs[-1]
     time_path = Path(case_dir) / latest_time
 
-    fields = []
-    try:
-        with os.scandir(str(time_path)) as entries:
-            for entry in entries:
-                if entry.is_file() and not entry.name.startswith("."):
-                    fields.append(entry.name)
-    except OSError as e:
-        logger.error(f"Error listing fields in {time_path}: {e}")
-        return []
+    # ⚡ Bolt Optimization: Use cached scanning
+    # We ignore the specific types here and just return all relevant files
+    _, _, all_files = parser._scan_time_dir(time_path)
 
-    return sorted(fields)
+    return sorted(all_files)
