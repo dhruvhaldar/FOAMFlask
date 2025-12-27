@@ -507,49 +507,57 @@ class OpenFOAMFieldParser:
 
             new_offset = start_offset
 
-            with log_path.open("r", encoding="utf-8") as f:
+            # ⚡ Bolt Optimization: Use binary mode to bulk read new data.
+            # This avoids expensive readline() loops and repeated tell() syscalls.
+            with log_path.open("rb") as f:
                 if start_offset > 0:
                     f.seek(start_offset)
 
-                # ⚡ Bolt Optimization: Read only new lines
-                # Using readline() loop to ensure correct tell() behavior in text mode
-                while True:
-                    # Record start of line position
-                    pos_before = f.tell()
-                    line = f.readline()
+                # Read all new bytes
+                chunk = f.read()
+                if not chunk:
+                    # No new data
+                    _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
+                    return residuals
 
-                    if not line:
-                        break
+                # Check for complete lines
+                # We need to find the last newline byte (0x0A)
+                last_newline = chunk.rfind(b'\n')
 
-                    # Safety check: If line is partial (no newline) at EOF, don't process it yet.
-                    # Wait for the next flush to complete the line.
-                    if not line.endswith('\n'):
-                        # Do not advance offset past this partial line
-                        new_offset = pos_before
-                        break
+                if last_newline == -1:
+                    # No complete lines found in the new chunk.
+                    # Do not advance offset, do not process partial data.
+                    # This waits for the line to complete in the next poll.
+                    pass
+                else:
+                    # Slice valid data up to the last newline (inclusive)
+                    valid_chunk = chunk[:last_newline+1]
 
-                    # Process complete line
-                    # ⚡ Bolt Optimization: Fast string search before Regex (~1.5x speedup)
-                    # Most lines don't contain "Time =" or "Initial residual", so we skip expensive regex
+                    # Update offset based on bytes processed
+                    new_offset = start_offset + len(valid_chunk)
 
-                    # Optimized time matching
-                    if "Time =" in line:
-                        time_match = TIME_REGEX.search(line)
-                        if time_match:
-                            current_time = float(time_match.group(1))
-                            residuals["time"].append(current_time)
+                    # Decode and process lines
+                    try:
+                        text_content = valid_chunk.decode("utf-8", errors="replace")
 
-                    # Optimized residual matching
-                    if "Initial residual" in line:
-                        residual_match = RESIDUAL_REGEX.search(line)
-                        if residual_match and residuals["time"]:
-                            field = residual_match.group(1)
-                            value = float(residual_match.group(2))
-                            if field in residuals:
-                                residuals[field].append(value)
+                        for line in text_content.splitlines():
+                            # Optimized time matching
+                            if "Time =" in line:
+                                time_match = TIME_REGEX.search(line)
+                                if time_match:
+                                    current_time = float(time_match.group(1))
+                                    residuals["time"].append(current_time)
 
-                    # Update offset to after this successfully processed line
-                    new_offset = f.tell()
+                            # Optimized residual matching
+                            if "Initial residual" in line:
+                                residual_match = RESIDUAL_REGEX.search(line)
+                                if residual_match and residuals["time"]:
+                                    field = residual_match.group(1)
+                                    value = float(residual_match.group(2))
+                                    if field in residuals:
+                                        residuals[field].append(value)
+                    except Exception as decode_error:
+                        logger.error(f"Error decoding log chunk: {decode_error}")
 
             # Update cache
             _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
