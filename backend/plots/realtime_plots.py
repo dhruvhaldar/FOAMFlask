@@ -9,6 +9,7 @@ import logging
 import os
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
+import copy
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
@@ -27,6 +28,10 @@ _FIELD_TYPE_CACHE: Dict[str, Tuple[float, Optional[str]]] = {}
 # Structure: { "case_dir_str": (mtime, list_of_time_dirs) }
 # ⚡ Bolt Optimization: Cache time directories based on case dir mtime
 _TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
+
+# Structure: { "case_dir_str": (list_of_time_dirs, full_data_dict) }
+# ⚡ Bolt Optimization: Cache accumulated time series data to avoid rebuilding lists
+_TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
 
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
@@ -369,19 +374,64 @@ class OpenFOAMFieldParser:
 
     def get_all_time_series_data(self, max_points: int = 100) -> Dict[str, List[float]]:
         """Get time series data for all available fields dynamically."""
-        time_dirs = self.get_time_directories()
-        if not time_dirs:
+        all_time_dirs = self.get_time_directories()
+        if not all_time_dirs:
             return {}
 
-        time_dirs = time_dirs[-max_points:]
+        # ⚡ Bolt Optimization: Use append-only cache for stable history
+        # We cache the full accumulated history (excluding the latest unstable step)
+        # This avoids rebuilding lists and redundant lookups for thousands of past steps.
+        case_path_str = str(self.case_dir)
 
-        # 1. Discover fields from the latest time step
-        latest_time_path = self.case_dir / time_dirs[-1]
+        # We must use deepcopy here to ensure we work on a detached copy.
+        # This prevents polluting the global cache if parsing fails partway,
+        # and ensures thread safety for readers of the global cache.
+        cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
+        if cache_entry:
+            cached_dirs, cached_data = copy.deepcopy(cache_entry)
+        else:
+            cached_dirs, cached_data = [], {}
+
+        # Determine how much of the cache is valid
+        # We need a common prefix match.
+        valid_cache_len = 0
+        min_len = min(len(cached_dirs), len(all_time_dirs))
+
+        # Fast prefix check: if lengths differ but prefix matches
+        if all_time_dirs[:len(cached_dirs)] == cached_dirs:
+            valid_cache_len = len(cached_dirs)
+        else:
+            # Slower element-wise check if there was a divergence (e.g. restart)
+            for i in range(min_len):
+                if cached_dirs[i] == all_time_dirs[i]:
+                    valid_cache_len += 1
+                else:
+                    break
+
+        # If cache is invalid (diverged), reset it
+        if valid_cache_len < len(cached_dirs):
+            cached_dirs = cached_dirs[:valid_cache_len]
+            # Slice all lists in cached_data
+            for k in cached_data:
+                cached_data[k] = cached_data[k][:valid_cache_len]
+
+        # Identify stable steps to process (all except the very last one)
+        # If simulation is done, the last one is stable too, but we treat it as volatile
+        # to simplify logic (it gets re-parsed every time until a newer one appears).
+        if not all_time_dirs:
+            return {}
+
+        latest_time = all_time_dirs[-1]
+        stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
+
+        # If we have new stable directories, we need to discover fields first
+        # We assume fields are consistent across time steps.
+        # We use the latest time step for discovery.
+        latest_time_path = self.case_dir / latest_time
         scalar_fields = []
         has_U = False
         
         try:
-            # ⚡ Bolt Optimization: Use os.scandir for field discovery
             with os.scandir(str(latest_time_path)) as entries:
                 for entry in entries:
                     if entry.is_file() and not entry.name.startswith("."):
@@ -390,71 +440,110 @@ class OpenFOAMFieldParser:
                             scalar_fields.append(entry.name)
                         elif field_type == "vector" and entry.name == "U":
                             has_U = True
-            
         except Exception as e:
             logger.error(f"Error discovering fields: {e}")
             return {}
 
-        # 2. Initialize data structure
-        data: Dict[str, List[float]] = {"time": []}
-        for f in scalar_fields:
-            data[f] = []
-        if has_U:
-            data['Ux'] = []
-            data['Uy'] = []
-            data['Uz'] = []
-            data['U_mag'] = []
-
-        # 3. Iterate time steps and parse
-        latest_time = time_dirs[-1] if time_dirs else None
-
-        for time_dir in time_dirs:
-            time_path = self.case_dir / time_dir
-            time_val = float(time_dir)
-            
-            # ⚡ Bolt Optimization: Only check mtime for the latest time step
-            # Historical time steps are assumed immutable
-            is_latest = (time_dir == latest_time)
-
-            data["time"].append(time_val)
-
-            # Parse scalars
-            for field in scalar_fields:
-                field_path = time_path / field
-                path_str = str(field_path)
-                val = 0.0
-
-                # ⚡ Bolt Optimization: Check cache first to avoid exists() stat call
-                if not is_latest and path_str in _FILE_CACHE:
-                    val = _FILE_CACHE[path_str][1]
-                else:
-                    # ⚡ Bolt Optimization: Skip exists() check, handle missing file in parser
-                    v = self.parse_scalar_field(field_path, check_mtime=is_latest)
-                    if v is not None:
-                        val = v
-                data[field].append(val)
-
-            # Parse U
+        # Initialize cached_data if empty
+        if not cached_data:
+            cached_data = {"time": []}
+            for f in scalar_fields:
+                cached_data[f] = []
             if has_U:
-                u_path = time_path / "U"
-                path_str = str(u_path)
-                ux, uy, uz = 0.0, 0.0, 0.0
+                cached_data['Ux'] = []
+                cached_data['Uy'] = []
+                cached_data['Uz'] = []
+                cached_data['U_mag'] = []
 
-                # ⚡ Bolt Optimization: Check cache first to avoid exists() stat call
-                if not is_latest and path_str in _FILE_CACHE:
-                     val_vec = _FILE_CACHE[path_str][1]
-                     if isinstance(val_vec, tuple) and len(val_vec) == 3:
-                        ux, uy, uz = val_vec
-                else:
-                    # ⚡ Bolt Optimization: Skip exists() check, handle missing file in parser
-                    ux, uy, uz = self.parse_vector_field(u_path, check_mtime=is_latest)
-                
-                data["Ux"].append(ux)
-                data["Uy"].append(uy)
-                data["Uz"].append(uz)
-                data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+        # Process new stable steps and append to cache (working copy)
+        try:
+            for time_dir in stable_dirs_to_process:
+                time_path = self.case_dir / time_dir
+                time_val = float(time_dir)
 
-        return data
+                cached_data["time"].append(time_val)
+
+                # Parse scalars
+                for field in scalar_fields:
+                    # Ensure field exists in cache (handle dynamic field addition)
+                    if field not in cached_data:
+                        cached_data[field] = [0.0] * (len(cached_data["time"]) - 1)
+
+                    field_path = time_path / field
+                    # Skip check_mtime for stable steps (assumed immutable)
+                    val = self.parse_scalar_field(field_path, check_mtime=False)
+                    cached_data[field].append(val if val is not None else 0.0)
+
+                # Parse U
+                if has_U:
+                    u_path = time_path / "U"
+                    ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False)
+
+                    # Ensure vector fields exist in cache
+                    for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
+                        if k not in cached_data:
+                            cached_data[k] = [0.0] * (len(cached_data["time"]) - 1)
+
+                    cached_data["Ux"].append(ux)
+                    cached_data["Uy"].append(uy)
+                    cached_data["Uz"].append(uz)
+                    cached_data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+
+            # Update global cache with new stable state (atomic-ish update)
+            # Note: cached_dirs + stable_dirs_to_process == all_time_dirs[:-1]
+            new_cached_dirs = cached_dirs + stable_dirs_to_process
+            _TIME_SERIES_CACHE[case_path_str] = (new_cached_dirs, cached_data)
+
+        except Exception as e:
+            logger.error(f"Error updating time series cache: {e}")
+            # Do not update global cache, fall back to what we have (or incomplete result)
+            # We continue to at least try to return something useful
+
+        # Construct final result: Cache Slice + Latest Step
+        # We need the last `max_points` points.
+
+        # 1. Start with a copy of the relevant slice from cache
+        # If we need N points, and we have M cached points.
+        # We take M points, add 1 latest point. Total M+1.
+        # If M+1 > N, we slice the last N.
+
+        # Be careful not to mutate cached lists in the result
+        result_data = {}
+        total_available = len(new_cached_dirs) + 1
+        start_idx = max(0, total_available - max_points)
+
+        # Calculate how many points from cache we need
+        # We take everything from start_idx up to end of cache
+        cache_slice_start = max(0, start_idx) # Index in cache
+
+        for k, v in cached_data.items():
+            result_data[k] = v[cache_slice_start:]
+
+        # 2. Process and append the latest (unstable) step
+        time_path = self.case_dir / latest_time
+        time_val = float(latest_time)
+
+        # Ensure latest step keys exist
+        if "time" not in result_data: result_data["time"] = []
+        result_data["time"].append(time_val)
+
+        for field in scalar_fields:
+            if field not in result_data: result_data[field] = []
+
+            field_path = time_path / field
+            # Always check mtime for latest step
+            val = self.parse_scalar_field(field_path, check_mtime=True)
+            result_data[field].append(val if val is not None else 0.0)
+
+        if has_U:
+            u_path = time_path / "U"
+            ux, uy, uz = self.parse_vector_field(u_path, check_mtime=True)
+
+            for k, v in [('Ux', ux), ('Uy', uy), ('Uz', uz), ('U_mag', float(np.sqrt(ux**2 + uy**2 + uz**2)))]:
+                if k not in result_data: result_data[k] = []
+                result_data[k].append(v)
+
+        return result_data
 
     def calculate_pressure_coefficient(
         self, p_field: Optional[float], p_inf: float = 101325, rho: float = 1.225, u_inf: float = 1.0
