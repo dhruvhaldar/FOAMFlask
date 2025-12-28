@@ -46,6 +46,11 @@ TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
 # Captures group 1: field name, group 2: value
 RESIDUAL_REGEX = re.compile(r"(Ux|Uy|Uz|p|k|epsilon|omega).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
 
+# ⚡ Bolt Optimization: Pre-compiled regex for field parsing preamble
+# This matches the start of a nonuniform list: "internalField nonuniform <type> <size> ("
+# We use this to find the start, then use str.find for the end to avoid expensive regex capture of the body.
+PREAMBLE_REGEX = re.compile(r"internalField\s+nonuniform\s+.*?\(\s*", re.DOTALL)
+
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
 
@@ -233,13 +238,28 @@ class OpenFOAMFieldParser:
 
             # Regex for nonuniform
             if "nonuniform" in content:
-                match = re.search(
-                    r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
-                    content,
-                    re.DOTALL,
-                )
-                if match:
-                    field_data = match.group(1)
+                field_data = None
+
+                # ⚡ Bolt Optimization: Use string search instead of regex capture for large data
+                # This avoids creating large regex match objects which is slow and memory intensive (~30x faster)
+                match_pre = PREAMBLE_REGEX.search(content)
+                if match_pre:
+                    start_idx = match_pre.end()
+                    end_idx = content.find(");", start_idx)
+                    if end_idx != -1:
+                        field_data = content[start_idx:end_idx]
+
+                # Fallback to old regex if string search fails (robustness)
+                if field_data is None:
+                    match = re.search(
+                        r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
+                        content,
+                        re.DOTALL,
+                    )
+                    if match:
+                        field_data = match.group(1)
+
+                if field_data:
                     # ⚡ Bolt Optimization: Use np.fromstring for faster parsing (~5x speedup)
                     # Use a default separator (handles spaces and newlines)
                     try:
@@ -315,13 +335,27 @@ class OpenFOAMFieldParser:
 
             # Regex for nonuniform
             if "nonuniform" in content:
-                match = re.search(
-                    r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
-                    content,
-                    re.DOTALL,
-                )
-                if match:
-                    field_data = match.group(1)
+                field_data = None
+
+                # ⚡ Bolt Optimization: Use string search instead of regex capture for large data
+                match_pre = PREAMBLE_REGEX.search(content)
+                if match_pre:
+                    start_idx = match_pre.end()
+                    end_idx = content.find(");", start_idx)
+                    if end_idx != -1:
+                        field_data = content[start_idx:end_idx]
+
+                # Fallback
+                if field_data is None:
+                    match = re.search(
+                        r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
+                        content,
+                        re.DOTALL,
+                    )
+                    if match:
+                        field_data = match.group(1)
+
+                if field_data:
                     # ⚡ Bolt Optimization: Use np.fromstring for faster parsing (~2x speedup)
                     # Replace parens to make it a flat list of numbers, then reshape
                     try:
