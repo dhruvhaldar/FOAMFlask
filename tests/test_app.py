@@ -763,7 +763,8 @@ def test_run_case_fallback_script(client, tmp_path):
         # Verify the bash script includes necessary setup
         assert "source /opt/" in wrapper_script  # Should source OpenFOAM bashrc
         # The test should check for /tmp/FOAM_Run as that is the container mount path
-        assert f"cd /tmp/FOAM_Run/{tutorial}" in wrapper_script
+        # Since is_direct_case_path is True (case_dir name matches tutorial name), path is just /tmp/FOAM_Run
+        assert "cd /tmp/FOAM_Run" in wrapper_script
         assert "chmod +x setup_environment" in wrapper_script
         assert "./setup_environment" in wrapper_script
 

@@ -627,7 +627,12 @@ def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
         if not case_name:
              return jsonify({"success": False, "message": "No case name or directory specified"}), 400
 
-        case_dir = str(Path(CASE_ROOT) / case_name)
+        try:
+            # Security: Validate path is within CASE_ROOT
+            case_dir_path = validate_safe_path(CASE_ROOT, case_name)
+            case_dir = str(case_dir_path)
+        except ValueError as e:
+            return jsonify({"success": False, "message": str(e)}), 400
 
     result = GeometryManager.upload_stl(case_dir, file, file.filename)
     if result["success"]:
@@ -642,7 +647,13 @@ def api_list_geometry() -> Union[Response, Tuple[Response, int]]:
     if not case_name:
          return jsonify({"success": False, "message": "No case name specified"}), 400
 
-    case_dir = str(Path(CASE_ROOT) / case_name)
+    try:
+        # Security: Validate path is within CASE_ROOT
+        case_dir_path = validate_safe_path(CASE_ROOT, case_name)
+        case_dir = str(case_dir_path)
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
     result = GeometryManager.list_stls(case_dir)
 
     if result["success"]:
@@ -660,7 +671,13 @@ def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
     if not case_name or not filename:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-    case_dir = str(Path(CASE_ROOT) / case_name)
+    try:
+        # Security: Validate path is within CASE_ROOT
+        case_dir_path = validate_safe_path(CASE_ROOT, case_name)
+        case_dir = str(case_dir_path)
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
     result = GeometryManager.delete_stl(case_dir, filename)
 
     if result["success"]:
@@ -745,7 +762,12 @@ def api_meshing_blockmesh_config() -> Union[Response, Tuple[Response, int]]:
     if not case_name:
          return jsonify({"success": False, "message": "No case name specified"}), 400
 
-    case_path = Path(CASE_ROOT) / case_name
+    try:
+        # Security: Validate path is within CASE_ROOT
+        case_path = validate_safe_path(CASE_ROOT, case_name)
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
     result = MeshingRunner.configure_blockmesh(case_path, config)
 
     if result["success"]:
@@ -763,7 +785,12 @@ def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
     if not case_name:
          return jsonify({"success": False, "message": "No case name specified"}), 400
 
-    case_path = Path(CASE_ROOT) / case_name
+    try:
+        # Security: Validate path is within CASE_ROOT
+        case_path = validate_safe_path(CASE_ROOT, case_name)
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
     result = MeshingRunner.configure_snappyhexmesh(case_path, config)
 
     if result["success"]:
@@ -784,7 +811,12 @@ def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
     if command not in ["blockMesh", "snappyHexMesh"]:
         return jsonify({"success": False, "message": "Invalid command"}), 400
 
-    case_path = Path(CASE_ROOT) / case_name
+    try:
+        # Security: Validate path is within CASE_ROOT
+        case_path = validate_safe_path(CASE_ROOT, case_name)
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
     client = get_docker_client()
     user_config = get_docker_user_config()
 
