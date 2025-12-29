@@ -123,6 +123,7 @@ const clearLog = (): void => {
   const outputDiv = document.getElementById("output");
   if (outputDiv) {
     outputDiv.innerHTML = "";
+    cachedLogHTML = ""; // ⚡ Bolt Optimization: clear cache
     try {
       localStorage.removeItem(CONSOLE_LOG_KEY);
     } catch (e) {
@@ -232,12 +233,14 @@ const outputBuffer: { message: string; type: string }[] = [];
 let outputFlushTimer: ReturnType<typeof setTimeout> | null = null;
 let saveLogTimer: ReturnType<typeof setTimeout> | null = null;
 
+// ⚡ Bolt Optimization: maintain off-DOM cache to avoid expensive innerHTML access
+let cachedLogHTML: string = "";
+
 // Save log to local storage (Debounced)
 const saveLogToStorage = (): void => {
-  const container = document.getElementById("output");
-  if (!container) return;
   try {
-    localStorage.setItem(CONSOLE_LOG_KEY, container.innerHTML);
+    // ⚡ Bolt Optimization: Write from string variable instead of reading DOM
+    localStorage.setItem(CONSOLE_LOG_KEY, cachedLogHTML);
   } catch (e) {
     console.warn("Failed to save console log to local storage (likely quota exceeded).");
   }
@@ -671,6 +674,8 @@ const flushOutputBuffer = (): void => {
   const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 50;
 
   const fragment = document.createDocumentFragment();
+  let newHtmlChunks = ""; // ⚡ Bolt Optimization: Accumulate HTML for cache
+
   outputBuffer.forEach(({ message, type }) => {
     const line = document.createElement("div");
     if (type === "stderr") line.className = "text-red-600";
@@ -680,9 +685,13 @@ const flushOutputBuffer = (): void => {
     else line.className = "text-green-700";
     line.textContent = message;
     fragment.appendChild(line);
+
+    // ⚡ Bolt Optimization: Use outerHTML to match exact DOM structure
+    newHtmlChunks += line.outerHTML;
   });
 
   container.appendChild(fragment);
+  cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
 
   // Only force scroll if user was already at the bottom
   if (isAtBottom) {
@@ -2150,6 +2159,7 @@ window.onload = async () => {
     const savedLog = localStorage.getItem(CONSOLE_LOG_KEY);
     if (savedLog) {
       outputDiv.innerHTML = savedLog;
+      cachedLogHTML = savedLog; // ⚡ Bolt Optimization: Restore cache
       outputDiv.scrollTop = outputDiv.scrollHeight;
     }
   }
