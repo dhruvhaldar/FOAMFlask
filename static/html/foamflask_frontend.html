@@ -166,6 +166,11 @@
 
 <body class="bg-gray-50 text-gray-800 min-h-screen">
 
+  <!-- Skip to content link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+    Skip to main content
+  </a>
+
   <!-- Notification Container -->
   <div id="notificationContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
   </div>
@@ -173,13 +178,15 @@
   <template id="notification-template">
     <div class="notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative">
       <div class="relative z-10">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <!-- Close Button -->
-            <button class="close-btn text-white/80 hover:text-white font-bold text-lg leading-none mr-1" aria-label="Close notification">×</button>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
             <span class="text-2xl font-bold icon-slot"></span>
-            <span class="text-lg font-medium message-slot"></span>
+            <span class="text-sm font-medium message-slot leading-tight py-1"></span>
           </div>
+          <!-- Close Button -->
+          <button class="close-btn text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10" aria-label="Close notification">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
         </div>
       </div>
       <!-- Progress Bar -->
@@ -230,7 +237,7 @@
   </nav>
 
   <!-- Main Content Area -->
-  <div class="px-4 py-2 sm:px-6">
+  <div id="main-content" class="px-4 py-2 sm:px-6 outline-none" tabindex="-1">
 
     <!-- Setup Page -->
     <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
