@@ -1,6 +1,7 @@
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.1
 aiosignal==1.4.0
+<<<<<<< HEAD
 altair==6.0.0
 asttokens==3.0.1
 attrs==25.4.0
@@ -9,11 +10,16 @@ black==25.11.0
 bleach==6.3.0
 blinker==1.9.0
 bokeh==3.6.3
+=======
+attrs==25.4.0
+blinker==1.9.0
+>>>>>>> origin/dev_trame
 certifi==2025.10.5
 cftime==1.6.5
 charset-normalizer==3.4.4
 click==8.2.1
 colorama==0.4.6
+<<<<<<< HEAD
 comm==0.2.3
 contourpy==1.3.3
 coverage==7.12.0
@@ -47,11 +53,28 @@ MarkupSafe==3.0.2
 matplotlib==3.10.7
 matplotlib-inline==0.2.1
 mdit-py-plugins==0.5.0
+=======
+contourpy==1.3.3
+cycler==0.12.1
+docker==7.1.0
+Flask==3.1.2
+fonttools==4.60.1
+frozenlist==1.8.0
+h5py==3.15.1
+idna==3.11
+itsdangerous==2.2.0
+Jinja2==3.1.6
+kiwisolver==1.4.9
+markdown-it-py==4.0.0
+MarkupSafe==3.0.2
+matplotlib==3.10.7
+>>>>>>> origin/dev_trame
 mdurl==0.1.2
 meshio==5.3.5
 more-itertools==10.8.0
 msgpack==1.1.2
 multidict==6.7.0
+<<<<<<< HEAD
 mypy_extensions==1.1.0
 nest-asyncio==1.6.0
 netCDF4==1.7.3
@@ -99,6 +122,22 @@ tornado==6.5.2
 tqdm==4.67.1
 traitlets==5.14.3
 traittypes==0.2.3
+=======
+netCDF4==1.7.3
+numpy==2.3.4
+packaging==25.0
+pillow==12.0.0
+propcache==0.4.1
+Pygments==2.19.2
+pyparsing==3.2.5
+python-dateutil==2.9.0.post0
+python_minifier==3.1.0
+pywin32==311
+PyYAML==6.0.3
+requests==2.32.5
+rich==14.2.0
+six==1.17.0
+>>>>>>> origin/dev_trame
 trame==3.12.0
 trame-client==3.11.2
 trame-common==1.0.1
@@ -107,6 +146,7 @@ trame-server==3.7.0
 trame-vtk==2.10.0
 trame-vtklocal==0.15.2
 trame-vuetify==3.1.0
+<<<<<<< HEAD
 typing_extensions==4.15.0
 tzdata==2025.2
 uc-micro-py==1.0.3
@@ -118,4 +158,10 @@ Werkzeug==3.1.4
 widgetsnbextension==4.0.15
 wslink==2.5.0
 xyzservices==2025.10.0
+=======
+urllib3==2.5.0
+vtk==9.5.2
+Werkzeug==3.1.3
+wslink==2.5.0
+>>>>>>> origin/dev_trame
 yarl==1.22.0

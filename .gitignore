@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Python
 __pycache__/
 *.pyc
@@ -16,3 +17,8 @@ case_config.json
 app.log
 environments/
 .coverage
+=======
+/run_folder
+app.log
+__pycache__/*
+>>>>>>> origin/dev_trame

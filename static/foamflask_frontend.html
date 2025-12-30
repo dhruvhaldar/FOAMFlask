@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FOAMFlask</title>
+
+  <!-- Resource hints for better performance -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.plot.ly">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Computer+Modern+Serif&display=swap" rel="stylesheet">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+  <link rel="dns-prefetch" href="https://cdn.plot.ly">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            clifford: '#da373d',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Performance optimizations for plots -->
+  <style>
+    /* Optimize plot containers for smooth scrolling */
+    #plotsContainer, #aeroContainer {
+      contain: layout style paint;
+      will-change: auto;
+      content-visibility: auto;
+    }
+
+    #pressure-plot, #velocity-plot, #turbulence-plot, #residuals-plot,
+    #cp-plot, #velocity-profile-plot {
+      contain: layout style paint;
+      /* transform: translateZ(0);
+      backface-visibility: hidden; */
+      content-visibility: auto;
+    }
+
+    /* Reduce repaints during scroll */
+    .js-plotly-plot {
+      will-change: auto;
+    }
+
+    /* Optimize output container */
+    #output {
+      contain: strict;
+      content-visibility: auto;
+    }
+
+    /* Reduce layout thrashing */
+    .grid {
+      contain: layout style;
+    }
+
+  </style>
+
+  <style>
+    /* Modebar container styles */
+    .modebar-container {
+      position: absolute;
+      top: 355px !important;
+      right: 550px !important;
+      z-index: 1001;
+    }
+
+    /* Modebar styles */
+    .modebar {
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      transform: scale(1.5);
+      transform-origin: bottom left;
+      pointer-events: none;
+      border: none;
+      position: relative;
+    }
+
+    /* Show modebar on plot hover */
+    .plot-container:hover .modebar,
+    .js-plotly-plot:hover .modebar,
+    .plotly-graph-div:hover .modebar,
+    .plot-container:hover .modebar-container .modebar,
+    .js-plotly-plot:hover .modebar-container .modebar,
+    .plotly-graph-div:hover .modebar-container .modebar {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 1000;
+    }
+
+    /* Notification styles */
+    .notification {
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    /* Page transition */
+    .page {
+      animation: fadeInPage 0.3s ease-in;
+    }
+
+    @keyframes fadeInPage {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- Notification Container -->
+  <div id="notificationContainer" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+  </div>
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
+        </div>
+        <div class="flex space-x-1">
+          <button onclick="switchPage('setup')" id="nav-setup" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
+            Setup
+          </button>
+          <button onclick="switchPage('run')" id="nav-run" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Run
+          </button>
+          <button onclick="switchPage('mesh')" id="nav-mesh" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Mesh
+          </button>
+          <button onclick="switchPage('plots')" id="nav-plots" class="px-4 py-2 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            Plots
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="p-4 sm:p-6">
+
+  <!-- Setup Page -->
+  <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+
+    <!-- Case Directory -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+      <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1 w-full sm:w-auto" />
+      <button type="button" onclick="setCase()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full sm:w-auto">
+        Set Case Dir
+      </button>
+    </div>
+
+    <!-- Docker Config (collapsible) -->
+    <details class="border border-gray-300 rounded p-3">
+      <summary class="cursor-pointer font-semibold text-gray-700">
+        Docker Config (click to expand)
+      </summary>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+        <input type="text" id="dockerImage" name="dockerImage"
+          placeholder="Docker image (e.g. haldardhruv/ubuntu_noble_openfoam:v12)"
+          class="border border-gray-300 rounded px-3 py-2 flex-1 w-full sm:w-auto" />
+        <input type="text" id="openfoamVersion" name="openfoamVersion"
+          placeholder="OpenFOAM version (e.g. 12)"
+          class="border border-gray-300 rounded px-3 py-2 w-full sm:w-32" />
+        <button type="button" onclick="setDockerConfig(
+          document.getElementById('dockerImage').value,
+          document.getElementById('openfoamVersion').value
+        )" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded w-full sm:w-auto">
+          Set Docker Config
+        </button>
+      </div>
+    </details>
+
+    <!-- Tutorial Selection -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+      <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 w-full sm:w-auto sm:max-w-xs">
+        {{ options|safe }}
+      </select>
+      <button onclick="loadTutorial()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full sm:w-auto">
+        Load Tutorial
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Run Page -->
+  <div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+
+    <!-- Run Commands Section -->
+    <div class="my-4">
+      <h3 class="text-xl font-semibold mb-2">Run OpenFOAM Commands</h3>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button onclick="runCommand('./Allrun')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          Allrun
+        </button>
+        <button onclick="runCommand('blockMesh')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          blockMesh
+        </button>
+        <button onclick="runCommand('simpleFoam')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          simpleFoam
+        </button>
+        <button onclick="runCommand('pimpleFoam')" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded w-full sm:flex-1">
+          pimpleFoam
+        </button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="flex flex-col">
+      <h2 class="text-xl font-semibold mb-2">Output</h2>
+      <div id="output" class="bg-gray-100 border border-gray-300 rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono"></div>
+    </div>
+
+  </div>
+
+  <!-- Mesh Page -->
+  <div id="page-mesh" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex flex-col h-full">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Mesh Visualization</h2>
+        <div class="flex space-x-2">
+          <button id="resetCameraBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Reset Camera
+          </button>
+          <button id="isometricViewBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Isometric View
+          </button>
+        </div>
+      </div>
+      <div id="mesh-viewer" class="border-2 border-gray-300 rounded-lg overflow-hidden" style="display: flex; flex-direction: column; position: relative; height: 100%; min-height: 70vh;">
+        <iframe id="trame-iframe" class="absolute top-0 left-0 w-full h-full" frameborder="0" style="display: none;"></iframe>
+        <div id="mesh-placeholder" class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
+          <div class="text-gray-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-700 mb-2">No Mesh Loaded</h3>
+          <p class="text-gray-500 mb-4">Select a tutorial case to view the mesh</p>
+          <button id="loadMeshBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Load Mesh from Current Case
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plots Page -->
+  <div id="page-plots" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Realtime Plots</h2>
+      <div class="flex gap-2">
+        <button onclick="toggleAeroPlots()" id="toggleAeroBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
+          Show Aero Plots
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Plots Container -->
+    <div id="plotsContainer" class="w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 w-full">
+
+        <!-- Pressure Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="pressure-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button
+            onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Pressure Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+
+        <!-- Velocity Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="velocity-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button
+            onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Velocity Data as separate CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+
+        <!-- Turbulence Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="turbulence-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button
+            onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Turbulence Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+
+        <!-- Residuals Plot -->
+        <div class="w-full overflow-hidden relative group">
+          <div id="residuals-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300" style="min-height: 300px;"></div>
+          <button
+            onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
+            class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            title="Download Residuals Data as CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aerodynamic Plots Container (optional) -->
+    <div id="aeroContainer" class="hidden mt-4 w-full">
+      <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div class="w-full overflow-hidden">
+          <div id="cp-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        </div>
+        <div class="w-full overflow-hidden">
+          <div id="velocity-profile-plot" class="w-full bg-gray-50 p-2 rounded-lg shadow border-2 border-gray-300"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  <!-- End Main Content Area -->
+
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script>
+  // Initialize after both DOM and Plotly are loaded
+  document.addEventListener("DOMContentLoaded", function() {
+    // Check if Plotly is loaded
+    if (typeof Plotly === 'undefined') {
+      console.error('Plotly.js not loaded!');
+      return;
+    }
+
+    // Initialize modebar styling
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.modebar').forEach(bar => {
+        bar.style.backgroundColor = 'transparent';
+        bar.style.boxShadow = 'none';
+      });
+    });
+
+    // Observe the document for Plotly plot creation
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Initialize plots if we're on the plots page
+    if (document.getElementById('page-plots') && !document.getElementById('page-plots').classList.contains('hidden')) {
+      if (typeof startPlotUpdates === 'function') {
+        startPlotUpdates();
+      }
+    }
+  });
+  </script>
+
+  <!-- JS - defer loading -->
+  <script src="{{ url_for('static', filename='js/foamflask_frontend.js') }}" defer></script>
+
+</body>
+</html>

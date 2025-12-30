@@ -22,9 +22,10 @@ from typing import Dict, List, Optional, Tuple, Union, Generator
 import docker
 from docker import DockerClient
 from docker.errors import DockerException
-from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
+from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory, redirect
 from markupsafe import escape
 from werkzeug.utils import secure_filename
+import nest_asyncio
 
 # Local application imports
 from backend.mesh.mesher import mesh_visualizer
@@ -35,9 +36,16 @@ from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
 from backend.geometry.visualizer import GeometryVisualizer
 from backend.meshing.runner import MeshingRunner
+from trame_visualization import create_trame_app
+
+# Allow nested event loops (needed for running TRAME in a thread)
+nest_asyncio.apply()
 
 # Initialize Flask application
 app = Flask(__name__)
+
+# Initialize Trame server
+trame_server, trame_layout = create_trame_app()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -1798,6 +1806,39 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
         except Exception as e:
             logger.error(f"Error cleaning up file {filepath}: {e}")
 
+# Mesh visualization endpoints
+@app.route("/mesh/<path:filename>")
+def serve_mesh_file(filename):
+    """Serve mesh files from the case directory."""
+    tutorial = request.args.get('tutorial')
+    if not tutorial:
+        return "Tutorial not specified", 400
+
+    case_dir = os.path.join(CASE_ROOT, tutorial)
+    return send_from_directory(case_dir, filename)
+
+# Trame visualization endpoint
+@app.route("/trame")
+def trame_viewer():
+    """Trame-powered mesh viewer. Redirect iframe to active Trame instance"""
+    time.sleep(1)
+    return redirect("http://localhost:12345/index.html")
+
+def start_trame():
+    """Start Trame server in background with its own event loop"""
+    import asyncio
+
+    # Create a new event loop for this thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        # Run the server in the new event loop
+        trame_server.start(port=12345, open_browser=False, thread=True)
+    except Exception as e:
+        logger.error(f"[TRAME] Error starting server: {e}")
+    finally:
+        loop.close()
 
 def main() -> None:
     global CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
@@ -1813,6 +1854,9 @@ def main() -> None:
     # We check if we are in the reloader or not to avoid running twice if possible
     # but re-running is safe.
     threading.Thread(target=run_startup_check, daemon=True).start()
+
+    # Start TRAME in background
+    threading.Thread(target=start_trame, daemon=True, name="TrameServer").start()
 
     host = os.environ.get("FLASK_HOST", "0.0.0.0") # nosec B104
     port = 5000
