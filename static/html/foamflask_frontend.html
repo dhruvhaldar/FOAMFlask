@@ -650,8 +650,18 @@
 
       <!-- Meshing Output -->
       <div class="mt-6">
-        <h3 class="text-sm font-semibold mb-1">Meshing Output</h3>
-        <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto">
+        <div class="flex justify-between items-center mb-1">
+          <h3 class="text-sm font-semibold">Meshing Output</h3>
+          <button onclick="copyMeshingOutput()"
+            class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none focus:underline"
+            aria-label="Copy meshing output">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto" tabindex="0" role="log" aria-label="Meshing Output Log">
           Ready...
         </div>
       </div>
@@ -723,7 +733,7 @@
           </div>
         </div>
         <div id="output"
-          class="bg-gray-100 border border-gray-300 rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono"></div>
+          class="bg-gray-100 border border-gray-300 rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0" role="log" aria-label="Console Output Log"></div>
       </div>
 
     </div>
