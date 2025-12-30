@@ -16,3 +16,5 @@ case_config.json
 app.log
 environments/
 .coverage
+playwright-report/
+test-results/

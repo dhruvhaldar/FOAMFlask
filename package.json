@@ -5,12 +5,22 @@
     "build": "tsc",
     "postbuild": "node copy-built-js.mjs",
     "build:watch": "tsc -w",
-    "docs": "typedoc static/ts/*.ts static/ts/**/*.ts --out docs/frontend --excludePrivate --excludeInternal --readme none"
+    "docs": "typedoc static/ts/*.ts static/ts/**/*.ts --out docs/frontend --excludePrivate --excludeInternal --readme none",
+    "test": "vitest run && playwright test",
+    "test:unit": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.3",
     "@types/plotly.js": "^3.0.8",
+    "jsdom": "^27.4.0",
+    "plotly.js": "^3.3.1",
     "typedoc": "^0.28.14",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.16"
   }
 }
