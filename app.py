@@ -900,6 +900,12 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
+    # Security: Validate against known tutorials to prevent command injection
+    valid_tutorials = get_tutorials()
+    if tutorial not in valid_tutorials:
+        logger.warning(f"Security: Invalid tutorial requested: {tutorial}")
+        return jsonify({"output": "[FOAMFlask] [Error] Invalid tutorial selected"}), 400
+
     client = get_docker_client()
     if client is None:
         return docker_unavailable_response()
