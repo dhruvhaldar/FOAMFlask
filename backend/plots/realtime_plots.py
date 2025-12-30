@@ -118,6 +118,14 @@ class OpenFOAMFieldParser:
 
             if path_str in _FIELD_TYPE_CACHE:
                 cached_mtime, cached_type = _FIELD_TYPE_CACHE[path_str]
+                # ⚡ Bolt Optimization: If type was previously identified, trust it.
+                # Field types (scalar/vector) are invariant for a given filename in OpenFOAM.
+                # Even if mtime changes (file update), the type remains the same.
+                # This eliminates thousands of open/read syscalls during simulation polling.
+                if cached_type is not None:
+                    return cached_type
+
+                # If it was None (unidentified), retry if mtime changed.
                 if cached_mtime == mtime:
                     return cached_type
 
