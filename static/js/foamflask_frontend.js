@@ -106,6 +106,7 @@ let isFirstPlotLoad = true;
 // Request management
 let abortControllers = new Map();
 let requestCache = new Map();
+let etagCache = new Map(); // ⚡ Bolt Optimization: ETag support
 const CACHE_DURATION = 1000;
 const outputBuffer = [];
 let outputFlushTimer = null;
@@ -481,6 +482,39 @@ const fetchWithCache = async (url, options = {}) => {
         const data = await response.json();
         requestCache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
+    }
+    finally {
+        abortControllers.delete(url);
+    }
+};
+// ⚡ Bolt Optimization: Conditional Fetch with ETag support
+// Returns null if content matches ETag (304 Not Modified)
+const fetchWithETag = async (url, options = {}) => {
+    const headers = new Headers(options.headers || {});
+    const cachedEtag = etagCache.get(url);
+    if (cachedEtag) {
+        headers.set("If-None-Match", cachedEtag);
+    }
+    if (abortControllers.has(url))
+        abortControllers.get(url)?.abort();
+    const controller = new AbortController();
+    abortControllers.set(url, controller);
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            signal: controller.signal,
+        });
+        if (response.status === 304) {
+            return null; // Not Modified
+        }
+        if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+        const newEtag = response.headers.get("ETag");
+        if (newEtag) {
+            etagCache.set(url, newEtag);
+        }
+        return await response.json();
     }
     finally {
         abortControllers.delete(url);
@@ -884,7 +918,10 @@ const stopPlotUpdates = () => {
 };
 const updateResidualsPlot = async (tutorial) => {
     try {
-        const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+        // ⚡ Bolt Optimization: Use ETag to skip updates if data unchanged
+        const data = await fetchWithETag(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+        if (!data)
+            return; // 304 Not Modified
         if (data.error || !data.time || data.time.length === 0) {
             return;
         }
@@ -1041,7 +1078,18 @@ const updatePlots = async () => {
         return;
     isUpdatingPlots = true;
     try {
-        const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        // ⚡ Bolt Optimization: Use ETag to skip updates if data unchanged
+        const data = await fetchWithETag(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        if (!data) {
+            // 304 Not Modified - still try to update residuals as they might have changed
+            // But wait, updateResidualsPlot has its own ETag check now.
+            // However, we still need to invoke it.
+            const updatePromises = [updateResidualsPlot(selectedTutorial)];
+            if (aeroVisible)
+                updatePromises.push(updateAeroPlots());
+            await Promise.allSettled(updatePromises);
+            return;
+        }
         if (data.error) {
             console.error("FOAMFlask Error fetching plot data", data.error);
             showNotification("Error fetching plot data", "error");

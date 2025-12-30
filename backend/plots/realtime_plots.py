@@ -100,6 +100,35 @@ class OpenFOAMFieldParser:
 
         return sorted_dirs
 
+    def get_plot_data_version(self) -> str:
+        """Get a version string for plot data based on file mtimes."""
+        try:
+            # 1. Case directory mtime (captures new time steps)
+            case_stat = self.case_dir.stat()
+            case_mtime = case_stat.st_mtime
+
+            # 2. Latest time step mtime (captures data updates in running simulation)
+            # Use cached time_dirs if available
+            time_dirs = self.get_time_directories()
+            if not time_dirs:
+                return f"{case_mtime}"
+
+            latest = time_dirs[-1]
+            latest_path = self.case_dir / latest
+            latest_mtime = latest_path.stat().st_mtime
+
+            return f"{case_mtime}-{latest}-{latest_mtime}"
+        except OSError:
+            return ""
+
+    def get_residuals_version(self, log_file: str = "log.foamRun") -> str:
+        """Get a version string for residuals based on log file mtime and size."""
+        try:
+            stat = (self.case_dir / log_file).stat()
+            return f"{stat.st_mtime}-{stat.st_size}"
+        except OSError:
+            return "0-0"
+
     def _get_field_type(self, field_entry: Union[Path, os.DirEntry]) -> Optional[str]:
         """
         Determine if a file is a volScalarField or volVectorField by reading the header.
@@ -245,7 +274,8 @@ class OpenFOAMFieldParser:
                 # This is ~3x faster for large fields and reduces memory pressure significantly.
                 with field_path.open("rb") as f:
                     # mmap can fail for empty files or if file is too small
-                    if f.fileno() != -1 and field_path.stat().st_size > 0:
+                    # ⚡ Bolt Optimization: Use os.fstat(fd) instead of path.stat() to save a syscall
+                    if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                          with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                             # 1. Check for nonuniform list
                             # Look for "internalField nonuniform"
@@ -373,7 +403,8 @@ class OpenFOAMFieldParser:
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files
                 with field_path.open("rb") as f:
-                    if f.fileno() != -1 and field_path.stat().st_size > 0:
+                    # ⚡ Bolt Optimization: Use os.fstat(fd) instead of path.stat()
+                    if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                             # 1. Check for nonuniform
                             idx = mm.find(b"internalField")

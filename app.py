@@ -1210,8 +1210,18 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
 
     try:
         parser = OpenFOAMFieldParser(str(case_dir))
+
+        # ⚡ Bolt Optimization: Conditional GET with ETag
+        version = parser.get_plot_data_version()
+        etag = f'"{version}"'
+
+        if request.headers.get("If-None-Match") == etag:
+            return Response(status=304)
+
         data = parser.get_all_time_series_data(max_points=100)
-        return jsonify(data)
+        response = jsonify(data)
+        response.headers["ETag"] = etag
+        return response
     except Exception as e:
         logger.error(f"Error getting plot data: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -1278,8 +1288,18 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
 
     try:
         parser = OpenFOAMFieldParser(str(case_dir))
+
+        # ⚡ Bolt Optimization: Conditional GET with ETag
+        version = parser.get_residuals_version()
+        etag = f'"{version}"'
+
+        if request.headers.get("If-None-Match") == etag:
+            return Response(status=304)
+
         residuals = parser.get_residuals_from_log()
-        return jsonify(residuals)
+        response = jsonify(residuals)
+        response.headers["ETag"] = etag
+        return response
     except Exception as e:
         logger.error(f"Error getting residuals: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
