@@ -14,7 +14,7 @@ export default defineConfig({
   use: {
     actionTimeout: 0,
     trace: 'on-first-retry',
-    baseURL: 'http://localhost:8000', // Assuming the server runs here
+    baseURL: 'http://localhost:5000', // Assuming the server runs here
   },
   projects: [
     {

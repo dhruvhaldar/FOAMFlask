@@ -627,7 +627,8 @@ def test_run_case(client, tmp_path):
 
     # Test 3: Unsafe command
     with patch('app.is_safe_command', return_value=False), \
-         patch('app.get_docker_client', return_value=MagicMock()):
+         patch('app.get_docker_client', return_value=MagicMock()), \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         response = client.post('/run', json={
             "tutorial": tutorial,
             "caseDir": case_dir,
@@ -638,7 +639,8 @@ def test_run_case(client, tmp_path):
 
     # Test 4: OpenFOAM command (success case)
     with patch('app.get_docker_client') as mock_docker, \
-         patch('app.threading.Thread') as mock_thread:
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         # Setup mock Docker client
         mock_client = MagicMock()
         mock_container = MagicMock()
@@ -659,7 +661,8 @@ def test_run_case(client, tmp_path):
     # Test 5: Script execution
     with patch('app.get_docker_client') as mock_docker, \
          patch('app.is_safe_script_name', return_value=True), \
-         patch('app.threading.Thread') as mock_thread:
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         # Setup mock Docker client
         mock_client = MagicMock()
         mock_container = MagicMock()
@@ -677,7 +680,8 @@ def test_run_case(client, tmp_path):
         assert b"Script output" in response.data
 
     # Test 6: Docker not available
-    with patch('app.get_docker_client', return_value=None):
+    with patch('app.get_docker_client', return_value=None), \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         response = client.post('/run', json={
             "tutorial": tutorial,
             "caseDir": case_dir,
@@ -695,7 +699,8 @@ def test_run_case_fallback_script(client, tmp_path):
     
     # Test 1: Valid script name
     with patch('app.get_docker_client') as mock_docker, \
-         patch('app.threading.Thread') as mock_thread:
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         # Setup mock Docker client
         mock_client = MagicMock()
         mock_container = MagicMock()
@@ -730,7 +735,8 @@ def test_run_case_fallback_script(client, tmp_path):
     # Test 2: Unsafe script name
     with patch('app.is_safe_command', return_value=True), \
          patch('app.is_safe_script_name', return_value=False), \
-         patch('app.get_docker_client', return_value=MagicMock()):
+         patch('app.get_docker_client', return_value=MagicMock()), \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         response = client.post('/run', json={
             "tutorial": tutorial,
             "caseDir": case_dir,
@@ -742,7 +748,8 @@ def test_run_case_fallback_script(client, tmp_path):
 
     # Test 3: Verify script execution with environment setup
     with patch('app.get_docker_client') as mock_docker, \
-         patch('app.threading.Thread') as mock_thread:
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         mock_client = MagicMock()
         mock_container = MagicMock()
         mock_container.logs.return_value = [b"Script with env\n"]
@@ -778,7 +785,8 @@ def test_run_case_unsafe_script_name(client, tmp_path):
     # Mock is_safe_command to return True (so we can test script name validation)
     with patch('app.is_safe_command', return_value=True), \
          patch('app.is_safe_script_name', return_value=False), \
-         patch('app.get_docker_client', return_value=MagicMock()):
+         patch('app.get_docker_client', return_value=MagicMock()), \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         
         # Test with a script that has an unsafe name
         unsafe_script = "malicious_script.sh"
@@ -801,7 +809,8 @@ def test_run_case_container_cleanup(client, tmp_path):
     (tmp_path / tutorial).mkdir(exist_ok=True)
     
     with patch('app.get_docker_client') as mock_docker, \
-         patch('app.threading.Thread') as mock_thread:
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         # Setup mock container that will raise an exception when reading logs
         mock_container = MagicMock()
         mock_container.logs.side_effect = Exception("Simulated error during execution")
@@ -846,7 +855,8 @@ def test_run_case_container_cleanup_with_errors(client, tmp_path):
     
     with patch('app.get_docker_client') as mock_docker, \
          patch('app.threading.Thread') as mock_thread, \
-         patch('app.logger') as mock_logger:
+         patch('app.logger') as mock_logger, \
+         patch('app.CASE_ROOT', str(tmp_path)):  # Patch CASE_ROOT to allow validation
         # Setup mock container that raises exception on logs
         mock_container = MagicMock()
         mock_container.logs.side_effect = Exception("Simulated error")

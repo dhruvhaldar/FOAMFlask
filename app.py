@@ -1006,6 +1006,15 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
 
+    # Security: Validate path is within CASE_ROOT
+    try:
+        # We don't use the return value here as the generator re-resolves it,
+        # but this ensures the path is valid before starting the stream.
+        validate_safe_path(CASE_ROOT, case_dir)
+    except ValueError as e:
+        logger.warning(f"Security violation in run_case: {e}")
+        return {"error": str(e)}, 400
+
     def stream_container_logs() -> Generator[str, None, None]:
         """Stream container logs for OpenFOAM command execution.
         
@@ -1479,6 +1488,13 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
 
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
+
+    # Security: Validate path is within CASE_ROOT
+    try:
+        validate_safe_path(CASE_ROOT, case_dir)
+    except ValueError as e:
+        logger.warning(f"Security violation in run_foamtovtk: {e}")
+        return {"error": str(e)}, 400
 
     def stream_foamtovtk_logs() -> Generator[str, None, None]:
         """Stream logs for foamToVTK conversion process.
