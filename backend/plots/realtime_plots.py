@@ -38,6 +38,12 @@ _TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
 # ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
 _DIR_SCAN_CACHE: Dict[str, Tuple[float, List[str], bool, List[str]]] = {}
 
+# Structure: { "case_dir_str": { "field_name": "scalar" | "vector" } }
+# ⚡ Bolt Optimization: Cache field types by name per case.
+# Field types (e.g. 'p' is scalar, 'U' is vector) are consistent within a case.
+# This avoids reading headers for every new time directory.
+_CASE_FIELD_TYPES: Dict[str, Dict[str, str]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -130,6 +136,15 @@ class OpenFOAMFieldParser:
                 if cached_mtime == mtime:
                     return cached_type
 
+            # ⚡ Bolt Optimization: Check known field types for this case by filename
+            # New time directories create new file paths, but filenames ('p', 'U') remain consistent.
+            # We can skip reading the header if we've seen this field name before in this case.
+            case_path_str = str(self.case_dir)
+            filename = field_path.name
+
+            if case_path_str in _CASE_FIELD_TYPES and filename in _CASE_FIELD_TYPES[case_path_str]:
+                 return _CASE_FIELD_TYPES[case_path_str][filename]
+
             # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
             with field_path.open("r", encoding="utf-8") as f:
                 header = f.read(2048)
@@ -141,6 +156,13 @@ class OpenFOAMFieldParser:
                 field_type = "vector"
 
             _FIELD_TYPE_CACHE[path_str] = (mtime, field_type)
+
+            # Update case-level cache
+            if field_type:
+                if case_path_str not in _CASE_FIELD_TYPES:
+                    _CASE_FIELD_TYPES[case_path_str] = {}
+                _CASE_FIELD_TYPES[case_path_str][filename] = field_type
+
             return field_type
         except Exception:
             return None
@@ -245,7 +267,8 @@ class OpenFOAMFieldParser:
                 # This is ~3x faster for large fields and reduces memory pressure significantly.
                 with field_path.open("rb") as f:
                     # mmap can fail for empty files or if file is too small
-                    if f.fileno() != -1 and field_path.stat().st_size > 0:
+                    # ⚡ Bolt Optimization: Use os.fstat instead of Path.stat to avoid extra syscall by path
+                    if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                          with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                             # 1. Check for nonuniform list
                             # Look for "internalField nonuniform"
@@ -373,7 +396,8 @@ class OpenFOAMFieldParser:
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files
                 with field_path.open("rb") as f:
-                    if f.fileno() != -1 and field_path.stat().st_size > 0:
+                    # ⚡ Bolt Optimization: Use os.fstat instead of Path.stat
+                    if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                             # 1. Check for nonuniform
                             idx = mm.find(b"internalField")
