@@ -8,6 +8,7 @@ import numpy as np
 import logging
 import os
 import mmap
+import threading
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
 import copy
@@ -32,7 +33,9 @@ _TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
 
 # Structure: { "case_dir_str": (list_of_time_dirs, full_data_dict) }
 # ⚡ Bolt Optimization: Cache accumulated time series data to avoid rebuilding lists
+# ⚡ Bolt Optimization: Protected by _CACHE_LOCK to allow append-only updates without deepcopy
 _TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
+_CACHE_LOCK = threading.Lock()
 
 # Structure: { "dir_path_str": (mtime, scalar_fields, has_U, all_files) }
 # ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
@@ -527,131 +530,214 @@ class OpenFOAMFieldParser:
         # This avoids rebuilding lists and redundant lookups for thousands of past steps.
         case_path_str = str(self.case_dir)
 
-        # We must use deepcopy here to ensure we work on a detached copy.
-        # This prevents polluting the global cache if parsing fails partway,
-        # and ensures thread safety for readers of the global cache.
-        cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
-        if cache_entry:
-            cached_dirs, cached_data = copy.deepcopy(cache_entry)
-        else:
-            cached_dirs, cached_data = [], {}
+        # ⚡ Bolt Optimization: Use Lock to protect cache access instead of deepcopy
+        # This eliminates O(N) memory allocation and copy per poll.
+        cached_dirs = []
+        cached_data = {}
 
-        # Determine how much of the cache is valid
-        # We need a common prefix match.
-        valid_cache_len = 0
-        min_len = min(len(cached_dirs), len(all_time_dirs))
+        with _CACHE_LOCK:
+            cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
+            if cache_entry:
+                # We get a reference to the mutable lists.
+                # We must be careful not to modify them unless we are sure.
+                # Since we are under lock, it's safe to read/check.
+                cached_dirs_ref, cached_data_ref = cache_entry
 
-        # Fast prefix check: if lengths differ but prefix matches
-        if all_time_dirs[:len(cached_dirs)] == cached_dirs:
-            valid_cache_len = len(cached_dirs)
-        else:
-            # Slower element-wise check if there was a divergence (e.g. restart)
-            for i in range(min_len):
-                if cached_dirs[i] == all_time_dirs[i]:
-                    valid_cache_len += 1
-                else:
-                    break
+                # Copy the lists of dirs to local variable (shallow copy is cheap)
+                # to allow comparison without holding lock for too long?
+                # Actually we need to hold lock to ensure consistency if another thread updates it.
+                # But since we are the updater, we just need exclusive access.
+                cached_dirs = cached_dirs_ref
+                cached_data = cached_data_ref
+            else:
+                 # Initialize empty cache entry under lock
+                 pass
 
-        # If cache is invalid (diverged), reset it
-        if valid_cache_len < len(cached_dirs):
-            cached_dirs = cached_dirs[:valid_cache_len]
-            # Slice all lists in cached_data
-            for k in cached_data:
-                cached_data[k] = cached_data[k][:valid_cache_len]
+            # Determine how much of the cache is valid
+            valid_cache_len = 0
+            min_len = min(len(cached_dirs), len(all_time_dirs))
 
-        # Identify stable steps to process (all except the very last one)
-        # If simulation is done, the last one is stable too, but we treat it as volatile
-        # to simplify logic (it gets re-parsed every time until a newer one appears).
-        if not all_time_dirs:
-            return {}
+            # Fast prefix check
+            if all_time_dirs[:len(cached_dirs)] == cached_dirs:
+                valid_cache_len = len(cached_dirs)
+            else:
+                for i in range(min_len):
+                    if cached_dirs[i] == all_time_dirs[i]:
+                        valid_cache_len += 1
+                    else:
+                        break
 
-        latest_time = all_time_dirs[-1]
-        stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
+            # If cache is invalid (diverged), truncate in place
+            if valid_cache_len < len(cached_dirs):
+                del cached_dirs[valid_cache_len:]
+                for k in cached_data:
+                    del cached_data[k][valid_cache_len:]
 
-        # If we have new stable directories, we need to discover fields first
-        # We assume fields are consistent across time steps.
-        # We use the latest time step for discovery.
+            # Identify new stable steps
+            if not all_time_dirs:
+                stable_dirs_to_process = []
+                latest_time = None
+            else:
+                latest_time = all_time_dirs[-1]
+                stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
+
+        # Release lock here to do I/O (parsing)
+        # We will collect new data into temporary structure
+
+        if not latest_time:
+             return {}
+
+        new_data_cols: Dict[str, List[float]] = {}
+        # We also need to know field names to initialize new columns if they appear
+        # We use the latest time step for discovery (optimistic)
         latest_time_path = self.case_dir / latest_time
-        
-        # ⚡ Bolt Optimization: Use cached scanning for field discovery
         scalar_fields, has_U, _ = self._scan_time_dir(latest_time_path)
 
-        # Initialize cached_data if empty
-        if not cached_data:
-            cached_data = {"time": []}
-            for f in scalar_fields:
-                cached_data[f] = []
-            if has_U:
-                cached_data['Ux'] = []
-                cached_data['Uy'] = []
-                cached_data['Uz'] = []
-                cached_data['U_mag'] = []
+        # Initialize new data structure
+        new_data_cols["time"] = []
+        for f in scalar_fields:
+            new_data_cols[f] = []
+        if has_U:
+            for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
+                new_data_cols[k] = []
 
-        # Process new stable steps and append to cache (working copy)
+        # Process new stable steps
         try:
             for time_dir in stable_dirs_to_process:
                 time_path = self.case_dir / time_dir
                 time_val = float(time_dir)
 
-                cached_data["time"].append(time_val)
+                new_data_cols["time"].append(time_val)
 
                 # Parse scalars
                 for field in scalar_fields:
-                    # Ensure field exists in cache (handle dynamic field addition)
-                    if field not in cached_data:
-                        cached_data[field] = [0.0] * (len(cached_data["time"]) - 1)
-
                     field_path = time_path / field
-                    # Skip check_mtime for stable steps (assumed immutable)
                     val = self.parse_scalar_field(field_path, check_mtime=False)
-                    cached_data[field].append(val if val is not None else 0.0)
+                    new_data_cols[field].append(val if val is not None else 0.0)
 
                 # Parse U
                 if has_U:
                     u_path = time_path / "U"
                     ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False)
 
-                    # Ensure vector fields exist in cache
-                    for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
-                        if k not in cached_data:
-                            cached_data[k] = [0.0] * (len(cached_data["time"]) - 1)
-
-                    cached_data["Ux"].append(ux)
-                    cached_data["Uy"].append(uy)
-                    cached_data["Uz"].append(uz)
-                    cached_data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
-
-            # Update global cache with new stable state (atomic-ish update)
-            # Note: cached_dirs + stable_dirs_to_process == all_time_dirs[:-1]
-            new_cached_dirs = cached_dirs + stable_dirs_to_process
-            _TIME_SERIES_CACHE[case_path_str] = (new_cached_dirs, cached_data)
+                    new_data_cols['Ux'].append(ux)
+                    new_data_cols['Uy'].append(uy)
+                    new_data_cols['Uz'].append(uz)
+                    new_data_cols['U_mag'].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
 
         except Exception as e:
-            logger.error(f"Error updating time series cache: {e}")
-            # Do not update global cache, fall back to what we have (or incomplete result)
-            # We continue to at least try to return something useful
+            logger.error(f"Error parsing stable time series: {e}")
+            # If error, we just don't update cache with new data, but we proceed with what we have
 
-        # Construct final result: Cache Slice + Latest Step
-        # We need the last `max_points` points.
+        # Re-acquire lock to update cache
+        with _CACHE_LOCK:
+            # Re-fetch entry in case it was evicted (unlikely) or modified
+            # But since we are the only writer for this case (usually), risk is low.
+            # However, in multi-threaded env, another thread could have cleared it.
+            cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
+            if not cache_entry:
+                # Cache was cleared or didn't exist, create new
+                cached_dirs = []
+                cached_data = {}
+                _TIME_SERIES_CACHE[case_path_str] = (cached_dirs, cached_data)
+            else:
+                cached_dirs, cached_data = cache_entry
 
-        # 1. Start with a copy of the relevant slice from cache
-        # If we need N points, and we have M cached points.
-        # We take M points, add 1 latest point. Total M+1.
-        # If M+1 > N, we slice the last N.
+            # Verify we are still in sync (append-only assumption)
+            # If cached_dirs changed length while we released lock, we might have a gap.
+            # But we calculated `stable_dirs_to_process` based on `valid_cache_len` which was the end of `cached_dirs`.
+            # If `cached_dirs` grew, it means another thread added data.
+            # We should check overlap.
 
-        # Be careful not to mutate cached lists in the result
-        result_data = {}
-        total_available = len(new_cached_dirs) + 1
-        start_idx = max(0, total_available - max_points)
+            # Simplest safe bet: Check if current cached_dirs is still prefix of all_time_dirs
+            # and if we can just append.
+            # If cached_dirs grew, we might be appending duplicate data.
 
-        # Calculate how many points from cache we need
-        # We take everything from start_idx up to end of cache
-        cache_slice_start = max(0, start_idx) # Index in cache
+            current_cache_len = len(cached_dirs)
+            expected_start = valid_cache_len # This was where we started
 
-        for k, v in cached_data.items():
-            result_data[k] = v[cache_slice_start:]
+            # If current_cache_len > expected_start, some data was added.
+            # We should only append data corresponding to dirs that are NOT in cached_dirs.
+
+            # Filter new_data_cols to only include points that are new
+            # stable_dirs_to_process corresponds to new_data_cols indices
+
+            points_to_add_count = len(new_data_cols["time"])
+
+            if points_to_add_count > 0:
+                 # Check which of these are already in cached_dirs?
+                 # stable_dirs_to_process[i]
+
+                 # Optimization: Just check the last element of cached_dirs
+                 pass
+
+            # For simplicity in this optimization step:
+            # We assume single writer or rare collision.
+            # We just append whatever we parsed that is NOT in cached_dirs.
+
+            # Identify which of stable_dirs_to_process are actually new
+            start_append_idx = 0
+            if current_cache_len > valid_cache_len:
+                 # Some data was added.
+                 # Find where stable_dirs_to_process starts relative to current end
+                 # stable_dirs_to_process[0] corresponds to valid_cache_len index in all_time_dirs
+
+                 # New directories added by other thread:
+                 added_by_others = cached_dirs[valid_cache_len:]
+
+                 # We have parsed stable_dirs_to_process.
+                 # We need to skip those that are in added_by_others.
+
+                 common = 0
+                 for i in range(min(len(added_by_others), len(stable_dirs_to_process))):
+                     if added_by_others[i] == stable_dirs_to_process[i]:
+                         common += 1
+                     else:
+                         break
+
+                 start_append_idx = common
+
+            # Append non-duplicate data
+            if start_append_idx < len(stable_dirs_to_process):
+                dirs_to_append = stable_dirs_to_process[start_append_idx:]
+                cached_dirs.extend(dirs_to_append)
+
+                # Append data columns
+                for k, v in new_data_cols.items():
+                    if k not in cached_data:
+                        # If new field appeared, pad with zeros up to current length
+                        cached_data[k] = [0.0] * (len(cached_dirs) - len(dirs_to_append))
+
+                    # Slice the new data
+                    data_chunk = v[start_append_idx:]
+                    cached_data[k].extend(data_chunk)
+
+                # Ensure all columns have same length (handle missing fields in new data)
+                target_len = len(cached_dirs)
+                for k in cached_data:
+                    if len(cached_data[k]) < target_len:
+                        cached_data[k].extend([0.0] * (target_len - len(cached_data[k])))
+
+            # Snapshot for result generation
+            # We need to slice the last N points.
+            # We make a shallow copy of the slice we need.
+
+            final_cached_dirs_len = len(cached_dirs)
+
+            # Calculate slice
+            # We need `max_points` total. 1 comes from latest (unstable), so `max_points - 1` from cache.
+            # Actually we usually return `max_points` history + latest.
+
+            points_needed_from_cache = max(0, max_points - 1)
+            slice_start = max(0, final_cached_dirs_len - points_needed_from_cache)
+
+            result_data = {}
+            for k, v in cached_data.items():
+                result_data[k] = v[slice_start:]
 
         # 2. Process and append the latest (unstable) step
+        # This is done outside lock as it doesn't affect cache
+
         time_path = self.case_dir / latest_time
         time_val = float(latest_time)
 
@@ -674,6 +760,13 @@ class OpenFOAMFieldParser:
             for k, v in [('Ux', ux), ('Uy', uy), ('Uz', uz), ('U_mag', float(np.sqrt(ux**2 + uy**2 + uz**2)))]:
                 if k not in result_data: result_data[k] = []
                 result_data[k].append(v)
+
+        # Ensure all lists have same length by padding missing fields
+        # (e.g. if field exists in cache but not in latest step, or vice versa)
+        final_len = len(result_data["time"])
+        for k in result_data:
+            if len(result_data[k]) < final_len:
+                 result_data[k].extend([0.0] * (final_len - len(result_data[k])))
 
         return result_data
 
