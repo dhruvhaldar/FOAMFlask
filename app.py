@@ -900,6 +900,12 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     if not tutorial:
         return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
+    # SECURITY FIX: Validate tutorial path to prevent command injection
+    # Only allow alphanumeric, underscore, hyphen, dot, and slash
+    if not re.match(r'^[a-zA-Z0-9_./-]+$', tutorial) or '..' in tutorial:
+        logger.warning(f"Security: Invalid tutorial path rejected: {tutorial}")
+        return jsonify({"output": "[FOAMFlask] [Error] Invalid tutorial path detected"}), 400
+
     client = get_docker_client()
     if client is None:
         return docker_unavailable_response()
