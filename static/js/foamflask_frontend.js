@@ -693,17 +693,22 @@ const refreshCaseList = async () => {
         const select = document.getElementById("caseSelect");
         if (select && data.cases) {
             const current = select.value;
-            select.innerHTML = '<option value="">-- Select a Case --</option>';
-            data.cases.forEach(c => {
-                const opt = document.createElement("option");
-                opt.value = c;
-                opt.textContent = c;
-                select.appendChild(opt);
-            });
-            if (current && data.cases.includes(current))
-                select.value = current;
-            else if (activeCase && data.cases.includes(activeCase))
-                select.value = activeCase;
+            if (data.cases.length === 0) {
+                select.innerHTML = '<option value="" disabled selected>No cases found</option>';
+            }
+            else {
+                select.innerHTML = '<option value="">-- Select a Case --</option>';
+                data.cases.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c;
+                    opt.textContent = c;
+                    select.appendChild(opt);
+                });
+                if (current && data.cases.includes(current))
+                    select.value = current;
+                else if (activeCase && data.cases.includes(activeCase))
+                    select.value = activeCase;
+            }
         }
     }
     catch (e) {
@@ -1276,12 +1281,20 @@ const refreshGeometryList = async () => {
             const select = document.getElementById("geometrySelect");
             if (select) {
                 select.innerHTML = "";
-                data.files.forEach((f) => {
+                if (data.files.length === 0) {
                     const opt = document.createElement("option");
-                    opt.value = f;
-                    opt.textContent = f;
+                    opt.disabled = true;
+                    opt.textContent = "No geometry files found";
                     select.appendChild(opt);
-                });
+                }
+                else {
+                    data.files.forEach((f) => {
+                        const opt = document.createElement("option");
+                        opt.value = f;
+                        opt.textContent = f;
+                        select.appendChild(opt);
+                    });
+                }
             }
         }
     }
@@ -1531,13 +1544,18 @@ const refreshMeshList = async () => {
         const data = await res.json();
         const select = document.getElementById("meshSelect");
         if (select && data.meshes) {
-            select.innerHTML = '<option value="">Select</option>';
-            data.meshes.forEach((m) => {
-                const opt = document.createElement("option");
-                opt.value = m.path;
-                opt.textContent = m.name;
-                select.appendChild(opt);
-            });
+            if (data.meshes.length === 0) {
+                select.innerHTML = '<option value="" disabled selected>No mesh files found</option>';
+            }
+            else {
+                select.innerHTML = '<option value="">-- Select a mesh file --</option>';
+                data.meshes.forEach((m) => {
+                    const opt = document.createElement("option");
+                    opt.value = m.path;
+                    opt.textContent = m.name;
+                    select.appendChild(opt);
+                });
+            }
         }
     }
     catch (e) {
@@ -1803,13 +1821,18 @@ const refreshPostListVTK = async () => {
         const data = await res.json();
         const select = document.getElementById("vtkFileSelect");
         if (select && data.meshes) {
-            select.innerHTML = '<option value="">Select</option>';
-            data.meshes.forEach((m) => {
-                const opt = document.createElement("option");
-                opt.value = m.path;
-                opt.textContent = m.name;
-                select.appendChild(opt);
-            });
+            if (data.meshes.length === 0) {
+                select.innerHTML = '<option value="" disabled selected>No VTK files found</option>';
+            }
+            else {
+                select.innerHTML = '<option value="">-- Select a VTK file --</option>';
+                data.meshes.forEach((m) => {
+                    const opt = document.createElement("option");
+                    opt.value = m.path;
+                    opt.textContent = m.name;
+                    select.appendChild(opt);
+                });
+            }
         }
     }
     catch (e) { }
