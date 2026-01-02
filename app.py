@@ -612,27 +612,40 @@ def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
     # Let's rely on the frontend sending 'caseDir' or using the set case.
 
     # Check if 'caseDir' is in form data?
-    case_dir = request.form.get("caseDir")
-    if not case_dir:
-        # Fallback to global CASE_ROOT + tutorial? Or just CASE_ROOT if it's the specific case?
-        # The frontend usually sets CASE_ROOT to the parent folder, and then loads a tutorial.
-        # But for custom cases, CASE_ROOT might be the parent, and we need the case name.
-        # Or CASE_ROOT is the actual case?
+    case_dir_raw = request.form.get("caseDir")
+    case_name = request.form.get("caseName")
 
-        # Current logic: CASE_ROOT is the root of *all* cases.
-        # We need to know which case we are uploading to.
-        # Let's assume the user selects a case/tutorial in the frontend.
+    # Security: Always validate the target path
+    # If caseDir is provided, it might be an absolute path or relative path
+    # We must ensure it resolves to something inside CASE_ROOT
+    try:
+        if case_dir_raw:
+            # If caseDir is provided, we treat it as potentially relative to CASE_ROOT
+            # or if it's absolute, validate_safe_path will check if it's inside CASE_ROOT
+            # But validate_safe_path takes (base, relative).
+            # If relative is absolute, Path(base) / relative might behave differently depending on OS,
+            # but usually Path("/a") / "/b" -> "/b".
+            # validate_safe_path implementation:
+            # base = Path(base_dir).resolve()
+            # target = (base / relative_path).resolve()
+            # if not target.is_relative_to(base): raise...
 
-        case_name = request.form.get("caseName")
-        if not case_name:
-             return jsonify({"success": False, "message": "No case name or directory specified"}), 400
+            # If case_dir_raw is absolute "/etc/passwd", target becomes "/etc/passwd".
+            # is_relative_to(CASE_ROOT) will fail. Safe.
 
-        try:
-            # Security: Validate path is within CASE_ROOT
+            case_dir_path = validate_safe_path(CASE_ROOT, case_dir_raw)
+            case_dir = str(case_dir_path)
+
+        elif case_name:
+            # If only caseName provided
             case_dir_path = validate_safe_path(CASE_ROOT, case_name)
             case_dir = str(case_dir_path)
-        except ValueError as e:
-            return jsonify({"success": False, "message": str(e)}), 400
+        else:
+             return jsonify({"success": False, "message": "No case name or directory specified"}), 400
+
+    except ValueError as e:
+        logger.warning(f"Security: Blocked upload attempt: {e}")
+        return jsonify({"success": False, "message": str(e)}), 400
 
     result = GeometryManager.upload_stl(case_dir, file, file.filename)
     if result["success"]:
