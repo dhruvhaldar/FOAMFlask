@@ -53,6 +53,24 @@ _PARENS_TRANS = str.maketrans("()", "  ")
 # ⚡ Bolt Optimization: Pre-compute bytes translation table for mmap processing
 _PARENS_TRANS_BYTES = bytes.maketrans(b"()", b"  ")
 
+# ⚡ Bolt Optimization: Pre-compile regex patterns for field parsing
+# Avoids recompilation overhead during high-frequency polling
+_RE_VOL_SCALAR = re.compile(r"class\s+volScalarField;")
+_RE_VOL_VECTOR = re.compile(r"class\s+volVectorField;")
+
+_RE_SCALAR_UNIFORM_VAR = re.compile(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);")
+_RE_SCALAR_UNIFORM_VAL = re.compile(r"internalField\s+uniform\s+([^;]+);")
+_RE_NONUNIFORM_LIST = re.compile(r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;", re.DOTALL)
+_RE_NUMBERS_FINDALL = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
+
+_RE_VECTOR_UNIFORM_VAR_CHECK = re.compile(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;")
+_RE_VECTOR_UNIFORM_VAL_GROUP = re.compile(r"internalField\s+uniform\s+(\([^;]+\));", re.DOTALL)
+_RE_VECTOR_COMPONENTS = re.compile(
+    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
+)
+
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
 
@@ -136,9 +154,9 @@ class OpenFOAMFieldParser:
                 header = f.read(2048)
             
             field_type = None
-            if re.search(r"class\s+volScalarField;", header):
+            if _RE_VOL_SCALAR.search(header):
                 field_type = "scalar"
-            elif re.search(r"class\s+volVectorField;", header):
+            elif _RE_VOL_VECTOR.search(header):
                 field_type = "vector"
 
             _FIELD_TYPE_CACHE[path_str] = (mtime, field_type)
@@ -297,7 +315,7 @@ class OpenFOAMFieldParser:
                                     context = mm.read(200).decode("utf-8", errors="ignore")
                                     if "uniform" in context:
                                         # Variable substitution
-                                        var_match = re.search(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);", context)
+                                        var_match = _RE_SCALAR_UNIFORM_VAR.search(context)
                                         if var_match:
                                             var_name = var_match.group(1)
                                             # We need full content for variable resolution, which is rare.
@@ -308,7 +326,7 @@ class OpenFOAMFieldParser:
                                                 val = float(resolved_value)
 
                                         if val is None:
-                                            match = re.search(r"internalField\s+uniform\s+([^;]+);", context)
+                                            match = _RE_SCALAR_UNIFORM_VAL.search(context)
                                             if match:
                                                 try:
                                                     val = float(match.group(1).strip())
@@ -325,14 +343,10 @@ class OpenFOAMFieldParser:
                 try:
                     content = field_path.read_text(encoding="utf-8")
                     if "nonuniform" in content:
-                        match = re.search(
-                            r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
-                            content,
-                            re.DOTALL,
-                        )
+                        match = _RE_NONUNIFORM_LIST.search(content)
                         if match:
                             field_data = match.group(1)
-                            numbers_list = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", field_data)
+                            numbers_list = _RE_NUMBERS_FINDALL.findall(field_data)
                             if numbers_list:
                                 val = float(np.mean([float(n) for n in numbers_list]))
                 except (FileNotFoundError, OSError):
@@ -426,20 +440,15 @@ class OpenFOAMFieldParser:
                                     mm.seek(idx)
                                     context = mm.read(200).decode("utf-8", errors="ignore")
                                     if "uniform" in context:
-                                         if re.search(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;", context):
+                                         if _RE_VECTOR_UNIFORM_VAR_CHECK.search(context):
                                              # Variable detected
                                              val = (0.0, 0.0, 0.0)
                                          else:
-                                             match = re.search(r"internalField\s+uniform\s+(\([^;]+\));", context, re.DOTALL)
+                                             match = _RE_VECTOR_UNIFORM_VAL_GROUP.search(context)
                                              if match:
                                                  vec_str = match.group(1)
                                                  # Simple regex for (x y z)
-                                                 vec_match = re.search(
-                                                    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                                                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-                                                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)",
-                                                    vec_str,
-                                                 )
+                                                 vec_match = _RE_VECTOR_COMPONENTS.search(vec_str)
                                                  if vec_match:
                                                      val = (
                                                          float(vec_match.group(1)),
@@ -455,11 +464,7 @@ class OpenFOAMFieldParser:
                 try:
                     content = field_path.read_text(encoding="utf-8")
                     if "nonuniform" in content:
-                        match = re.search(
-                            r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;",
-                            content,
-                            re.DOTALL,
-                        )
+                        match = _RE_NONUNIFORM_LIST.search(content)
                         if match:
                             field_data = match.group(1)
                             try:
