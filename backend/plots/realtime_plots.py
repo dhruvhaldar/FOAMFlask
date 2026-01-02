@@ -706,8 +706,9 @@ class OpenFOAMFieldParser:
         log_path = self.case_dir / log_file
         path_str = str(log_path)
 
-        if not log_path.exists():
-            return {}
+        # ⚡ Bolt Optimization: Remove redundant exists() check.
+        # stat() raises FileNotFoundError if file is missing, which we can catch.
+        # This saves 1 syscall per poll cycle.
 
         try:
             stat = log_path.stat()
@@ -799,6 +800,8 @@ class OpenFOAMFieldParser:
             # Update cache
             _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
 
+        except FileNotFoundError:
+            return {}
         except Exception as e:
             logger.error(f"Error parsing log file: {e}")
             # On error, clear cache entry to force fresh read next time
