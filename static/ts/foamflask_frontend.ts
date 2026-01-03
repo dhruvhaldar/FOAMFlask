@@ -1794,11 +1794,23 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
 };
 
 
-const refreshMeshList = async () => {
+const refreshMeshList = async (btnElement?: HTMLElement) => {
   if (!activeCase) {
     showNotification("No active case selected to list meshes", "warning", 3000);
     return;
   }
+
+  const btn = btnElement as HTMLButtonElement | undefined;
+  let originalText = "";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.classList.add("opacity-75", "cursor-wait");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...`;
+  }
+
   try {
     const res = await fetch(`/api/available_meshes?tutorial=${encodeURIComponent(activeCase)}`);
     const data = await res.json();
@@ -1814,9 +1826,17 @@ const refreshMeshList = async () => {
         });
       }
     }
+    if (btn) showNotification("Mesh list refreshed", "success", 2000);
   } catch (e) {
     console.error("Error refreshing mesh list:", e);
     showNotification("Failed to refresh mesh list", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.classList.remove("opacity-75", "cursor-wait");
+      btn.innerHTML = originalText;
+    }
   }
 };
 
