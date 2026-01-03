@@ -526,6 +526,16 @@ const flushOutputBuffer = () => {
     });
     container.appendChild(fragment);
     cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
+    // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
+    const MAX_LOG_LENGTH = 100000; // 100KB
+    if (cachedLogHTML.length > MAX_LOG_LENGTH * 1.5) {
+        const slice = cachedLogHTML.slice(-MAX_LOG_LENGTH);
+        // Ensure we cut at a clean tag boundary
+        const firstDiv = slice.indexOf("<div");
+        if (firstDiv !== -1) {
+            cachedLogHTML = slice.substring(firstDiv);
+        }
+    }
     // Only force scroll if user was already at the bottom
     if (isAtBottom) {
         container.scrollTop = container.scrollHeight;
