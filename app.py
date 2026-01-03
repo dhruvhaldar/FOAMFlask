@@ -1679,10 +1679,13 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
             return jsonify({"success": False, "error": error_msg}), 400
 
-        # Normalize path
-        case_dir = Path(case_dir_str)
-        if not case_dir.is_absolute():
-            case_dir = Path(CASE_ROOT) / case_dir
+        # Normalize and validate path
+        try:
+            case_dir = validate_safe_path(CASE_ROOT, case_dir_str)
+        except ValueError as e:
+            error_msg = str(e)
+            logger.warning(f"[FOAMFlask] [create_contour] Security: {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 400
 
         logger.info(
             f"[FOAMFlask] [create_contour] Normalized case directory: {case_dir}"
