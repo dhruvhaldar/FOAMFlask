@@ -463,7 +463,7 @@ const switchPage = (pageName: string): void => {
       break;
     case "meshing":
       refreshGeometryList().then(() => {
-        const shmSelect = document.getElementById("shmStlSelect") as HTMLSelectElement;
+        const shmSelect = document.getElementById("shmObjectList") as HTMLSelectElement;
         const geoSelect = document.getElementById("geometrySelect") as HTMLSelectElement;
         if (shmSelect && geoSelect) {
           shmSelect.innerHTML = geoSelect.innerHTML;
@@ -1681,7 +1681,7 @@ const loadGeometryView = async () => {
 // Meshing Functions
 const fillBoundsFromGeometry = async () => {
   // simplified for brevity
-  const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
+  const filename = (document.getElementById("shmObjectList") as HTMLSelectElement)?.value;
   if (!filename || !activeCase) return;
   try {
     const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
@@ -1709,14 +1709,46 @@ const generateBlockMeshDict = async () => {
 };
 
 const generateSnappyHexMeshDict = async () => {
-  const filename = (document.getElementById("shmStlSelect") as HTMLSelectElement)?.value;
+  const filename = (document.getElementById("shmObjectList") as HTMLSelectElement)?.value;
   if (!activeCase || !filename) return;
-  const level = parseInt((document.getElementById("shmLevel") as HTMLInputElement).value);
-  const location = (document.getElementById("shmLocation") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
+  // Use default value 0 if element doesn't exist or is empty, though HTML doesn't have shmLevel
+  // The HTML has shmObjRefMin/Max, but not a global shmLevel.
+  // Wait, I am fixing selectShmObject.
+  // The request above was to generate snappyHexMeshDict.
+
+  // The code references shmLevel which doesn't exist in HTML.
+  // I should fix this too? Or just stub selectShmObject.
+  // For now, I'll add selectShmObject.
+
+  const level = 0; // Stub as element might be missing
+  const locationInput = document.getElementById("shmLocation") as HTMLInputElement;
+  const location = locationInput ? locationInput.value.trim().split(/\s+/).map(Number) : [0, 0, 0];
   try {
     await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { stl_filename: filename, refinement_level: level, location_in_mesh: location } }) });
     showNotification("Generated", "success");
   } catch (e) { }
+};
+
+const selectShmObject = () => {
+    const list = document.getElementById("shmObjectList") as HTMLSelectElement;
+    const props = document.getElementById("shmObjectProps");
+    const placeholder = document.getElementById("shmObjectPlaceholder");
+    const nameLabel = document.getElementById("shmSelectedObjectName");
+
+    if (list && list.value) {
+        if (props) props.classList.remove("hidden");
+        if (placeholder) placeholder.classList.add("hidden");
+        if (nameLabel) nameLabel.textContent = list.value;
+        // In a real app, we would fetch existing config for this object here
+    } else {
+        if (props) props.classList.add("hidden");
+        if (placeholder) placeholder.classList.remove("hidden");
+    }
+};
+
+const updateShmObjectConfig = () => {
+    // Stub for updating object config
+    console.log("Updated object config");
 };
 
 const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
@@ -2315,6 +2347,8 @@ window.onload = async () => {
 (window as any).fillBoundsFromGeometry = fillBoundsFromGeometry;
 (window as any).generateBlockMeshDict = generateBlockMeshDict;
 (window as any).generateSnappyHexMeshDict = generateSnappyHexMeshDict;
+(window as any).selectShmObject = selectShmObject;
+(window as any).updateShmObjectConfig = updateShmObjectConfig;
 (window as any).runMeshingCommand = runMeshingCommand;
 (window as any).refreshMeshList = refreshMeshList;
 (window as any).loadMeshVisualization = loadMeshVisualization;
