@@ -876,11 +876,23 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
 
     updates = {}
     if "dockerImage" in data and data["dockerImage"]:
-        DOCKER_IMAGE = data["dockerImage"]
+        # Security: Validate docker image string
+        # Allow alphanumeric, underscore, hyphen, dot, slash, colon
+        image_str = str(data["dockerImage"])
+        if not re.match(r'^[a-zA-Z0-9_./:-]+$', image_str):
+            return jsonify({"output": "[FOAMFlask] [Error] Invalid Docker image string"}), 400
+
+        DOCKER_IMAGE = image_str
         updates["DOCKER_IMAGE"] = DOCKER_IMAGE
 
     if "openfoamVersion" in data and data["openfoamVersion"]:
-        OPENFOAM_VERSION = str(data["openfoamVersion"])
+        # Security: Validate version string to prevent command injection
+        # Allow alphanumeric, dot, hyphen
+        version_str = str(data["openfoamVersion"])
+        if not re.match(r'^[a-zA-Z0-9.-]+$', version_str):
+             return jsonify({"output": "[FOAMFlask] [Error] Invalid OpenFOAM version string"}), 400
+
+        OPENFOAM_VERSION = version_str
         updates["OPENFOAM_VERSION"] = OPENFOAM_VERSION
 
     if updates:
