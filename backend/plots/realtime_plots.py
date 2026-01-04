@@ -561,43 +561,30 @@ class OpenFOAMFieldParser:
         # This avoids rebuilding lists and redundant lookups for thousands of past steps.
         case_path_str = str(self.case_dir)
 
-        # We must use deepcopy here to ensure we work on a detached copy.
-        # This prevents polluting the global cache if parsing fails partway,
-        # and ensures thread safety for readers of the global cache.
+        # We must determine if we need to modify the cache (update path) or just read from it (steady state).
         cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
+
+        # Use source directly for checking to avoid premature copy
         if cache_entry:
-            # ⚡ Bolt Optimization: Replace copy.deepcopy with manual shallow copy
-            # Since cached_dirs is List[str] and cached_data is Dict[str, List[float]],
-            # and floats/strings are immutable, a shallow copy of the container lists is sufficient.
-            # This yields ~100x speedup (O(N) -> O(1) mostly) and reduces memory allocation pressure.
-            _dirs, _data = cache_entry
-            cached_dirs = _dirs[:]
-            cached_data = {k: v[:] for k, v in _data.items()}
+            src_dirs, src_data = cache_entry
         else:
-            cached_dirs, cached_data = [], {}
+            src_dirs, src_data = [], {}
 
         # Determine how much of the cache is valid
         # We need a common prefix match.
         valid_cache_len = 0
-        min_len = min(len(cached_dirs), len(all_time_dirs))
+        min_len = min(len(src_dirs), len(all_time_dirs))
 
         # Fast prefix check: if lengths differ but prefix matches
-        if all_time_dirs[:len(cached_dirs)] == cached_dirs:
-            valid_cache_len = len(cached_dirs)
+        if all_time_dirs[:len(src_dirs)] == src_dirs:
+            valid_cache_len = len(src_dirs)
         else:
             # Slower element-wise check if there was a divergence (e.g. restart)
             for i in range(min_len):
-                if cached_dirs[i] == all_time_dirs[i]:
+                if src_dirs[i] == all_time_dirs[i]:
                     valid_cache_len += 1
                 else:
                     break
-
-        # If cache is invalid (diverged), reset it
-        if valid_cache_len < len(cached_dirs):
-            cached_dirs = cached_dirs[:valid_cache_len]
-            # Slice all lists in cached_data
-            for k in cached_data:
-                cached_data[k] = cached_data[k][:valid_cache_len]
 
         # Identify stable steps to process (all except the very last one)
         # If simulation is done, the last one is stable too, but we treat it as volatile
@@ -607,69 +594,87 @@ class OpenFOAMFieldParser:
 
         latest_time = all_time_dirs[-1]
         stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
-
-        # If we have new stable directories, we need to discover fields first
-        # We assume fields are consistent across time steps.
-        # We use the latest time step for discovery.
-        latest_time_path = self.case_dir / latest_time
         
+        latest_time_path = self.case_dir / latest_time
         # ⚡ Bolt Optimization: Use cached scanning for field discovery
         scalar_fields, has_U, _ = self._scan_time_dir(latest_time_path)
 
-        # Initialize cached_data if empty
-        if not cached_data:
-            cached_data = {"time": []}
-            for f in scalar_fields:
-                cached_data[f] = []
-            if has_U:
-                cached_data['Ux'] = []
-                cached_data['Uy'] = []
-                cached_data['Uz'] = []
-                cached_data['U_mag'] = []
+        # Decision: Do we need to modify the cache?
+        needs_update = (valid_cache_len < len(src_dirs)) or (len(stable_dirs_to_process) > 0)
 
-        # Process new stable steps and append to cache (working copy)
-        try:
-            for time_dir in stable_dirs_to_process:
-                time_path = self.case_dir / time_dir
-                time_val = float(time_dir)
+        working_data = None
+        working_dirs_len = 0
 
-                cached_data["time"].append(time_val)
+        if needs_update:
+            # Full Copy and Update Path
+            cached_dirs = src_dirs[:valid_cache_len]
+            # Slice all lists in cached_data
+            cached_data = {k: v[:valid_cache_len] for k, v in src_data.items()}
 
-                # Parse scalars
-                for field in scalar_fields:
-                    # Ensure field exists in cache (handle dynamic field addition)
-                    if field not in cached_data:
-                        cached_data[field] = [0.0] * (len(cached_data["time"]) - 1)
-
-                    field_path = time_path / field
-                    # Skip check_mtime for stable steps (assumed immutable)
-                    val = self.parse_scalar_field(field_path, check_mtime=False)
-                    cached_data[field].append(val if val is not None else 0.0)
-
-                # Parse U
+            # Initialize cached_data if empty
+            if not cached_data:
+                cached_data = {"time": []}
+                for f in scalar_fields:
+                    cached_data[f] = []
                 if has_U:
-                    u_path = time_path / "U"
-                    ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False)
+                    cached_data['Ux'] = []
+                    cached_data['Uy'] = []
+                    cached_data['Uz'] = []
+                    cached_data['U_mag'] = []
 
-                    # Ensure vector fields exist in cache
-                    for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
-                        if k not in cached_data:
-                            cached_data[k] = [0.0] * (len(cached_data["time"]) - 1)
+            # Process new stable steps and append to cache (working copy)
+            try:
+                for time_dir in stable_dirs_to_process:
+                    time_path = self.case_dir / time_dir
+                    time_val = float(time_dir)
 
-                    cached_data["Ux"].append(ux)
-                    cached_data["Uy"].append(uy)
-                    cached_data["Uz"].append(uz)
-                    cached_data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+                    cached_data["time"].append(time_val)
 
-            # Update global cache with new stable state (atomic-ish update)
-            # Note: cached_dirs + stable_dirs_to_process == all_time_dirs[:-1]
-            new_cached_dirs = cached_dirs + stable_dirs_to_process
-            _TIME_SERIES_CACHE[case_path_str] = (new_cached_dirs, cached_data)
+                    # Parse scalars
+                    for field in scalar_fields:
+                        # Ensure field exists in cache (handle dynamic field addition)
+                        if field not in cached_data:
+                            cached_data[field] = [0.0] * (len(cached_data["time"]) - 1)
 
-        except Exception as e:
-            logger.error(f"Error updating time series cache: {e}")
-            # Do not update global cache, fall back to what we have (or incomplete result)
-            # We continue to at least try to return something useful
+                        field_path = time_path / field
+                        # Skip check_mtime for stable steps (assumed immutable)
+                        val = self.parse_scalar_field(field_path, check_mtime=False)
+                        cached_data[field].append(val if val is not None else 0.0)
+
+                    # Parse U
+                    if has_U:
+                        u_path = time_path / "U"
+                        ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False)
+
+                        # Ensure vector fields exist in cache
+                        for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
+                            if k not in cached_data:
+                                cached_data[k] = [0.0] * (len(cached_data["time"]) - 1)
+
+                        cached_data["Ux"].append(ux)
+                        cached_data["Uy"].append(uy)
+                        cached_data["Uz"].append(uz)
+                        cached_data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+
+                # Update global cache with new stable state (atomic-ish update)
+                # Note: cached_dirs + stable_dirs_to_process == all_time_dirs[:-1]
+                new_cached_dirs = cached_dirs + stable_dirs_to_process
+                _TIME_SERIES_CACHE[case_path_str] = (new_cached_dirs, cached_data)
+
+                working_data = cached_data
+                working_dirs_len = len(new_cached_dirs)
+
+            except Exception as e:
+                logger.error(f"Error updating time series cache: {e}")
+                # Do not update global cache, fall back to what we have (or incomplete result)
+                working_data = cached_data
+                working_dirs_len = len(cached_dirs) + len(stable_dirs_to_process)
+        else:
+             # ⚡ Bolt Optimization: Zero-copy path for steady state
+             # No changes to stable history, so we read directly from source
+             # This avoids O(N) copy operations when simulation is running but no new time steps have appeared yet.
+             working_data = src_data
+             working_dirs_len = len(src_dirs)
 
         # Construct final result: Cache Slice + Latest Step
         # We need the last `max_points` points.
@@ -681,14 +686,16 @@ class OpenFOAMFieldParser:
 
         # Be careful not to mutate cached lists in the result
         result_data = {}
-        total_available = len(new_cached_dirs) + 1
+        total_available = working_dirs_len + 1
         start_idx = max(0, total_available - max_points)
 
         # Calculate how many points from cache we need
         # We take everything from start_idx up to end of cache
         cache_slice_start = max(0, start_idx) # Index in cache
 
-        for k, v in cached_data.items():
+        # Since working_data might be the global cache (in zero-copy path),
+        # we MUST ensure we don't mutate it. Slicing creates new lists.
+        for k, v in working_data.items():
             result_data[k] = v[cache_slice_start:]
 
         # 2. Process and append the latest (unstable) step
@@ -699,17 +706,37 @@ class OpenFOAMFieldParser:
         if "time" not in result_data: result_data["time"] = []
         result_data["time"].append(time_val)
 
+        # ⚡ Bolt Optimization: Pre-scan directory to avoid stat() calls per field
+        file_mtimes = {}
+        try:
+             with os.scandir(str(time_path)) as entries:
+                 for entry in entries:
+                     file_mtimes[entry.name] = entry.stat().st_mtime
+        except OSError:
+             pass
+
         for field in scalar_fields:
             if field not in result_data: result_data[field] = []
 
             field_path = time_path / field
-            # Always check mtime for latest step
-            val = self.parse_scalar_field(field_path, check_mtime=True)
+            known_mtime = file_mtimes.get(field)
+
+            # Pass known_mtime. If missing (file deleted?), parse_scalar_field handles it by stat-ing again (if None)
+            if known_mtime is not None:
+                val = self.parse_scalar_field(field_path, check_mtime=False, known_mtime=known_mtime)
+            else:
+                 val = self.parse_scalar_field(field_path, check_mtime=True)
+
             result_data[field].append(val if val is not None else 0.0)
 
         if has_U:
             u_path = time_path / "U"
-            ux, uy, uz = self.parse_vector_field(u_path, check_mtime=True)
+            known_mtime = file_mtimes.get("U")
+
+            if known_mtime is not None:
+                ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False, known_mtime=known_mtime)
+            else:
+                ux, uy, uz = self.parse_vector_field(u_path, check_mtime=True)
 
             for k, v in [('Ux', ux), ('Uy', uy), ('Uz', uz), ('U_mag', float(np.sqrt(ux**2 + uy**2 + uz**2)))]:
                 if k not in result_data: result_data[k] = []
