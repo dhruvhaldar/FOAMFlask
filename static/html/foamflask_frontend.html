@@ -252,7 +252,7 @@
             onchange="selectCase(this.value)">
             <option value="">-- Select a Case --</option>
           </select>
-          <button onclick="refreshCaseList(this)"
+          <button id="refreshCaseListBtn" onclick="refreshCaseList(this)"
             class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded transition-colors flex items-center gap-1"
             title="Refresh List">
             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -311,7 +311,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="caseDir" class="w-32 font-medium text-gray-700">Case Root:</label>
             <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" />
-            <button type="button" onclick="setCase(this)"
+            <button id="setRootBtn" type="button" onclick="setCase(this)"
               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[100px]">
               Set Root
             </button>
@@ -324,7 +324,7 @@
               class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
               class="border border-gray-300 rounded px-3 py-2 w-24" aria-label="OpenFOAM Version" />
-            <button type="button" onclick="setDockerConfig(
+            <button id="setDockerConfigBtn" type="button" onclick="setDockerConfig(
                   document.getElementById('dockerImage').value,
                   document.getElementById('openfoamVersion').value,
                   this
@@ -367,7 +367,7 @@
           <div class="flex flex-col gap-2 mt-4">
             <div class="flex justify-between items-center">
               <label for="geometrySelect" class="text-sm font-medium">Available Geometries</label>
-              <button onclick="refreshGeometryList(this)"
+              <button id="refreshGeometryBtn" onclick="refreshGeometryList(this)"
                 class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none focus:underline"
                 aria-label="Refresh geometry list">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
@@ -382,11 +382,11 @@
               <!-- Populated by JS -->
             </select>
             <div class="flex gap-2">
-              <button onclick="loadGeometryView()"
+              <button id="viewGeometryBtn" onclick="loadGeometryView()"
                 class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex-1 text-sm">
                 View
               </button>
-              <button onclick="deleteGeometry()"
+              <button id="deleteGeometryBtn" onclick="deleteGeometry()"
                 class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex-1 text-sm">
                 Delete
               </button>
@@ -505,7 +505,7 @@
               </div>
             </div>
             <div class="flex gap-2 pt-2">
-              <button onclick="generateBlockMeshDict()"
+              <button id="genBlockMeshBtn" onclick="generateBlockMeshDict()"
                 class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm">
                 Generate blockMeshDict
               </button>
@@ -649,7 +649,7 @@
           </div>
 
           <div class="flex gap-2 pt-4 border-t mt-4">
-            <button onclick="generateSnappyHexMeshDict()"
+            <button id="genSnappyHexMeshBtn" onclick="generateSnappyHexMeshDict()"
               class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium">
               Generate snappyHexMeshDict
             </button>
@@ -689,23 +689,23 @@
       <div class="my-4">
         <h3 class="text-xl font-semibold mb-2">Run OpenFOAM Commands</h3>
         <div class="flex flex-col sm:flex-row gap-2">
-          <button onclick="runCommand('./Allrun', this)"
+          <button id="runAllrunBtn" onclick="runCommand('./Allrun', this)"
             class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full sm:flex-1">
             Allrun
           </button>
-          <button onclick="runCommand('./Allclean', this)"
+          <button id="runAllcleanBtn" onclick="runCommand('./Allclean', this)"
             class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full sm:flex-1">
             Allclean
           </button>
-          <button onclick="runCommand('blockMesh', this)"
+          <button id="runBlockMeshBtnRun" onclick="runCommand('blockMesh', this)"
             class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded w-full sm:flex-1">
             blockMesh
           </button>
-          <button onclick="runCommand('simpleFoam', this)"
+          <button id="runSimpleFoamBtn" onclick="runCommand('simpleFoam', this)"
             class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full sm:flex-1">
             simpleFoam
           </button>
-          <button onclick="runCommand('pimpleFoam', this)"
+          <button id="runPimpleFoamBtn" onclick="runCommand('pimpleFoam', this)"
             class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded w-full sm:flex-1">
             pimpleFoam
           </button>
@@ -776,11 +776,11 @@
 
               <!-- Buttons are Hidden when Mesh files have been found/loaded-->
               <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
-                <button onclick="runFoamToVTK(this)"
+                <button id="runFoamToVTKBtn" onclick="runFoamToVTK(this)"
                   class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
                   Generate VTK files (foamToVTK)
                 </button>
-                <button onclick="refreshMeshList(this)"
+                <button id="refreshMeshListBtn" onclick="refreshMeshList(this)"
                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
                   Refresh List
                 </button>

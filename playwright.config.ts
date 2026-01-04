@@ -14,7 +14,14 @@ export default defineConfig({
   use: {
     actionTimeout: 0,
     trace: 'on-first-retry',
-    baseURL: 'http://localhost:5000', // Assuming the server runs here
+    baseURL: 'http://localhost:5000',
+  },
+  webServer: {
+    command: 'python3 tests/frontend/e2e/mock_app.py',
+    port: 5000,
+    reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
   projects: [
     {
