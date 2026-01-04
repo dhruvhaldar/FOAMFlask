@@ -37,6 +37,11 @@ _TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
 # ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
 _DIR_SCAN_CACHE: Dict[str, Tuple[float, List[str], bool, List[str]]] = {}
 
+# Structure: { "case_dir_str": { "filename": "type" } }
+# ⚡ Bolt Optimization: Cache field types by filename per case to avoid re-reading headers
+# OpenFOAM field types (scalar vs vector) are consistent by filename (e.g., 'p' is always scalar).
+_CASE_FIELD_TYPES: Dict[str, Dict[str, str]] = {}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 TIME_REGEX = re.compile(r"Time\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
@@ -129,29 +134,41 @@ class OpenFOAMFieldParser:
             # ⚡ Bolt Optimization: Accept DirEntry to avoid extra stat() call
             if isinstance(field_entry, os.DirEntry):
                 path_str = field_entry.path
+                filename = field_entry.name
                 mtime = field_entry.stat().st_mtime
                 field_path = Path(path_str)
             else:
                 field_path = field_entry
                 path_str = str(field_path)
+                filename = field_path.name
                 mtime = field_path.stat().st_mtime
 
+            # ⚡ Bolt Optimization: Check case-wide filename cache first
+            # If we know 'p' is scalar in this case, we don't need to read '0.1/p', '0.2/p'...
+            case_path_str = str(self.case_dir)
+            if case_path_str in _CASE_FIELD_TYPES:
+                if filename in _CASE_FIELD_TYPES[case_path_str]:
+                    return _CASE_FIELD_TYPES[case_path_str][filename]
+
+            # Fallback to path-specific cache (useful if logic changes or for non-standard structures)
             if path_str in _FIELD_TYPE_CACHE:
                 cached_mtime, cached_type = _FIELD_TYPE_CACHE[path_str]
                 # ⚡ Bolt Optimization: If type was previously identified, trust it.
-                # Field types (scalar/vector) are invariant for a given filename in OpenFOAM.
-                # Even if mtime changes (file update), the type remains the same.
-                # This eliminates thousands of open/read syscalls during simulation polling.
                 if cached_type is not None:
+                    # Propagate to case cache for future speedup
+                    if case_path_str not in _CASE_FIELD_TYPES:
+                        _CASE_FIELD_TYPES[case_path_str] = {}
+                    _CASE_FIELD_TYPES[case_path_str][filename] = cached_type
                     return cached_type
 
-                # If it was None (unidentified), retry if mtime changed.
                 if cached_mtime == mtime:
                     return cached_type
 
             # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
+            # ⚡ Bolt Optimization: Reduced read size from 2048 to 512 bytes.
+            # The class definition is almost always in the first few lines.
             with field_path.open("r", encoding="utf-8") as f:
-                header = f.read(2048)
+                header = f.read(512)
             
             field_type = None
             if _RE_VOL_SCALAR.search(header):
@@ -159,7 +176,15 @@ class OpenFOAMFieldParser:
             elif _RE_VOL_VECTOR.search(header):
                 field_type = "vector"
 
+            # Update path cache
             _FIELD_TYPE_CACHE[path_str] = (mtime, field_type)
+
+            # Update case-wide filename cache if type was found
+            if field_type:
+                if case_path_str not in _CASE_FIELD_TYPES:
+                    _CASE_FIELD_TYPES[case_path_str] = {}
+                _CASE_FIELD_TYPES[case_path_str][filename] = field_type
+
             return field_type
         except Exception:
             return None
