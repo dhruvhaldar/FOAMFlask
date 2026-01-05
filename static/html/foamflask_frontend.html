@@ -161,20 +161,59 @@
       }
     }
 
-    /* Glassmorphism Utilities */
+    /* Glassmorphism Utilities - Advanced */
     .glass {
-      background: rgba(255, 255, 255, 0.65);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+      background: rgba(255, 255, 255, 0.57);
+      backdrop-filter:  blur(16px) saturate(167%);
+      -webkit-backdrop-filter: blur(16px) saturate(167%);
+      border: 1px solid rgba(209, 213, 219, 0.3);
+      border-radius: 12px;
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 0 36px 18px rgba(255, 255, 255, 0.9);
+      position: relative;
+      overflow: hidden;
     }
     
     .glass-panel {
-        background: rgba(255, 255, 255, 0.4);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border: 0.2px solid rgb(30, 58, 138);
+        border-radius: 12px;
+        box-shadow: 
+          0 8px 32px rgba(0, 0, 0, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 0 36px 18px rgba(255, 255, 255, 0.9);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .glass::before, .glass-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      /* Gradient top border effect */
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      pointer-events: none;
+    }
+
+    .glass::after, .glass-panel::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 100%;
+      /* Gradient left border effect */
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
+      pointer-events: none;
     }
 
   </style>
@@ -284,7 +323,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- Create New Case -->
-        <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div class="glass-panel rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-bold mb-3 text-gray-800">Create New Case</h3>
           <p class="text-sm text-gray-500 mb-3">Create a blank case structure (0, constant, system).</p>
           <form class="flex flex-col gap-3" onsubmit="event.preventDefault(); createNewCase()">
@@ -303,7 +342,7 @@
         </div>
 
         <!-- Import Tutorial -->
-        <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div class="glass-panel rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-bold mb-3 text-gray-800">Import Tutorial</h3>
           <p class="text-sm text-gray-500 mb-3">Copy an OpenFOAM tutorial to your workspace.</p>
           <div class="flex flex-col gap-3">
