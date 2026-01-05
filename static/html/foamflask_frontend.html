@@ -181,7 +181,7 @@
         background: rgba(255, 255, 255, 0.75);
         backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border: 0.2px solid rgb(30, 58, 138);
+        border: 0.2px solid rgb(134, 25, 143);
         border-radius: 12px;
         box-shadow: 
           0 8px 32px rgba(0, 0, 0, 0.1),
@@ -220,10 +220,10 @@
 
 </head>
 
-<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 min-h-screen bg-fixed">
+<body class="bg-gradient-to-br from-pink-50 via-indigo-50 to-purple-50 text-gray-800 min-h-screen bg-fixed">
 
   <!-- Skip to content link -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-pink-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-fuchsia-500">
     Skip to main content
   </a>
 
@@ -260,7 +260,7 @@
         </div>
         <div class="flex space-x-1">
           <button id="nav-setup" aria-current="page"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] text-white">
             Setup
           </button>
           <button id="nav-geometry"
@@ -300,16 +300,16 @@
 
       <!-- Active Case Selection -->
       <div class="glass-panel rounded-lg p-4">
-        <h2 class="text-xl font-bold mb-2 text-blue-900">Active Case</h2>
-        <p class="text-sm text-blue-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
+        <h2 class="text-xl font-bold mb-2 text-pink-900">Active Case</h2>
+        <p class="text-sm text-pink-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
         <div class="flex flex-col sm:flex-row gap-2 items-center">
-          <select id="caseSelect" aria-label="Select Active Case" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium"
+          <select id="caseSelect" aria-label="Select Active Case" class="border border-pink-300 rounded px-3 py-2 flex-1 w-full font-medium"
             onchange="selectCase(this.value)">
             <option value="">-- Select a Case --</option>
           </select>
           <button id="refreshCaseListBtn" onclick="refreshCaseList(this)"
-            class="bg-blue-100 hover:bg-blue-200 text-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 px-4 py-2 rounded transition-colors flex items-center gap-1"
+            class="bg-pink-100 hover:bg-pink-200 text-pink-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-fuchsia-500 px-4 py-2 rounded transition-colors flex items-center gap-1"
             title="Refresh List">
             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -350,7 +350,7 @@
               {{ options|safe }}
             </select>
             <button id="loadTutorialBtn"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded font-medium transition-colors">
+              class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded font-medium transition-colors">
               Import Tutorial
             </button>
           </div>
@@ -410,11 +410,11 @@
              file:mr-4 file:py-2 file:px-4
              file:rounded-full file:border-0
              file:text-sm file:font-semibold
-             file:bg-blue-50 file:text-blue-700
-             hover:file:bg-blue-100
+             file:bg-pink-50 file:text-pink-700
+             hover:file:bg-pink-100
            " />
             <button id="uploadGeometryBtn" onclick="uploadGeometry(this)"
-              class="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
+              class="bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-fuchsia-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
               Upload
             </button>
           </div>
@@ -424,7 +424,7 @@
             <div class="flex justify-between items-center">
               <label for="geometrySelect" class="text-sm font-medium">Available Geometries</label>
               <button id="refreshGeometryBtn" onclick="refreshGeometryList(this)"
-                class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 rounded px-1"
+                class="text-xs text-pink-600 hover:text-pink-800 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-fuchsia-500 rounded px-1"
                 aria-label="Refresh geometry list">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -451,12 +451,12 @@
 
           <!-- Info Panel -->
           <div id="geometryInfo" class="hidden glass-panel rounded p-3 mt-4">
-            <h3 class="font-semibold text-blue-900 mb-2">Geometry Info</h3>
-            <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1">
+            <h3 class="font-semibold text-pink-900 mb-2">Geometry Info</h3>
+            <div id="geometryInfoContent" class="text-sm text-pink-800 space-y-1">
               <div class="mt-2 border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
-                <div class="bg-indigo-50 px-3 py-2 border-b border-indigo-100 flex justify-between items-center">
-                  <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Geometry Bounds</span>
-                  <span class="text-[10px] bg-white text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">World
+                <div class="bg-pink-50 px-3 py-2 border-b border-pink-100 flex justify-between items-center">
+                  <span class="text-xs font-bold text-pink-900 uppercase tracking-wider">Geometry Bounds</span>
+                  <span class="text-[10px] bg-white text-pink-600 px-1.5 py-0.5 rounded border border-pink-200">World
                     Coords</span>
                 </div>
                 <div class="p-2 space-y-1.5">
@@ -488,7 +488,7 @@
                   </div>
                   <!-- Z Axis -->
                   <div class="flex items-center text-xs">
-                    <div class="w-4 flex-shrink-0 font-bold text-blue-500">Z</div>
+                    <div class="w-4 flex-shrink-0 font-bold text-pink-500">Z</div>
                     <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
                       <span class="text-gray-400">min</span> <span id="geo-bound-z-min"></span> <span
                         class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
@@ -534,7 +534,7 @@
 
         <!-- BlockMesh Config -->
         <div class="glass-panel rounded-lg p-4 shadow-sm">
-          <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-fuchsia-500 rounded"
             onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
             <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Foundation</span></span>
             <span id="blockMeshSectionToggle" class="text-sm transition-transform duration-200">▼</span>
@@ -547,7 +547,7 @@
                   <input type="text" id="bmMin" placeholder="-1 -1 -1" class="border rounded px-2 py-1 text-sm" aria-label="BlockMesh Min Bounds">
                   <input type="text" id="bmMax" placeholder="1 1 1" class="border rounded px-2 py-1 text-sm" aria-label="BlockMesh Max Bounds">
                 </div>
-                <button onclick="fillBoundsFromGeometry()" class="text-xs text-blue-600 hover:underline mt-1">
+                <button onclick="fillBoundsFromGeometry()" class="text-xs text-pink-600 hover:underline mt-1">
                   Auto-fill from selected Geometry
                 </button>
               </div>
@@ -562,7 +562,7 @@
             </div>
             <div class="flex gap-2 pt-2">
               <button id="genBlockMeshBtn" onclick="generateBlockMeshDict()"
-                class="bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-3 py-1 rounded text-sm">
+                class="bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-3 py-1 rounded text-sm">
                 Generate blockMeshDict
               </button>
               <button id="runBlockMeshBtn" onclick="runMeshingCommand('blockMesh', this)"
@@ -584,19 +584,19 @@
             <div class="w-full lg:w-1/2 flex flex-col gap-4">
 
               <!-- Basic Global Settings -->
-              <div class="bg-blue-50 p-3 rounded border border-blue-200">
-                <h4 class="font-medium text-blue-900 mb-2">Global Settings</h4>
+              <div class="bg-pink-50 p-3 rounded border border-pink-200">
+                <h4 class="font-medium text-pink-900 mb-2">Global Settings</h4>
                 <div class="grid grid-cols-2 gap-3">
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmCastellated" checked class="rounded text-blue-600">
+                    <input type="checkbox" id="shmCastellated" checked class="rounded text-pink-600">
                     <span class="text-sm">Castellated Mesh</span>
                   </label>
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmSnap" checked class="rounded text-blue-600">
+                    <input type="checkbox" id="shmSnap" checked class="rounded text-pink-600">
                     <span class="text-sm">Snap</span>
                   </label>
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmLayers" class="rounded text-blue-600">
+                    <input type="checkbox" id="shmLayers" class="rounded text-pink-600">
                     <span class="text-sm">Add Layers</span>
                   </label>
                 </div>
@@ -706,7 +706,7 @@
 
           <div class="flex gap-2 pt-4 border-t mt-4">
             <button id="genSnappyHexMeshBtn" onclick="generateSnappyHexMeshDict()"
-              class="bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded text-sm font-medium">
+              class="bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded text-sm font-medium">
               Generate snappyHexMeshDict
             </button>
             <button id="runSnappyHexMeshBtn" onclick="runMeshingCommand('snappyHexMesh', this)"
@@ -724,7 +724,7 @@
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-sm font-semibold">Meshing Output</h3>
           <button onclick="copyMeshingOutput()"
-            class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none focus:underline"
+            class="text-xs text-pink-600 hover:text-pink-800 flex items-center gap-1 focus:outline-none focus:underline"
             aria-label="Copy meshing output">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -760,7 +760,7 @@
             Allclean
           </button>
           <button id="runBlockMeshBtnRun" onclick="runCommand('blockMesh', this)"
-            class="bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm8-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm9-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
             </svg>
@@ -788,7 +788,7 @@
         <div class="flex justify-between items-center mb-2">
       <h2 class="text-xl font-semibold flex items-center">Console Log
         <div class="relative group ml-1">
-          <button type="button" aria-describedby="console-log-tooltip" class="text-blue-500 cursor-help focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full w-6 h-6 flex items-center justify-center text-sm" aria-label="Information about Console Log">ℹ️</button>
+          <button type="button" aria-describedby="console-log-tooltip" class="text-pink-500 cursor-help focus:outline-none focus:ring-2 focus:ring-fuchsia-500 rounded-full w-6 h-6 flex items-center justify-center text-sm" aria-label="Information about Console Log">ℹ️</button>
           <div id="console-log-tooltip" role="tooltip"
             class="invisible group-hover:visible group-focus-within:visible opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-10 pointer-events-none">
                 Output from OpenFOAM is viewed here
@@ -861,7 +861,7 @@
                 <option value="">-- Select a mesh file --</option>
               </select>
               <button id="loadMeshBtn" onclick="loadMeshVisualization()"
-                class="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2">
+                class="bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-fuchsia-500 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2">
                 Load Mesh
               </button>
             </div>
@@ -958,9 +958,9 @@
             </div>
 
             <!-- Mesh Info -->
-            <div id="meshInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3">
-              <h3 class="font-semibold text-blue-900 mb-2">Mesh Information</h3>
-              <div id="meshInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
+            <div id="meshInfo" class="hidden bg-pink-50 border border-pink-200 rounded p-3">
+              <h3 class="font-semibold text-pink-900 mb-2">Mesh Information</h3>
+              <div id="meshInfoContent" class="text-sm text-pink-800 grid grid-cols-2 gap-2"></div>
             </div>
           </div>
 
@@ -1051,7 +1051,7 @@
       <div id="plotsContainer" class="w-full bg-white relative">
         <div id="plotsLoading"
           class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 z-50 hidden transition-opacity duration-300">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mb-3"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500 mb-3"></div>
           <span class="text-lg font-semibold text-gray-700">Loading Plot Data...</span>
         </div>
 
@@ -1060,13 +1060,13 @@
 
           <!-- Pressure Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 relative group">
             <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button
               onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);"
-              class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Pressure Data as CSV">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -1090,12 +1090,12 @@
 
           <!-- Velocity Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 relative group">
             <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
-              class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Velocity Data as separate CSV">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -1119,12 +1119,12 @@
 
           <!-- Turbulence Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 relative group">
             <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
-              class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Turbulence Data as CSV">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -1148,12 +1148,12 @@
 
           <!-- Residuals Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 relative group">
+            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 relative group">
             <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
-              class="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Residuals Data as CSV">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -1244,7 +1244,7 @@
 
             <!-- Load Selected VTK Button -->
             <button onclick="loadContourVTK()"
-              class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full font-medium">
+              class="bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-4 py-2 rounded w-full font-medium">
               Load for Contour
             </button>
 
@@ -1258,10 +1258,10 @@
             <div class="flex flex-col gap-2">
               <label for="scalarField" class="text-sm font-medium">Scalar Field</label>
               <select id="scalarField"
-                class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-blue-500 [&_.cell-data-option]:text-green-500">
+                class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-pink-500 [&_.cell-data-option]:text-green-500">
                 <style>
                   option.point-data-option {
-                    color: #3b82f6;
+                    color: #d946ef;
                   }
 
                   option.cell-data-option {
@@ -1300,7 +1300,7 @@
                 </div>
               </div>
               <button id="RangeBtn"
-                class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors duration-200 w-full">
+                class="mt-2 bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white font-medium py-2 px-4 rounded transition-colors duration-200 w-full">
                 Set Range
               </button>
             </div>
@@ -1315,14 +1315,14 @@
 
             <!-- Generate Contours Button -->
             <button id="generateContoursBtn" onclick="generateContours()"
-              class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2">
+              class="bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)] hover:bg-pink-600 text-white px-4 py-2 rounded w-full mt-2">
               Generate Contours
             </button>
 
             <!-- Contour Info -->
-            <div id="contourInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
-              <h3 class="font-semibold text-blue-900 mb-2">Contour Information</h3>
-              <div id="contourInfoContent" class="text-sm text-blue-800 grid grid-cols-2 gap-2"></div>
+            <div id="contourInfo" class="hidden bg-pink-50 border border-pink-200 rounded p-3 mt-4">
+              <h3 class="font-semibold text-pink-900 mb-2">Contour Information</h3>
+              <div id="contourInfoContent" class="text-sm text-pink-800 grid grid-cols-2 gap-2"></div>
             </div>
           </div>
 
@@ -1449,20 +1449,20 @@
           <div>FOAMFlask &copy; 2025</div>
           <div class="text-xs mt-1">
             Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer"
-              class="text-blue-600 hover:text-blue-800">GNU GPLv3</a>
+              class="text-pink-600 hover:text-pink-800">GNU GPLv3</a>
           </div>
         </div>
         <div class="flex items-center space-x-4">
           <span>Powered by:</span>
 
           <a href="https://pyvista.org/" target="_blank" rel="noopener noreferrer"
-            class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+            class="flex items-center text-pink-600 hover:text-pink-800 transition-colors">
             <img src="{{ url_for('static', filename='icons/Pyvista-logo.avif') }}" alt="PyVista" class="h-8 w-auto">
           </a>
           <span class="text-gray-400">|</span>
 
           <a href="https://plotly.com/" target="_blank" rel="noopener noreferrer"
-            class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+            class="flex items-center text-pink-600 hover:text-pink-800 transition-colors">
             <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}" alt="Plotly" class="h-8 w-auto">
           </a>
         </div>
@@ -1474,3 +1474,5 @@
 </body>
 
 </html>
+
+
