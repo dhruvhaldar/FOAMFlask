@@ -441,7 +441,7 @@ const switchPage = (pageName: string): void => {
     const navButton = document.getElementById(`nav-${page}`);
     if (pageElement) pageElement.classList.add("hidden");
     if (navButton) {
-      navButton.classList.remove("bg-white/40", "backdrop-blur-sm", "border", "border-white/20", "text-blue-900", "shadow-sm");
+      navButton.classList.remove("bg-blue-500", "text-white");
       navButton.classList.add("text-gray-700", "hover:bg-gray-100");
       navButton.removeAttribute("aria-current");
     }
@@ -452,7 +452,7 @@ const switchPage = (pageName: string): void => {
   if (selectedPage) selectedPage.classList.remove("hidden");
   if (selectedNav) {
     selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-    selectedNav.classList.add("bg-white/40", "backdrop-blur-sm", "border", "border-white/20", "text-blue-900", "shadow-sm");
+    selectedNav.classList.add("bg-blue-500", "text-white");
     selectedNav.setAttribute("aria-current", "page");
   }
 
