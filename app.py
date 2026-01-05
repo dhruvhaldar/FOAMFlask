@@ -1376,6 +1376,17 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
 
+    # Security: Validate dimensions to prevent DoS
+    if not isinstance(width, int) or not isinstance(height, int):
+        return jsonify({"error": "Width and height must be integers"}), 400
+
+    MAX_DIMENSION = 4096
+    if width > MAX_DIMENSION or height > MAX_DIMENSION:
+        return jsonify({"error": f"Dimensions too large (max {MAX_DIMENSION}px)"}), 400
+
+    if width < 1 or height < 1:
+        return jsonify({"error": "Dimensions must be positive"}), 400
+
     try:
         # Security: Validate path is within CASE_ROOT
         try:

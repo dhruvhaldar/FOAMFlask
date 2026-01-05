@@ -123,6 +123,12 @@ class MeshVisualizer:
             Base64-encoded PNG image as a string, or None if an error occurs.
         """
         try:
+            # Security: Limit dimensions to prevent DoS
+            MAX_DIMENSION = 4096
+            if width > MAX_DIMENSION or height > MAX_DIMENSION:
+                logger.error(f"Screenshot dimensions exceed limit ({MAX_DIMENSION}px): {width}x{height}")
+                return None
+
             path = Path(file_path)
 
             # Load mesh if not already loaded or if a different file is requested
