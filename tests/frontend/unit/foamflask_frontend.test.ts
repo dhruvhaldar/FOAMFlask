@@ -126,7 +126,11 @@ describe('FoamFlask Frontend', () => {
     const notification = container?.querySelector('.notification');
     expect(notification).toBeTruthy();
     expect(notification?.querySelector('.message-slot')?.textContent).toBe('Test Message');
-    expect(notification?.classList.contains('bg-green-500')).toBe(true);
+    // Actual class is bg-green-500/80 which is a single class string if tailwind hasn't processed it into separate classes yet in jsdom environment?
+    // The code sets className += ` ${colors[type]}`.
+    // colors.success = "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl"
+    // "bg-green-500/80" is the class name.
+    expect(notification?.className).toContain('bg-green-500/80');
   });
 
   it('toggleSection should toggle visibility and rotate icon', () => {
