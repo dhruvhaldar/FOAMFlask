@@ -527,6 +527,20 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
 
     try:
         case_dir_path = Path(data["caseDir"]).resolve()
+
+        # Security: Prevent setting CASE_ROOT to system directories
+        forbidden_prefixes = [
+            "/bin", "/boot", "/dev", "/etc", "/lib", "/lib64",
+            "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var"
+        ]
+        resolved_str = str(case_dir_path)
+
+        if resolved_str == "/":
+            return jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system root"}), 400
+
+        if any(resolved_str == p or resolved_str.startswith(p + os.sep) for p in forbidden_prefixes):
+            return jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system directory"}), 400
+
         case_dir_path.mkdir(parents=True, exist_ok=True)
         CASE_ROOT = str(case_dir_path)
         save_config({"CASE_ROOT": CASE_ROOT})
