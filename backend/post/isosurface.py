@@ -40,7 +40,32 @@ class IsosurfaceVisualizer:
         self.mesh: Optional[DataSet] = None
         self.contours: Optional[PolyData] = None
         self.plotter: Optional[Plotter] = None
+        self.current_mesh_path: Optional[str] = None
+        self.current_mesh_mtime: Optional[float] = None
         logger.info("[FOAMFlask] [IsosurfaceVisualizer] Initialized")
+
+    def _decimate_mesh(self, mesh: DataSet, target_faces: int = 100000) -> DataSet:
+        """Decimate mesh to reduce size for web visualization."""
+        if mesh.n_cells <= target_faces:
+            return mesh
+
+        try:
+            if not isinstance(mesh, pv.PolyData):
+                mesh_poly = mesh.extract_surface()
+            else:
+                mesh_poly = mesh
+
+            if mesh_poly.n_cells > target_faces:
+                reduction = 1.0 - (target_faces / mesh_poly.n_cells)
+                reduction = max(0.0, min(0.95, reduction))
+
+                logger.info(f"Decimating mesh from {mesh_poly.n_cells} to ~{target_faces} cells (reduction={reduction:.2f})")
+                mesh_poly = mesh_poly.decimate(reduction)
+
+            return mesh_poly
+        except Exception as e:
+            logger.warning(f"Mesh decimation failed: {e}")
+            return mesh
 
     def load_mesh(
         self, file_path: str
@@ -68,27 +93,41 @@ class IsosurfaceVisualizer:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"Mesh file not found: {file_path}")
 
-            logger.info(
-                f"[FOAMFlask] [IsosurfaceVisualizer] " f"Loading mesh from: {file_path}"
-            )
+            mtime = os.path.getmtime(file_path)
 
-            # Read the mesh with progress bar using PyVista
-            self.mesh = pv.read(file_path, progress_bar=True)
-            logger.info(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Successfully loaded mesh: {self.mesh.n_points} points, "
-                f"{self.mesh.n_cells} cells"
-            )
-
-            # Compute velocity magnitude if U vector field exists
-            if "U" in self.mesh.point_data:
-                self.mesh.point_data["U_Magnitude"] = np.linalg.norm(
-                    self.mesh.point_data["U"], axis=1
-                )
+            # ⚡ Bolt Optimization: Cache Check
+            if (
+                self.mesh is not None
+                and self.current_mesh_path == file_path
+                and self.current_mesh_mtime == mtime
+            ):
+                logger.info(f"[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for {file_path}")
+            else:
                 logger.info(
-                    "[FOAMFlask] [IsosurfaceVisualizer] "
-                    "Computed U_Magnitude from U field"
+                    f"[FOAMFlask] [IsosurfaceVisualizer] " f"Loading mesh from: {file_path}"
                 )
+
+                # Read the mesh with progress bar using PyVista
+                # ⚡ Bolt Optimization: Disable progress bar
+                self.mesh = pv.read(file_path, progress_bar=False)
+                self.current_mesh_path = file_path
+                self.current_mesh_mtime = mtime
+
+                logger.info(
+                    f"[FOAMFlask] [IsosurfaceVisualizer] "
+                    f"Successfully loaded mesh: {self.mesh.n_points} points, "
+                    f"{self.mesh.n_cells} cells"
+                )
+
+                # Compute velocity magnitude if U vector field exists
+                if "U" in self.mesh.point_data:
+                    self.mesh.point_data["U_Magnitude"] = np.linalg.norm(
+                        self.mesh.point_data["U"], axis=1
+                    )
+                    logger.info(
+                        "[FOAMFlask] [IsosurfaceVisualizer] "
+                        "Computed U_Magnitude from U field"
+                    )
 
             # Get mesh information
             mesh_info = {
@@ -116,11 +155,6 @@ class IsosurfaceVisualizer:
                         "100": float(np.percentile(u_mag, 100)),
                     },
                 }
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] U_Magnitude range: "
-                    f"[{mesh_info['u_magnitude']['min']:.3f}, "
-                    f"{mesh_info['u_magnitude']['max']:.3f}]"
-                )
 
             return mesh_info
 
@@ -352,8 +386,11 @@ class IsosurfaceVisualizer:
 
             # Add base mesh if requested
             if show_base_mesh:
+                # ⚡ Bolt Optimization: Decimate base mesh for display
+                display_mesh = self._decimate_mesh(self.mesh, target_faces=100000)
+
                 plotter.add_mesh(
-                    self.mesh,
+                    display_mesh,
                     opacity=base_mesh_opacity,
                     scalars=scalar_field,
                     show_scalar_bar=True,
@@ -378,8 +415,20 @@ class IsosurfaceVisualizer:
 
             # Add isosurfaces with slider OR static contours
             if show_isovalue_slider:
+                # Note: add_mesh_isovalue requires the mesh.
+                # Decimating before isosurfacing might reduce quality of the contour itself.
+                # However, for web interactivity, performance is key.
+                # Since we compute isosurfaces on the fly in the browser (via trame?),
+                # passing a huge mesh is slow.
+                # PyVista's `add_mesh_isovalue` uses a widget in Python side?
+                # If backend is pythreejs or similar, it might pre-compute.
+                # Since we use `export_html` (trame backend embedded), it likely embeds the full mesh if we use the widget.
+                # To be safe and performant, we use the decimated mesh for the widget source too if mesh is huge.
+
+                widget_mesh = self._decimate_mesh(self.mesh, target_faces=200000)
+
                 plotter.add_mesh_isovalue(
-                    self.mesh,
+                    widget_mesh,
                     scalars=scalar_field,
                     compute_normals=True,
                     compute_gradients=False,
@@ -407,8 +456,11 @@ class IsosurfaceVisualizer:
                     )
 
                 if self.contours is not None and self.contours.n_points > 0:
+                    # Decimate contours if they are huge
+                    display_contours = self._decimate_mesh(self.contours, target_faces=100000)
+
                     plotter.add_mesh(
-                        self.contours,
+                        display_contours,
                         opacity=contour_opacity,
                         show_scalar_bar=False,
                         color=contour_color,
@@ -418,9 +470,7 @@ class IsosurfaceVisualizer:
                         f"[FOAMFlask] [IsosurfaceVisualizer] "
                         f"[get_interactive_html] "
                         f"Added {result['num_isosurfaces']} "
-                        f"static isosurfaces "
-                        f"({self.contours.n_points} points, "
-                        f"{self.contours.n_cells} cells)"
+                        f"static isosurfaces"
                     )
                 else:
                     logger.warning(
