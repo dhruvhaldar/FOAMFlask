@@ -310,7 +310,7 @@
           </select>
           <button id="refreshCaseListBtn" onclick="refreshCaseList(this)"
             class="bg-cyan-100 hover:bg-cyan-200 text-cyan-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 px-4 py-2 rounded transition-colors flex items-center gap-1"
-            title="Refresh List">
+            title="Refresh List" aria-label="Refresh case list">
             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
@@ -852,7 +852,11 @@
                   Generate VTK files (foamToVTK)
                 </button>
                 <button id="refreshMeshListBtn" onclick="refreshMeshList(this)"
-                  class="bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-white px-4 py-2 rounded text-sm transition-opacity duration-300">
+                  class="bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-white px-4 py-2 rounded text-sm transition-opacity duration-300 flex items-center gap-1"
+                  aria-label="Refresh mesh list">
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
                   Refresh List
                 </button>
               </div>
