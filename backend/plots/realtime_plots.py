@@ -165,10 +165,10 @@ class OpenFOAMFieldParser:
                     return cached_type
 
             # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
-            # ⚡ Bolt Optimization: Reduced read size from 2048 to 512 bytes.
-            # The class definition is almost always in the first few lines.
+            # ⚡ Bolt Optimization: Reduced read size to 2048 bytes (enough for header + banner).
+            # The class definition is almost always in the first few lines, but banner can be large.
             with field_path.open("r", encoding="utf-8") as f:
-                header = f.read(512)
+                header = f.read(2048)
             
             field_type = None
             if _RE_VOL_SCALAR.search(header):
@@ -186,7 +186,8 @@ class OpenFOAMFieldParser:
                 _CASE_FIELD_TYPES[case_path_str][filename] = field_type
 
             return field_type
-        except Exception:
+        except Exception as e:
+            # print(f"DEBUG: _get_field_type failed for {field_entry}: {e}")
             return None
 
     def _scan_time_dir(self, time_path: Path) -> Tuple[List[str], bool, List[str]]:
@@ -796,58 +797,48 @@ class OpenFOAMFieldParser:
 
             new_offset = start_offset
 
-            # ⚡ Bolt Optimization: Use binary mode to bulk read new data.
-            # This avoids expensive readline() loops and repeated tell() syscalls.
+            # ⚡ Bolt Optimization: Stream file line-by-line to avoid loading massive files into RAM.
+            # This reduces memory usage from O(N) to O(1) for log parsing.
             with log_path.open("rb") as f:
                 if start_offset > 0:
                     f.seek(start_offset)
 
-                # Read all new bytes
-                chunk = f.read()
-                if not chunk:
-                    # No new data
-                    _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
-                    return residuals
+                for line in f:
+                    # Check for complete line (active writes might leave incomplete lines at EOF)
+                    if not line.endswith(b'\n'):
+                        break
 
-                # Check for complete lines
-                # We need a newline at the end of the valid chunk.
-                # However, chunk may not end with newline if write is partial.
-                # We should only process up to the last newline.
-                last_newline = chunk.rfind(b'\n')
-
-                if last_newline == -1:
-                    # No complete lines found in the new chunk.
-                    # Do not advance offset, do not process partial data.
-                    pass
-                else:
-                    # Slice valid data
-                    valid_chunk = chunk[:last_newline+1]
-
-                    # Update offset
-                    new_offset = start_offset + len(valid_chunk)
-
-                    # Decode and process lines
+                    line_len = len(line)
                     try:
-                        text_content = valid_chunk.decode("utf-8", errors="replace")
+                        # Decode single line
+                        # errors='replace' ensures we don't crash on binary garbage
+                        line_str = line.decode("utf-8", errors="replace")
 
-                        for line in text_content.splitlines():
-                            # Optimized time matching
-                            if "Time =" in line:
-                                time_match = TIME_REGEX.search(line)
-                                if time_match:
-                                    current_time = float(time_match.group(1))
-                                    residuals["time"].append(current_time)
+                        # Optimized time matching
+                        if "Time =" in line_str:
+                            time_match = TIME_REGEX.search(line_str)
+                            if time_match:
+                                current_time = float(time_match.group(1))
+                                residuals["time"].append(current_time)
 
-                            # Optimized residual matching
-                            if "Initial residual" in line:
-                                residual_match = RESIDUAL_REGEX.search(line)
-                                if residual_match and residuals["time"]:
+                        # Optimized residual matching
+                        if "Initial residual" in line_str:
+                            # Optimization: Check if we have any time steps first
+                            if residuals["time"]:
+                                residual_match = RESIDUAL_REGEX.search(line_str)
+                                if residual_match:
                                     field = residual_match.group(1)
                                     value = float(residual_match.group(2))
                                     if field in residuals:
                                         residuals[field].append(value)
+
+                        # Only advance offset after successful processing attempt
+                        new_offset += line_len
+
                     except Exception as decode_error:
-                        logger.error(f"Error decoding log chunk: {decode_error}")
+                        logger.error(f"Error processing log line: {decode_error}")
+                        # Advance offset to avoid getting stuck on bad lines
+                        new_offset += line_len
 
             # Update cache
             _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)
