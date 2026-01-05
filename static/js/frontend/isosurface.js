@@ -115,7 +115,7 @@ function showLoadingState(container, message = 'Loading...') {
         return;
     container.innerHTML = `
         <div class="flex items-center justify-center h-full">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-600"></div>
             <span class="ml-4 text-gray-600"></span>
         </div>
     `;
@@ -291,7 +291,7 @@ function handleContourError(placeholder, viewer, error) {
                 </div>
                 <button 
                     onclick="generateContours()" 
-                    class="mt-4 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
+                    class="mt-4 px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700">
                     Try Again
                 </button>
             </div>

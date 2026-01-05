@@ -129,7 +129,7 @@ const saveLogDebounced = () => {
 };
 // Colors
 const plotlyColors = {
-    blue: "#ec4899",
+    blue: "#1dbde6",
     orange: "#ff7f0e",
     green: "#2ca02c",
     red: "#d62728",
@@ -305,7 +305,7 @@ const switchPage = (pageName) => {
         if (pageElement)
             pageElement.classList.add("hidden");
         if (navButton) {
-            navButton.classList.remove("bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)]", "text-white");
+            navButton.classList.remove("bg-cyan-600", "text-white");
             navButton.classList.add("text-gray-700", "hover:bg-gray-100");
             navButton.removeAttribute("aria-current");
         }
@@ -316,7 +316,7 @@ const switchPage = (pageName) => {
         selectedPage.classList.remove("hidden");
     if (selectedNav) {
         selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-        selectedNav.classList.add("bg-[linear-gradient(225deg,hsla(339,100%,55%,1)_0%,hsla(334,75%,55%,1)_23%,hsla(317,42%,55%,1)_44%,hsla(206,72%,65%,1)_88%,hsla(197,100%,64%,1)_100%)]", "text-white");
+        selectedNav.classList.add("bg-cyan-600", "text-white");
         selectedNav.setAttribute("aria-current", "page");
     }
     // Auto-refresh lists based on page
@@ -397,7 +397,7 @@ const showNotification = (message, type, duration = 5000) => {
         success: "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
         error: "bg-red-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
         warning: "bg-yellow-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
-        info: "bg-pink-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        info: "bg-cyan-600/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
     };
     notification.className += ` ${colors[type]}`;
     // Set icon and message safely
@@ -524,7 +524,7 @@ const flushOutputBuffer = () => {
         if (type === "stderr")
             className = "text-red-600";
         else if (type === "tutorial")
-            className = "text-pink-600 font-semibold";
+            className = "text-cyan-600 font-semibold";
         else if (type === "info")
             className = "text-yellow-600 italic";
         const line = document.createElement("div");
