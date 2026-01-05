@@ -305,7 +305,7 @@ const switchPage = (pageName) => {
         if (pageElement)
             pageElement.classList.add("hidden");
         if (navButton) {
-            navButton.classList.remove("bg-blue-500", "text-white");
+            navButton.classList.remove("bg-white/40", "backdrop-blur-sm", "border", "border-white/20", "text-blue-900", "shadow-sm");
             navButton.classList.add("text-gray-700", "hover:bg-gray-100");
             navButton.removeAttribute("aria-current");
         }
@@ -316,7 +316,7 @@ const switchPage = (pageName) => {
         selectedPage.classList.remove("hidden");
     if (selectedNav) {
         selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-        selectedNav.classList.add("bg-blue-500", "text-white");
+        selectedNav.classList.add("bg-white/40", "backdrop-blur-sm", "border", "border-white/20", "text-blue-900", "shadow-sm");
         selectedNav.setAttribute("aria-current", "page");
     }
     // Auto-refresh lists based on page
@@ -394,10 +394,10 @@ const showNotification = (message, type, duration = 5000) => {
     }
     // Set colors
     const colors = {
-        success: "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
-        error: "bg-red-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
-        warning: "bg-yellow-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
-        info: "bg-blue-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        success: "bg-green-500 text-white",
+        error: "bg-red-500 text-white",
+        warning: "bg-yellow-500 text-white",
+        info: "bg-blue-500 text-white",
     };
     notification.className += ` ${colors[type]}`;
     // Set icon and message safely
