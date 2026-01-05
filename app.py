@@ -480,10 +480,17 @@ def index() -> str:
     Returns:
         Rendered HTML template with tutorials and case root.
     """
+    # Reload template for development
+    try:
+        with TEMPLATE_FILE.open("r", encoding="utf-8") as f:
+            template_content = f.read()
+    except (OSError, UnicodeDecodeError):
+        template_content = TEMPLATE # Fallback to cached/initial
+
     tutorials = get_tutorials()
     # Use escape to prevent XSS in option values
     options_html = "\n".join(f'<option value="{escape(t)}">{escape(t)}</option>' for t in tutorials)
-    return render_template_string(TEMPLATE, options=options_html, CASE_ROOT=CASE_ROOT)
+    return render_template_string(template_content, options=options_html, CASE_ROOT=CASE_ROOT)
 
 
 @app.route("/api/startup_status", methods=["GET"])
