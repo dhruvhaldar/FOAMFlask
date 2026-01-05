@@ -160,11 +160,28 @@
         transform: translateY(0);
       }
     }
+
+    /* Glassmorphism Utilities */
+    .glass {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    }
+    
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
   </style>
 
 </head>
 
-<body class="bg-gray-50 text-gray-800 min-h-screen">
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800 min-h-screen bg-fixed">
 
   <!-- Skip to content link -->
   <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -196,7 +213,7 @@
   </template>
 
   <!-- Navbar -->
-  <nav class="bg-white shadow-md sticky top-0 z-40">
+  <nav class="glass sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-10">
         <div class="flex items-center">
@@ -240,10 +257,10 @@
   <div id="main-content" class="px-4 py-2 sm:px-6 outline-none" tabindex="-1">
 
     <!-- Setup Page -->
-    <div id="page-setup" class="page max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+    <div id="page-setup" class="page max-w-4xl mx-auto glass rounded-lg p-6 flex flex-col gap-6">
 
       <!-- Active Case Selection -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="glass-panel rounded-lg p-4">
         <h2 class="text-xl font-bold mb-2 text-blue-900">Active Case</h2>
         <p class="text-sm text-blue-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
@@ -338,14 +355,14 @@
     </div>
 
     <!-- Geometry Page -->
-    <div id="page-geometry" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div id="page-geometry" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Geometry Management</h2>
       </div>
 
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Left Sidebar: Controls -->
-        <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div class="w-full lg:w-1/3 flex flex-col gap-4 glass-panel rounded-lg p-4">
 
           <!-- File Upload -->
           <div class="flex flex-col gap-2">
@@ -394,7 +411,7 @@
           </div>
 
           <!-- Info Panel -->
-          <div id="geometryInfo" class="hidden bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+          <div id="geometryInfo" class="hidden glass-panel rounded p-3 mt-4">
             <h3 class="font-semibold text-blue-900 mb-2">Geometry Info</h3>
             <div id="geometryInfoContent" class="text-sm text-blue-800 space-y-1">
               <div class="mt-2 border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
@@ -451,7 +468,7 @@
         </div>
 
         <!-- Right Column: Viewer -->
-        <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative"
+        <div class="w-full lg:w-2/3 glass-panel rounded-lg overflow-hidden relative"
           style="min-height: 500px;">
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
           <div id="geometryPlaceholder"
@@ -463,7 +480,7 @@
     </div>
 
     <!-- Meshing Page -->
-    <div id="page-meshing" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div id="page-meshing" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Meshing Configuration</h2>
       </div>
@@ -477,7 +494,7 @@
       <div class="flex flex-col gap-6">
 
         <!-- BlockMesh Config -->
-        <div class="border border-gray-200 rounded-lg p-4 shadow-sm bg-gray-50">
+        <div class="glass-panel rounded-lg p-4 shadow-sm">
           <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
             onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
             <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Foundation</span></span>
@@ -617,7 +634,7 @@
               </div>
 
               <!-- Selected Object Properties -->
-              <div id="shmObjectProps" class="bg-gray-50 p-3 rounded border border-gray-200 hidden">
+              <div id="shmObjectProps" class="glass-panel p-3 rounded hidden">
                 <div class="flex justify-between items-center mb-2">
                   <h5 class="font-semibold text-sm" id="shmSelectedObjectName">Object Name</h5>
                 </div>
@@ -683,7 +700,7 @@
     </div>
 
     <!-- Run Page -->
-    <div id="page-run" class="page hidden max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 flex flex-col gap-6">
+    <div id="page-run" class="page hidden max-w-4xl mx-auto glass rounded-lg p-6 flex flex-col gap-6">
 
       <!-- Run Commands Section -->
       <div class="my-4">
@@ -763,13 +780,13 @@
           </div>
         </div>
         <div id="output"
-          class="bg-gray-100 border border-gray-300 rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0" role="log" aria-label="Console Output Log"></div>
+          class="glass-panel rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0" role="log" aria-label="Console Output Log"></div>
       </div>
 
     </div>
 
     <!-- Visualizer Page -->
-    <div id="page-visualizer" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div id="page-visualizer" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex flex-col gap-4">
         <!-- Header -->
         <div class="flex justify-between items-center">
@@ -783,7 +800,7 @@
         <div class="flex flex-col lg:flex-row gap-6">
 
           <!-- Left Sidebar: Controls -->
-          <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="w-full lg:w-1/3 flex flex-col gap-4 glass-panel rounded-lg p-4">
 
             <!-- Mesh Selection -->
             <div class="flex flex-col gap-2">
@@ -1386,7 +1403,7 @@
   <script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
 
 
-  <footer class="py-4 bg-white border-t border-gray-200">
+  <footer class="py-4 glass border-t border-gray-200/50 mt-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 space-y-2 md:space-y-0">
         <div class="text-center md:text-left">

@@ -394,10 +394,10 @@ const showNotification = (message, type, duration = 5000) => {
     }
     // Set colors
     const colors = {
-        success: "bg-green-500 text-white",
-        error: "bg-red-500 text-white",
-        warning: "bg-yellow-500 text-white",
-        info: "bg-blue-500 text-white",
+        success: "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        error: "bg-red-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        warning: "bg-yellow-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        info: "bg-blue-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
     };
     notification.className += ` ${colors[type]}`;
     // Set icon and message safely
