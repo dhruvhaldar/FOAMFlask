@@ -9,6 +9,7 @@ mesh data for visualization purposes.
 import base64
 import logging
 import tempfile
+import os
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
@@ -277,7 +278,8 @@ class MeshVisualizer:
                 # Clean up temporary file
                 try:
                     tmp_path.unlink()
-                except OSError:
+                except Exception:
+                    # Catch all exceptions during cleanup to ensure we still return content
                     pass
 
                 return html_content
@@ -296,8 +298,13 @@ class MeshVisualizer:
     ) -> List[Dict[str, Union[str, int]]]:
         """Get list of available mesh files in the case directory.
 
-        This method searches for VTK/VTP files in common OpenFOAM case
-        directories and returns information about each found mesh file.
+        This method searches for VTK/VTP files in the case directory.
+
+        ⚡ Bolt Optimization:
+        We use `os.walk` with directory pruning to avoid scanning the thousands of time
+        directories common in OpenFOAM cases (e.g., 0, 0.1, 100, etc.).
+        This allows us to find meshes in nested folders (e.g. `VTK/`, `postProcessing/`, `custom/subdir`)
+        without paying the penalty of visiting every single time step directory.
 
         Args:
             case_dir: Base case directory path.
@@ -319,33 +326,53 @@ class MeshVisualizer:
                 return []
 
             mesh_files = []
+            seen_paths = set()
+            # Use a set for faster lookup
+            extensions = {".vtk", ".vtp", ".vtu"}
 
-            # Common locations for mesh files in OpenFOAM cases
-            search_dirs = [
-                tutorial_path,
-                tutorial_path / "VTK",
-                tutorial_path / "postProcessing",
-            ]
+            # Walk the directory tree
+            for root, dirs, files in os.walk(str(tutorial_path)):
+                # Prune directories in-place to optimize scan
+                # We iterate a copy of dirs to allow modification
+                for d in list(dirs):
+                    # Skip hidden directories
+                    if d.startswith("."):
+                        dirs.remove(d)
+                        continue
 
-            # Search for VTK/VTP files
-            for search_dir in search_dirs:
-                if not search_dir.exists():
-                    continue
+                    # ⚡ Bolt Optimization: Skip time directories
+                    # OpenFOAM time directories are numeric (e.g., "0", "0.1", "100")
+                    # We prune them to avoid scanning thousands of field files.
+                    try:
+                        float(d)
+                        # It's a number, likely a time directory. Prune it.
+                        dirs.remove(d)
+                    except ValueError:
+                        # Not a number. Keep it, unless it's a known non-mesh source
+                        if d in ["system"]:
+                            dirs.remove(d)
 
-                for file_path in search_dir.rglob("*"):
-                    if file_path.suffix in [".vtk", ".vtp", ".vtu"]:
+                root_path = Path(root)
+                for file in files:
+                    if Path(file).suffix in extensions:
+                        file_path = root_path / file
+                        path_str = str(file_path)
+
+                        if path_str in seen_paths:
+                            continue
+
+                        seen_paths.add(path_str)
                         try:
                             rel_path = file_path.relative_to(tutorial_path)
                             mesh_files.append(
                                 {
                                     "name": file_path.name,
-                                    "path": str(file_path),
+                                    "path": path_str,
                                     "relative_path": str(rel_path),
                                     "size": file_path.stat().st_size,
                                 }
                             )
-                        except ValueError:
-                            # Skip if path is not relative
+                        except (ValueError, OSError):
                             continue
 
             return mesh_files
