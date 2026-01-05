@@ -204,31 +204,31 @@
         </div>
         <div class="flex space-x-1">
           <button id="nav-setup" aria-current="page"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-blue-500 text-white">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-blue-500 text-white">
             Setup
           </button>
           <button id="nav-geometry"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Geometry
           </button>
           <button id="nav-meshing"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Meshing
           </button>
           <button id="nav-visualizer"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Visualizer
           </button>
           <button id="nav-run"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Run/Log
           </button>
           <button id="nav-plots"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Plots
           </button>
           <button id="nav-post"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-gray-700 hover:bg-gray-100">
             Post
           </button>
         </div>
@@ -248,7 +248,7 @@
         <p class="text-sm text-blue-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
         <div class="flex flex-col sm:flex-row gap-2 items-center">
-          <select id="caseSelect" aria-label="Select Active Case" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium"
+          <select id="caseSelect" aria-label="Select Active Case" class="border border-blue-300 rounded px-3 py-2 flex-1 w-full font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             onchange="selectCase(this.value)">
             <option value="">-- Select a Case --</option>
           </select>
@@ -290,7 +290,7 @@
           <h3 class="text-lg font-bold mb-3 text-gray-800">Import Tutorial</h3>
           <p class="text-sm text-gray-500 mb-3">Copy an OpenFOAM tutorial to your workspace.</p>
           <div class="flex flex-col gap-3">
-            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm" aria-label="Select Tutorial">
+            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Select Tutorial">
               {{ options|safe }}
             </select>
             <button id="loadTutorialBtn"
@@ -378,7 +378,7 @@
                 Refresh
               </button>
             </div>
-            <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full" size="5">
+            <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" size="5">
               <!-- Populated by JS -->
             </select>
             <div class="flex gap-2">
@@ -801,7 +801,7 @@
                 </button>
               </div>
 
-              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full" aria-label="Select Mesh File">
+              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Select Mesh File">
                 <option value="">-- Select a mesh file --</option>
               </select>
               <button id="loadMeshBtn" onclick="loadMeshVisualization()"
@@ -1153,7 +1153,7 @@
             <!-- VTK File Selection -->
             <div class="flex flex-col gap-2">
               <label for="vtkFileSelect" class="text-sm font-medium">Select VTK File</label>
-              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">-- Select a VTK file --</option>
               </select>
             </div>
