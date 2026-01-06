@@ -372,20 +372,20 @@
       <!-- Case Management Tabs -->
       <div class="glass-panel rounded-lg shadow-lg overflow-hidden">
 
-        <!-- Tab Navigation -->
-        <div class="flex p-1 bg-gray-50/80 border-b border-gray-200/60 backdrop-blur-sm gap-1 rounded-t-lg">
-          <button id="tab-btn-create" onclick="switchCaseCreationTab('create')"
-            class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 bg-cyan-50 shadow-sm ring-1 ring-cyan-200 transition-all duration-200 focus:outline-none">
-            Create Blank Case
-          </button>
-          <button id="tab-btn-import" onclick="switchCaseCreationTab('import')"
-            class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100/50 transition-all duration-200 focus:outline-none">
-            Import Tutorial
-          </button>
-        </div>
-
         <!-- Tab Content -->
         <div class="p-6">
+
+          <!-- Tab Navigation -->
+          <div class="flex p-1 bg-gray-50/80 border border-gray-200/60 backdrop-blur-sm gap-1 rounded-lg mb-6">
+            <button id="tab-btn-create" onclick="switchCaseCreationTab('create')"
+              class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 bg-cyan-50 shadow-sm ring-1 ring-cyan-200 transition-all duration-200 focus:outline-none">
+              Create Blank Case
+            </button>
+            <button id="tab-btn-import" onclick="switchCaseCreationTab('import')"
+              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100/50 transition-all duration-200 focus:outline-none">
+              Import Tutorial
+            </button>
+          </div>
 
           <!-- Create New Case Tab -->
           <div id="tab-content-create" class="flex flex-col gap-4">
