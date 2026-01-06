@@ -285,7 +285,7 @@ const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Inter, sans-serif", size: 12 },
   plot_bgcolor: "rgba(255, 255, 255, 0)",
   paper_bgcolor: "rgba(255, 255, 255, 0)",
-  margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
+  margin: { l: 50, r: 20, t: 60, b: 80, pad: 5 },
   height: 400,
   autosize: true,
   showlegend: true,
@@ -304,20 +304,16 @@ const plotLayout: Partial<Plotly.Layout> = {
 
 const plotConfig: Partial<Plotly.Config> = {
   responsive: true,
-  displayModeBar: true,
+  displayModeBar: false,
   staticPlot: false,
   scrollZoom: true,
   doubleClick: "reset+autosize" as const,
-  showTips: true,
-  modeBarButtonsToAdd: [],
+  showTips: false,
   modeBarButtonsToRemove: [
-    "autoScale2d",
-    "zoomIn2d",
-    "zoomOut2d",
-    "lasso2d",
-    "select2d",
-    "pan2d",
-    "sendDataToCloud",
+    "zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+    "hoverClosestCartesian", "hoverCompareCartesian", "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+    "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d", "hoverClosest3d",
+    "sendDataToCloud", "toggleSpikelines", "setBackground", "toggleHover", "resetViews", "toImage"
   ] as any,
   displaylogo: false,
 };

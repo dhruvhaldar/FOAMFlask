@@ -165,20 +165,16 @@ const plotLayout = {
 };
 const plotConfig = {
     responsive: true,
-    displayModeBar: true,
+    displayModeBar: false,
     staticPlot: false,
     scrollZoom: true,
     doubleClick: "reset+autosize",
-    showTips: true,
-    modeBarButtonsToAdd: [],
+    showTips: false,
     modeBarButtonsToRemove: [
-        "autoScale2d",
-        "zoomIn2d",
-        "zoomOut2d",
-        "lasso2d",
-        "select2d",
-        "pan2d",
-        "sendDataToCloud",
+        "zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+        "hoverClosestCartesian", "hoverCompareCartesian", "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+        "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d", "hoverClosest3d",
+        "sendDataToCloud", "toggleSpikelines", "setBackground", "toggleHover", "resetViews", "toImage"
     ],
     displaylogo: false,
 };
@@ -256,11 +252,11 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
     };
     void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
         .then(() => {
-            plotDiv.dataset.whiteButtonAdded = "true";
-        })
+        plotDiv.dataset.whiteButtonAdded = "true";
+    })
         .catch((err) => {
-            console.error("Plotly update failed:", err);
-        });
+        console.error("Plotly update failed:", err);
+    });
 };
 const downloadPlotData = (plotId, filename) => {
     const plotDiv = document.getElementById(plotId);
@@ -1114,11 +1110,11 @@ const updateAeroPlots = async (preFetchedData) => {
                     },
                 }, plotConfig)
                     .then(() => {
-                        attachWhiteBGDownloadButton(cpDiv);
-                    })
+                    attachWhiteBGDownloadButton(cpDiv);
+                })
                     .catch((err) => {
-                        console.error("Plotly update failed:", err);
-                    });
+                    console.error("Plotly update failed:", err);
+                });
             }
         }
         // Velocity profile 3D plot
@@ -1146,11 +1142,11 @@ const updateAeroPlots = async (preFetchedData) => {
                     },
                 }, plotConfig)
                     .then(() => {
-                        attachWhiteBGDownloadButton(velocityDiv);
-                    })
+                    attachWhiteBGDownloadButton(velocityDiv);
+                })
                     .catch((err) => {
-                        console.error("Plotly update failed:", err);
-                    });
+                    console.error("Plotly update failed:", err);
+                });
             }
         }
     }
@@ -1202,11 +1198,11 @@ const updatePlots = async () => {
                 },
             }, plotConfig)
                 .then(() => {
-                    attachWhiteBGDownloadButton(pressureDiv);
-                })
+                attachWhiteBGDownloadButton(pressureDiv);
+            })
                 .catch((err) => {
-                    console.error("Plotly update failed:", err);
-                });
+                console.error("Plotly update failed:", err);
+            });
         }
         // Velocity plot
         if (data.U_mag && data.time) {
