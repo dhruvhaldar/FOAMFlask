@@ -29,7 +29,25 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
                  temp_read_path = tmp.name
                  read_path = temp_read_path
 
-        mesh = pv.read(read_path)
+        # ⚡ Bolt Optimization: Disable progress bar
+        mesh = pv.read(read_path, progress_bar=False)
+
+        # ⚡ Bolt Optimization: Decimate mesh if needed
+        TARGET_FACES = 100000
+        if mesh.n_cells > TARGET_FACES:
+            try:
+                # Assuming mesh is likely PolyData for STL/OBJ
+                if not isinstance(mesh, pv.PolyData):
+                    mesh = mesh.extract_surface()
+
+                reduction = 1.0 - (TARGET_FACES / mesh.n_cells)
+                reduction = max(0.0, min(0.95, reduction))
+                if reduction > 0.05: # Only decimate if reduction is significant
+                    print(f"Decimating geometry from {mesh.n_cells} to ~{TARGET_FACES} cells")
+                    mesh = mesh.decimate(reduction)
+            except Exception as e:
+                print(f"Decimation failed, using full mesh: {e}")
+
         plotter = pv.Plotter(notebook=False, off_screen=True)
         plotter.add_mesh(mesh, color=color, opacity=opacity, show_edges=False)
         plotter.show_grid()
@@ -95,7 +113,7 @@ class GeometryVisualizer:
                 args=(str(path), temp_output_path, color, opacity)
             )
             p.start()
-            p.join(timeout=30) # Wait up to 30 seconds
+            p.join(timeout=60) # Increased timeout for large meshes
 
             if p.is_alive():
                 p.terminate()
@@ -161,7 +179,8 @@ class GeometryVisualizer:
                         temp_read_path = tmp.name
                         read_path = temp_read_path
 
-                mesh = pv.read(read_path)
+                # ⚡ Bolt Optimization: Disable progress bar
+                mesh = pv.read(read_path, progress_bar=False)
                 bounds = mesh.bounds
                 center = mesh.center
 

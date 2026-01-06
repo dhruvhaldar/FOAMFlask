@@ -39,11 +39,49 @@ class MeshVisualizer:
         """Initialize the mesh visualizer with empty attributes."""
         self.mesh: Optional[DataSet] = None
         self.plotter: Optional[Plotter] = None
+        self.current_mesh_path: Optional[str] = None
+        self.current_mesh_mtime: Optional[float] = None
 
     def __del__(self) -> None:
         """Clean up resources by closing the plotter if it exists."""
         if self.plotter is not None:
             self.plotter.close()
+
+    def _decimate_mesh(self, mesh: DataSet, target_faces: int = 100000) -> DataSet:
+        """Decimate mesh to reduce size for web visualization.
+
+        Args:
+            mesh: The PyVista DataSet to decimate.
+            target_faces: Target number of faces (approximate).
+
+        Returns:
+            Decimated mesh.
+        """
+        if mesh.n_cells <= target_faces:
+            return mesh
+
+        try:
+            # We need PolyData for decimation
+            if not isinstance(mesh, pv.PolyData):
+                # Extract surface geometry
+                mesh_poly = mesh.extract_surface()
+            else:
+                mesh_poly = mesh
+
+            # Calculate reduction factor (0.0 to 1.0)
+            # reduction = 1 - (target / current)
+            if mesh_poly.n_cells > target_faces:
+                reduction = 1.0 - (target_faces / mesh_poly.n_cells)
+                # Ensure reduction is valid
+                reduction = max(0.0, min(0.95, reduction))
+
+                logger.info(f"Decimating mesh from {mesh_poly.n_cells} to ~{target_faces} cells (reduction={reduction:.2f})")
+                mesh_poly = mesh_poly.decimate(reduction)
+
+            return mesh_poly
+        except Exception as e:
+            logger.warning(f"Mesh decimation failed: {e}")
+            return mesh
 
     def load_mesh(
         self, file_path: Union[str, Path], for_contour: bool = False, **kwargs: Any
@@ -74,12 +112,27 @@ class MeshVisualizer:
             if not path.exists():
                 raise FileNotFoundError(f"Mesh file not found: {path}")
 
-            # Read the mesh
-            logger.info("[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh]")
-            self.mesh = pv.read(str(path), progress_bar=True)
-            logger.info(
-                f"[FOAMFlask] [backend] [mesh] [mesher.py] [load_mesh] Loaded mesh from {path}"
-            )
+            path_str = str(path)
+            mtime = path.stat().st_mtime
+
+            # ⚡ Bolt Optimization: Cache Check
+            if (
+                self.mesh is not None
+                and self.current_mesh_path == path_str
+                and self.current_mesh_mtime == mtime
+            ):
+                logger.info(f"[FOAMFlask] [mesher] Using cached mesh for {path_str}")
+                # Use cached mesh
+            else:
+                # Read the mesh
+                logger.info(f"[FOAMFlask] [mesher] Loading mesh from {path_str}")
+                # ⚡ Bolt Optimization: Disable progress bar for speed
+                self.mesh = pv.read(path_str, progress_bar=False)
+                self.current_mesh_path = path_str
+                self.current_mesh_mtime = mtime
+                logger.info(
+                    f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
+                )
 
             # Get mesh information
             mesh_info = {
@@ -132,20 +185,18 @@ class MeshVisualizer:
 
             path = Path(file_path)
 
-            # Load mesh if not already loaded or if a different file is requested
-            # Note: Checking path equality naively; in a robust system we might want to track current path
-            if self.mesh is None or not path.exists():
-                # We reuse load_mesh logic, though technically if self.mesh is None we load it.
-                # If path exists but self.mesh corresponds to another file, we rely on caller or just reload.
-                # For simplicity, let's just reload if needed.
-                mesh_info = self.load_mesh(path)
-                if not mesh_info.get("success"):
-                    return None
+            # Load mesh (uses caching)
+            mesh_info = self.load_mesh(path)
+            if not mesh_info.get("success"):
+                return None
 
             # Create plotter
             plotter = pv.Plotter(off_screen=True, window_size=[width, height])
 
             # Add mesh to plotter
+            # Note: For static screenshot, we might not want to decimate to preserve quality,
+            # but for huge meshes, we might need to if rendering fails.
+            # For now, we use full mesh for high-quality screenshots.
             plotter.add_mesh(self.mesh, color=color, show_edges=show_edges)
 
             # Add axes
@@ -207,8 +258,11 @@ class MeshVisualizer:
             # Create plotter
             plotter = pv.Plotter(notebook=False)
 
+            # ⚡ Bolt Optimization: Decimate mesh for web performance
+            display_mesh = self._decimate_mesh(self.mesh, target_faces=100000)
+
             # Add mesh to plotter
-            plotter.add_mesh(self.mesh, color=color, show_edges=show_edges)
+            plotter.add_mesh(display_mesh, color=color, show_edges=show_edges)
 
             # Add axes
             plotter.add_axes()
@@ -241,17 +295,20 @@ class MeshVisualizer:
             or None if an error occurs.
         """
         try:
-            if self.mesh is None:
-                mesh_info = self.load_mesh(file_path)
-                if not mesh_info.get("success"):
-                    return None
+            mesh_info = self.load_mesh(file_path)
+            if not mesh_info.get("success"):
+                return None
 
             # Create plotter with better settings for web
             plotter = pv.Plotter(notebook=False, window_size=[1200, 800])
 
+            # ⚡ Bolt Optimization: Decimate mesh for web performance
+            # Target 200k faces for interactive viewer (trame/vtk.js handles it reasonably well)
+            display_mesh = self._decimate_mesh(self.mesh, target_faces=200000)
+
             # Add mesh with better rendering options
             plotter.add_mesh(
-                self.mesh,
+                display_mesh,
                 color=color,
                 show_edges=show_edges,
                 opacity=1.0,
