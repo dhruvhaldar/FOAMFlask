@@ -161,54 +161,46 @@
       }
     }
 
-    /* Glassmorphism Utilities - Advanced */
+    /* Glassmorphism Utilities - Mixed */
     .glass {
-      backdrop-filter:  blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      /* Visible Frosted Glass (e.g. Navbar) */
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       background-color: rgba(255, 255, 255, 0.8);
       border-radius: 12px;
-      border: 1px solid rgba(209, 213, 219, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       position: relative;
       overflow: hidden;
     }
     
     .glass-panel {
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      background-color: rgba(255, 255, 255, 0.75);
+      /* Solid Opaque Panels (e.g. Content Cards) */
+      background-color: #ffffff; /* Solid white */
       border-radius: 12px;
-      border: 0.2px solid #0891b2;
+      border: 1px solid rgba(229, 231, 235, 1); /* Gray-200 */
+      /* Consistent shadow for depth */
       box-shadow: 
-          0 8px 32px rgba(0, 0, 0, 0.1),
-          inset 0 1px 0 rgba(255, 255, 255, 0.5),
-          inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-          inset 0 0 36px 18px rgba(255, 255, 255, 0.9);
+          0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
       position: relative;
-        overflow: hidden;
+      overflow: hidden;
     }
 
-    .glass::before, .glass-panel::before {
+    /* Top shine only for glass elements */
+    .glass::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       height: 1px;
-      /* Gradient top border effect */
-      /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent); */
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
       pointer-events: none;
     }
 
-    .glass::after, .glass-panel::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1px;
-      height: 100%;
-      /* Gradient left border effect */
-      /* background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3)); */
-      pointer-events: none;
+    .glass-panel::before, .glass::after, .glass-panel::after {
+      display: none;
     }
 
   </style>
@@ -531,7 +523,7 @@
         <div class="glass-panel rounded-lg p-4 shadow-sm">
           <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded"
             onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
-            <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">- The Foundation</span></span>
+            <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">The Foundation</span></span>
             <span id="blockMeshSectionToggle" class="text-sm transition-transform duration-200">▼</span>
           </button>
           <div id="blockMeshSection" class="block space-y-3">
@@ -571,7 +563,7 @@
         <!-- SnappyHexMesh Config -->
         <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-semibold mb-3 border-b pb-2">SnappyHexMesh <span
-              class="text-sm font-normal text-gray-500 ml-2">- The Refinement</span></h3>
+              class="text-sm font-normal text-gray-500 ml-2">The Refinement</span></h3>
 
           <div class="flex flex-col lg:flex-row gap-6">
 
