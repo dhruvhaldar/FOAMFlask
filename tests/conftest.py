@@ -25,9 +25,16 @@ import app as flask_app
 
 @pytest.fixture
 def app():
+    # Disable rate limiting for general tests to avoid flaky failures
     flask_app.app.config.update({
         "TESTING": True,
+        "ENABLE_RATE_LIMIT": False
     })
+
+    # Reset rate limit history
+    if hasattr(flask_app, '_request_history'):
+        flask_app._request_history = {}
+
     yield flask_app.app
 
 @pytest.fixture
