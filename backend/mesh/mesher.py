@@ -364,10 +364,10 @@ class MeshVisualizer:
         This method searches for VTK/VTP files in the case directory.
 
         ⚡ Bolt Optimization:
-        We use `os.walk` with directory pruning to avoid scanning the thousands of time
-        directories common in OpenFOAM cases (e.g., 0, 0.1, 100, etc.).
-        This allows us to find meshes in nested folders (e.g. `VTK/`, `postProcessing/`, `custom/subdir`)
-        without paying the penalty of visiting every single time step directory.
+        We use `os.scandir` recursively instead of `os.walk`.
+        This avoids the overhead of creating lists and `Path` objects during traversal,
+        and leverages `DirEntry.stat()` caching for file sizes.
+        We also strictly prune time directories and standard OpenFOAM folders.
 
         Args:
             case_dir: Base case directory path.
@@ -383,66 +383,68 @@ class MeshVisualizer:
         Note:
             Returns an empty list if no mesh files are found or if an error occurs.
         """
+        tutorial_path = Path(case_dir) / tutorial
+        if not tutorial_path.exists():
+            return []
+
+        mesh_files = []
+        seen_paths = set()
+        # Use a tuple for endswith check
+        extensions = (".vtk", ".vtp", ".vtu")
+
+        tutorial_path_str = str(tutorial_path)
+
+        def _scan(path: str):
+            try:
+                with os.scandir(path) as entries:
+                    for entry in entries:
+                        # ⚡ Bolt Optimization: Skip symlinks to avoid infinite recursion or escaping the sandbox
+                        # os.walk uses follow_symlinks=False by default, so we mimic that here.
+                        if entry.is_dir(follow_symlinks=False):
+                            name = entry.name
+                            if name.startswith("."): continue
+
+                            # Pruning logic
+                            try:
+                                float(name)
+                                continue # Skip time dirs
+                            except ValueError:
+                                # Skip system folder
+                                if name == "system": continue
+
+                            _scan(entry.path)
+
+                        elif entry.is_file(follow_symlinks=False):
+                            name = entry.name
+                            if name.endswith(extensions):
+                                if entry.path in seen_paths: continue
+                                seen_paths.add(entry.path)
+
+                                try:
+                                    # Use relpath for correct relative path calculation
+                                    rel_path = os.path.relpath(entry.path, tutorial_path_str)
+
+                                    # Use entry.stat() which is often cached/cheaper
+                                    size = entry.stat().st_size
+
+                                    mesh_files.append({
+                                        "name": name,
+                                        "path": entry.path,
+                                        "relative_path": rel_path,
+                                        "size": size
+                                    })
+                                except (OSError, ValueError):
+                                    continue
+            except OSError:
+                pass
+
         try:
-            tutorial_path = Path(case_dir) / tutorial
-            if not tutorial_path.exists():
-                return []
-
-            mesh_files = []
-            seen_paths = set()
-            # Use a set for faster lookup
-            extensions = {".vtk", ".vtp", ".vtu"}
-
-            # Walk the directory tree
-            for root, dirs, files in os.walk(str(tutorial_path)):
-                # Prune directories in-place to optimize scan
-                # We iterate a copy of dirs to allow modification
-                for d in list(dirs):
-                    # Skip hidden directories
-                    if d.startswith("."):
-                        dirs.remove(d)
-                        continue
-
-                    # ⚡ Bolt Optimization: Skip time directories
-                    # OpenFOAM time directories are numeric (e.g., "0", "0.1", "100")
-                    # We prune them to avoid scanning thousands of field files.
-                    try:
-                        float(d)
-                        # It's a number, likely a time directory. Prune it.
-                        dirs.remove(d)
-                    except ValueError:
-                        # Not a number. Keep it, unless it's a known non-mesh source
-                        if d in ["system"]:
-                            dirs.remove(d)
-
-                root_path = Path(root)
-                for file in files:
-                    if Path(file).suffix in extensions:
-                        file_path = root_path / file
-                        path_str = str(file_path)
-
-                        if path_str in seen_paths:
-                            continue
-
-                        seen_paths.add(path_str)
-                        try:
-                            rel_path = file_path.relative_to(tutorial_path)
-                            mesh_files.append(
-                                {
-                                    "name": file_path.name,
-                                    "path": path_str,
-                                    "relative_path": str(rel_path),
-                                    "size": file_path.stat().st_size,
-                                }
-                            )
-                        except (ValueError, OSError):
-                            continue
-
-            return mesh_files
-
+            _scan(tutorial_path_str)
         except Exception as e:
             logger.error(f"Error getting available meshes: {e}")
             return []
+
+        return mesh_files
 
 
 # Global instance for use as a singleton
