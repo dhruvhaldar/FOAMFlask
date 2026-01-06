@@ -143,7 +143,7 @@ const plotlyColors = {
     magenta: "#e377c2",
 };
 const plotLayout = {
-    font: { family: "Computer Modern Serif, serif", size: 12 },
+    font: { family: "Inter, sans-serif", size: 12 },
     // plot_bgcolor: "rgba(255, 255, 255, 0)",
     paper_bgcolor: "#FFF",
     margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
@@ -2244,6 +2244,61 @@ const init = () => {
     if (showEdgesCheck) {
         showEdgesCheck.addEventListener("change", onMeshParamChange);
     }
+};
+// --- Font Settings Logic ---
+window.toggleFontSettings = () => {
+    const menu = document.getElementById("fontSettingsMenu");
+    if (menu) {
+        if (menu.classList.contains("hidden")) {
+            menu.classList.remove("hidden");
+            // Close on click outside
+            setTimeout(() => {
+                const closeHandler = (e) => {
+                    if (!menu.contains(e.target) &&
+                        e.target.id !== "fontSettingsBtn" &&
+                        !e.target.closest("#fontSettingsBtn")) {
+                        menu.classList.add("hidden");
+                        document.removeEventListener("click", closeHandler);
+                    }
+                };
+                document.addEventListener("click", closeHandler);
+            }, 10);
+        }
+        else {
+            menu.classList.add("hidden");
+        }
+    }
+};
+window.changePlotFont = (fontFamily) => {
+    if (!fontFamily)
+        return;
+    // Update global layout config
+    if (plotLayout.font) {
+        plotLayout.font.family = fontFamily;
+    }
+    // Update existing plots
+    const plotIds = [
+        "pressure-plot",
+        "velocity-plot",
+        "turbulence-plot",
+        "residuals-plot",
+        "cp-plot",
+        "velocity-profile-plot"
+    ];
+    plotIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.data) { // Check if plot exists and has data
+            Plotly.relayout(el, { "font.family": fontFamily }).catch(err => {
+                console.warn(`Failed to update font for ${id}:`, err);
+            });
+        }
+    });
+    // Update input value if it wasn't the trigger
+    const input = document.getElementById("customFontInput");
+    if (input && input.value !== fontFamily) {
+        input.value = fontFamily;
+    }
+    showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 2000);
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
