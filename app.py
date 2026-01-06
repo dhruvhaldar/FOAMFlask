@@ -474,6 +474,13 @@ def set_security_headers(response: Response) -> Response:
 
 
 @app.route("/")
+@app.route("/setup")
+@app.route("/geometry")
+@app.route("/meshing")
+@app.route("/visualizer")
+@app.route("/run")
+@app.route("/plots")
+@app.route("/post")
 def index() -> str:
     """Render the index page with available tutorials.
 

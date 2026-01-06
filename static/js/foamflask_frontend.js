@@ -296,8 +296,12 @@ const downloadPlotData = (plotId, filename) => {
     });
 };
 // Page Switching
-const switchPage = (pageName) => {
+const switchPage = (pageName, updateUrl = true) => {
     console.log(`switchPage called with: ${pageName}`);
+    if (updateUrl) {
+        const url = pageName === "setup" ? "/" : `/${pageName}`;
+        history.pushState({ page: pageName }, "", url);
+    }
     const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
     pages.forEach((page) => {
         const pageElement = document.getElementById(`page-${page}`);
@@ -2129,6 +2133,28 @@ window.copyMeshingOutput = copyMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
 const init = () => {
+    // Routing Initialization
+    const path = window.location.pathname.substring(1).toLowerCase();
+    const validPages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
+    let initialPage = "setup";
+    if (validPages.includes(path)) {
+        initialPage = path;
+    }
+    switchPage(initialPage, false);
+
+    window.addEventListener("popstate", (event) => {
+        if (event.state && event.state.page) {
+            switchPage(event.state.page, false);
+        } else {
+            const path = window.location.pathname.substring(1).toLowerCase();
+            let page = "setup";
+             if (validPages.includes(path)) {
+                page = path;
+            }
+            switchPage(page, false);
+        }
+    });
+
     const navButtons = [
         { id: 'nav-setup', handler: () => switchPage('setup') },
         { id: 'nav-run', handler: () => switchPage('run') },
