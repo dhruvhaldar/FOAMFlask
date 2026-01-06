@@ -512,9 +512,7 @@
       </div>
 
       <div class="mb-6 text-gray-600 text-sm">
-        <p>Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured background mesh with blockMesh,
-          then refines and snaps it to complex geometry (like STL files) using snappyHexMesh, a common workflow for
-          detailed, automated meshing, especially for boundary layers, by starting simple and adding complexity.</p>
+        <p class="text-gray-600 text-sm">Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured background mesh with blockMesh, then refines and snaps it to complex geometry (like STL files) using snappyHexMesh, a common workflow for detailed, automated meshing, especially for boundary layers, by starting simple and adding complexity.</p>
       </div>
 
       <div class="flex flex-col gap-6">
@@ -561,7 +559,7 @@
         </div>
 
         <!-- SnappyHexMesh Config -->
-        <div class="border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div class="glass-panel rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-semibold mb-3 border-b pb-2">SnappyHexMesh <span
               class="text-sm font-normal text-gray-500 ml-2">The Refinement</span></h3>
 
@@ -818,6 +816,7 @@
         <div class="flex justify-between items-center">
           <h2 class="text-2xl font-bold">VTK Mesh Visualization</h2>
           <div class="flex gap-2">
+          <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
 
           </div>
         </div>
@@ -830,7 +829,6 @@
 
             <!-- Mesh Selection -->
             <div class="flex flex-col gap-2">
-              <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
 
               <!-- Buttons are Hidden when Mesh files have been found/loaded-->
               <div id="meshActionButtons" class="flex gap-2 transition-all duration-300 ease-in-out">
@@ -1027,7 +1025,7 @@
     </div>
 
     <!-- Plots Page -->
-    <div id="page-plots" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div id="page-plots" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Realtime Plots</h2>
         <div class="flex gap-2">
@@ -1039,9 +1037,9 @@
       </div>
 
       <!-- Main Plots Container -->
-      <div id="plotsContainer" class="w-full bg-white relative">
+      <div id="plotsContainer" class="w-full glass relative">
         <div id="plotsLoading"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 z-50 hidden transition-opacity duration-300">
+          class="absolute inset-0 flex flex-col items-center justify-center glass z-50 hidden transition-opacity duration-300">
           <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mb-3"></div>
           <span class="text-lg font-semibold text-gray-700">Loading Plot Data...</span>
         </div>
@@ -1051,7 +1049,7 @@
 
           <!-- Pressure Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
@@ -1081,7 +1079,7 @@
 
           <!-- Velocity Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
@@ -1110,7 +1108,7 @@
 
           <!-- Turbulence Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
@@ -1139,7 +1137,7 @@
 
           <!-- Residuals Plot -->
           <div
-            class="w-full bg-white p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
@@ -1185,7 +1183,7 @@
     </div>
 
     <!-- Post Processing Page -->
-    <div id="page-post" class="page hidden max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4">
+    <div id="page-post" class="page hidden max-w-7xl mx-auto glass shadow-lg rounded-lg p-4">
       <div class="flex justify-between items-center mb-3">
         <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
       </div>
