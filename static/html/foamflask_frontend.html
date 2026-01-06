@@ -248,7 +248,7 @@
   </template>
 
   <!-- Navbar -->
-  <nav class="glass sticky top-0 z-40">
+  <nav class="glass sticky top-0 z-40 rounded-none">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-10">
         <div class="flex items-center">
@@ -1610,7 +1610,7 @@
   <script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
 
 
-  <footer class="py-4 glass border-t border-gray-200/50 mt-8">
+  <footer class="py-4 glass border-t border-gray-200/50 mt-8 rounded-none">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 space-y-2 md:space-y-0">
         <div class="text-center md:text-left">
@@ -1633,6 +1633,13 @@
             class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
             <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}" alt="Plotly" class="h-8 w-auto">
           </a>
+          <span class="text-gray-400">|</span>
+
+          <a href="https://docker.com/" target="_blank" rel="noopener noreferrer"
+            class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
+            <img src="{{ url_for('static', filename='icons/docker-logo.avif') }}" alt="Docker" class="h-8 w-auto">
+          </a>
+
         </div>
 
       </div>
