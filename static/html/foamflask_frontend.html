@@ -163,32 +163,27 @@
 
     /* Glassmorphism Utilities - Advanced */
     .glass {
-      background: rgba(255, 255, 255, 0.57);
-      backdrop-filter:  blur(16px) saturate(167%);
-      -webkit-backdrop-filter: blur(16px) saturate(167%);
-      border: 1px solid rgba(209, 213, 219, 0.3);
+      backdrop-filter:  blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.8);
       border-radius: 12px;
-      box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-        inset 0 0 36px 18px rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(209, 213, 219, 0.3);
       position: relative;
       overflow: hidden;
     }
     
     .glass-panel {
-        background: rgba(255, 255, 255, 0.75);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border: 0.2px solid rgb(134, 25, 143);
-        border-radius: 12px;
-        box-shadow: 
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.75);
+      border-radius: 12px;
+      border: 0.2px solid #0891b2;
+      box-shadow: 
           0 8px 32px rgba(0, 0, 0, 0.1),
           inset 0 1px 0 rgba(255, 255, 255, 0.5),
           inset 0 -1px 0 rgba(255, 255, 255, 0.1),
           inset 0 0 36px 18px rgba(255, 255, 255, 0.9);
-        position: relative;
+      position: relative;
         overflow: hidden;
     }
 
@@ -200,7 +195,7 @@
       right: 0;
       height: 1px;
       /* Gradient top border effect */
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent); */
       pointer-events: none;
     }
 
@@ -212,7 +207,7 @@
       width: 1px;
       height: 100%;
       /* Gradient left border effect */
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
+      /* background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3)); */
       pointer-events: none;
     }
 
