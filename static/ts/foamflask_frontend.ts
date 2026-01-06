@@ -447,21 +447,41 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
   pages.forEach((page) => {
     const pageElement = document.getElementById(`page-${page}`);
     const navButton = document.getElementById(`nav-${page}`);
+    const mobileNavButton = document.getElementById(`mobile-nav-${page}`);
+
     if (pageElement) pageElement.classList.add("hidden");
+
+    // Desktop Reset
     if (navButton) {
       navButton.classList.remove("bg-cyan-600", "text-white");
       navButton.classList.add("text-gray-700", "hover:bg-gray-100");
       navButton.removeAttribute("aria-current");
     }
+
+    // Mobile Reset
+    if (mobileNavButton) {
+      mobileNavButton.classList.remove("bg-cyan-600", "text-white");
+      mobileNavButton.classList.add("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
+      mobileNavButton.removeAttribute("aria-current");
+    }
   });
 
   const selectedPage = document.getElementById(`page-${pageName}`);
   const selectedNav = document.getElementById(`nav-${pageName}`);
+  const selectedMobileNav = document.getElementById(`mobile-nav-${pageName}`);
+
   if (selectedPage) selectedPage.classList.remove("hidden");
+
   if (selectedNav) {
     selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
     selectedNav.classList.add("bg-cyan-600", "text-white");
     selectedNav.setAttribute("aria-current", "page");
+  }
+
+  if (selectedMobileNav) {
+    selectedMobileNav.classList.remove("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
+    selectedMobileNav.classList.add("bg-cyan-600", "text-white");
+    selectedMobileNav.setAttribute("aria-current", "page");
   }
 
   // Auto-refresh lists based on page
@@ -510,6 +530,18 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
       break;
   }
 };
+
+const toggleMobileMenu = () => {
+  const menu = document.getElementById("mobile-menu");
+  if (menu) {
+    if (menu.classList.contains("hidden")) {
+      menu.classList.remove("hidden");
+    } else {
+      menu.classList.add("hidden");
+    }
+  }
+};
+(window as any).toggleMobileMenu = toggleMobileMenu;
 
 // Show notification
 const showNotification = (
@@ -2476,18 +2508,27 @@ const init = () => {
   switchPage(initialPage, false);
 
   const navButtons = [
-    { id: 'nav-setup', handler: () => switchPage('setup') },
-    { id: 'nav-run', handler: () => switchPage('run') },
-    { id: 'nav-geometry', handler: () => switchPage('geometry') },
-    { id: 'nav-meshing', handler: () => switchPage('meshing') },
-    { id: 'nav-visualizer', handler: () => switchPage('visualizer') },
-    { id: 'nav-plots', handler: () => switchPage('plots') },
-    { id: 'nav-post', handler: () => switchPage('post') }
+    { id: 'nav-setup', mobileId: 'mobile-nav-setup', handler: () => switchPage('setup') },
+    { id: 'nav-run', mobileId: 'mobile-nav-run', handler: () => switchPage('run') },
+    { id: 'nav-geometry', mobileId: 'mobile-nav-geometry', handler: () => switchPage('geometry') },
+    { id: 'nav-meshing', mobileId: 'mobile-nav-meshing', handler: () => switchPage('meshing') },
+    { id: 'nav-visualizer', mobileId: 'mobile-nav-visualizer', handler: () => switchPage('visualizer') },
+    { id: 'nav-plots', mobileId: 'mobile-nav-plots', handler: () => switchPage('plots') },
+    { id: 'nav-post', mobileId: 'mobile-nav-post', handler: () => switchPage('post') }
   ];
 
-  navButtons.forEach(({ id, handler }) => {
+  navButtons.forEach(({ id, mobileId, handler }) => {
     const button = document.getElementById(id);
     if (button) button.addEventListener('click', handler);
+
+    const mobileButton = document.getElementById(mobileId);
+    if (mobileButton) {
+      mobileButton.addEventListener('click', () => {
+        handler();
+        const menu = document.getElementById("mobile-menu");
+        if (menu) menu.classList.add("hidden");
+      });
+    }
   });
 
   const loadTutorialBtn = document.getElementById('loadTutorialBtn');

@@ -23,6 +23,7 @@
 
     body {
       font-family: var(--font-sans);
+      scrollbar-gutter: stable;
     }
   </style>
   <link rel="dns-prefetch" href="https://cdn.plot.ly">
@@ -248,13 +249,15 @@
   </template>
 
   <!-- Navbar -->
-  <nav class="glass sticky top-0 z-40 rounded-none">
+  <nav class="glass sticky top-0 z-40 rounded-none transform transition-transform duration-300" id="navbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-10">
         <div class="flex items-center">
           <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
         </div>
-        <div class="flex space-x-1">
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex space-x-1">
           <button id="nav-setup" aria-current="page"
             class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn bg-cyan-600 text-white">
             Setup
@@ -284,6 +287,53 @@
             Post
           </button>
         </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="flex items-center md:hidden">
+          <button type="button" onclick="toggleMobileMenu()"
+            class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-cyan-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
+            aria-controls="mobile-menu" aria-expanded="false">
+            <span class="sr-only">Open main menu</span>
+            <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu, show/hide based on menu state. -->
+    <div class="hidden md:hidden border-t border-gray-200" id="mobile-menu">
+      <div class="px-2 pt-2 pb-3 space-y-1">
+        <button id="mobile-nav-setup"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-cyan-600 text-white nav-btn">
+          Setup
+        </button>
+        <button id="mobile-nav-geometry"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Geometry
+        </button>
+        <button id="mobile-nav-meshing"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Meshing
+        </button>
+        <button id="mobile-nav-visualizer"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Visualizer
+        </button>
+        <button id="mobile-nav-run"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Run/Log
+        </button>
+        <button id="mobile-nav-plots"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Plots
+        </button>
+        <button id="mobile-nav-post"
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          Post
+        </button>
       </div>
     </div>
   </nav>
@@ -620,7 +670,7 @@
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
               </div>
             </div>
-            <div class="flex gap-2 pt-2">
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
               <button id="genBlockMeshBtn" onclick="generateBlockMeshDict()"
                 class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
                 Generate blockMeshDict
@@ -768,7 +818,7 @@
             </div>
           </div>
 
-          <div class="flex gap-2 pt-4 border-t mt-4">
+          <div class="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
             <button id="genSnappyHexMeshBtn" onclick="generateSnappyHexMeshDict()"
               class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
               Generate snappyHexMeshDict
