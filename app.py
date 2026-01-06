@@ -2029,7 +2029,7 @@ def main() -> None:
     host = os.environ.get("FLASK_HOST", "0.0.0.0") # nosec B104
     port = 5000
     print(f"FOAMFlask listening on: {host}:{port}")
-    app.run(host=host, port=port, debug=False) # nosec B104
+    app.run(host=host, port=port, debug=True) # nosec B104
 
 
 if __name__ == "__main__":
