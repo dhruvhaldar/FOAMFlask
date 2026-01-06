@@ -511,7 +511,6 @@ const flushOutputBuffer = () => {
     // ⚡ Bolt Optimization: Check scroll position BEFORE appending to avoid layout thrashing
     // Check if user is near bottom (within 50px tolerance)
     const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 50;
-    const fragment = document.createDocumentFragment();
     let newHtmlChunks = ""; // ⚡ Bolt Optimization: Accumulate HTML for cache
     // Helper for manual HTML escaping (significantly faster than browser serialization)
     const escapeHtml = (str) => {
@@ -531,16 +530,12 @@ const flushOutputBuffer = () => {
             className = "text-cyan-600 font-semibold";
         else if (type === "info")
             className = "text-yellow-600 italic";
-        const line = document.createElement("div");
-        line.className = className;
-        line.textContent = message;
-        fragment.appendChild(line);
-        // ⚡ Bolt Optimization: Manually construct HTML string
-        // This avoids accessing .outerHTML which triggers expensive browser serialization (~40x faster)
+        // ⚡ Bolt Optimization: Direct string construction + insertAdjacentHTML
+        // Removes overhead of document.createElement() and .textContent assignments (O(N) -> O(1) DOM touches)
         const safeMessage = escapeHtml(message);
         newHtmlChunks += `<div class="${className}">${safeMessage}</div>`;
     });
-    container.appendChild(fragment);
+    container.insertAdjacentHTML("beforeend", newHtmlChunks);
     cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
     // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
     const MAX_LOG_LENGTH = 100000; // 100KB
