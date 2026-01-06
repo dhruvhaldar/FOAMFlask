@@ -170,16 +170,18 @@
     }
 
     .glass-panel {
-      /* Solid Opaque Panels (e.g. Content Cards) */
-      background-color: #ffffff;
-      /* Solid white */
+      /* Matte Liquid Panel */
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
       border-radius: 12px;
-      border: 1px solid #0891b2;
-      /* Gray-200 */
-      /* Consistent shadow for depth */
+      border: 1px solid rgba(255, 255, 255, 0.5);
+
       box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
       position: relative;
       overflow: hidden;
     }
