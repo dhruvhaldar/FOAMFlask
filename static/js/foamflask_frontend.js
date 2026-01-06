@@ -145,9 +145,9 @@ const plotlyColors = {
 };
 const plotLayout = {
     font: { family: "Inter, sans-serif", size: 12 },
-    // plot_bgcolor: "rgba(255, 255, 255, 0)",
-    paper_bgcolor: "#FFF",
-    margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
+    plot_bgcolor: "rgba(255, 255, 255, 0)",
+    paper_bgcolor: "rgba(255, 255, 255, 0)",
+    margin: { l: 50, r: 20, t: 60, b: 80, pad: 5 },
     height: 400,
     autosize: true,
     showlegend: true,
@@ -256,11 +256,11 @@ const attachWhiteBGDownloadButton = (plotDiv) => {
     };
     void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
         .then(() => {
-        plotDiv.dataset.whiteButtonAdded = "true";
-    })
+            plotDiv.dataset.whiteButtonAdded = "true";
+        })
         .catch((err) => {
-        console.error("Plotly update failed:", err);
-    });
+            console.error("Plotly update failed:", err);
+        });
 };
 const downloadPlotData = (plotId, filename) => {
     const plotDiv = document.getElementById(plotId);
@@ -1114,11 +1114,11 @@ const updateAeroPlots = async (preFetchedData) => {
                     },
                 }, plotConfig)
                     .then(() => {
-                    attachWhiteBGDownloadButton(cpDiv);
-                })
+                        attachWhiteBGDownloadButton(cpDiv);
+                    })
                     .catch((err) => {
-                    console.error("Plotly update failed:", err);
-                });
+                        console.error("Plotly update failed:", err);
+                    });
             }
         }
         // Velocity profile 3D plot
@@ -1146,11 +1146,11 @@ const updateAeroPlots = async (preFetchedData) => {
                     },
                 }, plotConfig)
                     .then(() => {
-                    attachWhiteBGDownloadButton(velocityDiv);
-                })
+                        attachWhiteBGDownloadButton(velocityDiv);
+                    })
                     .catch((err) => {
-                    console.error("Plotly update failed:", err);
-                });
+                        console.error("Plotly update failed:", err);
+                    });
             }
         }
     }
@@ -1202,11 +1202,11 @@ const updatePlots = async () => {
                 },
             }, plotConfig)
                 .then(() => {
-                attachWhiteBGDownloadButton(pressureDiv);
-            })
+                    attachWhiteBGDownloadButton(pressureDiv);
+                })
                 .catch((err) => {
-                console.error("Plotly update failed:", err);
-            });
+                    console.error("Plotly update failed:", err);
+                });
         }
         // Velocity plot
         if (data.U_mag && data.time) {

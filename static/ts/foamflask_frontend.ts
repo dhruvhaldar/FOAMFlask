@@ -283,8 +283,8 @@ const plotlyColors = {
 
 const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Inter, sans-serif", size: 12 },
-  // plot_bgcolor: "rgba(255, 255, 255, 0)",
-  paper_bgcolor: "#FFF",
+  plot_bgcolor: "rgba(255, 255, 255, 0)",
+  paper_bgcolor: "rgba(255, 255, 255, 0)",
   margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
   height: 400,
   autosize: true,
