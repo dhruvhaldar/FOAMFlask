@@ -265,8 +265,8 @@ const plotlyColors = {
 
 const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Computer Modern Serif, serif", size: 12 },
-  plot_bgcolor: "rgba(255, 255, 255, 0)",
-  paper_bgcolor: "rgba(255, 255, 255, 0)",
+  // plot_bgcolor: "rgba(255, 255, 255, 0)",
+  paper_bgcolor: "#FFF",
   margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
   height: 400,
   autosize: true,
@@ -277,7 +277,7 @@ const plotLayout: Partial<Plotly.Layout> = {
     x: 0.5,
     xanchor: "center" as const,
     yanchor: "top" as const,
-    bgcolor: "rgba(255, 0, 0, 0)",
+    // bgcolor: "rgba(255, 0, 0, 0)",
     borderwidth: 0,
   },
   xaxis: { showgrid: false, linewidth: 1 },
@@ -522,16 +522,16 @@ const showNotification = (
   if (document.querySelector(`.notification .message-slot[data-message="${message}"]`)) {
     return null;
   }
-  
+
   const container = document.getElementById("notificationContainer");
   const template = document.getElementById("notification-template") as HTMLTemplateElement;
-  
+
   if (!container || !template) return null;
-  
+
   const id = ++notificationId;
   const clone = template.content.cloneNode(true) as DocumentFragment;
   const notification = clone.querySelector(".notification") as HTMLElement;
-  
+
   if (!notification) return null;
 
   notification.id = `notification-${id}`;
@@ -542,7 +542,7 @@ const showNotification = (
   } else {
     notification.setAttribute("role", "status");
   }
-  
+
   // Set colors
   const colors = {
     success: "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
@@ -556,7 +556,7 @@ const showNotification = (
   const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
   const iconSlot = notification.querySelector(".icon-slot");
   const messageSlot = notification.querySelector(".message-slot");
-  
+
   if (iconSlot) iconSlot.textContent = icons[type];
   if (messageSlot) {
     messageSlot.textContent = message;
@@ -571,7 +571,7 @@ const showNotification = (
       progressBar.classList.remove("hidden");
       progressBar.style.width = "100%";
       progressBar.style.transition = `width ${duration}ms linear`;
-      
+
       // Trigger reflow to ensure transition works
       requestAnimationFrame(() => {
         progressBar.style.width = "0%";
@@ -581,21 +581,21 @@ const showNotification = (
     // Countdown logic
     // Add fade-out class 300ms before removal
     const fadeTime = Math.max(0, duration - 300);
-    
+
     // Timer for fade out animation
     const fadeTimer = setTimeout(() => {
-        notification.classList.add("fade-out");
+      notification.classList.add("fade-out");
     }, fadeTime);
 
     // Timer for actual removal
     const countdownInterval = setTimeout(() => {
-        removeNotification(id);
+      removeNotification(id);
     }, duration);
 
     notification.dataset.timerId = countdownInterval.toString();
     notification.dataset.fadeTimerId = fadeTimer.toString();
   }
-  
+
   // Setup close button for all notifications
   const closeBtn = notification.querySelector(".close-btn") as HTMLElement;
   if (closeBtn) {
@@ -616,10 +616,10 @@ const removeNotification = (id: number): void => {
       clearTimeout(parseInt(notification.dataset.timerId, 10));
     if (notification.dataset.fadeTimerId)
       clearTimeout(parseInt(notification.dataset.fadeTimerId, 10));
-    
+
     // Ensure fade-out class is present for manual dismissals
     notification.classList.add("fade-out");
-    
+
     // Wait for animation then remove
     setTimeout(() => notification.remove(), 300);
   }
@@ -708,12 +708,12 @@ const flushOutputBuffer = (): void => {
   // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
   const MAX_LOG_LENGTH = 100000; // 100KB
   if (cachedLogHTML.length > MAX_LOG_LENGTH * 1.5) {
-      const slice = cachedLogHTML.slice(-MAX_LOG_LENGTH);
-      // Ensure we cut at a clean tag boundary
-      const firstDiv = slice.indexOf("<div");
-      if (firstDiv !== -1) {
-          cachedLogHTML = slice.substring(firstDiv);
-      }
+    const slice = cachedLogHTML.slice(-MAX_LOG_LENGTH);
+    // Ensure we cut at a clean tag boundary
+    const firstDiv = slice.indexOf("<div");
+    if (firstDiv !== -1) {
+      cachedLogHTML = slice.substring(firstDiv);
+    }
   }
 
   // Only force scroll if user was already at the bottom
@@ -891,13 +891,13 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
     btn.classList.add("opacity-75", "cursor-wait");
     // Preserve the icon if it exists, but spin it
     if (btn.querySelector("svg")) {
-        // Since we know the structure from HTML, we can just replace innerHTML for simplicity
-        // or toggle a class. But let's follow the pattern used elsewhere.
-        // However, the Refresh button has text "↻ Refresh".
-        btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...`;
+      // Since we know the structure from HTML, we can just replace innerHTML for simplicity
+      // or toggle a class. But let's follow the pattern used elsewhere.
+      // However, the Refresh button has text "↻ Refresh".
+      btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...`;
     } else {
-        // Fallback or just standard spinner
-         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Refreshing...`;
+      // Fallback or just standard spinner
+      btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Refreshing...`;
     }
   }
 
@@ -1780,25 +1780,25 @@ const generateSnappyHexMeshDict = async () => {
 };
 
 const selectShmObject = () => {
-    const list = document.getElementById("shmObjectList") as HTMLSelectElement;
-    const props = document.getElementById("shmObjectProps");
-    const placeholder = document.getElementById("shmObjectPlaceholder");
-    const nameLabel = document.getElementById("shmSelectedObjectName");
+  const list = document.getElementById("shmObjectList") as HTMLSelectElement;
+  const props = document.getElementById("shmObjectProps");
+  const placeholder = document.getElementById("shmObjectPlaceholder");
+  const nameLabel = document.getElementById("shmSelectedObjectName");
 
-    if (list && list.value) {
-        if (props) props.classList.remove("hidden");
-        if (placeholder) placeholder.classList.add("hidden");
-        if (nameLabel) nameLabel.textContent = list.value;
-        // In a real app, we would fetch existing config for this object here
-    } else {
-        if (props) props.classList.add("hidden");
-        if (placeholder) placeholder.classList.remove("hidden");
-    }
+  if (list && list.value) {
+    if (props) props.classList.remove("hidden");
+    if (placeholder) placeholder.classList.add("hidden");
+    if (nameLabel) nameLabel.textContent = list.value;
+    // In a real app, we would fetch existing config for this object here
+  } else {
+    if (props) props.classList.add("hidden");
+    if (placeholder) placeholder.classList.remove("hidden");
+  }
 };
 
 const updateShmObjectConfig = () => {
-    // Stub for updating object config
-    console.log("Updated object config");
+  // Stub for updating object config
+  console.log("Updated object config");
 };
 
 const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
@@ -1877,9 +1877,9 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
       const text = decoder.decode(value);
       text.split("\n").forEach(line => {
         if (line.trim()) {
-           // Simply append to output, maybe parse for errors if needed
-           const type = /error/i.test(line) ? "stderr" : "stdout";
-           appendOutput(line, "stdout");
+          // Simply append to output, maybe parse for errors if needed
+          const type = /error/i.test(line) ? "stderr" : "stdout";
+          appendOutput(line, "stdout");
         }
       });
       await read();
@@ -2061,104 +2061,104 @@ function displayMeshInfo(meshInfo: {
 }
 
 async function refreshInteractiveViewer(successMessage: string = "Interactive mode enabled"): Promise<void> {
-    const meshInteractive = document.getElementById(
-      "meshInteractive"
-    ) as HTMLIFrameElement | null;
-    const meshImage = document.getElementById(
-      "meshImage"
-    ) as HTMLImageElement | null;
-    const meshPlaceholder = document.getElementById("meshPlaceholder");
-    const toggleBtn = document.getElementById("toggleInteractiveBtn");
-    const cameraControl = document.getElementById("cameraPosition");
-    const updateBtn = document.getElementById("updateViewBtn");
+  const meshInteractive = document.getElementById(
+    "meshInteractive"
+  ) as HTMLIFrameElement | null;
+  const meshImage = document.getElementById(
+    "meshImage"
+  ) as HTMLImageElement | null;
+  const meshPlaceholder = document.getElementById("meshPlaceholder");
+  const toggleBtn = document.getElementById("toggleInteractiveBtn");
+  const cameraControl = document.getElementById("cameraPosition");
+  const updateBtn = document.getElementById("updateViewBtn");
 
-    if (!meshInteractive || !meshImage || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn) return;
+  if (!meshInteractive || !meshImage || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn) return;
 
-    showNotification("Loading interactive viewer...", "info");
+  showNotification("Loading interactive viewer...", "info");
 
-    try {
-      const showEdgesInput = document.getElementById(
-        "showEdges"
-      ) as HTMLInputElement | null;
-      const colorInput = document.getElementById(
-        "meshColor"
-      ) as HTMLInputElement | null;
+  try {
+    const showEdgesInput = document.getElementById(
+      "showEdges"
+    ) as HTMLInputElement | null;
+    const colorInput = document.getElementById(
+      "meshColor"
+    ) as HTMLInputElement | null;
 
-      if (!showEdgesInput || !colorInput) {
-        showNotification("Required mesh controls not found", "error");
-        return;
-      }
-
-      const showEdges = showEdgesInput.checked;
-      const color = colorInput.value;
-
-      // Fetch interactive viewer HTML
-      const response = await fetch("/api/mesh_interactive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          file_path: currentMeshPath,
-          show_edges: showEdges,
-          color: color,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const html = await response.text();
-
-      // Hide static image, show iframe
-      meshImage.classList.add("hidden");
-      meshPlaceholder.classList.add("hidden");
-      meshInteractive.classList.remove("hidden");
-
-      // Load HTML into iframe using srcdoc
-      meshInteractive.srcdoc = html;
-
-      // Update button text
-      toggleBtn.textContent = "Static Mode";
-      toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
-      toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
-
-      // Hide camera position control (not needed in interactive mode)
-      cameraControl.parentElement?.classList.add("hidden");
-      updateBtn.classList.add("hidden");
-      document.getElementById("interactiveModeHint")?.classList.remove("hidden");
-
-      showNotification(
-        successMessage,
-        "success",
-        8000
-      );
-    } catch (error: unknown) {
-      console.error("[FOAMFlask] Error loading interactive viewer:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.name === "AbortError"
-            ? "Loading was cancelled or timed out"
-            : error.message
-          : "Failed to load interactive viewer";
-
-      showNotification(
-        `Failed to load interactive viewer: ${errorMessage}`,
-        "error"
-      );
-
-      // Reset to static mode
-      isInteractiveMode = false;
-
-      // Safely update UI elements if they exist
-      toggleBtn.textContent = "Interactive Mode";
-      toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
-      toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
-      cameraControl.parentElement?.classList.remove("hidden");
-      updateBtn.classList.remove("hidden");
-      document.getElementById("interactiveModeHint")?.classList.add("hidden");
-      meshInteractive.classList.add("hidden");
-      meshImage.classList.remove("hidden");
+    if (!showEdgesInput || !colorInput) {
+      showNotification("Required mesh controls not found", "error");
+      return;
     }
+
+    const showEdges = showEdgesInput.checked;
+    const color = colorInput.value;
+
+    // Fetch interactive viewer HTML
+    const response = await fetch("/api/mesh_interactive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_path: currentMeshPath,
+        show_edges: showEdges,
+        color: color,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+
+    // Hide static image, show iframe
+    meshImage.classList.add("hidden");
+    meshPlaceholder.classList.add("hidden");
+    meshInteractive.classList.remove("hidden");
+
+    // Load HTML into iframe using srcdoc
+    meshInteractive.srcdoc = html;
+
+    // Update button text
+    toggleBtn.textContent = "Static Mode";
+    toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
+    toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
+
+    // Hide camera position control (not needed in interactive mode)
+    cameraControl.parentElement?.classList.add("hidden");
+    updateBtn.classList.add("hidden");
+    document.getElementById("interactiveModeHint")?.classList.remove("hidden");
+
+    showNotification(
+      successMessage,
+      "success",
+      8000
+    );
+  } catch (error: unknown) {
+    console.error("[FOAMFlask] Error loading interactive viewer:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.name === "AbortError"
+          ? "Loading was cancelled or timed out"
+          : error.message
+        : "Failed to load interactive viewer";
+
+    showNotification(
+      `Failed to load interactive viewer: ${errorMessage}`,
+      "error"
+    );
+
+    // Reset to static mode
+    isInteractiveMode = false;
+
+    // Safely update UI elements if they exist
+    toggleBtn.textContent = "Interactive Mode";
+    toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
+    toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
+    cameraControl.parentElement?.classList.remove("hidden");
+    updateBtn.classList.remove("hidden");
+    document.getElementById("interactiveModeHint")?.classList.add("hidden");
+    meshInteractive.classList.add("hidden");
+    meshImage.classList.remove("hidden");
+  }
 }
 
 async function onMeshParamChange(): Promise<void> {
@@ -2507,27 +2507,27 @@ const init = () => {
   // Persist Tutorial Selection
   const tutorialSelect = document.getElementById('tutorialSelect') as HTMLSelectElement;
   if (tutorialSelect) {
-      // Restore
-      const savedTutorial = localStorage.getItem('lastSelectedTutorial');
-      if (savedTutorial) {
-          // Check if option exists
-          let exists = false;
-          for (let i = 0; i < tutorialSelect.options.length; i++) {
-              if (tutorialSelect.options[i].value === savedTutorial) {
-                  exists = true;
-                  break;
-              }
-          }
-          if (exists) {
-              tutorialSelect.value = savedTutorial;
-          }
+    // Restore
+    const savedTutorial = localStorage.getItem('lastSelectedTutorial');
+    if (savedTutorial) {
+      // Check if option exists
+      let exists = false;
+      for (let i = 0; i < tutorialSelect.options.length; i++) {
+        if (tutorialSelect.options[i].value === savedTutorial) {
+          exists = true;
+          break;
+        }
       }
+      if (exists) {
+        tutorialSelect.value = savedTutorial;
+      }
+    }
 
-      // Save on change
-      tutorialSelect.addEventListener('change', (e: Event) => {
-          const target = e.target as HTMLSelectElement;
-          localStorage.setItem('lastSelectedTutorial', target.value);
-      });
+    // Save on change
+    tutorialSelect.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      localStorage.setItem('lastSelectedTutorial', target.value);
+    });
   }
 
   // Interactive Mode Event Listeners

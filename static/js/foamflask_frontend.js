@@ -144,8 +144,8 @@ const plotlyColors = {
 };
 const plotLayout = {
     font: { family: "Computer Modern Serif, serif", size: 12 },
-    plot_bgcolor: "rgba(255, 255, 255, 0)",
-    paper_bgcolor: "rgba(255, 255, 255, 0)",
+    // plot_bgcolor: "rgba(255, 255, 255, 0)",
+    paper_bgcolor: "#FFF",
     margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
     height: 400,
     autosize: true,
@@ -156,7 +156,7 @@ const plotLayout = {
         x: 0.5,
         xanchor: "center",
         yanchor: "top",
-        bgcolor: "rgba(255, 0, 0, 0)",
+        // bgcolor: "rgba(255, 0, 0, 0)",
         borderwidth: 0,
     },
     xaxis: { showgrid: false, linewidth: 1 },

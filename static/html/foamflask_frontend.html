@@ -173,16 +173,18 @@
       position: relative;
       overflow: hidden;
     }
-    
+
     .glass-panel {
       /* Solid Opaque Panels (e.g. Content Cards) */
-      background-color: #ffffff; /* Solid white */
+      background-color: #ffffff;
+      /* Solid white */
       border-radius: 12px;
-      border: 1px solid #0891b2; /* Gray-200 */
+      border: 1px solid #0891b2;
+      /* Gray-200 */
       /* Consistent shadow for depth */
-      box-shadow: 
-          0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
       position: relative;
       overflow: hidden;
     }
@@ -199,23 +201,27 @@
       pointer-events: none;
     }
 
-    .glass-panel::before, .glass::after, .glass-panel::after {
+    .glass-panel::before,
+    .glass::after,
+    .glass-panel::after {
       display: none;
     }
-
   </style>
 
 </head>
 
-<body class="bg-[linear-gradient(180deg,hsla(192,80%,51%,1)_0%,hsla(355,85%,63%,1)_100%)] text-gray-800 min-h-screen bg-fixed">
+<body
+  class="bg-[linear-gradient(180deg,hsla(192,80%,51%,1)_0%,hsla(355,85%,63%,1)_100%)] text-gray-800 min-h-screen bg-fixed">
 
   <!-- Skip to content link -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-cyan-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+  <a href="#main-content"
+    class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-cyan-600 focus:shadow-lg focus:rounded-md focus:font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
     Skip to main content
   </a>
 
   <!-- Notification Container -->
-  <div id="notificationContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
+  <div id="notificationContainer"
+    class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
   </div>
 
   <template id="notification-template">
@@ -227,8 +233,11 @@
             <span class="text-sm font-medium message-slot leading-tight py-1"></span>
           </div>
           <!-- Close Button -->
-          <button class="close-btn text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10" aria-label="Close notification">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <button class="close-btn text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+            aria-label="Close notification">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
           </button>
         </div>
       </div>
@@ -291,15 +300,18 @@
         <p class="text-sm text-cyan-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
         <div class="flex flex-col sm:flex-row gap-2 items-center">
-          <select id="caseSelect" aria-label="Select Active Case" class="border border-cyan-300 rounded px-3 py-2 flex-1 w-full font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+          <select id="caseSelect" aria-label="Select Active Case"
+            class="border border-cyan-300 rounded px-3 py-2 flex-1 w-full font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
             onchange="selectCase(this.value)">
             <option value="">-- Select a Case --</option>
           </select>
           <button id="refreshCaseListBtn" onclick="refreshCaseList(this)"
             class="bg-cyan-100 hover:bg-cyan-200 text-cyan-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 px-4 py-2 rounded transition-colors flex items-center gap-1"
             title="Refresh List" aria-label="Refresh case list">
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
             Refresh
           </button>
@@ -333,7 +345,8 @@
           <h3 class="text-lg font-bold mb-3 text-gray-800">Import Tutorial</h3>
           <p class="text-sm text-gray-500 mb-3">Copy an OpenFOAM tutorial to your workspace.</p>
           <div class="flex flex-col gap-3">
-            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm" aria-label="Select Tutorial">
+            <select id="tutorialSelect" class="border border-gray-300 rounded px-3 py-2 text-sm"
+              aria-label="Select Tutorial">
               {{ options|safe }}
             </select>
             <button id="loadTutorialBtn"
@@ -371,7 +384,8 @@
                   document.getElementById('dockerImage').value,
                   document.getElementById('openfoamVersion').value,
                   this
-                )" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[90px]">
+                )"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[90px]">
               Update
             </button>
           </div>
@@ -455,7 +469,8 @@
                         class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
                         id="geo-bound-x-max"></span>
                     </div>
-                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                    <div
+                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-x-len"></span>
                     </div>
@@ -468,7 +483,8 @@
                         class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
                         id="geo-bound-y-max"></span>
                     </div>
-                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                    <div
+                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-y-len"></span>
                     </div>
@@ -481,7 +497,8 @@
                         class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
                         id="geo-bound-z-max"></span>
                     </div>
-                    <div class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                    <div
+                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-z-len"></span>
                     </div>
@@ -494,8 +511,7 @@
         </div>
 
         <!-- Right Column: Viewer -->
-        <div class="w-full lg:w-2/3 glass-panel rounded-lg overflow-hidden relative"
-          style="min-height: 500px;">
+        <div class="w-full lg:w-2/3 glass-panel rounded-lg overflow-hidden relative" style="min-height: 500px;">
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
           <div id="geometryPlaceholder"
             class="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none bg-gray-50">
@@ -512,14 +528,18 @@
       </div>
 
       <div class="mb-6 text-gray-600 text-sm">
-        <p class="text-gray-600 text-sm">Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured background mesh with blockMesh, then refines and snaps it to complex geometry (like STL files) using snappyHexMesh, a common workflow for detailed, automated meshing, especially for boundary layers, by starting simple and adding complexity.</p>
+        <p class="text-gray-600 text-sm">Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured
+          background mesh with blockMesh, then refines and snaps it to complex geometry (like STL files) using
+          snappyHexMesh, a common workflow for detailed, automated meshing, especially for boundary layers, by starting
+          simple and adding complexity.</p>
       </div>
 
       <div class="flex flex-col gap-6">
 
         <!-- BlockMesh Config -->
         <div class="glass-panel rounded-lg p-4 shadow-sm">
-          <button class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded"
+          <button
+            class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded"
             onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
             <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">The Foundation</span></span>
             <span id="blockMeshSectionToggle" class="text-sm transition-transform duration-200">▼</span>
@@ -529,20 +549,27 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Bounds (Min / Max)</label>
                 <div class="grid grid-cols-2 gap-2">
-                  <input type="text" id="bmMin" placeholder="-1 -1 -1" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" aria-label="BlockMesh Min Bounds">
-                  <input type="text" id="bmMax" placeholder="1 1 1" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" aria-label="BlockMesh Max Bounds">
+                  <input type="text" id="bmMin" placeholder="-1 -1 -1"
+                    class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    aria-label="BlockMesh Min Bounds">
+                  <input type="text" id="bmMax" placeholder="1 1 1"
+                    class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    aria-label="BlockMesh Max Bounds">
                 </div>
-                <button onclick="fillBoundsFromGeometry(this)" class="text-xs text-cyan-600 hover:text-cyan-800 mt-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded px-1 transition-colors">
+                <button onclick="fillBoundsFromGeometry(this)"
+                  class="text-xs text-cyan-600 hover:text-cyan-800 mt-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded px-1 transition-colors">
                   Auto-fill from selected Geometry
                 </button>
               </div>
               <div>
                 <label for="bmCells" class="block text-sm font-medium text-gray-700">Cells (x y z)</label>
-                <input type="text" id="bmCells" value="20 20 20" class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                <input type="text" id="bmCells" value="20 20 20"
+                  class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
               </div>
               <div>
                 <label for="bmGrading" class="block text-sm font-medium text-gray-700">Grading (x y z)</label>
-                <input type="text" id="bmGrading" value="1 1 1" class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                <input type="text" id="bmGrading" value="1 1 1"
+                  class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
               </div>
             </div>
             <div class="flex gap-2 pt-2">
@@ -586,7 +613,8 @@
                   </label>
                 </div>
                 <div class="mt-3">
-                  <label for="shmLocation" class="block text-sm font-medium text-gray-700">Location In Mesh (x y z)</label>
+                  <label for="shmLocation" class="block text-sm font-medium text-gray-700">Location In Mesh (x y
+                    z)</label>
                   <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
                     placeholder="e.g. 0.1 0.1 0.1">
                 </div>
@@ -667,14 +695,17 @@
                     <label class="block text-xs font-medium text-gray-700">Refinement Level (Min / Max)</label>
                     <div class="flex items-center gap-2">
                       <input type="number" id="shmObjRefMin" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()" aria-label="Min Refinement Level">
+                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
+                        aria-label="Min Refinement Level">
                       <span class="text-gray-500">-</span>
                       <input type="number" id="shmObjRefMax" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()" aria-label="Max Refinement Level">
+                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
+                        aria-label="Max Refinement Level">
                     </div>
                   </div>
                   <div>
-                    <label for="shmObjLayers" class="block text-xs font-medium text-gray-700">Number of Surface Layers</label>
+                    <label for="shmObjLayers" class="block text-xs font-medium text-gray-700">Number of Surface
+                      Layers</label>
                     <input type="number" id="shmObjLayers" min="0" max="10"
                       class="border rounded px-2 py-1 text-sm w-full" onchange="updateShmObjectConfig()">
                     <p class="text-xs text-gray-500 mt-1">Requires "Add Layers" to be enabled globally.</p>
@@ -711,13 +742,16 @@
           <button onclick="copyMeshingOutput()"
             class="text-xs text-cyan-600 hover:text-cyan-800 flex items-center gap-1 focus:outline-none focus:underline"
             aria-label="Copy meshing output">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
             Copy
           </button>
         </div>
-        <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto" tabindex="0" role="log" aria-label="Meshing Output Log">
+        <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto"
+          tabindex="0" role="log" aria-label="Meshing Output Log">
           Ready...
         </div>
       </div>
@@ -732,36 +766,50 @@
         <div class="flex flex-col sm:flex-row gap-2">
           <button id="runAllrunBtn" onclick="runCommand('./Allrun', this)"
             class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+              aria-hidden="true">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                clip-rule="evenodd" />
             </svg>
             Allrun
           </button>
           <button id="runAllcleanBtn" onclick="runCommand('./Allclean', this)"
             class="bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+              aria-hidden="true">
+              <path fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
             </svg>
             Allclean
           </button>
           <button id="runBlockMeshBtnRun" onclick="runCommand('blockMesh', this)"
             class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm8-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm9-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+              aria-hidden="true">
+              <path
+                d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm8-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm9-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
             </svg>
             blockMesh
           </button>
           <button id="runSimpleFoamBtn" onclick="runCommand('simpleFoam', this)"
             class="bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+              aria-hidden="true">
+              <path fill-rule="evenodd"
+                d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                clip-rule="evenodd" />
             </svg>
             simpleFoam
           </button>
           <button id="runPimpleFoamBtn" onclick="runCommand('pimpleFoam', this)"
             class="bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+              aria-hidden="true">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                clip-rule="evenodd" />
             </svg>
             pimpleFoam
           </button>
@@ -771,14 +819,16 @@
       <!-- Console Log -->
       <div class="flex flex-col">
         <div class="flex justify-between items-center mb-2">
-      <h2 class="text-xl font-semibold flex items-center">Console Log
-        <div class="relative group ml-1">
-          <button type="button" aria-describedby="console-log-tooltip" class="text-cyan-500 cursor-help focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded-full w-6 h-6 flex items-center justify-center text-sm" aria-label="Information about Console Log">ℹ️</button>
-          <div id="console-log-tooltip" role="tooltip"
-            class="invisible group-hover:visible group-focus-within:visible opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-10 pointer-events-none">
+          <h2 class="text-xl font-semibold flex items-center">Console Log
+            <div class="relative group ml-1">
+              <button type="button" aria-describedby="console-log-tooltip"
+                class="text-cyan-500 cursor-help focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                aria-label="Information about Console Log">ℹ️</button>
+              <div id="console-log-tooltip" role="tooltip"
+                class="invisible group-hover:visible group-focus-within:visible opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-10 pointer-events-none">
                 Output from OpenFOAM is viewed here
-          </div>
-        </div>
+              </div>
+            </div>
           </h2>
           <div class="flex gap-2">
             <button onclick="clearLog()"
@@ -803,8 +853,8 @@
             </button>
           </div>
         </div>
-        <div id="output"
-          class="glass-panel rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0" role="log" aria-label="Console Output Log"></div>
+        <div id="output" class="glass-panel rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
+          role="log" aria-label="Console Output Log"></div>
       </div>
 
     </div>
@@ -816,7 +866,7 @@
         <div class="flex justify-between items-center">
           <h2 class="text-2xl font-bold">VTK Mesh Visualization</h2>
           <div class="flex gap-2">
-          <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
+            <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
 
           </div>
         </div>
@@ -839,14 +889,17 @@
                 <button id="refreshMeshListBtn" onclick="refreshMeshList(this)"
                   class="bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-white px-4 py-2 rounded text-sm transition-opacity duration-300 flex items-center gap-1"
                   aria-label="Refresh mesh list">
-                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                   </svg>
                   Refresh List
                 </button>
               </div>
 
-              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full" aria-label="Select Mesh File">
+              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full"
+                aria-label="Select Mesh File">
                 <option value="">-- Select a mesh file --</option>
               </select>
               <button id="loadMeshBtn" onclick="loadMeshVisualization()"
@@ -895,28 +948,30 @@
                   Interactive Mode
                 </button>
               </div>
-              <div id="interactiveModeHint" class="hidden mt-3 text-[11px] text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
+              <div id="interactiveModeHint"
+                class="hidden mt-3 text-[11px] text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
                 <div class="font-semibold text-gray-700 mb-2 border-b border-gray-200 pb-1">How to Interact?</div>
                 <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-                  
+
                   <!-- Rotate -->
                   <div class="flex justify-center">
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5"/>
-                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6"/>
-                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5"/>
+                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
+                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6" />
+                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5" />
                     </svg>
                   </div>
                   <span>Rotate</span>
 
                   <!-- Axis Rotate -->
                   <div class="flex items-center gap-1 justify-center">
-                    <kbd class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Ctrl</kbd>
+                    <kbd
+                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Ctrl</kbd>
                     <span class="text-gray-400 text-[10px]">+</span>
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5"/>
-                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6"/>
-                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5"/>
+                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
+                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6" />
+                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5" />
                     </svg>
                   </div>
                   <span>Axis Rotate</span>
@@ -924,20 +979,21 @@
                   <!-- Zoom -->
                   <div class="flex justify-center">
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5"/>
-                      <rect x="6" y="3" width="2" height="4" rx="1" fill="#EF4444"/>
+                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
+                      <rect x="6" y="3" width="2" height="4" rx="1" fill="#EF4444" />
                     </svg>
                   </div>
                   <span>Zoom</span>
 
                   <!-- Pan -->
                   <div class="flex items-center gap-1 justify-center">
-                    <kbd class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Shift</kbd>
+                    <kbd
+                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Shift</kbd>
                     <span class="text-gray-400 text-[10px]">+</span>
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5"/>
-                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6"/>
-                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5"/>
+                      <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
+                      <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6" />
+                      <line x1="7" y1="1" x2="7" y2="8" stroke="#9CA3AF" stroke-width="1.5" />
                     </svg>
                   </div>
                   <span>Pan</span>
@@ -1053,8 +1109,7 @@
           <!-- Pressure Plot -->
           <div
             class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="pressure-plot" class="w-full p-1 rounded-lg"
-              style="min-height: 300px;"></div>
+            <div id="pressure-plot" class="w-full p-1 rounded-lg shadow" style="min-height: 300px;"></div>
 
             <button
               onclick="downloadPlotData('pressure-plot', 'pressure_data.csv'); showNotification('Downloading pressure data...', 'info', 3000);"
@@ -1082,9 +1137,8 @@
 
           <!-- Velocity Plot -->
           <div
-            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="velocity-plot" class="w-full p-2 rounded-lg shadow border-2 border-gray-300"
-              style="min-height: 300px;"></div>
+            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            <div id="velocity-plot" class="w-full p-2 rounded-lg shadow" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
               class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
@@ -1111,9 +1165,8 @@
 
           <!-- Turbulence Plot -->
           <div
-            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="turbulence-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"
-              style="min-height: 300px;"></div>
+            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            <div id="turbulence-plot" class="w-full p-2 rounded-lg shadow" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
               class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
@@ -1140,9 +1193,8 @@
 
           <!-- Residuals Plot -->
           <div
-            class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="residuals-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"
-              style="min-height: 300px;"></div>
+            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            <div id="residuals-plot" class="w-full p-2 rounded-lg shadow" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
               class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
@@ -1175,11 +1227,10 @@
         <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <div class="w-full overflow-hidden">
-            <div id="cp-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"></div>
+            <div id="cp-plot" class="w-full p-2 rounded-lg shadow"></div>
           </div>
           <div class="w-full overflow-hidden">
-            <div id="velocity-profile-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300">
-            </div>
+            <div id="velocity-profile-plot" class="w-full p-2 rounded-lg shadow"></div>
           </div>
         </div>
       </div>
@@ -1296,11 +1347,13 @@
               <div class="grid grid-cols-2 gap-2 w-full">
                 <div class="w-full">
                   <input type="number" id="rangeMin" placeholder="Min"
-                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34" aria-label="Scalar Field Range Minimum">
+                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="122.34"
+                    aria-label="Scalar Field Range Minimum">
                 </div>
                 <div class="w-full">
                   <input type="number" id="rangeMax" placeholder="Max"
-                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177" aria-label="Scalar Field Range Maximum">
+                    class="w-full border border-gray-300 rounded px-3 py-2" step="0.0001" value="168.2177"
+                    aria-label="Scalar Field Range Maximum">
                 </div>
               </div>
               <button id="RangeBtn"
@@ -1478,7 +1531,3 @@
 </body>
 
 </html>
-
-
-
-
