@@ -2300,6 +2300,36 @@ window.changePlotFont = (fontFamily) => {
     }
     showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 2000);
 };
+window.switchCaseCreationTab = (tab) => {
+    const createTab = document.getElementById("tab-content-create");
+    const importTab = document.getElementById("tab-content-import");
+    const createBtn = document.getElementById("tab-btn-create");
+    const importBtn = document.getElementById("tab-btn-import");
+    if (!createTab || !importTab || !createBtn || !importBtn)
+        return;
+    // Active Classes: text-cyan-800 bg-cyan-50 shadow-sm ring-1 ring-cyan-200 font-semibold
+    // Inactive Classes: text-gray-600 hover:text-gray-800 hover:bg-gray-100/50 font-medium
+    if (tab === "create") {
+        createTab.classList.remove("hidden");
+        importTab.classList.add("hidden");
+        // Active Style for Create
+        createBtn.classList.remove("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+        createBtn.classList.add("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+        // Inactive Style for Import
+        importBtn.classList.remove("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+        importBtn.classList.add("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+    }
+    else {
+        createTab.classList.add("hidden");
+        importTab.classList.remove("hidden");
+        // Active Style for Import
+        importBtn.classList.remove("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+        importBtn.classList.add("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+        // Inactive Style for Create
+        createBtn.classList.remove("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+        createBtn.classList.add("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+    }
+};
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 }
