@@ -265,8 +265,8 @@ const plotlyColors = {
 
 const plotLayout: Partial<Plotly.Layout> = {
   font: { family: "Computer Modern Serif, serif", size: 12 },
-  plot_bgcolor: "white",
-  paper_bgcolor: "#ffffff",
+  plot_bgcolor: "rgba(255, 255, 255, 0)",
+  paper_bgcolor: "rgba(255, 255, 255, 0)",
   margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
   height: 400,
   autosize: true,
@@ -277,8 +277,8 @@ const plotLayout: Partial<Plotly.Layout> = {
     x: 0.5,
     xanchor: "center" as const,
     yanchor: "top" as const,
-    bgcolor: "white",
-    borderwidth: 0.5,
+    bgcolor: "rgba(255, 0, 0, 0)",
+    borderwidth: 0,
   },
   xaxis: { showgrid: false, linewidth: 1 },
   yaxis: { showgrid: false, linewidth: 1 },
@@ -379,8 +379,8 @@ const getLegendVisibility = (
 // Helper: Attach white-bg download button to a plot
 const attachWhiteBGDownloadButton = (plotDiv: any): void => {
   if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
-  plotDiv.layout.paper_bgcolor = "white";
-  plotDiv.layout.plot_bgcolor = "white";
+  // plotDiv.layout.paper_bgcolor = "white"; // Disable white BG enforcement
+  // plotDiv.layout.plot_bgcolor = "white";
   plotDiv.dataset.whiteButtonAdded = "true";
   const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
   configWithWhiteBG.toImageButtonOptions = {
@@ -433,8 +433,16 @@ const downloadPlotData = (plotId: string, filename: string): void => {
 };
 
 // Page Switching
-const switchPage = (pageName: string): void => {
+const switchPage = (pageName: string, updateUrl: boolean = true): void => {
   console.log(`switchPage called with: ${pageName}`);
+
+  // Update URL
+  if (updateUrl) {
+    const url = new URL(window.location.href);
+    url.pathname = pageName === "setup" ? "/" : `/${pageName}`;
+    window.history.pushState({ page: pageName }, "", url);
+  }
+
   const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
   pages.forEach((page) => {
     const pageElement = document.getElementById(`page-${page}`);
@@ -2440,6 +2448,33 @@ window.onload = async () => {
 
 
 const init = () => {
+  // Determine initial page from URL
+  const path = window.location.pathname;
+  let initialPage = "setup";
+  if (path !== "/" && path !== "") {
+    const pageName = path.substring(1).toLowerCase(); // remove leading slash
+    // check if it's a valid page
+    const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
+    if (pages.includes(pageName)) {
+      initialPage = pageName;
+    }
+  }
+
+  // Handle browser back/forward buttons
+  window.onpopstate = (event) => {
+    if (event.state && event.state.page) {
+      switchPage(event.state.page, false);
+    } else {
+      // Fallback if no state (e.g. initial load turned into history entry?)
+      // or just parse URL again
+      const p = window.location.pathname.substring(1).toLowerCase() || "setup";
+      switchPage(p, false);
+    }
+  };
+
+  // Switch to initial page (don't push state for the initial load)
+  switchPage(initialPage, false);
+
   const navButtons = [
     { id: 'nav-setup', handler: () => switchPage('setup') },
     { id: 'nav-run', handler: () => switchPage('run') },

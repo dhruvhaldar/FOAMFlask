@@ -164,11 +164,11 @@
     /* Glassmorphism Utilities - Mixed */
     .glass {
       /* Visible Frosted Glass (e.g. Navbar) */
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(5px) saturate(180%);
+      -webkit-backdrop-filter: blur(5px) saturate(180%);
       background-color: rgba(255, 255, 255, 0.8);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(209, 213, 219, 0.3);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       position: relative;
       overflow: hidden;
@@ -178,7 +178,7 @@
       /* Solid Opaque Panels (e.g. Content Cards) */
       background-color: #ffffff; /* Solid white */
       border-radius: 12px;
-      border: 1px solid rgba(229, 231, 235, 1); /* Gray-200 */
+      border: 1px solid #0891b2; /* Gray-200 */
       /* Consistent shadow for depth */
       box-shadow: 
           0 4px 6px -1px rgba(0, 0, 0, 0.1), 
@@ -1029,10 +1029,13 @@
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Realtime Plots</h2>
         <div class="flex gap-2">
+
+          <!-- Show Aero Plots Button -->
           <button onclick="toggleAeroPlots()" id="toggleAeroBtn"
             class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
             Show Aero Plots
           </button>
+
         </div>
       </div>
 
@@ -1050,7 +1053,7 @@
           <!-- Pressure Plot -->
           <div
             class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="pressure-plot" class="w-full bg-white p-1 rounded-lg shadow border-2 border-gray-300"
+            <div id="pressure-plot" class="w-full glass p-1 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button
@@ -1080,7 +1083,7 @@
           <!-- Velocity Plot -->
           <div
             class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="velocity-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
+            <div id="velocity-plot" class="w-full p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
@@ -1109,7 +1112,7 @@
           <!-- Turbulence Plot -->
           <div
             class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="turbulence-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
+            <div id="turbulence-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
@@ -1138,7 +1141,7 @@
           <!-- Residuals Plot -->
           <div
             class="w-full glass p-2 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
-            <div id="residuals-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"
+            <div id="residuals-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"
               style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
@@ -1172,10 +1175,10 @@
         <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <div class="w-full overflow-hidden">
-            <div id="cp-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300"></div>
+            <div id="cp-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300"></div>
           </div>
           <div class="w-full overflow-hidden">
-            <div id="velocity-profile-plot" class="w-full bg-white p-2 rounded-lg shadow border-2 border-gray-300">
+            <div id="velocity-profile-plot" class="w-full glass p-2 rounded-lg shadow border-2 border-gray-300">
             </div>
           </div>
         </div>
