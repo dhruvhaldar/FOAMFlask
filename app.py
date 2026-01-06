@@ -17,6 +17,7 @@ import posixpath
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator
+from functools import wraps
 
 # Third-party imports
 import docker
@@ -52,6 +53,82 @@ OPENFOAM_VERSION: Optional[str] = None
 docker_client: Optional[DockerClient] = None
 foamrun_logs: Dict[str, str] = {}  # Maps tutorial names to their log content
 STARTUP_STATUS = {"status": "starting", "message": "Initializing..."}
+
+# --- Rate Limiting Logic ---
+# IP -> list of timestamps
+_request_history: Dict[str, List[float]] = {}
+_last_cleanup_time = 0.0
+
+def _cleanup_rate_limit_history(window: int = 60):
+    """
+    Clean up old entries from the rate limit history to prevent memory leaks.
+    """
+    global _last_cleanup_time
+    now = time.time()
+
+    # Only cleanup every 'window' seconds
+    if now - _last_cleanup_time < window:
+        return
+
+    _last_cleanup_time = now
+    ips_to_remove = []
+
+    for ip, history in _request_history.items():
+        # Keep only timestamps within the window
+        valid_timestamps = [t for t in history if now - t < window]
+        if not valid_timestamps:
+            ips_to_remove.append(ip)
+        else:
+            _request_history[ip] = valid_timestamps
+
+    for ip in ips_to_remove:
+        del _request_history[ip]
+
+def rate_limit(limit: int = 5, window: int = 60):
+    """
+    Decorator to rate limit endpoints.
+
+    Args:
+        limit: Max requests allowed in the window.
+        window: Time window in seconds.
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            # Allow rate limiting to be disabled for testing if needed
+            if app.config.get("TESTING") and not app.config.get("ENABLE_RATE_LIMIT", True):
+                return f(*args, **kwargs)
+
+            # Get IP address (simple remote_addr, trusted in this context)
+            ip = request.remote_addr or "unknown"
+
+            # Allow internal testing calls if needed, or handle unknown IPs
+            if ip == "unknown":
+                pass
+
+            now = time.time()
+
+            # Opportunistic cleanup
+            _cleanup_rate_limit_history(window)
+
+            # Clean up old history for this IP
+            history = _request_history.get(ip, [])
+            # Filter out timestamps older than the window
+            history = [t for t in history if now - t < window]
+
+            if len(history) >= limit:
+                logger.warning(f"Security: Rate limit exceeded for {ip} on {request.endpoint}")
+                return jsonify({
+                    "error": "Too many requests. Please try again later.",
+                    "retry_after": int(window - (now - history[0])) if history else window
+                }), 429
+
+            history.append(now)
+            _request_history[ip] = history
+
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 
 
 # Security validation functions
@@ -826,6 +903,7 @@ def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
         return jsonify(result), 500
 
 @app.route("/api/meshing/run", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
     """Run a meshing command."""
     data = request.get_json()
@@ -922,6 +1000,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
 
 
 @app.route("/load_tutorial", methods=["POST"])
+@rate_limit(limit=5, window=60)
 def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     """
     Load a tutorial in the Docker container.
@@ -1029,6 +1108,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
 
 
 @app.route("/run", methods=["POST"])
+@rate_limit(limit=5, window=60)
 def run_case() -> Union[Response, Tuple[Dict, int]]:
     """
     Run a case in the Docker container.
@@ -1390,17 +1470,6 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
 
-    # Security: Validate dimensions to prevent DoS
-    if not isinstance(width, int) or not isinstance(height, int):
-        return jsonify({"error": "Width and height must be integers"}), 400
-
-    MAX_DIMENSION = 4096
-    if width > MAX_DIMENSION or height > MAX_DIMENSION:
-        return jsonify({"error": f"Dimensions too large (max {MAX_DIMENSION}px)"}), 400
-
-    if width < 1 or height < 1:
-        return jsonify({"error": "Dimensions must be positive"}), 400
-
     try:
         # Security: Validate path is within CASE_ROOT
         try:
@@ -1431,6 +1500,7 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
 
 
 @app.route("/api/mesh_screenshot", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     """
     Generate a screenshot of the mesh.
@@ -1456,6 +1526,17 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
 
     if not file_path:
         return jsonify({"error": "No file path provided"}), 400
+
+    # Security: Validate dimensions to prevent DoS
+    if not isinstance(width, int) or not isinstance(height, int):
+        return jsonify({"error": "Width and height must be integers"}), 400
+
+    MAX_DIMENSION = 4096
+    if width > MAX_DIMENSION or height > MAX_DIMENSION:
+        return jsonify({"error": f"Dimensions too large (max {MAX_DIMENSION}px)"}), 400
+
+    if width < 1 or height < 1:
+        return jsonify({"error": "Dimensions must be positive"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
@@ -1534,6 +1615,7 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
 
 
 @app.route("/run_foamtovtk", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
     """
     Run foamToVTK command in the Docker container.
