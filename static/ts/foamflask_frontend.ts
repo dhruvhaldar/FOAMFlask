@@ -1684,20 +1684,28 @@ const switchGeometryTab = (tab: "upload" | "resources") => {
   const uploadBtn = document.getElementById("tab-btn-geo-upload");
   const resourceBtn = document.getElementById("tab-btn-geo-resources");
 
+  const activeClasses = ["text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold"];
+  const inactiveClasses = ["text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium"];
+
   if (tab === "upload") {
     uploadTab?.classList.remove("hidden");
     resourceTab?.classList.add("hidden");
-    uploadBtn?.classList.add("border-cyan-500", "text-cyan-600");
-    uploadBtn?.classList.remove("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
-    resourceBtn?.classList.remove("border-cyan-500", "text-cyan-600");
-    resourceBtn?.classList.add("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+
+    uploadBtn?.classList.remove(...inactiveClasses);
+    uploadBtn?.classList.add(...activeClasses);
+
+    resourceBtn?.classList.remove(...activeClasses);
+    resourceBtn?.classList.add(...inactiveClasses);
   } else {
     uploadTab?.classList.add("hidden");
     resourceTab?.classList.remove("hidden");
-    resourceBtn?.classList.add("border-cyan-500", "text-cyan-600");
-    resourceBtn?.classList.remove("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
-    uploadBtn?.classList.remove("border-cyan-500", "text-cyan-600");
-    uploadBtn?.classList.add("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+
+    resourceBtn?.classList.remove(...inactiveClasses);
+    resourceBtn?.classList.add(...activeClasses);
+
+    uploadBtn?.classList.remove(...activeClasses);
+    uploadBtn?.classList.add(...inactiveClasses);
+
     loadResourceGeometries();
   }
 };
