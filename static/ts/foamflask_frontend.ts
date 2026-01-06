@@ -1679,32 +1679,34 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
 
 
 const switchGeometryTab = (tab: "upload" | "resources") => {
-  const uploadTab = document.getElementById("tab-geo-upload");
-  const resourceTab = document.getElementById("tab-geo-resources");
+  const track = document.getElementById("geometry-track");
+  const pill = document.getElementById("geometry-bg-pill");
   const uploadBtn = document.getElementById("tab-btn-geo-upload");
   const resourceBtn = document.getElementById("tab-btn-geo-resources");
 
-  const activeClasses = ["text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold"];
-  const inactiveClasses = ["text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium"];
+  // Only toggle text styles now, background is handled by the pill
+  const activeTextClasses = ["text-cyan-800", "font-semibold"];
+  const inactiveTextClasses = ["text-gray-600", "hover:text-gray-800", "font-medium"];
 
   if (tab === "upload") {
-    uploadTab?.classList.remove("hidden");
-    resourceTab?.classList.add("hidden");
+    if (track) track.style.transform = "translateX(0%)";
+    if (pill) pill.style.transform = "translateX(0)";
 
-    uploadBtn?.classList.remove(...inactiveClasses);
-    uploadBtn?.classList.add(...activeClasses);
+    uploadBtn?.classList.remove(...inactiveTextClasses);
+    uploadBtn?.classList.add(...activeTextClasses);
 
-    resourceBtn?.classList.remove(...activeClasses);
-    resourceBtn?.classList.add(...inactiveClasses);
+    resourceBtn?.classList.remove(...activeTextClasses);
+    resourceBtn?.classList.add(...inactiveTextClasses);
   } else {
-    uploadTab?.classList.add("hidden");
-    resourceTab?.classList.remove("hidden");
+    if (track) track.style.transform = "translateX(-100%)";
+    // Move pill to the second position (100% width + gap)
+    if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
 
-    resourceBtn?.classList.remove(...inactiveClasses);
-    resourceBtn?.classList.add(...activeClasses);
+    resourceBtn?.classList.remove(...inactiveTextClasses);
+    resourceBtn?.classList.add(...activeTextClasses);
 
-    uploadBtn?.classList.remove(...activeClasses);
-    uploadBtn?.classList.add(...inactiveClasses);
+    uploadBtn?.classList.remove(...activeTextClasses);
+    uploadBtn?.classList.add(...inactiveTextClasses);
 
     loadResourceGeometries();
   }
@@ -2819,38 +2821,39 @@ const init = () => {
 
 
 (window as any).switchCaseCreationTab = (tab: "create" | "import"): void => {
-  const createTab = document.getElementById("tab-content-create");
-  const importTab = document.getElementById("tab-content-import");
+  const track = document.getElementById("case-creation-track");
+  const pill = document.getElementById("case-creation-bg-pill");
   const createBtn = document.getElementById("tab-btn-create");
   const importBtn = document.getElementById("tab-btn-import");
 
-  if (!createTab || !importTab || !createBtn || !importBtn) return;
+  if (!track || !createBtn || !importBtn) return;
 
-  // Active Classes: text-cyan-800 bg-cyan-50 shadow-sm ring-1 ring-cyan-200 font-semibold
-  // Inactive Classes: text-gray-600 hover:text-gray-800 hover:bg-gray-100/50 font-medium
+  // Only toggle text styles now
+  const activeTextClasses = ["text-cyan-800", "font-semibold"];
+  const inactiveTextClasses = ["text-gray-600", "hover:text-gray-800", "font-medium"];
 
   if (tab === "create") {
-    createTab.classList.remove("hidden");
-    importTab.classList.add("hidden");
+    track.style.transform = "translateX(0%)";
+    if (pill) pill.style.transform = "translateX(0)";
 
     // Active Style for Create
-    createBtn.classList.remove("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
-    createBtn.classList.add("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+    createBtn.classList.remove(...inactiveTextClasses);
+    createBtn.classList.add(...activeTextClasses);
 
     // Inactive Style for Import
-    importBtn.classList.remove("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
-    importBtn.classList.add("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+    importBtn.classList.remove(...activeTextClasses);
+    importBtn.classList.add(...inactiveTextClasses);
   } else {
-    createTab.classList.add("hidden");
-    importTab.classList.remove("hidden");
+    track.style.transform = "translateX(-100%)";
+    if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
 
     // Active Style for Import
-    importBtn.classList.remove("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
-    importBtn.classList.add("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
+    importBtn.classList.remove(...inactiveTextClasses);
+    importBtn.classList.add(...activeTextClasses);
 
     // Inactive Style for Create
-    createBtn.classList.remove("text-cyan-800", "bg-cyan-50", "shadow-sm", "ring-1", "ring-cyan-200", "font-semibold");
-    createBtn.classList.add("text-gray-600", "hover:text-gray-800", "hover:bg-gray-100/50", "font-medium");
+    createBtn.classList.remove(...activeTextClasses);
+    createBtn.classList.add(...inactiveTextClasses);
   }
 };
 
