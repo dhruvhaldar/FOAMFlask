@@ -2774,9 +2774,12 @@ const init = () => {
 
 (window as any).toggleFontSettings = (): void => {
   const menu = document.getElementById("fontSettingsMenu");
+  const btn = document.getElementById("fontSettingsBtn");
   if (menu) {
-    if (menu.classList.contains("hidden")) {
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
       menu.classList.remove("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "true");
       // Close on click outside
       setTimeout(() => {
         const closeHandler = (e: MouseEvent) => {
@@ -2784,6 +2787,7 @@ const init = () => {
             (e.target as HTMLElement).id !== "fontSettingsBtn" &&
             !(e.target as HTMLElement).closest("#fontSettingsBtn")) {
             menu.classList.add("hidden");
+            if (btn) btn.setAttribute("aria-expanded", "false");
             document.removeEventListener("click", closeHandler);
           }
         };
@@ -2791,6 +2795,7 @@ const init = () => {
       }, 10);
     } else {
       menu.classList.add("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "false");
     }
   }
 };
