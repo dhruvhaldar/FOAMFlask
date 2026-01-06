@@ -471,8 +471,9 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
 
     // Desktop Reset
     if (navButton) {
-      navButton.classList.remove("bg-cyan-600", "text-white");
-      navButton.classList.add("text-gray-700", "hover:bg-gray-100");
+      // navButton.classList.remove("bg-cyan-600", "text-white"); // BG handled by pill
+      navButton.classList.remove("text-white");
+      navButton.classList.add("text-gray-700", "hover:bg-gray-100/50");
       navButton.removeAttribute("aria-current");
     }
 
@@ -487,13 +488,24 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
   const selectedPage = document.getElementById(`page-${pageName}`);
   const selectedNav = document.getElementById(`nav-${pageName}`);
   const selectedMobileNav = document.getElementById(`mobile-nav-${pageName}`);
+  const navPill = document.getElementById("nav-pill");
 
   if (selectedPage) selectedPage.classList.remove("hidden");
 
   if (selectedNav) {
-    selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-    selectedNav.classList.add("bg-cyan-600", "text-white");
+    // Update Text Color
+    // selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
+    // selectedNav.classList.add("bg-cyan-600", "text-white");
+    selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100/50");
+    selectedNav.classList.add("text-white");
     selectedNav.setAttribute("aria-current", "page");
+
+    // Move Pill
+    if (navPill) {
+      navPill.style.opacity = "1";
+      navPill.style.left = `${selectedNav.offsetLeft}px`;
+      navPill.style.width = `${selectedNav.offsetWidth}px`;
+    }
   }
 
   if (selectedMobileNav) {
