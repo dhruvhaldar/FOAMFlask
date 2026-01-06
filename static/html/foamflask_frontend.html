@@ -502,19 +502,58 @@
         <!-- Left Sidebar: Controls -->
         <div class="w-full lg:w-1/3 flex flex-col gap-4 glass-panel rounded-lg p-4">
 
-          <!-- File Upload -->
-          <div class="flex flex-col gap-2">
+          <!-- Geometry Tabs -->
+          <div class="border-b border-gray-200 mb-4">
+            <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+              <button onclick="switchGeometryTab('upload')" id="tab-btn-geo-upload"
+                class="border-cyan-500 text-cyan-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                Upload File
+              </button>
+              <button onclick="switchGeometryTab('resources')" id="tab-btn-geo-resources"
+                class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                From Resources
+              </button>
+            </nav>
+          </div>
+
+          <!-- Tab Content: Upload -->
+          <div id="tab-geo-upload" class="flex flex-col gap-2">
             <label for="geometryUpload" class="text-sm font-medium">Upload Geometry File (stl, obj, obj.gz)</label>
             <input type="file" id="geometryUpload" accept=".stl,.obj,.obj.gz" class="block w-full text-sm text-gray-500
-             file:mr-4 file:py-2 file:px-4
-             file:rounded-full file:border-0
-             file:text-sm file:font-semibold
-             file:bg-cyan-50 file:text-cyan-700
-             hover:file:bg-cyan-100
-           " />
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-full file:border-0
+              file:text-sm file:font-semibold
+              file:bg-cyan-50 file:text-cyan-700
+              hover:file:bg-cyan-100
+            " />
             <button id="uploadGeometryBtn" onclick="uploadGeometry(this)"
               class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
               Upload
+            </button>
+          </div>
+
+          <!-- Tab Content: Resources -->
+          <div id="tab-geo-resources" class="hidden flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+              <label for="resourceGeometrySelect" class="text-sm font-medium">Select Resource Geometry</label>
+              <button id="refreshResourceGeometryBtn" onclick="loadResourceGeometries(true)"
+                class="text-xs text-cyan-600 hover:text-cyan-800 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500 rounded px-1"
+                aria-label="Refresh resource list">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            </div>
+            <select id="resourceGeometrySelect"
+              class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md bg-white bg-opacity-80">
+              <option value="" disabled selected>Loading...</option>
+            </select>
+            <button id="fetchResourceGeometryBtn" onclick="fetchResourceGeometry(this)"
+              class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
+              Fetch & Import
             </button>
           </div>
 

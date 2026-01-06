@@ -2089,6 +2089,125 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
             logger.error(f"Error cleaning up file {filepath}: {e}")
 
 
+# --- Caching for Resource Geometry ---
+_RESOURCE_GEOMETRY_CACHE: Dict[str, Union[str, List[str]]] = {}
+
+@app.route("/api/resources/geometry/list", methods=["GET"])
+def api_list_resource_geometry() -> Union[Response, Tuple[Response, int]]:
+    """List available geometry files in $FOAM_TUTORIALS/resources/geometry."""
+    global _RESOURCE_GEOMETRY_CACHE
+    
+    refresh = request.args.get("refresh", "false").lower() == "true"
+    
+    # Check cache if not refreshing
+    if not refresh and _RESOURCE_GEOMETRY_CACHE.get("files"):
+        logger.debug("[FOAMFlask] Returning cached resource geometry list")
+        return jsonify({"files": _RESOURCE_GEOMETRY_CACHE["files"]})
+
+    try:
+        client = get_docker_client()
+        if client is None:
+             return docker_unavailable_response()
+
+        bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
+        cmd = (
+            f"bash -c 'source {bashrc} && "
+            "ls -1 $FOAM_TUTORIALS/resources/geometry'"
+        )
+
+        result = client.containers.run(
+            DOCKER_IMAGE,
+            cmd,
+            remove=True,
+            stdout=True,
+            stderr=True,
+            tty=True
+        )
+
+        output = result.decode().strip()
+        if not output:
+             files = []
+        else:
+             files = [f.strip() for f in output.splitlines() if f.strip().lower().endswith(('.stl', '.obj', '.gz'))]
+        
+        files = sorted(files)
+        
+        # Update cache
+        _RESOURCE_GEOMETRY_CACHE["files"] = files
+        
+        return jsonify({"files": files})
+
+    except Exception as e:
+        logger.error(f"Error listing resource geometry: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/resources/geometry/fetch", methods=["POST"])
+def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
+    """Fetch a geometry file from resources to the case."""
+    data = request.get_json()
+    filename = data.get("filename")
+    case_name = data.get("caseName")
+
+    if not filename or not case_name:
+        logger.error(f"Fetch failed: Missing filename ({filename}) or caseName ({case_name})")
+        return jsonify({"success": False, "message": "Missing filename or caseName"}), 400
+
+    if not is_safe_script_name(filename):
+         logger.error(f"Fetch failed: Invalid filename ({filename})")
+         return jsonify({"success": False, "message": "Invalid filename"}), 400
+
+    try:
+        case_dir_path = validate_safe_path(CASE_ROOT, case_name)
+        tri_surface_dir = case_dir_path / "constant" / "triSurface"
+        tri_surface_dir.mkdir(parents=True, exist_ok=True)
+    except ValueError as e:
+        logger.error(f"Fetch failed: Path validation error ({e})")
+        return jsonify({"success": False, "message": str(e)}), 400
+
+    try:
+        client = get_docker_client()
+        if client is None:
+             return docker_unavailable_response()
+
+        bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
+        host_path = tri_surface_dir.resolve()
+        host_path_str = host_path.as_posix() if platform.system() == "Windows" else str(host_path)
+
+        volumes = {
+            host_path_str: {"bind": "/output", "mode": "rw"}
+        }
+
+        cmd = (
+            f"bash -c 'source {bashrc} && "
+            f"cp $FOAM_TUTORIALS/resources/geometry/{filename} /output/'"
+        )
+        
+        run_kwargs = {
+            "volumes": volumes,
+            "remove": True,
+            "stdout": True,
+            "stderr": True
+        }
+        run_kwargs.update(get_docker_user_config())
+
+        client.containers.run(
+            DOCKER_IMAGE,
+            cmd,
+            **run_kwargs
+        )
+
+        expected_file = tri_surface_dir / filename
+        if expected_file.exists():
+             return jsonify({"success": True, "message": f"Fetched {filename}"})
+        else:
+             return jsonify({"success": False, "message": "File copy failed"}), 500
+
+    except Exception as e:
+        logger.error(f"Error fetching resource geometry: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 def main() -> None:
     global CONFIG, CASE_ROOT, DOCKER_IMAGE, OPENFOAM_VERSION
     CONFIG = load_config()
@@ -2112,3 +2231,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

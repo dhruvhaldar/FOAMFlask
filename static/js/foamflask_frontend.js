@@ -696,6 +696,8 @@ const loadTutorial = async () => {
             const select = document.getElementById("caseSelect");
             if (select)
                 select.value = importedName;
+            // UX: Default to "From Resources" tab for imported tutorials
+            switchGeometryTab("resources");
         }
     }
     catch (e) {
@@ -1428,6 +1430,119 @@ const refreshGeometryList = async (btnElement) => {
         }
     }
 };
+const switchGeometryTab = (tab) => {
+    const uploadTab = document.getElementById("tab-geo-upload");
+    const resourceTab = document.getElementById("tab-geo-resources");
+    const uploadBtn = document.getElementById("tab-btn-geo-upload");
+    const resourceBtn = document.getElementById("tab-btn-geo-resources");
+    if (tab === "upload") {
+        uploadTab?.classList.remove("hidden");
+        resourceTab?.classList.add("hidden");
+        uploadBtn?.classList.add("border-cyan-500", "text-cyan-600");
+        uploadBtn?.classList.remove("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+        resourceBtn?.classList.remove("border-cyan-500", "text-cyan-600");
+        resourceBtn?.classList.add("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+    }
+    else {
+        uploadTab?.classList.add("hidden");
+        resourceTab?.classList.remove("hidden");
+        resourceBtn?.classList.add("border-cyan-500", "text-cyan-600");
+        resourceBtn?.classList.remove("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+        uploadBtn?.classList.remove("border-cyan-500", "text-cyan-600");
+        uploadBtn?.classList.add("border-transparent", "text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+        loadResourceGeometries();
+    }
+};
+const loadResourceGeometries = async (refresh = false) => {
+    const select = document.getElementById("resourceGeometrySelect");
+    if (!select)
+        return;
+    // Frontend Cache Check: If we have options (more than just the placeholder/loading) and strict refresh isn't requested
+    if (!refresh && select.options.length > 1) {
+        return;
+    }
+    const btn = document.getElementById("refreshResourceGeometryBtn");
+    const originalIcon = btn ? btn.innerHTML : "Refresh";
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add("cursor-wait", "opacity-75");
+        btn.innerHTML = `<svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    }
+    select.innerHTML = '<option>Loading...</option>';
+    try {
+        const url = refresh ? "/api/resources/geometry/list?refresh=true" : "/api/resources/geometry/list";
+        const res = await fetch(url);
+        const data = await res.json();
+        select.innerHTML = '<option value="" disabled selected>Select Geometry</option>';
+        if (data.files && Array.isArray(data.files)) {
+            if (data.files.length === 0) {
+                const opt = document.createElement("option");
+                opt.disabled = true;
+                opt.textContent = "No geometry files found";
+                select.appendChild(opt);
+            }
+            else {
+                data.files.forEach((f) => {
+                    const opt = document.createElement("option");
+                    opt.value = f;
+                    opt.textContent = f;
+                    select.appendChild(opt);
+                });
+            }
+        }
+    }
+    catch (e) {
+        console.error(e);
+        select.innerHTML = '<option>Error loading list</option>';
+    }
+    finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove("cursor-wait", "opacity-75");
+            btn.innerHTML = originalIcon;
+        }
+    }
+};
+const fetchResourceGeometry = async (btnElement) => {
+    const select = document.getElementById("resourceGeometrySelect");
+    const filename = select?.value;
+    if (!filename || !activeCase) {
+        showNotification("Please select a geometry and active case", "error");
+        return;
+    }
+    const btn = (btnElement || document.getElementById("fetchResourceGeometryBtn"));
+    const originalText = btn ? btn.innerHTML : "Fetch & Import";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Fetching...`;
+    }
+    try {
+        const res = await fetch("/api/resources/geometry/fetch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, caseName: activeCase })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showNotification(`Fetched ${filename} successfully`, "success");
+            refreshGeometryList();
+        }
+        else {
+            showNotification(result.message || "Fetch failed", "error");
+        }
+    }
+    catch (e) {
+        showNotification("Error fetching geometry", "error");
+    }
+    finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+};
+window.switchGeometryTab = switchGeometryTab;
+window.fetchResourceGeometry = fetchResourceGeometry;
 const uploadGeometry = async (btnElement) => {
     const input = document.getElementById("geometryUpload");
     const btn = (btnElement || document.getElementById("uploadGeometryBtn"));
