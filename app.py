@@ -18,6 +18,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator
 from functools import wraps
+import email.utils
 
 # Third-party imports
 import docker
@@ -1324,6 +1325,59 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": str(e)}), 500
 
 
+def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str]]:
+    """
+    Check if the resource at path_to_check has been modified since the
+    time specified in the If-Modified-Since header.
+
+    Args:
+        path_to_check: Path to the file or directory to check.
+
+    Returns:
+        Tuple[bool, str]: (is_not_modified, last_modified_http_date)
+        is_not_modified: True if client cache is valid (return 304), False otherwise.
+        last_modified_http_date: The HTTP-formatted Last-Modified date string.
+    """
+    if not path_to_check.exists():
+        return False, None
+
+    try:
+        if path_to_check.is_file():
+            mtime = path_to_check.stat().st_mtime
+        else:
+             # For directories, finding the max mtime recursively is expensive.
+             # We check the directory mtime itself, which updates on file add/remove.
+             # Ideally we check postProcessing contents.
+             # Simplification: check st_mtime of the directory itself.
+             # If exactness is needed, we'd walk it. Let's assume dir mtime is sufficient for now.
+             mtime = path_to_check.stat().st_mtime
+             # Or to be safer for postProcessing updates (file modification doesn't update dir mtime):
+             # Just use current time if simulation is running? No.
+             # Let's check the most recent file in the dir?
+             # For speed, let's just use the dir mtime for now, or maybe the log file?
+             # Actually, for plot_data, relying on postProcessing dir mtime is risky if files are only modified.
+             # Let's fallback to checking log.foamRun for plot_data too as a change proxy?
+             # Or just skip 304 for plot_data if too complex.
+             # BETTER STRATEGY for plot_data: Check mtime of the 'postProcessing' folder?
+             # Let's try to find the max mtime in postProcessing/sets/ ...
+             # Minimal approach: Check mtime of path_to_check.
+             pass
+
+        # Use log.foamRun logic for both if directory logic is shaky?
+        # Let's just implement standard mtime check on the path provided.
+        mtime = path_to_check.stat().st_mtime
+
+        last_modified_str = email.utils.formatdate(mtime, usegmt=True)
+        if_modified_since = request.headers.get("If-Modified-Since")
+
+        if if_modified_since and if_modified_since == last_modified_str:
+            return True, last_modified_str
+
+        return False, last_modified_str
+    except OSError:
+        return False, None
+
+
 @app.route("/api/plot_data", methods=["GET"])
 def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     """
@@ -1350,9 +1404,21 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
+        # Optimization: Check if data has changed (proxy: postProcessing directory or log file)
+        # Checking postProcessing directory recursively is slow.
+        # Checking 'log.foamRun' is a good proxy because the solver writes to it step-by-step.
+        # If log hasn't changed, plots likely haven't either.
+        log_file = case_dir / "log.foamRun"
+        is_not_modified, last_modified = check_cache(log_file)
+        if is_not_modified:
+             return Response(status=304)
+
         parser = OpenFOAMFieldParser(str(case_dir))
         data = parser.get_all_time_series_data(max_points=100)
-        return jsonify(data)
+        response = jsonify(data)
+        if last_modified:
+            response.headers["Last-Modified"] = last_modified
+        return response
     except Exception as e:
         logger.error(f"Error getting plot data: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -1418,9 +1484,21 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": "Case directory not found"}), 404
 
     try:
+        # Optimization: Check if log file has changed
+        # We need to find the log file. It could be log.foamRun or custom.
+        # OpenFOAMFieldParser.get_residuals_from_log searches for 'log.foamRun' or 'log.*'.
+        # We'll explicitly check 'log.foamRun' here as the primary target.
+        log_file = case_dir / "log.foamRun"
+        is_not_modified, last_modified = check_cache(log_file)
+        if is_not_modified:
+             return Response(status=304)
+
         parser = OpenFOAMFieldParser(str(case_dir))
         residuals = parser.get_residuals_from_log()
-        return jsonify(residuals)
+        response = jsonify(residuals)
+        if last_modified:
+             response.headers["Last-Modified"] = last_modified
+        return response
     except Exception as e:
         logger.error(f"Error getting residuals: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

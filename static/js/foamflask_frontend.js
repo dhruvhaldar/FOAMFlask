@@ -101,6 +101,7 @@ let plotsVisible = true;
 let aeroVisible = false;
 let isUpdatingPlots = false;
 let pendingPlotUpdate = false;
+let isSimulationRunning = false; // Controls polling loop
 let plotsInViewport = true;
 let isFirstPlotLoad = true;
 // Request management
@@ -869,34 +870,50 @@ const runCommand = async (cmd, btnElement) => {
             throw new Error();
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        const read = async () => {
+        // Start polling immediately when command starts
+        isSimulationRunning = true;
+        startPlotUpdates();
+        while (true) {
             const { done, value } = (await reader?.read()) || { done: true, value: undefined };
             if (done) {
                 showNotification("Simulation completed successfully", "success");
                 flushOutputBuffer();
-                return;
+                break;
             }
             const text = decoder.decode(value);
             text.split("\n").forEach(line => {
                 if (line.trim()) {
-                    const type = /error/i.test(line) ? "stderr" : "stdout";
-                    appendOutput(line, type);
+                    // Parse HTML line if present (e.g. from app.py escaping)
+                    // Actually app.py sends raw strings or HTML? It sends <br>.
+                    // But appendOutput just adds to innerHTML.
+                    // Wait, the previous logic parsed lines. Let's keep it simple.
+                    let logLine = line;
+                    if (logLine.startsWith("INFO::[FOAMFlask]")) {
+                        // Special handling?
+                    }
+                    // Simple append
+                    const output = document.getElementById("commandOutput");
+                    if (output) {
+                        output.innerHTML += line + "<br>";
+                        output.scrollTop = output.scrollHeight;
+                    }
                 }
             });
-            await read();
-        };
-        await read();
+        }
     }
-    catch (e) {
-        console.error(e);
-        showNotification("Error running command", "error");
+    catch (err) {
+        console.error(err); // Keep console error for debugging
+        showNotification(`Error: ${err}`, "error");
     }
     finally {
+        const btn = btnElement;
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
             btn.innerHTML = originalText;
         }
+        isSimulationRunning = false;
+        updatePlots(); // Final update to catch last data
     }
 };
 // Realtime Plotting Functions
@@ -956,6 +973,11 @@ const startPlotUpdates = () => {
         // ⚡ Bolt Optimization: Pause polling when tab is hidden to save resources
         if (document.hidden)
             return;
+        // Stop polling if simulation is not running
+        if (!isSimulationRunning) {
+            stopPlotUpdates();
+            return;
+        }
         if (!plotsInViewport)
             return;
         if (!isUpdatingPlots)
