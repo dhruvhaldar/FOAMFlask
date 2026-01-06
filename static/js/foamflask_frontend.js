@@ -1477,25 +1477,53 @@ const loadGeometryView = async () => {
     catch (e) { }
 };
 // Meshing Functions
-const fillBoundsFromGeometry = async () => {
-    // simplified for brevity
-    const filename = document.getElementById("shmObjectList")?.value;
-    if (!filename || !activeCase)
+const fillBoundsFromGeometry = async (btnElement) => {
+    if (!activeCase) {
+        showNotification("Please select an active case first", "warning");
         return;
+    }
+    const filename = document.getElementById("shmObjectList")?.value;
+    if (!filename) {
+        showNotification("Please select a geometry object in the 'Object Settings' list below", "warning");
+        return;
+    }
+    const btn = btnElement;
+    let originalText = "";
+    if (btn) {
+        originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.innerHTML = `Auto-filling...`;
+    }
     try {
         const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
         const info = await res.json();
         if (info.success) {
             const b = info.bounds;
-            const p = 0.1;
+            const p = 0.1; // 10% padding
             const dx = b[1] - b[0];
             const dy = b[3] - b[2];
             const dz = b[5] - b[4];
-            document.getElementById("bmMin").value = `${(b[0] - dx * p).toFixed(2)} ${(b[2] - dy * p).toFixed(2)} ${(b[4] - dz * p).toFixed(2)}`;
-            document.getElementById("bmMax").value = `${(b[1] + dx * p).toFixed(2)} ${(b[3] + dy * p).toFixed(2)} ${(b[5] + dz * p).toFixed(2)}`;
+            const minStr = `${(b[0] - dx * p).toFixed(2)} ${(b[2] - dy * p).toFixed(2)} ${(b[4] - dz * p).toFixed(2)}`;
+            const maxStr = `${(b[1] + dx * p).toFixed(2)} ${(b[3] + dy * p).toFixed(2)} ${(b[5] + dz * p).toFixed(2)}`;
+            document.getElementById("bmMin").value = minStr;
+            document.getElementById("bmMax").value = maxStr;
+            showNotification(`Bounds updated from ${filename}`, "success");
+        }
+        else {
+            showNotification("Failed to get geometry info", "error");
         }
     }
-    catch (e) { }
+    catch (e) {
+        showNotification("Error auto-filling bounds", "error");
+    }
+    finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute("aria-busy");
+            btn.innerHTML = originalText;
+        }
+    }
 };
 const generateBlockMeshDict = async () => {
     if (!activeCase)
