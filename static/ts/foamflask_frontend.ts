@@ -147,7 +147,7 @@ const clearLog = (): void => {
       // Ignore local storage errors
     }
     outputBuffer.length = 0; // Clear buffer
-    showNotification("Console log cleared", "info", 2000);
+    showNotification("Console log cleared", "info", 5000);
   }
 };
 
@@ -159,13 +159,13 @@ const copyTextFromElement = (elementId: string, successMessage: string): void =>
   // innerText preserves newlines better than textContent
   const text = el.innerText;
   if (!text.trim()) {
-    showNotification("Content is empty", "info", 2000);
+    showNotification("Content is empty", "info", 5000);
     return;
   }
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      showNotification(successMessage, "success", 2000);
+      showNotification(successMessage, "success", 5000);
     }).catch(() => fallbackCopyText(text, successMessage));
   } else {
     fallbackCopyText(text, successMessage);
@@ -186,7 +186,7 @@ const fallbackCopyText = (text: string, successMessage: string): void => {
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);
 
-    if (successful) showNotification(successMessage, "success", 2000);
+    if (successful) showNotification(successMessage, "success", 5000);
     else showNotification("Failed to copy", "error");
   } catch (err) {
     showNotification("Failed to copy", "error");
@@ -262,7 +262,7 @@ const saveLogToStorage = (): void => {
 
 const saveLogDebounced = (): void => {
   if (saveLogTimer) clearTimeout(saveLogTimer);
-  saveLogTimer = setTimeout(saveLogToStorage, 2000);
+  saveLogTimer = setTimeout(saveLogToStorage, 5000);
 };
 
 // Colors
@@ -577,7 +577,7 @@ const toggleMobileMenu = () => {
 const showNotification = (
   message: string,
   type: "success" | "error" | "warning" | "info",
-  duration: number = 5000
+  duration: number = 10000
 ): number | null => {
   // If a notification with the same message already exists, do not show another one
   // This prevents spamming the user with the same message
@@ -987,7 +987,7 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
       }
     }
     // Only show success notification if invoked manually (via button)
-    if (btn) showNotification("Case list refreshed", "success", 2000);
+    if (btn) showNotification("Case list refreshed", "success", 5000);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh case list", "error");
@@ -1176,7 +1176,7 @@ const startPlotUpdates = (): void => {
     if (!plotsInViewport) return;
     if (!isUpdatingPlots) updatePlots();
     else pendingPlotUpdate = true;
-  }, 2000);
+  }, 5000);
 };
 
 const stopPlotUpdates = (): void => {
@@ -1603,7 +1603,7 @@ const updatePlots = async (): Promise<void> => {
 
     // After all plots are updated
     if (isFirstPlotLoad) {
-      showNotification("Plots loaded successfully", "success", 3000);
+      showNotification("Plots loaded successfully", "success", 6000);
       isFirstPlotLoad = false;
     }
   } catch (error: unknown) {
@@ -1674,7 +1674,7 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
         }
       }
     }
-    if (btn) showNotification("Geometry list refreshed", "success", 2000);
+    if (btn) showNotification("Geometry list refreshed", "success", 5000);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh geometry list", "error");
@@ -2120,7 +2120,7 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
 
 const refreshMeshList = async (btnElement?: HTMLElement) => {
   if (!activeCase) {
-    showNotification("No active case selected to list meshes", "warning", 3000);
+    showNotification("No active case selected to list meshes", "warning", 6000);
     return;
   }
 
@@ -2150,7 +2150,7 @@ const refreshMeshList = async (btnElement?: HTMLElement) => {
         });
       }
     }
-    if (btn) showNotification("Mesh list refreshed", "success", 2000);
+    if (btn) showNotification("Mesh list refreshed", "success", 5000);
   } catch (e) {
     console.error("Error refreshing mesh list:", e);
     showNotification("Failed to refresh mesh list", "error");
@@ -2435,7 +2435,7 @@ async function toggleInteractiveMode(): Promise<void> {
     updateBtn.classList.remove("hidden");
     document.getElementById("interactiveModeHint")?.classList.add("hidden");
 
-    showNotification("Switched to static mode", "info", 2000);
+    showNotification("Switched to static mode", "info", 5000);
   }
 }
 
@@ -2518,7 +2518,7 @@ const refreshPostListVTK = async (btnElement?: HTMLElement) => {
         });
       }
     }
-    if (btn) showNotification("VTK file list refreshed", "success", 2000);
+    if (btn) showNotification("VTK file list refreshed", "success", 5000);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh VTK list", "error");
@@ -2571,7 +2571,7 @@ const checkStartupStatus = async (): Promise<void> => {
       }
       setTimeout(pollStatus, 1000);
     } catch (e) {
-      setTimeout(pollStatus, 2000);
+      setTimeout(pollStatus, 5000);
     }
   };
   await pollStatus();
@@ -2828,7 +2828,7 @@ const init = () => {
     input.value = fontFamily;
   }
 
-  showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 2000);
+  showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 5000);
 };
 
 
