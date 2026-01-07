@@ -2435,9 +2435,13 @@ const init = () => {
 // --- Font Settings Logic ---
 window.toggleFontSettings = () => {
     const menu = document.getElementById("fontSettingsMenu");
+    const btn = document.getElementById("fontSettingsBtn");
     if (menu) {
-        if (menu.classList.contains("hidden")) {
+        const isHidden = menu.classList.contains("hidden");
+        if (isHidden) {
             menu.classList.remove("hidden");
+            if (btn)
+                btn.setAttribute("aria-expanded", "true");
             // Close on click outside
             setTimeout(() => {
                 const closeHandler = (e) => {
@@ -2445,6 +2449,8 @@ window.toggleFontSettings = () => {
                         e.target.id !== "fontSettingsBtn" &&
                         !e.target.closest("#fontSettingsBtn")) {
                         menu.classList.add("hidden");
+                        if (btn)
+                            btn.setAttribute("aria-expanded", "false");
                         document.removeEventListener("click", closeHandler);
                     }
                 };
@@ -2453,6 +2459,8 @@ window.toggleFontSettings = () => {
         }
         else {
             menu.classList.add("hidden");
+            if (btn)
+                btn.setAttribute("aria-expanded", "false");
         }
     }
 };

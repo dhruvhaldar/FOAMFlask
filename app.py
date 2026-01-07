@@ -177,6 +177,26 @@ def is_safe_command(command: str) -> bool:
     return True
 
 
+def is_safe_tutorial_path(path: str) -> bool:
+    """
+    Validate tutorial path to prevent command injection.
+
+    Args:
+        path: Tutorial path string
+
+    Returns:
+        True if path is safe, False otherwise
+    """
+    if not path or not isinstance(path, str):
+        return False
+    # Only allow alphanumeric, underscore, hyphen, dot, and slash
+    if not re.match(r'^[a-zA-Z0-9_./-]+$', path):
+        return False
+    if '..' in path:
+        return False
+    return True
+
+
 def is_safe_script_name(script_name: str) -> bool:
     """
     Validate script name to prevent path traversal and injection.
@@ -1027,8 +1047,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
     # SECURITY FIX: Validate tutorial path to prevent command injection
-    # Only allow alphanumeric, underscore, hyphen, dot, and slash
-    if not re.match(r'^[a-zA-Z0-9_./-]+$', tutorial) or '..' in tutorial:
+    if not is_safe_tutorial_path(tutorial):
         logger.warning(f"Security: Invalid tutorial path rejected: {tutorial}")
         return jsonify({"output": "[FOAMFlask] [Error] Invalid tutorial path detected"}), 400
 
@@ -1138,6 +1157,10 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         return {"error": "No command provided"}, 400
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
+
+    # Security: Validate tutorial path
+    if not is_safe_tutorial_path(tutorial):
+        return {"error": "Invalid tutorial path"}, 400
 
     # Security: Validate path is within CASE_ROOT
     try:
@@ -1712,6 +1735,10 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
     if not tutorial or not case_dir:
         return {"error": "Missing tutorial or caseDir"}, 400
 
+    # Security: Validate tutorial path
+    if not is_safe_tutorial_path(tutorial):
+        return {"error": "Invalid tutorial path"}, 400
+
     # Security: Validate path is within CASE_ROOT
     try:
         validate_safe_path(CASE_ROOT, case_dir)
@@ -2226,7 +2253,7 @@ def main() -> None:
     host = os.environ.get("FLASK_HOST", "0.0.0.0") # nosec B104
     port = 5000
     print(f"FOAMFlask listening on: {host}:{port}")
-    app.run(host=host, port=port, debug=True) # nosec B104
+    app.run(host=host, port=port, debug=False) # nosec B104
 
 
 if __name__ == "__main__":
