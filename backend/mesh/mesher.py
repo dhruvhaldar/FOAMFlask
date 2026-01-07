@@ -364,10 +364,9 @@ class MeshVisualizer:
         This method searches for VTK/VTP files in the case directory.
 
         ⚡ Bolt Optimization:
-        We use `os.walk` with directory pruning to avoid scanning the thousands of time
-        directories common in OpenFOAM cases (e.g., 0, 0.1, 100, etc.).
-        This allows us to find meshes in nested folders (e.g. `VTK/`, `postProcessing/`, `custom/subdir`)
-        without paying the penalty of visiting every single time step directory.
+        We use recursive `os.scandir` to avoid the overhead of `os.walk` and `pathlib.Path`
+        during directory traversal. This also allows us to access file attributes (size)
+        directly from the directory entry, saving one stat() call per file.
 
         Args:
             case_dir: Base case directory path.
@@ -390,54 +389,67 @@ class MeshVisualizer:
 
             mesh_files = []
             seen_paths = set()
-            # Use a set for faster lookup
             extensions = {".vtk", ".vtp", ".vtu"}
+            ext_tuple = tuple(extensions)  # for endswith
 
-            # Walk the directory tree
-            for root, dirs, files in os.walk(str(tutorial_path)):
-                # Prune directories in-place to optimize scan
-                # We iterate a copy of dirs to allow modification
-                for d in list(dirs):
-                    # Skip hidden directories
-                    if d.startswith("."):
-                        dirs.remove(d)
-                        continue
+            def _scan(path_str: str):
+                try:
+                    subdirs_to_visit = []
 
-                    # ⚡ Bolt Optimization: Skip time directories
-                    # OpenFOAM time directories are numeric (e.g., "0", "0.1", "100")
-                    # We prune them to avoid scanning thousands of field files.
-                    try:
-                        float(d)
-                        # It's a number, likely a time directory. Prune it.
-                        dirs.remove(d)
-                    except ValueError:
-                        # Not a number. Keep it, unless it's a known non-mesh source
-                        if d in ["system"]:
-                            dirs.remove(d)
+                    # Open directory, read entries, then CLOSE it before recursing
+                    # This prevents file descriptor exhaustion in deep hierarchies
+                    with os.scandir(path_str) as entries:
+                        for entry in entries:
+                            if entry.is_dir(follow_symlinks=False):
+                                name = entry.name
+                                # Prune hidden directories
+                                if name.startswith("."):
+                                    continue
 
-                root_path = Path(root)
-                for file in files:
-                    if Path(file).suffix in extensions:
-                        file_path = root_path / file
-                        path_str = str(file_path)
+                                # Prune numerical time directories
+                                try:
+                                    float(name)
+                                    continue
+                                except ValueError:
+                                    # Prune system directory
+                                    if name == "system":
+                                        continue
 
-                        if path_str in seen_paths:
-                            continue
+                                subdirs_to_visit.append(entry.path)
 
-                        seen_paths.add(path_str)
-                        try:
-                            rel_path = file_path.relative_to(tutorial_path)
-                            mesh_files.append(
-                                {
-                                    "name": file_path.name,
-                                    "path": path_str,
-                                    "relative_path": str(rel_path),
-                                    "size": file_path.stat().st_size,
-                                }
-                            )
-                        except (ValueError, OSError):
-                            continue
+                            # Check for file (allow symlinks to match original behavior)
+                            elif entry.is_file(follow_symlinks=True):
+                                name = entry.name
+                                if name.endswith(ext_tuple):
+                                    entry_path = entry.path
+                                    if entry_path in seen_paths:
+                                        continue
+                                    seen_paths.add(entry_path)
 
+                                    try:
+                                        # Only create Path objects when we have a match
+                                        file_path = Path(entry_path)
+                                        rel_path = file_path.relative_to(tutorial_path)
+
+                                        mesh_files.append({
+                                            "name": name,
+                                            "path": entry_path,
+                                            "relative_path": str(rel_path),
+                                            # Optimization: use cached stat from entry
+                                            "size": entry.stat().st_size,
+                                        })
+                                    except (ValueError, OSError):
+                                        continue
+
+                    # Recurse after closing the directory handle
+                    for subdir in subdirs_to_visit:
+                        _scan(subdir)
+
+                except OSError:
+                    # Permission denied or other access errors
+                    pass
+
+            _scan(str(tutorial_path))
             return mesh_files
 
         except Exception as e:
