@@ -1493,8 +1493,10 @@ const switchGeometryTab = (tab) => {
             pill.style.transform = "translateX(0)";
         uploadBtn?.classList.remove(...inactiveTextClasses);
         uploadBtn?.classList.add(...activeTextClasses);
+        uploadBtn?.setAttribute("aria-selected", "true");
         resourceBtn?.classList.remove(...activeTextClasses);
         resourceBtn?.classList.add(...inactiveTextClasses);
+        resourceBtn?.setAttribute("aria-selected", "false");
     }
     else {
         if (track)
@@ -1504,8 +1506,10 @@ const switchGeometryTab = (tab) => {
             pill.style.transform = "translateX(calc(100% + 0.25rem))";
         resourceBtn?.classList.remove(...inactiveTextClasses);
         resourceBtn?.classList.add(...activeTextClasses);
+        resourceBtn?.setAttribute("aria-selected", "true");
         uploadBtn?.classList.remove(...activeTextClasses);
         uploadBtn?.classList.add(...inactiveTextClasses);
+        uploadBtn?.setAttribute("aria-selected", "false");
         loadResourceGeometries();
     }
 };
@@ -2591,9 +2595,11 @@ window.switchCaseCreationTab = (tab) => {
         // Active Style for Create
         createBtn.classList.remove(...inactiveTextClasses);
         createBtn.classList.add(...activeTextClasses);
+        createBtn.setAttribute("aria-selected", "true");
         // Inactive Style for Import
         importBtn.classList.remove(...activeTextClasses);
         importBtn.classList.add(...inactiveTextClasses);
+        importBtn.setAttribute("aria-selected", "false");
     }
     else {
         track.style.transform = "translateX(-100%)";
@@ -2602,9 +2608,11 @@ window.switchCaseCreationTab = (tab) => {
         // Active Style for Import
         importBtn.classList.remove(...inactiveTextClasses);
         importBtn.classList.add(...activeTextClasses);
+        importBtn.setAttribute("aria-selected", "true");
         // Inactive Style for Create
         createBtn.classList.remove(...activeTextClasses);
         createBtn.classList.add(...inactiveTextClasses);
+        createBtn.setAttribute("aria-selected", "false");
     }
 };
 if (document.readyState === 'loading') {
