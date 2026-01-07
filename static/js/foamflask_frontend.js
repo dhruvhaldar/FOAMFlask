@@ -1566,8 +1566,19 @@ const uploadGeometry = async (btnElement) => {
     const input = document.getElementById("geometryUpload");
     const btn = (btnElement || document.getElementById("uploadGeometryBtn"));
     const file = input?.files?.[0];
-    if (!file || !activeCase)
+    if (!activeCase) {
+        showNotification("Please select an active case first", "warning");
         return;
+    }
+    if (!file) {
+        showNotification("Please select a file to upload", "warning");
+        if (input) {
+            input.focus();
+            input.setAttribute("aria-invalid", "true");
+            input.addEventListener("change", () => input.removeAttribute("aria-invalid"), { once: true });
+        }
+        return;
+    }
     // UX: Loading state
     const originalText = btn ? btn.innerHTML : "Upload";
     if (btn) {
@@ -1906,10 +1917,18 @@ const refreshMeshList = async (btnElement) => {
     }
 };
 const loadMeshVisualization = async () => {
-    const path = document.getElementById("meshSelect")?.value;
+    const select = document.getElementById("meshSelect");
+    const path = select?.value;
     const btn = document.getElementById("loadMeshBtn");
-    if (!path)
+    if (!path) {
+        showNotification("Please select a mesh file to load", "warning");
+        if (select) {
+            select.focus();
+            select.setAttribute("aria-invalid", "true");
+            select.addEventListener("change", () => select.removeAttribute("aria-invalid"), { once: true });
+        }
         return;
+    }
     // UX: Loading state
     const originalText = btn ? btn.innerHTML : "Load Mesh";
     if (btn) {
