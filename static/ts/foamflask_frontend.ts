@@ -2831,6 +2831,26 @@ const init = () => {
   if (showEdgesCheck) {
     showEdgesCheck.addEventListener("change", onMeshParamChange);
   }
+
+  // Scroll Listener for Navbar
+  window.addEventListener("scroll", handleScroll);
+};
+
+const handleScroll = (): void => {
+  const navbar = document.getElementById("navbar");
+  if (!navbar) return;
+
+  if (window.scrollY > 10) {
+    if (navbar.classList.contains("glass")) {
+      navbar.classList.remove("glass");
+      navbar.classList.add("glass-plot");
+    }
+  } else {
+    if (navbar.classList.contains("glass-plot")) {
+      navbar.classList.remove("glass-plot");
+      navbar.classList.add("glass");
+    }
+  }
 };
 
 // --- Font Settings Logic ---

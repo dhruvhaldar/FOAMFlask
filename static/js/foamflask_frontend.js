@@ -10,12 +10,26 @@ const getCookie = (name) => {
 // Monkey patch fetch to include CSRF token
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
-    const method = (init?.method || "GET").toUpperCase();
-    if (method !== "GET" && method !== "HEAD") {
-        const token = getCookie("csrf_token");
-        if (token) {
-            init = init || {};
-            init.headers = { ...init.headers, "X-CSRFToken": token };
+    // Only inject for same-origin requests or relative URLs to prevent leaking token
+    const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+    const isRelative = url.startsWith('/');
+    const isSameOrigin = url.startsWith(window.location.origin);
+    if (isRelative || isSameOrigin) {
+        const method = (init?.method || "GET").toUpperCase();
+        if (method !== "GET" && method !== "HEAD") {
+            const token = getCookie("csrf_token");
+            if (token) {
+                init = init || {};
+                if (init.headers instanceof Headers) {
+                    init.headers.append("X-CSRFToken", token);
+                }
+                else if (Array.isArray(init.headers)) {
+                    init.headers.push(["X-CSRFToken", token]);
+                }
+                else {
+                    init.headers = { ...init.headers, "X-CSRFToken": token };
+                }
+            }
         }
     }
     return originalFetch(input, init);
@@ -2476,6 +2490,25 @@ const init = () => {
     const showEdgesCheck = document.getElementById("showEdges");
     if (showEdgesCheck) {
         showEdgesCheck.addEventListener("change", onMeshParamChange);
+    }
+    // Scroll Listener for Navbar
+    window.addEventListener("scroll", handleScroll);
+};
+const handleScroll = () => {
+    const navbar = document.getElementById("navbar");
+    if (!navbar)
+        return;
+    if (window.scrollY > 10) {
+        if (navbar.classList.contains("glass")) {
+            navbar.classList.remove("glass");
+            navbar.classList.add("glass-plot");
+        }
+    }
+    else {
+        if (navbar.classList.contains("glass-plot")) {
+            navbar.classList.remove("glass-plot");
+            navbar.classList.add("glass");
+        }
     }
 };
 // --- Font Settings Logic ---
