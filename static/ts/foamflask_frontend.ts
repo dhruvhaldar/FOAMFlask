@@ -147,7 +147,7 @@ const clearLog = (): void => {
       // Ignore local storage errors
     }
     outputBuffer.length = 0; // Clear buffer
-    showNotification("Console log cleared", "info", 5000);
+    showNotification("Console log cleared", "info", NOTIFY_MEDIUM);
   }
 };
 
@@ -159,13 +159,13 @@ const copyTextFromElement = (elementId: string, successMessage: string): void =>
   // innerText preserves newlines better than textContent
   const text = el.innerText;
   if (!text.trim()) {
-    showNotification("Content is empty", "info", 5000);
+    showNotification("Content is empty", "info", NOTIFY_MEDIUM);
     return;
   }
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      showNotification(successMessage, "success", 5000);
+      showNotification(successMessage, "success", NOTIFY_MEDIUM);
     }).catch(() => fallbackCopyText(text, successMessage));
   } else {
     fallbackCopyText(text, successMessage);
@@ -186,7 +186,7 @@ const fallbackCopyText = (text: string, successMessage: string): void => {
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);
 
-    if (successful) showNotification(successMessage, "success", 5000);
+    if (successful) showNotification(successMessage, "success", NOTIFY_MEDIUM);
     else showNotification("Failed to copy", "error");
   } catch (err) {
     showNotification("Failed to copy", "error");
@@ -222,6 +222,17 @@ let isInteractiveMode: boolean = false;
 
 // Geometry State
 let selectedGeometry: string | null = null;
+
+// Notification constants
+const NOTIFY_SHORT = 1500;
+const NOTIFY_MEDIUM = 5000;
+const NOTIFY_LONG = 8000;
+const NOTIFY_DEFAULT = 10000;
+
+// System constants
+const POLL_INTERVAL = 5000;
+const DEBOUNCE_DELAY = 5000;
+const MAX_LOG_SIZE = 100000;
 
 // Notification management
 let notificationId: number = 0;
@@ -262,7 +273,7 @@ const saveLogToStorage = (): void => {
 
 const saveLogDebounced = (): void => {
   if (saveLogTimer) clearTimeout(saveLogTimer);
-  saveLogTimer = setTimeout(saveLogToStorage, 5000);
+  saveLogTimer = setTimeout(saveLogToStorage, DEBOUNCE_DELAY);
 };
 
 // Colors
@@ -573,7 +584,7 @@ const toggleMobileMenu = () => {
 const showNotification = (
   message: string,
   type: "success" | "error" | "warning" | "info",
-  duration: number = 10000
+  duration: number = NOTIFY_DEFAULT
 ): number | null => {
   // If a notification with the same message already exists, do not show another one
   // This prevents spamming the user with the same message
@@ -764,7 +775,7 @@ const flushOutputBuffer = (): void => {
   cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
 
   // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
-  const MAX_LOG_LENGTH = 100000; // 100KB
+  const MAX_LOG_LENGTH = MAX_LOG_SIZE; // 100KB
   if (cachedLogHTML.length > MAX_LOG_LENGTH * 1.5) {
     const slice = cachedLogHTML.slice(-MAX_LOG_LENGTH);
     // Ensure we cut at a clean tag boundary
@@ -983,7 +994,7 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
       }
     }
     // Only show success notification if invoked manually (via button)
-    if (btn) showNotification("Case list refreshed", "success", 5000);
+    if (btn) showNotification("Case list refreshed", "success", NOTIFY_MEDIUM);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh case list", "error");
@@ -1172,7 +1183,7 @@ const startPlotUpdates = (): void => {
     if (!plotsInViewport) return;
     if (!isUpdatingPlots) updatePlots();
     else pendingPlotUpdate = true;
-  }, 5000);
+  }, POLL_INTERVAL);
 };
 
 const stopPlotUpdates = (): void => {
@@ -1599,7 +1610,7 @@ const updatePlots = async (): Promise<void> => {
 
     // After all plots are updated
     if (isFirstPlotLoad) {
-      showNotification("Plots loaded successfully", "success", 6000);
+      showNotification("Plots loaded successfully", "success", NOTIFY_LONG);
       isFirstPlotLoad = false;
     }
   } catch (error: unknown) {
@@ -1670,7 +1681,7 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
         }
       }
     }
-    if (btn) showNotification("Geometry list refreshed", "success", 5000);
+    if (btn) showNotification("Geometry list refreshed", "success", NOTIFY_MEDIUM);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh geometry list", "error");
@@ -2116,7 +2127,7 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
 
 const refreshMeshList = async (btnElement?: HTMLElement) => {
   if (!activeCase) {
-    showNotification("No active case selected to list meshes", "warning", 6000);
+    showNotification("No active case selected to list meshes", "warning", NOTIFY_LONG);
     return;
   }
 
@@ -2146,7 +2157,7 @@ const refreshMeshList = async (btnElement?: HTMLElement) => {
         });
       }
     }
-    if (btn) showNotification("Mesh list refreshed", "success", 5000);
+    if (btn) showNotification("Mesh list refreshed", "success", NOTIFY_MEDIUM);
   } catch (e) {
     console.error("Error refreshing mesh list:", e);
     showNotification("Failed to refresh mesh list", "error");
@@ -2345,7 +2356,7 @@ async function refreshInteractiveViewer(successMessage: string = "Interactive mo
     showNotification(
       successMessage,
       "success",
-      8000
+      NOTIFY_LONG
     );
   } catch (error: unknown) {
     console.error("[FOAMFlask] Error loading interactive viewer:", error);
@@ -2431,7 +2442,7 @@ async function toggleInteractiveMode(): Promise<void> {
     updateBtn.classList.remove("hidden");
     document.getElementById("interactiveModeHint")?.classList.add("hidden");
 
-    showNotification("Switched to static mode", "info", 5000);
+    showNotification("Switched to static mode", "info", NOTIFY_MEDIUM);
   }
 }
 
@@ -2452,7 +2463,7 @@ function setCameraView(view: CameraView): void {
       "*"
     );
 
-    showNotification(`Set view to ${view.toUpperCase()}`, "info", 1500);
+    showNotification(`Set view to ${view.toUpperCase()}`, "info", NOTIFY_SHORT);
   } catch (error: unknown) {
     console.error("Error setting camera view:", error);
   }
@@ -2474,7 +2485,7 @@ function resetCamera(): void {
       "*"
     );
 
-    showNotification("Camera view reset", "info", 1500);
+    showNotification("Camera view reset", "info", NOTIFY_SHORT);
   } catch (error: unknown) {
     console.error("Error resetting camera:", error);
   }
@@ -2514,7 +2525,7 @@ const refreshPostListVTK = async (btnElement?: HTMLElement) => {
         });
       }
     }
-    if (btn) showNotification("VTK file list refreshed", "success", 5000);
+    if (btn) showNotification("VTK file list refreshed", "success", NOTIFY_MEDIUM);
   } catch (e) {
     console.error(e);
     if (btn) showNotification("Failed to refresh VTK list", "error");
@@ -2829,7 +2840,7 @@ const init = () => {
     input.value = fontFamily;
   }
 
-  showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 5000);
+  showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", NOTIFY_MEDIUM);
 };
 
 
