@@ -2,6 +2,24 @@
  * FOAMFlask Frontend JavaScript
  */
 import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
+// CSRF Protection Helpers
+const getCookie = (name) => {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
+};
+// Monkey patch fetch to include CSRF token
+const originalFetch = window.fetch;
+window.fetch = async (input, init) => {
+    const method = (init?.method || "GET").toUpperCase();
+    if (method !== "GET" && method !== "HEAD") {
+        const token = getCookie("csrf_token");
+        if (token) {
+            init = init || {};
+            init.headers = { ...init.headers, "X-CSRFToken": token };
+        }
+    }
+    return originalFetch(input, init);
+};
 // Utility functions
 const getElement = (id) => {
     return document.getElementById(id);
