@@ -60,20 +60,21 @@ _PARENS_TRANS_BYTES = bytes.maketrans(b"()", b"  ")
 
 # ⚡ Bolt Optimization: Pre-compile regex patterns for field parsing
 # Avoids recompilation overhead during high-frequency polling
-_RE_VOL_SCALAR = re.compile(r"class\s+volScalarField;")
-_RE_VOL_VECTOR = re.compile(r"class\s+volVectorField;")
+# ⚡ Bolt Optimization: Use bytes regex to avoid decoding overhead and unnecessary copies
+_RE_VOL_SCALAR = re.compile(rb"class\s+volScalarField;")
+_RE_VOL_VECTOR = re.compile(rb"class\s+volVectorField;")
 
-_RE_SCALAR_UNIFORM_VAR = re.compile(r"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);")
-_RE_SCALAR_UNIFORM_VAL = re.compile(r"internalField\s+uniform\s+([^;]+);")
+_RE_SCALAR_UNIFORM_VAR = re.compile(rb"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);")
+_RE_SCALAR_UNIFORM_VAL = re.compile(rb"internalField\s+uniform\s+([^;]+);")
 _RE_NONUNIFORM_LIST = re.compile(r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;", re.DOTALL)
 _RE_NUMBERS_FINDALL = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
-_RE_VECTOR_UNIFORM_VAR_CHECK = re.compile(r"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;")
-_RE_VECTOR_UNIFORM_VAL_GROUP = re.compile(r"internalField\s+uniform\s+(\([^;]+\));", re.DOTALL)
+_RE_VECTOR_UNIFORM_VAR_CHECK = re.compile(rb"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;")
+_RE_VECTOR_UNIFORM_VAL_GROUP = re.compile(rb"internalField\s+uniform\s+(\([^;]+\));", re.DOTALL)
 _RE_VECTOR_COMPONENTS = re.compile(
-    r"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
+    rb"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+    rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+    rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
 )
 
 class OpenFOAMFieldParser:
@@ -167,7 +168,8 @@ class OpenFOAMFieldParser:
             # Simple header check doesn't need aggressive caching, but reading first bytes is fast.
             # ⚡ Bolt Optimization: Reduced read size to 2048 bytes (enough for header + banner).
             # The class definition is almost always in the first few lines, but banner can be large.
-            with field_path.open("r", encoding="utf-8") as f:
+            # ⚡ Bolt Optimization: Read bytes to avoid decode overhead during type check
+            with field_path.open("rb") as f:
                 header = f.read(2048)
             
             field_type = None
@@ -232,28 +234,41 @@ class OpenFOAMFieldParser:
             logger.error(f"Error scanning time directory {time_path}: {e}")
             return [], False, []
 
-    def _resolve_variable(self, content: str, var_name: str) -> Optional[str]:
+    def _resolve_variable(self, content: Union[str, bytes], var_name: Union[str, bytes]) -> Optional[str]:
         """
         Attempt to resolve a variable definition within the file content.
         Looks for patterns like 'varName value;'
         """
-        clean_var = var_name.lstrip('$')
+        is_bytes = isinstance(content, bytes)
         
-        # Regex to find "variable value;"
-        pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+        if is_bytes:
+            if isinstance(var_name, str):
+                var_name = var_name.encode('utf-8')
+            clean_var = var_name.lstrip(b'$')
+            pattern = re.compile(rb"(?:^|\s)" + re.escape(clean_var) + rb"\s+([^;]+);")
+        else:
+            if isinstance(var_name, bytes):
+                var_name = var_name.decode('utf-8')
+            clean_var = var_name.lstrip('$')
+            pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+
         match = pattern.search(content)
         
         if match:
-            value_str = match.group(1).strip()
+            value = match.group(1).strip()
             
-            if value_str.startswith('$'):
-                return self._resolve_variable(content, value_str)
-            
-            if "#calc" in value_str:
-                logger.debug(f"Variable {clean_var} contains #calc macro, skipping resolution.")
-                return None
-                
-            return value_str
+            if is_bytes:
+                if value.startswith(b'$'):
+                    return self._resolve_variable(content, value)
+                if b"#calc" in value:
+                    return None
+                return value.decode('utf-8')
+            else:
+                if value.startswith('$'):
+                    return self._resolve_variable(content, value)
+                if "#calc" in value:
+                    return None
+                return value
             
         return None
 
@@ -298,13 +313,12 @@ class OpenFOAMFieldParser:
                             idx = mm.find(b"internalField")
                             if idx != -1:
                                 # Verify "nonuniform" follows
-                                # Read enough context (e.g., 200 bytes)
-                                mm.seek(idx)
-                                context = mm.read(200)
+                                # ⚡ Bolt Optimization: Avoid read() and decode() by searching buffer directly
+                                nonuniform_idx = mm.find(b"nonuniform", idx, idx + 200)
 
-                                if b"nonuniform" in context:
+                                if nonuniform_idx != -1:
                                     # Locate list start '('
-                                    start_paren = mm.find(b'(', idx)
+                                    start_paren = mm.find(b'(', nonuniform_idx)
                                     if start_paren != -1:
                                         # Locate list end ')'
                                         # It usually ends with ');' before 'boundaryField'
@@ -329,39 +343,36 @@ class OpenFOAMFieldParser:
                             # 2. Check for uniform if not found
                             if val is None:
                                 # Reset for search
-                                if idx != -1: mm.seek(idx)
-                                else: mm.seek(0)
-
-                                # If we haven't read context yet, read it now
-                                # But we might have searched for internalField above
-                                if idx == -1: idx = mm.find(b"internalField")
+                                if idx != -1:
+                                    pass # idx is already valid for internalField
+                                else:
+                                    idx = mm.find(b"internalField")
 
                                 if idx != -1:
-                                    mm.seek(idx)
-                                    context = mm.read(200).decode("utf-8", errors="ignore")
-                                    if "uniform" in context:
-                                        # Variable substitution
-                                        var_match = _RE_SCALAR_UNIFORM_VAR.search(context)
-                                        if var_match:
-                                            var_name = var_match.group(1)
-                                            # We need full content for variable resolution, which is rare.
-                                            # Fallback to full read only if needed.
-                                            content = field_path.read_text(encoding="utf-8")
-                                            resolved_value = self._resolve_variable(content, var_name)
-                                            if resolved_value:
-                                                val = float(resolved_value)
+                                    # ⚡ Bolt Optimization: Use bytes regex search on mmap buffer directly
+                                    # Avoids read(200) and decode('utf-8')
+                                    # Search range limited to ~200 bytes after internalField
 
-                                        if val is None:
-                                            match = _RE_SCALAR_UNIFORM_VAL.search(context)
-                                            if match:
-                                                try:
-                                                    val = float(match.group(1).strip())
-                                                except ValueError:
-                                                    pass
+                                    # Check for uniform with variable substitution
+                                    var_match = _RE_SCALAR_UNIFORM_VAR.search(mm, idx, idx + 200)
+                                    if var_match:
+                                        var_name = var_match.group(1) # bytes
+                                        # We need full content for variable resolution, which is rare.
+                                        content = field_path.read_bytes() # Read as bytes
+                                        resolved_value = self._resolve_variable(content, var_name)
+                                        if resolved_value:
+                                            val = float(resolved_value)
+
+                                    if val is None:
+                                        match = _RE_SCALAR_UNIFORM_VAL.search(mm, idx, idx + 200)
+                                        if match:
+                                            try:
+                                                val = float(match.group(1).strip())
+                                            except ValueError:
+                                                pass
 
             except (FileNotFoundError, OSError, ValueError) as e:
                 # If mmap fails or file issues, we fall back or return None
-                # If we really want to be safe we can fall back to read_text
                 pass
 
             # Fallback for complex cases (e.g. comments inside list breaking numpy)
@@ -421,10 +432,11 @@ class OpenFOAMFieldParser:
                             # 1. Check for nonuniform
                             idx = mm.find(b"internalField")
                             if idx != -1:
-                                mm.seek(idx)
-                                context = mm.read(200)
-                                if b"nonuniform" in context:
-                                    start_paren = mm.find(b'(', idx)
+                                # ⚡ Bolt Optimization: Avoid read() and decode() by searching buffer directly
+                                nonuniform_idx = mm.find(b"nonuniform", idx, idx + 200)
+
+                                if nonuniform_idx != -1:
+                                    start_paren = mm.find(b'(', nonuniform_idx)
                                     if start_paren != -1:
                                         boundary_idx = mm.find(b"boundaryField", start_paren)
                                         end_paren = -1
@@ -457,30 +469,28 @@ class OpenFOAMFieldParser:
 
                             # 2. Check for uniform
                             if val == (0.0, 0.0, 0.0):
-                                if idx != -1: mm.seek(idx)
-                                else: mm.seek(0)
-
-                                if idx == -1: idx = mm.find(b"internalField")
+                                if idx != -1:
+                                    pass
+                                else:
+                                    idx = mm.find(b"internalField")
 
                                 if idx != -1:
-                                    mm.seek(idx)
-                                    context = mm.read(200).decode("utf-8", errors="ignore")
-                                    if "uniform" in context:
-                                         if _RE_VECTOR_UNIFORM_VAR_CHECK.search(context):
-                                             # Variable detected
-                                             val = (0.0, 0.0, 0.0)
-                                         else:
-                                             match = _RE_VECTOR_UNIFORM_VAL_GROUP.search(context)
-                                             if match:
-                                                 vec_str = match.group(1)
-                                                 # Simple regex for (x y z)
-                                                 vec_match = _RE_VECTOR_COMPONENTS.search(vec_str)
-                                                 if vec_match:
-                                                     val = (
-                                                         float(vec_match.group(1)),
-                                                         float(vec_match.group(2)),
-                                                         float(vec_match.group(3)),
-                                                     )
+                                    # ⚡ Bolt Optimization: Use bytes regex search on mmap buffer directly
+                                    if _RE_VECTOR_UNIFORM_VAR_CHECK.search(mm, idx, idx + 200):
+                                        # Variable detected
+                                        val = (0.0, 0.0, 0.0)
+                                    else:
+                                        match = _RE_VECTOR_UNIFORM_VAL_GROUP.search(mm, idx, idx + 200)
+                                        if match:
+                                            vec_str = match.group(1)
+                                            # Simple regex for (x y z)
+                                            vec_match = _RE_VECTOR_COMPONENTS.search(vec_str)
+                                            if vec_match:
+                                                val = (
+                                                    float(vec_match.group(1)),
+                                                    float(vec_match.group(2)),
+                                                    float(vec_match.group(3)),
+                                                )
 
             except (FileNotFoundError, OSError, ValueError) as e:
                 pass
