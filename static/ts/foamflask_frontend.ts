@@ -478,15 +478,15 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
 
     // Desktop Reset
     if (navButton) {
-      // navButton.classList.remove("bg-cyan-600", "text-white"); // BG handled by pill
+      // navButton.classList.remove("bg-cyan-700", "text-white"); // BG handled by pill
       navButton.classList.remove("text-white");
-      navButton.classList.add("text-gray-700", "hover:bg-gray-100/50");
+      navButton.classList.add("text-gray-900", "hover:bg-gray-100/50");
       navButton.removeAttribute("aria-current");
     }
 
     // Mobile Reset
     if (mobileNavButton) {
-      mobileNavButton.classList.remove("bg-cyan-600", "text-white");
+      mobileNavButton.classList.remove("bg-cyan-700", "text-white");
       mobileNavButton.classList.add("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
       mobileNavButton.removeAttribute("aria-current");
     }
@@ -501,9 +501,9 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
 
   if (selectedNav) {
     // Update Text Color
-    // selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-    // selectedNav.classList.add("bg-cyan-600", "text-white");
-    selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100/50");
+    // selectedNav.classList.remove("text-gray-900", "hover:bg-gray-100");
+    // selectedNav.classList.add("bg-cyan-700", "text-white");
+    selectedNav.classList.remove("text-gray-900", "hover:bg-gray-100/50");
     selectedNav.classList.add("text-white");
     selectedNav.setAttribute("aria-current", "page");
 
@@ -517,7 +517,7 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
 
   if (selectedMobileNav) {
     selectedMobileNav.classList.remove("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
-    selectedMobileNav.classList.add("bg-cyan-600", "text-white");
+    selectedMobileNav.classList.add("bg-cyan-700", "text-white");
     selectedMobileNav.setAttribute("aria-current", "page");
   }
 
