@@ -24,7 +24,7 @@ const clearLog = () => {
             // Ignore local storage errors
         }
         outputBuffer.length = 0; // Clear buffer
-        showNotification("Console log cleared", "info", 2000);
+        showNotification("Console log cleared", "info", NOTIFY_MEDIUM);
     }
 };
 // Generic Copy to Clipboard Helper
@@ -35,12 +35,12 @@ const copyTextFromElement = (elementId, successMessage) => {
     // innerText preserves newlines better than textContent
     const text = el.innerText;
     if (!text.trim()) {
-        showNotification("Content is empty", "info", 2000);
+        showNotification("Content is empty", "info", NOTIFY_MEDIUM);
         return;
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-            showNotification(successMessage, "success", 2000);
+            showNotification(successMessage, "success", NOTIFY_MEDIUM);
         }).catch(() => fallbackCopyText(text, successMessage));
     }
     else {
@@ -60,7 +60,7 @@ const fallbackCopyText = (text, successMessage) => {
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
         if (successful)
-            showNotification(successMessage, "success", 2000);
+            showNotification(successMessage, "success", NOTIFY_MEDIUM);
         else
             showNotification("Failed to copy", "error");
     }
@@ -91,6 +91,15 @@ let availableMeshes = [];
 let isInteractiveMode = false;
 // Geometry State
 let selectedGeometry = null;
+// Notification constants
+const NOTIFY_SHORT = 1500;
+const NOTIFY_MEDIUM = 5000;
+const NOTIFY_LONG = 8000;
+const NOTIFY_DEFAULT = 10000;
+// System constants
+const POLL_INTERVAL = 5000;
+const DEBOUNCE_DELAY = 5000;
+const MAX_LOG_SIZE = 100000;
 // Notification management
 let notificationId = 0;
 let lastErrorNotificationTime = 0;
@@ -126,7 +135,7 @@ const saveLogToStorage = () => {
 const saveLogDebounced = () => {
     if (saveLogTimer)
         clearTimeout(saveLogTimer);
-    saveLogTimer = setTimeout(saveLogToStorage, 2000);
+    saveLogTimer = setTimeout(saveLogToStorage, DEBOUNCE_DELAY);
 };
 // Colors
 const plotlyColors = {
@@ -145,9 +154,9 @@ const plotlyColors = {
 };
 const plotLayout = {
     font: { family: "Inter, sans-serif", size: 12 },
-    // plot_bgcolor: "rgba(255, 255, 255, 0)",
-    paper_bgcolor: "#FFF",
-    margin: { l: 50, r: 20, t: 60, b: 80, pad: 0 },
+    plot_bgcolor: "rgba(255, 255, 255, 0)",
+    paper_bgcolor: "rgba(255, 255, 255, 0)",
+    margin: { l: 50, r: 20, t: 60, b: 80, pad: 5 },
     height: 400,
     autosize: true,
     showlegend: true,
@@ -165,20 +174,16 @@ const plotLayout = {
 };
 const plotConfig = {
     responsive: true,
-    displayModeBar: true,
+    displayModeBar: false,
     staticPlot: false,
     scrollZoom: true,
     doubleClick: "reset+autosize",
-    showTips: true,
-    modeBarButtonsToAdd: [],
+    showTips: false,
     modeBarButtonsToRemove: [
-        "autoScale2d",
-        "zoomIn2d",
-        "zoomOut2d",
-        "lasso2d",
-        "select2d",
-        "pan2d",
-        "sendDataToCloud",
+        "zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+        "hoverClosestCartesian", "hoverCompareCartesian", "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+        "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d", "hoverClosest3d",
+        "sendDataToCloud", "toggleSpikelines", "setBackground", "toggleHover", "resetViews", "toImage"
     ],
     displaylogo: false,
 };
@@ -314,14 +319,14 @@ const switchPage = (pageName, updateUrl = true) => {
             pageElement.classList.add("hidden");
         // Desktop Reset
         if (navButton) {
-            // navButton.classList.remove("bg-cyan-600", "text-white"); // BG handled by pill
+            // navButton.classList.remove("bg-cyan-700", "text-white"); // BG handled by pill
             navButton.classList.remove("text-white");
-            navButton.classList.add("text-gray-700", "hover:bg-gray-100/50");
+            navButton.classList.add("text-gray-900", "hover:bg-gray-100/50");
             navButton.removeAttribute("aria-current");
         }
         // Mobile Reset
         if (mobileNavButton) {
-            mobileNavButton.classList.remove("bg-cyan-600", "text-white");
+            mobileNavButton.classList.remove("bg-cyan-700", "text-white");
             mobileNavButton.classList.add("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
             mobileNavButton.removeAttribute("aria-current");
         }
@@ -334,9 +339,9 @@ const switchPage = (pageName, updateUrl = true) => {
         selectedPage.classList.remove("hidden");
     if (selectedNav) {
         // Update Text Color
-        // selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100");
-        // selectedNav.classList.add("bg-cyan-600", "text-white");
-        selectedNav.classList.remove("text-gray-700", "hover:bg-gray-100/50");
+        // selectedNav.classList.remove("text-gray-900", "hover:bg-gray-100");
+        // selectedNav.classList.add("bg-cyan-700", "text-white");
+        selectedNav.classList.remove("text-gray-900", "hover:bg-gray-100/50");
         selectedNav.classList.add("text-white");
         selectedNav.setAttribute("aria-current", "page");
         // Move Pill
@@ -348,7 +353,7 @@ const switchPage = (pageName, updateUrl = true) => {
     }
     if (selectedMobileNav) {
         selectedMobileNav.classList.remove("text-gray-700", "hover:text-cyan-800", "hover:bg-gray-50");
-        selectedMobileNav.classList.add("bg-cyan-600", "text-white");
+        selectedMobileNav.classList.add("bg-cyan-700", "text-white");
         selectedMobileNav.setAttribute("aria-current", "page");
     }
     // Auto-refresh lists based on page
@@ -413,7 +418,7 @@ const toggleMobileMenu = () => {
 };
 window.toggleMobileMenu = toggleMobileMenu;
 // Show notification
-const showNotification = (message, type, duration = 5000) => {
+const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
     // If a notification with the same message already exists, do not show another one
     // This prevents spamming the user with the same message
     if (document.querySelector(`.notification .message-slot[data-message="${message}"]`)) {
@@ -578,7 +583,7 @@ const flushOutputBuffer = () => {
     container.insertAdjacentHTML("beforeend", newHtmlChunks);
     cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
     // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
-    const MAX_LOG_LENGTH = 100000; // 100KB
+    const MAX_LOG_LENGTH = MAX_LOG_SIZE; // 100KB
     if (cachedLogHTML.length > MAX_LOG_LENGTH * 1.5) {
         const slice = cachedLogHTML.slice(-MAX_LOG_LENGTH);
         // Ensure we cut at a clean tag boundary
@@ -796,7 +801,7 @@ const refreshCaseList = async (btnElement) => {
         }
         // Only show success notification if invoked manually (via button)
         if (btn)
-            showNotification("Case list refreshed", "success", 2000);
+            showNotification("Case list refreshed", "success", NOTIFY_MEDIUM);
     }
     catch (e) {
         console.error(e);
@@ -997,7 +1002,7 @@ const startPlotUpdates = () => {
             updatePlots();
         else
             pendingPlotUpdate = true;
-    }, 2000);
+    }, POLL_INTERVAL);
 };
 const stopPlotUpdates = () => {
     if (plotUpdateInterval) {
@@ -1361,7 +1366,7 @@ const updatePlots = async () => {
         await Promise.allSettled(updatePromises);
         // After all plots are updated
         if (isFirstPlotLoad) {
-            showNotification("Plots loaded successfully", "success", 3000);
+            showNotification("Plots loaded successfully", "success", NOTIFY_LONG);
             isFirstPlotLoad = false;
         }
     }
@@ -1425,7 +1430,7 @@ const refreshGeometryList = async (btnElement) => {
             }
         }
         if (btn)
-            showNotification("Geometry list refreshed", "success", 2000);
+            showNotification("Geometry list refreshed", "success", NOTIFY_MEDIUM);
     }
     catch (e) {
         console.error(e);
@@ -1859,7 +1864,7 @@ const runFoamToVTK = async (btnElement) => {
 };
 const refreshMeshList = async (btnElement) => {
     if (!activeCase) {
-        showNotification("No active case selected to list meshes", "warning", 3000);
+        showNotification("No active case selected to list meshes", "warning", NOTIFY_LONG);
         return;
     }
     const btn = btnElement;
@@ -1890,7 +1895,7 @@ const refreshMeshList = async (btnElement) => {
             }
         }
         if (btn)
-            showNotification("Mesh list refreshed", "success", 2000);
+            showNotification("Mesh list refreshed", "success", NOTIFY_MEDIUM);
     }
     catch (e) {
         console.error("Error refreshing mesh list:", e);
@@ -2050,7 +2055,7 @@ async function refreshInteractiveViewer(successMessage = "Interactive mode enabl
         cameraControl.parentElement?.classList.add("hidden");
         updateBtn.classList.add("hidden");
         document.getElementById("interactiveModeHint")?.classList.remove("hidden");
-        showNotification(successMessage, "success", 8000);
+        showNotification(successMessage, "success", NOTIFY_LONG);
     }
     catch (error) {
         console.error("[FOAMFlask] Error loading interactive viewer:", error);
@@ -2115,7 +2120,7 @@ async function toggleInteractiveMode() {
         cameraControl.parentElement?.classList.remove("hidden");
         updateBtn.classList.remove("hidden");
         document.getElementById("interactiveModeHint")?.classList.add("hidden");
-        showNotification("Switched to static mode", "info", 2000);
+        showNotification("Switched to static mode", "info", NOTIFY_MEDIUM);
     }
 }
 // Set camera view for interactive mode
@@ -2129,7 +2134,7 @@ function setCameraView(view) {
             type: "setCameraView",
             view: view,
         }, "*");
-        showNotification(`Set view to ${view.toUpperCase()}`, "info", 1500);
+        showNotification(`Set view to ${view.toUpperCase()}`, "info", NOTIFY_SHORT);
     }
     catch (error) {
         console.error("Error setting camera view:", error);
@@ -2145,7 +2150,7 @@ function resetCamera() {
         iframe.contentWindow.postMessage({
             type: "resetCamera",
         }, "*");
-        showNotification("Camera view reset", "info", 1500);
+        showNotification("Camera view reset", "info", NOTIFY_SHORT);
     }
     catch (error) {
         console.error("Error resetting camera:", error);
@@ -2186,7 +2191,7 @@ const refreshPostListVTK = async (btnElement) => {
             }
         }
         if (btn)
-            showNotification("VTK file list refreshed", "success", 2000);
+            showNotification("VTK file list refreshed", "success", NOTIFY_MEDIUM);
     }
     catch (e) {
         console.error(e);
@@ -2241,7 +2246,7 @@ const checkStartupStatus = async () => {
             setTimeout(pollStatus, 1000);
         }
         catch (e) {
-            setTimeout(pollStatus, 2000);
+            setTimeout(pollStatus, 5000);
         }
     };
     await pollStatus();
@@ -2497,7 +2502,7 @@ window.changePlotFont = (fontFamily) => {
     if (input && input.value !== fontFamily) {
         input.value = fontFamily;
     }
-    showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", 2000);
+    showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", NOTIFY_MEDIUM);
 };
 window.switchCaseCreationTab = (tab) => {
     const track = document.getElementById("case-creation-track");

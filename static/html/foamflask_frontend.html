@@ -146,49 +146,74 @@
     }
 
     /* Page transition */
-    .page {
-      /* Animation removed for instant swiftching */
-      /* animation: fadeInPage 0.3s ease-in; */
-    }
+    /* Page transition rules removed */
 
     /* Glassmorphism Utilities - Mixed */
     .glass {
-      /* Visible Frosted Glass (e.g. Navbar) */
-      backdrop-filter: blur(5px) saturate(180%);
-      -webkit-backdrop-filter: blur(5px) saturate(180%);
-      background-color: rgba(255, 255, 255, 0.8);
-      border-radius: 12px;
-      border: 1px solid rgba(209, 213, 219, 0.3);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      /* Clear Liquid Glass */
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+
+      box-shadow:
+        0 4px 30px rgba(0, 0, 0, 0.1),
+        inset 0 0 10px rgba(255, 255, 255, 0.3);
+
       position: relative;
       overflow: hidden;
     }
 
     .glass-panel {
-      /* Solid Opaque Panels (e.g. Content Cards) */
-      background-color: #ffffff;
-      /* Solid white */
+      /* Matte Liquid Panel */
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
       border-radius: 12px;
-      border: 1px solid #0891b2;
-      /* Gray-200 */
-      /* Consistent shadow for depth */
+      border: 1px solid rgba(255, 255, 255, 0.5);
+
       box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
       position: relative;
       overflow: hidden;
     }
 
-    /* Top shine only for glass elements */
+    .glass-plot {
+      /* Matte Liquid Panel */
+      background: rgba(255, 255, 255, 0.904);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+
+      box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Enhanced Shine */
     .glass::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      height: 100%;
+      background: linear-gradient(135deg,
+          rgba(255, 255, 255, 0.4) 0%,
+          rgba(255, 255, 255, 0.05) 40%,
+          transparent 100%);
       pointer-events: none;
+      z-index: 1;
     }
 
     .glass-panel::before,
@@ -200,8 +225,9 @@
 
 </head>
 
+<!-- Background color -->
 <body
-  class="bg-[linear-gradient(180deg,hsla(192,80%,51%,1)_0%,hsla(355,85%,63%,1)_100%)] text-gray-800 min-h-screen bg-fixed">
+  class="bg-[linear-gradient(180deg,hsla(192,100%,86%,1)_0%,hsla(292,37%,88%,1)_100%)] text-black min-h-screen bg-fixed">
 
   <!-- Skip to content link -->
   <a href="#main-content"
@@ -242,42 +268,42 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-10">
         <div class="flex items-center">
-          <h1 class="text-2xl font-bold text-gray-800">FOAMFlask</h1>
+          <h1 class="text-2xl font-bold text-black">FOAMFlask</h1>
         </div>
 
         <!-- Desktop Menu -->
         <div class="hidden md:flex space-x-1 relative isolate">
           <!-- Navigation Sliding Pill -->
           <div id="nav-pill"
-            class="absolute top-0 bottom-0 rounded-md bg-cyan-600 transition-all duration-300 ease-in-out -z-10"
+            class="absolute top-0 bottom-0 rounded-md bg-cyan-700 transition-all duration-300 ease-in-out -z-10"
             style="opacity: 0;"></div>
 
           <button id="nav-setup" aria-current="page"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-white bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 bg-transparent">
             Setup
           </button>
           <button id="nav-geometry"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Geometry
           </button>
           <button id="nav-meshing"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Meshing
           </button>
           <button id="nav-visualizer"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Visualizer
           </button>
           <button id="nav-run"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Run/Log
           </button>
           <button id="nav-plots"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Plots
           </button>
           <button id="nav-post"
-            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-700 hover:bg-gray-100/50 bg-transparent">
+            class="px-4 py-1 rounded-md text-sm font-medium transition-colors nav-btn text-gray-900 hover:bg-gray-100/50 bg-transparent">
             Post
           </button>
         </div>
@@ -285,7 +311,7 @@
         <!-- Mobile Menu Button -->
         <div class="flex items-center md:hidden">
           <button type="button" onclick="toggleMobileMenu()"
-            class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-cyan-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
+            class="inline-flex items-center justify-center p-2 rounded-md text-gray-900 hover:text-cyan-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
             aria-controls="mobile-menu" aria-expanded="false">
             <span class="sr-only">Open main menu</span>
             <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -301,31 +327,31 @@
     <div class="hidden md:hidden border-t border-gray-200" id="mobile-menu">
       <div class="px-2 pt-2 pb-3 space-y-1">
         <button id="mobile-nav-setup"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-cyan-600 text-white nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-cyan-700 text-white nav-btn">
           Setup
         </button>
         <button id="mobile-nav-geometry"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Geometry
         </button>
         <button id="mobile-nav-meshing"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Meshing
         </button>
         <button id="mobile-nav-visualizer"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Visualizer
         </button>
         <button id="mobile-nav-run"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Run/Log
         </button>
         <button id="mobile-nav-plots"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Plots
         </button>
         <button id="mobile-nav-post"
-          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
+          class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-cyan-800 hover:bg-gray-50 nav-btn">
           Post
         </button>
       </div>
@@ -336,11 +362,11 @@
   <div id="main-content" class="px-4 py-2 sm:px-6 outline-none" tabindex="-1">
 
     <!-- Setup Page -->
-    <div id="page-setup" class="page max-w-4xl mx-auto glass rounded-lg p-6 flex flex-col gap-6">
+    <div id="page-setup" class="page max-w-4xl mx-auto glass rounded-lg p-6 flex flex-col gap-6 hidden">
 
       <!-- Active Case Selection -->
       <div class="glass-panel rounded-lg p-4">
-        <h2 class="text-xl font-bold mb-2 text-cyan-900">Active Case</h2>
+        <h2 class="text-xl font-bold mb-2 text-black">Active Case</h2>
         <p class="text-sm text-cyan-700 mb-3">Select the case you want to work on. This selection applies to Geometry,
           Meshing, and Run tabs.</p>
         <div class="flex flex-col sm:flex-row gap-2 items-center">
@@ -382,7 +408,7 @@
               Create Blank Case
             </button>
             <button id="tab-btn-import" onclick="switchCaseCreationTab('import')"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none bg-transparent">
               Import Tutorial
             </button>
           </div>
@@ -396,14 +422,14 @@
               <div class="w-full flex-shrink-0">
                 <div id="tab-content-create" class="flex flex-col gap-4">
                   <div class="mb-2">
-                    <h3 class="text-xl font-bold mb-2 text-gray-800">Create New Case</h3>
-                    <p class="text-sm text-gray-500">Initialize a blank case with standard structure (0, constant,
+                    <h3 class="text-xl font-bold mb-2 text-black">Create New Case</h3>
+                    <p class="text-sm text-gray-900">Initialize a blank case with standard structure (0, constant,
                       system).
                     </p>
                   </div>
 
                   <form class="flex flex-col gap-1 w-full" onsubmit="event.preventDefault(); createNewCase()">
-                    <label for="newCaseName" class="text-sm font-medium text-gray-700">
+                    <label for="newCaseName" class="text-sm font-medium text-gray-900">
                       Case Name <span class="text-red-500" title="Required">*</span>
                     </label>
                     <div class="flex flex-col sm:flex-row gap-2">
@@ -427,12 +453,12 @@
               <div class="w-full flex-shrink-0">
                 <div id="tab-content-import" class="flex flex-col gap-4">
                   <div class="mb-2">
-                    <h3 class="text-xl font-bold mb-2 text-gray-800">Import Tutorial</h3>
-                    <p class="text-sm text-gray-500">Clone an official OpenFOAM tutorial into your workspace.</p>
+                    <h3 class="text-xl font-bold mb-2 text-black">Import Tutorial</h3>
+                    <p class="text-sm text-gray-900">Clone an official OpenFOAM tutorial into your workspace.</p>
                   </div>
 
                   <div class="flex flex-col gap-1 w-full">
-                    <label for="tutorialSelect" class="text-sm font-medium text-gray-700">
+                    <label for="tutorialSelect" class="text-sm font-medium text-gray-900">
                       Select Tutorial Source
                     </label>
                     <div class="flex flex-col sm:flex-row gap-2">
@@ -443,7 +469,7 @@
                           {{ options|safe }}
                         </select>
                         <div
-                          class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-900">
                           <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                             <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                           </svg>
@@ -471,13 +497,13 @@
 
       <!-- Advanced Configuration (Collapsible) -->
       <details class="border-t pt-4">
-        <summary class="cursor-pointer text-gray-500 font-medium hover:text-gray-700">
+        <summary class="cursor-pointer text-gray-900 font-medium hover:text-gray-900">
           Advanced Configuration (Case Root, Docker)
         </summary>
         <div class="mt-4 space-y-4 pl-2">
           <!-- Case Directory -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label for="caseDir" class="w-32 font-medium text-gray-700">Case Root:</label>
+            <label for="caseDir" class="w-32 font-medium text-gray-900">Case Root:</label>
             <input type="text" id="caseDir" name="caseDir" class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <button id="setRootBtn" type="button" onclick="setCase(this)"
               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[100px]">
@@ -487,7 +513,7 @@
 
           <!-- Docker Config -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label for="dockerImage" class="w-32 font-medium text-gray-700">Docker Image:</label>
+            <label for="dockerImage" class="w-32 font-medium text-gray-900">Docker Image:</label>
             <input type="text" id="dockerImage" name="dockerImage"
               class="border border-gray-300 rounded px-3 py-2 flex-1" />
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
@@ -509,7 +535,7 @@
     <!-- Geometry Page -->
     <div id="page-geometry" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Geometry Management</h2>
+        <h2 class="text-2xl font-bold text-black">Geometry Management</h2>
       </div>
 
       <div class="flex flex-col lg:flex-row gap-6">
@@ -528,7 +554,7 @@
               Upload File
             </button>
             <button onclick="switchGeometryTab('resources')" id="tab-btn-geo-resources"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none bg-transparent">
               From Resources
             </button>
           </div>
@@ -543,7 +569,7 @@
                 <div id="tab-geo-upload" class="flex flex-col gap-2">
                   <label for="geometryUpload" class="text-sm font-medium">Upload Geometry File (stl, obj,
                     obj.gz)</label>
-                  <input type="file" id="geometryUpload" accept=".stl,.obj,.obj.gz" class="block w-full text-sm text-gray-500
+                  <input type="file" id="geometryUpload" accept=".stl,.obj,.obj.gz" class="block w-full text-sm text-gray-900
                     file:mr-4 file:py-2 file:px-4
                     file:rounded-full file:border-0
                     file:text-sm file:font-semibold
@@ -619,7 +645,7 @@
 
           <!-- Info Panel -->
           <div id="geometryInfo" class="hidden glass-panel rounded p-3 mt-4">
-            <h3 class="font-semibold text-cyan-900 mb-2">Geometry Info</h3>
+            <h3 class="font-semibold text-black mb-2">Geometry Info</h3>
             <div id="geometryInfoContent" class="text-sm text-cyan-800 space-y-1">
               <div class="mt-2 border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
                 <div class="bg-cyan-50 px-3 py-2 border-b border-cyan-100 flex justify-between items-center">
@@ -631,13 +657,13 @@
                   <!-- X Axis -->
                   <div class="flex items-center text-xs">
                     <div class="w-4 flex-shrink-0 font-bold text-red-500">X</div>
-                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
-                      <span class="text-gray-400">min</span> <span id="geo-bound-x-min"></span> <span
-                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                    <div class="flex-1 font-mono text-black text-[11px] whitespace-nowrap">
+                      <span class="text-gray-600">min</span> <span id="geo-bound-x-min"></span> <span
+                        class="text-gray-500 mx-1">|</span> <span class="text-gray-600">max</span> <span
                         id="geo-bound-x-max"></span>
                     </div>
                     <div
-                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      class="ml-1 bg-gray-100 text-black px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-x-len"></span>
                     </div>
@@ -645,13 +671,13 @@
                   <!-- Y Axis -->
                   <div class="flex items-center text-xs">
                     <div class="w-4 flex-shrink-0 font-bold text-green-500">Y</div>
-                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
-                      <span class="text-gray-400">min</span> <span id="geo-bound-y-min"></span> <span
-                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                    <div class="flex-1 font-mono text-black text-[11px] whitespace-nowrap">
+                      <span class="text-gray-600">min</span> <span id="geo-bound-y-min"></span> <span
+                        class="text-gray-500 mx-1">|</span> <span class="text-gray-600">max</span> <span
                         id="geo-bound-y-max"></span>
                     </div>
                     <div
-                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      class="ml-1 bg-gray-100 text-black px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-y-len"></span>
                     </div>
@@ -659,13 +685,13 @@
                   <!-- Z Axis -->
                   <div class="flex items-center text-xs">
                     <div class="w-4 flex-shrink-0 font-bold text-cyan-500">Z</div>
-                    <div class="flex-1 font-mono text-gray-600 text-[11px] whitespace-nowrap">
-                      <span class="text-gray-400">min</span> <span id="geo-bound-z-min"></span> <span
-                        class="text-gray-300 mx-1">|</span> <span class="text-gray-400">max</span> <span
+                    <div class="flex-1 font-mono text-black text-[11px] whitespace-nowrap">
+                      <span class="text-gray-600">min</span> <span id="geo-bound-z-min"></span> <span
+                        class="text-gray-500 mx-1">|</span> <span class="text-gray-600">max</span> <span
                         id="geo-bound-z-max"></span>
                     </div>
                     <div
-                      class="ml-1 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
+                      class="ml-1 bg-gray-100 text-black px-1.5 py-0.5 rounded text-[10px] font-mono border border-gray-200"
                       title="Length">
                       Δ <span id="geo-bound-z-len"></span>
                     </div>
@@ -678,20 +704,20 @@
         </div>
 
         <!-- Right Column: Viewer -->
-        <div class="w-full lg:w-2/3 glass-panel rounded-lg overflow-hidden relative" style="min-height: 500px;">
+        <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 500px;">
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
           <div id="geometryPlaceholder"
-            class="absolute inset-0 flex items-center justify-center pointer-events-none bg-gray-50">
+            class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div class="text-gray-400 mb-4">
+              <div class="text-gray-600 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
-              <h3 class="text-lg font-medium text-gray-700 mb-2">No Geometry Loaded</h3>
-              <p class="text-gray-500">Select a geometry file and click "View" to visualize</p>
+              <h3 class="text-lg font-medium text-black mb-2">No Geometry Loaded</h3>
+              <p class="text-gray-900">Select a geometry file and click "View" to visualize</p>
             </div>
           </div>
         </div>
@@ -701,11 +727,12 @@
     <!-- Meshing Page -->
     <div id="page-meshing" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Meshing Configuration</h2>
+        <h2 class="text-2xl font-bold" style="color: black;">Meshing Configuration</h2>
       </div>
 
-      <div class="mb-6 text-gray-600 text-sm">
-        <p class="text-gray-600 text-sm">Using blockMesh followed by snappyHexMesh in OpenFOAM creates a structured
+      <div class="mb-6 text-black text-sm">
+        <p class="text-black text-sm" style="color: black !important; opacity: 1;">Using blockMesh followed by
+          snappyHexMesh in OpenFOAM creates a structured
           background mesh with blockMesh, then refines and snaps it to complex geometry (like STL files) using
           snappyHexMesh, a common workflow for detailed, automated meshing, especially for boundary layers, by starting
           simple and adding complexity.</p>
@@ -718,13 +745,13 @@
           <button
             class="w-full text-left text-lg font-semibold mb-3 border-b pb-2 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-cyan-500 rounded"
             onclick="toggleSection('blockMeshSection')" aria-expanded="true" aria-controls="blockMeshSection">
-            <span>blockMesh <span class="text-sm font-normal text-gray-500 ml-2">The Foundation</span></span>
+            <span>blockMesh <span class="text-sm font-normal text-gray-900 ml-2">The Foundation</span></span>
             <span id="blockMeshSectionToggle" class="text-sm transition-transform duration-200">▼</span>
           </button>
           <div id="blockMeshSection" class="block space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700">Bounds (Min / Max)</label>
+                <label class="block text-sm font-medium text-gray-900">Bounds (Min / Max)</label>
                 <div class="grid grid-cols-2 gap-2">
                   <input type="text" id="bmMin" placeholder="-1 -1 -1"
                     class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
@@ -739,12 +766,12 @@
                 </button>
               </div>
               <div>
-                <label for="bmCells" class="block text-sm font-medium text-gray-700">Cells (x y z)</label>
+                <label for="bmCells" class="block text-sm font-medium text-gray-900">Cells (x y z)</label>
                 <input type="text" id="bmCells" value="20 20 20"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
               </div>
               <div>
-                <label for="bmGrading" class="block text-sm font-medium text-gray-700">Grading (x y z)</label>
+                <label for="bmGrading" class="block text-sm font-medium text-gray-900">Grading (x y z)</label>
                 <input type="text" id="bmGrading" value="1 1 1"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
               </div>
@@ -765,7 +792,7 @@
         <!-- SnappyHexMesh Config -->
         <div class="glass-panel rounded-lg p-4 shadow-sm">
           <h3 class="text-lg font-semibold mb-3 border-b pb-2">SnappyHexMesh <span
-              class="text-sm font-normal text-gray-500 ml-2">The Refinement</span></h3>
+              class="text-sm font-normal text-gray-900 ml-2">The Refinement</span></h3>
 
           <div class="flex flex-col lg:flex-row gap-6">
 
@@ -790,7 +817,7 @@
                   </label>
                 </div>
                 <div class="mt-3">
-                  <label for="shmLocation" class="block text-sm font-medium text-gray-700">Location In Mesh (x y
+                  <label for="shmLocation" class="block text-sm font-medium text-gray-900">Location In Mesh (x y
                     z)</label>
                   <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
                     placeholder="e.g. 0.1 0.1 0.1">
@@ -799,21 +826,21 @@
 
               <!-- Advanced Settings (Collapsible) -->
               <details class="border rounded bg-gray-50">
-                <summary class="px-3 py-2 cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-100">
+                <summary class="px-3 py-2 cursor-pointer text-sm font-medium text-gray-900 hover:bg-gray-100">
                   Advanced Global Settings
                 </summary>
                 <div class="p-3 space-y-3">
                   <!-- Quality -->
                   <div>
-                    <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Mesh Quality</h5>
+                    <h5 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-1">Mesh Quality</h5>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
-                        <label for="shmMaxNonOrtho" class="block text-xs text-gray-600">Max Non-Ortho</label>
+                        <label for="shmMaxNonOrtho" class="block text-xs text-black">Max Non-Ortho</label>
                         <input type="number" id="shmMaxNonOrtho" value="65"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label for="shmMinTriangleTwist" class="block text-xs text-gray-600">Min Triangle Twist</label>
+                        <label for="shmMinTriangleTwist" class="block text-xs text-black">Min Triangle Twist</label>
                         <input type="number" id="shmMinTriangleTwist" value="-1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
@@ -822,25 +849,25 @@
 
                   <!-- Layers Global -->
                   <div>
-                    <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Layer Addition Global</h5>
+                    <h5 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-1">Layer Addition Global</h5>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
-                        <label for="shmLayerFeatureAngle" class="block text-xs text-gray-600">Feature Angle</label>
+                        <label for="shmLayerFeatureAngle" class="block text-xs text-black">Feature Angle</label>
                         <input type="number" id="shmLayerFeatureAngle" value="130"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label for="shmExpansionRatio" class="block text-xs text-gray-600">Expansion Ratio</label>
+                        <label for="shmExpansionRatio" class="block text-xs text-black">Expansion Ratio</label>
                         <input type="number" id="shmExpansionRatio" value="1.2" step="0.1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label for="shmFinalThickness" class="block text-xs text-gray-600">Final Thickness</label>
+                        <label for="shmFinalThickness" class="block text-xs text-black">Final Thickness</label>
                         <input type="number" id="shmFinalThickness" value="0.3" step="0.1"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
                       <div>
-                        <label for="shmMinThickness" class="block text-xs text-gray-600">Min Thickness</label>
+                        <label for="shmMinThickness" class="block text-xs text-black">Min Thickness</label>
                         <input type="number" id="shmMinThickness" value="0.1" step="0.01"
                           class="border rounded px-2 py-1 text-sm w-full">
                       </div>
@@ -852,10 +879,10 @@
 
             <!-- Right: Object Settings -->
             <div class="w-full lg:w-1/2 flex flex-col gap-4 border-l pl-0 lg:pl-6 border-gray-200">
-              <h4 class="font-medium text-gray-800">Object Settings</h4>
+              <h4 class="font-medium text-black">Object Settings</h4>
 
               <div class="flex flex-col gap-2 h-48">
-                <label for="shmObjectList" class="text-sm text-gray-600">Loaded Geometry Objects</label>
+                <label for="shmObjectList" class="text-sm text-black">Loaded Geometry Objects</label>
                 <select id="shmObjectList" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full" size="5"
                   onchange="selectShmObject()">
                   <!-- Populated by JS -->
@@ -869,28 +896,28 @@
                 </div>
                 <div class="space-y-3">
                   <div>
-                    <label class="block text-xs font-medium text-gray-700">Refinement Level (Min / Max)</label>
+                    <label class="block text-xs font-medium text-gray-900">Refinement Level (Min / Max)</label>
                     <div class="flex items-center gap-2">
                       <input type="number" id="shmObjRefMin" min="0" max="10"
                         class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
                         aria-label="Min Refinement Level">
-                      <span class="text-gray-500">-</span>
+                      <span class="text-gray-900">-</span>
                       <input type="number" id="shmObjRefMax" min="0" max="10"
                         class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
                         aria-label="Max Refinement Level">
                     </div>
                   </div>
                   <div>
-                    <label for="shmObjLayers" class="block text-xs font-medium text-gray-700">Number of Surface
+                    <label for="shmObjLayers" class="block text-xs font-medium text-gray-900">Number of Surface
                       Layers</label>
                     <input type="number" id="shmObjLayers" min="0" max="10"
                       class="border rounded px-2 py-1 text-sm w-full" onchange="updateShmObjectConfig()">
-                    <p class="text-xs text-gray-500 mt-1">Requires "Add Layers" to be enabled globally.</p>
+                    <p class="text-xs text-gray-900 mt-1">Requires "Add Layers" to be enabled globally.</p>
                   </div>
                 </div>
               </div>
               <div id="shmObjectPlaceholder"
-                class="text-sm text-gray-400 italic p-4 text-center border border-dashed rounded">
+                class="text-sm text-gray-600 italic p-4 text-center border border-dashed rounded">
                 Select an object to configure its properties.
               </div>
 
@@ -939,7 +966,7 @@
 
       <!-- Run Commands Section -->
       <div class="my-4">
-        <h3 class="text-xl font-semibold mb-2">Run OpenFOAM Commands</h3>
+        <h3 class="text-xl font-semibold mb-2 text-black">Run OpenFOAM Commands</h3>
         <div class="flex flex-col sm:flex-row gap-2">
           <button id="runAllrunBtn" onclick="runCommand('./Allrun', this)"
             class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
@@ -1019,7 +1046,7 @@
               Clear
             </button>
             <button onclick="copyLogToClipboard()"
-              class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
               aria-label="Copy console log to clipboard">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -1030,7 +1057,7 @@
             </button>
           </div>
         </div>
-        <div id="output" class="glass-panel rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
+        <div id="output" class="glass-plot rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
           role="log" aria-label="Console Output Log"></div>
       </div>
 
@@ -1041,11 +1068,11 @@
       <div class="flex flex-col gap-4">
         <!-- Header -->
         <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-bold">VTK Mesh Visualization</h2>
+          <h2 class="text-2xl font-bold text-black">VTK Mesh Visualization</h2>
         </div>
 
-        <div class="mb-6 text-gray-600 text-sm">
-          <p class="text-gray-600 text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
+        <div class="mb-6 text-black text-sm">
+          <p class="text-black text-sm">Generate VTK files to view mesh structure and inspect its properties.</p>
         </div>
 
         <!-- Main Two-Column Layout -->
@@ -1126,8 +1153,8 @@
                 </button>
               </div>
               <div id="interactiveModeHint"
-                class="hidden mt-3 text-[11px] text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
-                <div class="font-semibold text-gray-700 mb-2 border-b border-gray-200 pb-1">How to Interact?</div>
+                class="hidden mt-3 text-[11px] text-black bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
+                <div class="font-semibold text-gray-900 mb-2 border-b border-gray-200 pb-1">How to Interact?</div>
                 <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
 
                   <!-- Rotate -->
@@ -1143,8 +1170,8 @@
                   <!-- Axis Rotate -->
                   <div class="flex items-center gap-1 justify-center">
                     <kbd
-                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Ctrl</kbd>
-                    <span class="text-gray-400 text-[10px]">+</span>
+                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-900 shadow-sm">Ctrl</kbd>
+                    <span class="text-gray-600 text-[10px]">+</span>
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
                       <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6" />
@@ -1165,8 +1192,8 @@
                   <!-- Pan -->
                   <div class="flex items-center gap-1 justify-center">
                     <kbd
-                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-500 shadow-sm">Shift</kbd>
-                    <span class="text-gray-400 text-[10px]">+</span>
+                      class="px-1.5 py-0.5 rounded bg-white border border-gray-300 font-sans text-[10px] text-gray-900 shadow-sm">Shift</kbd>
+                    <span class="text-gray-600 text-[10px]">+</span>
                     <svg class="w-4 h-5" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect x="1" y="1" width="12" height="18" rx="6" stroke="#9CA3AF" stroke-width="1.5" />
                       <path d="M7 1V8H1.5C1.5 4.5 3.5 1 7 1Z" fill="#3B82F6" />
@@ -1181,19 +1208,19 @@
 
             <!-- Mesh Info -->
             <div id="meshInfo" class="hidden bg-cyan-50 border border-cyan-200 rounded p-3">
-              <h3 class="font-semibold text-cyan-900 mb-2">Mesh Information</h3>
+              <h3 class="font-semibold text-black mb-2">Mesh Information</h3>
               <div id="meshInfoContent" class="text-sm text-cyan-800 grid grid-cols-2 gap-2"></div>
             </div>
           </div>
 
           <!-- Right Column: Interactive Geometry Viewer -->
-          <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative"
+          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative"
             style="min-height: 400px;">
             <!-- Camera Controls -->
             <div id="cameraControls"
               class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 pointer-events-auto">
               <button onclick="setCameraView('xy')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Top View (XY)" aria-label="Top View (XY)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1202,7 +1229,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('xz')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Front View (XZ)" aria-label="Front View (XZ)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1210,7 +1237,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('yz')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Side View (YZ)" aria-label="Side View (YZ)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1218,7 +1245,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('iso')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Isometric View" aria-label="Isometric View">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1227,7 +1254,7 @@
                 </svg>
               </button>
               <button onclick="resetCamera()"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Reset Camera" aria-label="Reset Camera">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1239,15 +1266,15 @@
 
             <!-- Viewer -->
             <div id="meshPlaceholder" class="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div class="text-gray-500 mb-4">
+              <div class="text-gray-900 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                 </svg>
               </div>
-              <h3 class="text-lg font-medium text-gray-700 mb-2">No Mesh Loaded</h3>
-              <p class="text-gray-500">Select a mesh file and click "Load Mesh" to visualize</p>
+              <h3 class="text-lg font-medium text-black mb-2">No Mesh Loaded</h3>
+              <p class="text-gray-900">Select a mesh file and click "Load Mesh" to visualize</p>
             </div>
             <img id="meshImage" class="hidden w-full h-auto" alt="Mesh Visualization">
             <iframe id="meshInteractive" class="hidden w-full border-0" style="height: 800px;"
@@ -1260,13 +1287,13 @@
     <!-- Plots Page -->
     <div id="page-plots" class="page hidden max-w-7xl mx-auto glass rounded-lg p-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Realtime Plots</h2>
+        <h2 class="text-2xl font-bold text-black">Realtime Plots</h2>
         <div class="flex gap-2 relative">
 
           <!-- Font Settings Button -->
           <div class="relative">
-            <button onclick="toggleFontSettings()" id="fontSettingsBtn" aria-haspopup="true" aria-expanded="false"
-              class="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 transition-colors">
+            <button onclick="toggleFontSettings()" id="fontSettingsBtn"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
                   d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
@@ -1277,12 +1304,11 @@
 
             <!-- MegaMenu Popup -->
             <div id="fontSettingsMenu"
-              class="hidden absolute glass right-0 mt-2 w-80 origin-top-right rounded-xl shadow-2xl z-50 p-4 flex flex-col gap-4 bg-white/40">
+              class="hidden absolute glass right-0 mt-2 w-80 origin-top-right rounded-xl shadow-2xl z-50 p-4 flex flex-col gap-4 bg-white/40 border-cyan-300">
 
               <div class="flex justify-between items-center pb-2">
-                <h3 class="font-semibold text-gray-800">Plot Appearance</h3>
-                <button onclick="toggleFontSettings()" class="text-gray-500 hover:text-gray-700"
-                  aria-label="Close font settings">
+                <h3 class="font-semibold text-black">Plot Appearance</h3>
+                <button onclick="toggleFontSettings()" class="text-gray-900 hover:text-gray-900">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
                       d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -1293,7 +1319,7 @@
 
               <!-- Presets -->
               <div>
-                <label class="text-xs text-gray-600 font-medium mb-2 block uppercase tracking-wider">Presets</label>
+                <label class="text-xs text-black font-medium mb-2 block uppercase tracking-wider">Presets</label>
                 <div class="grid grid-cols-2 gap-2">
                   <button onclick="changePlotFont('Inter, sans-serif')"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Inter']">Inter</button>
@@ -1315,7 +1341,7 @@
               <!-- Custom Font -->
               <div>
                 <label for="customFontInput"
-                  class="text-xs text-gray-600 font-medium mb-1 block uppercase tracking-wider">Custom Font
+                  class="text-xs text-black font-medium mb-1 block uppercase tracking-wider">Custom Font
                   Family</label>
                 <div class="flex gap-2">
                   <input type="text" id="customFontInput" placeholder="e.g. Courier New"
@@ -1341,7 +1367,7 @@
         <div id="plotsLoading"
           class="absolute inset-0 flex flex-col items-center justify-center glass z-50 hidden transition-opacity duration-300">
           <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mb-3"></div>
-          <span class="text-lg font-semibold text-gray-700">Loading Plot Data...</span>
+          <span class="text-lg font-semibold text-gray-900">Loading Plot Data...</span>
         </div>
 
         <div
@@ -1349,7 +1375,7 @@
 
           <!-- Pressure Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="pressure-plot" class="w-full p-1" style="min-height: 300px;"></div>
 
             <button
@@ -1378,7 +1404,7 @@
 
           <!-- Velocity Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="velocity-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
@@ -1406,7 +1432,7 @@
 
           <!-- Turbulence Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="turbulence-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
@@ -1434,7 +1460,7 @@
 
           <!-- Residuals Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="residuals-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
@@ -1465,7 +1491,7 @@
 
       <!-- Aerodynamic Plots Container (optional) -->
       <div id="aeroContainer" class="hidden mt-4 w-full">
-        <h3 class="text-xl font-semibold mb-2">Aerodynamic Analysis</h3>
+        <h3 class="text-xl font-semibold mb-2 text-black">Aerodynamic Analysis</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <div class="w-full overflow-hidden">
             <div id="cp-plot" class="w-full p-2"></div>
@@ -1480,7 +1506,7 @@
     <!-- Post Processing Page -->
     <div id="page-post" class="page hidden max-w-7xl mx-auto glass shadow-lg rounded-lg p-4">
       <div class="flex justify-between items-center mb-3">
-        <h2 class="text-2xl font-bold text-gray-800">Post Processing</h2>
+        <h2 class="text-2xl font-bold text-black">Post Processing</h2>
       </div>
 
       <!-- Contour Visualization Section -->
@@ -1514,7 +1540,7 @@
             <div class="border border-gray-200 rounded-lg overflow-hidden">
               <button type="button"
                 onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')"
-                class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none">
+                class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-left text-gray-900 bg-gray-50 hover:bg-gray-100 focus:outline-none">
                 <span>Load custom VTK file</span>
                 <svg class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1533,7 +1559,7 @@
                       Load File
                     </button>
                   </div>
-                  <small class="text-gray-500 text-xs">Supported: .vtk, .vtp, .vtu, .vtm, .pvtu</small>
+                  <small class="text-gray-900 text-xs">Supported: .vtk, .vtp, .vtu, .vtm, .pvtu</small>
                 </div>
               </div>
             </div>
@@ -1546,7 +1572,7 @@
 
             <!-- VTK File Info -->
             <div id="vtkFileInfo" class="hidden bg-green-50 border border-green-200 rounded p-3">
-              <h3 class="font-semibold text-green-900 mb-2">VTK File Information</h3>
+              <h3 class="font-semibold text-black mb-2">VTK File Information</h3>
               <div id="vtkFileInfoContent" class="text-sm text-green-800 space-y-1"></div>
             </div>
 
@@ -1606,7 +1632,7 @@
             <!-- Number of Isosurfaces -->
             <div class="flex flex-col gap-2">
               <label for="numIsosurfaces" class="text-sm font-medium">Number of Isosurfaces <span
-                  class="text-gray-500">(Optional)</span></label>
+                  class="text-gray-900">(Optional)</span></label>
               <input type="number" id="numIsosurfaces" placeholder="Leave empty for default (10)" min="1" max="40"
                 class="border border-gray-300 rounded px-3 py-2">
             </div>
@@ -1619,19 +1645,19 @@
 
             <!-- Contour Info -->
             <div id="contourInfo" class="hidden bg-cyan-50 border border-cyan-200 rounded p-3 mt-4">
-              <h3 class="font-semibold text-cyan-900 mb-2">Contour Information</h3>
+              <h3 class="font-semibold text-black mb-2">Contour Information</h3>
               <div id="contourInfoContent" class="text-sm text-cyan-800 grid grid-cols-2 gap-2"></div>
             </div>
           </div>
 
           <!-- Right Column: Contour Viewer -->
-          <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative"
+          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative"
             style="min-height: 600px;">
             <!-- Camera Controls -->
             <div id="contourCameraControls"
               class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 pointer-events-auto">
               <button onclick="setCameraView('xy')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Top View (XY)" aria-label="Top View (XY)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1640,7 +1666,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('xz')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Front View (XZ)" aria-label="Front View (XZ)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1648,7 +1674,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('yz')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Side View (YZ)" aria-label="Side View (YZ)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1656,7 +1682,7 @@
                 </svg>
               </button>
               <button onclick="setCameraView('iso')"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Isometric View" aria-label="Isometric View">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1665,7 +1691,7 @@
                 </svg>
               </button>
               <button onclick="resetCamera()"
-                class="bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md backdrop-blur-sm"
+                class="bg-white/80 hover:bg-white text-black p-2 rounded-full shadow-md backdrop-blur-sm"
                 title="Reset Camera" aria-label="Reset Camera">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -1677,15 +1703,15 @@
 
             <!-- Viewer -->
             <div id="contourPlaceholder" class="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div class="text-gray-500 mb-4">
+              <div class="text-gray-900 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                 </svg>
               </div>
-              <h3 class="text-lg font-medium text-gray-700 mb-2">No Contour Loaded</h3>
-              <p class="text-gray-500">Click "Generate Contours" to visualize the data</p>
+              <h3 class="text-lg font-medium text-black mb-2">No Contour Loaded</h3>
+              <p class="text-gray-900">Click "Generate Contours" to visualize the data</p>
             </div>
             <div id="contourViewer" class="hidden w-full h-full"></div>
           </div>
@@ -1742,28 +1768,29 @@
 
   <footer class="py-4 glass border-t border-gray-200/50 mt-8 rounded-none">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 space-y-2 md:space-y-0">
+      <div
+        class="flex flex-col md:flex-row justify-between items-center text-sm text-black font-medium space-y-2 md:space-y-0">
         <div class="text-center md:text-left">
-          <div>FOAMFlask &copy; 2025</div>
-          <div class="text-xs mt-1">
+          <div class="text-black font-medium">FOAMFlask &copy; 2025</div>
+          <div class="text-xs mt-1 text-black font-medium">
             Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer"
-              class="text-cyan-600 hover:text-cyan-800">GNU GPLv3</a>
+              class="text-black underline decoration-cyan-700 hover:text-cyan-900">GNU GPLv3</a>
           </div>
         </div>
         <div class="flex items-center space-x-4">
           <span>Powered by:</span>
 
           <a href="https://pyvista.org/" target="_blank" rel="noopener noreferrer"
-            class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
+            class="flex items-center text-cyan-800 hover:text-cyan-900 transition-colors">
             <img src="{{ url_for('static', filename='icons/Pyvista-logo.avif') }}" alt="PyVista" class="h-8 w-auto">
           </a>
-          <span class="text-gray-400">|</span>
+          <span class="text-black">|</span>
 
           <a href="https://plotly.com/" target="_blank" rel="noopener noreferrer"
-            class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
+            class="flex items-center text-cyan-800 hover:text-cyan-900 transition-colors">
             <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}" alt="Plotly" class="h-8 w-auto">
           </a>
-          <span class="text-gray-400">|</span>
+          <span class="text-black">|</span>
 
           <a href="https://docker.com/" target="_blank" rel="noopener noreferrer"
             class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
