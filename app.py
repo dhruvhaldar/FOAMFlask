@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator
 from functools import wraps
 import email.utils
+import secrets
 
 # Third-party imports
 import docker
@@ -559,15 +560,33 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
 
 
 # --- Routes ---
+@app.before_request
+def csrf_protect():
+    """Check CSRF token on state-changing requests."""
+    if request.method not in ["GET", "HEAD", "OPTIONS", "TRACE"]:
+        if app.config.get("TESTING") and not app.config.get("ENABLE_CSRF", True):
+            return
+        token = request.cookies.get("csrf_token")
+        header_token = request.headers.get("X-CSRFToken")
+        if not token or token != header_token:
+            return jsonify({"error": "CSRF token missing or invalid"}), 403
+
 @app.after_request
 def set_security_headers(response: Response) -> Response:
     """
-    Set security headers for all responses.
+    Set security headers and CSRF cookie for all responses.
     """
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Set CSRF cookie if not present
+    if not request.cookies.get("csrf_token"):
+        # Lax allows top-level navigation, Strict is better but might break if linked from elsewhere
+        # Since this is a local app, Lax is fine.
+        response.set_cookie("csrf_token", secrets.token_hex(32), samesite="Lax", secure=False)
+
     return response
 
 

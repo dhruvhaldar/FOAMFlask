@@ -5,6 +5,39 @@
 import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
 import * as Plotly from "plotly.js";
 
+// CSRF Protection Helpers
+const getCookie = (name: string): string | null => {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+};
+
+// Monkey patch fetch to include CSRF token
+const originalFetch = window.fetch;
+window.fetch = async (input, init) => {
+  // Only inject for same-origin requests or relative URLs to prevent leaking token
+  const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+  const isRelative = url.startsWith('/');
+  const isSameOrigin = url.startsWith(window.location.origin);
+
+  if (isRelative || isSameOrigin) {
+    const method = (init?.method || "GET").toUpperCase();
+    if (method !== "GET" && method !== "HEAD") {
+      const token = getCookie("csrf_token");
+      if (token) {
+        init = init || {};
+        if (init.headers instanceof Headers) {
+          init.headers.append("X-CSRFToken", token);
+        } else if (Array.isArray(init.headers)) {
+          (init.headers as string[][]).push(["X-CSRFToken", token]);
+        } else {
+           init.headers = { ...init.headers, "X-CSRFToken": token };
+        }
+      }
+    }
+  }
+  return originalFetch(input, init);
+};
+
 // --- Interfaces ---
 // Global Window Interface
 declare global {

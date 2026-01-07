@@ -28,7 +28,8 @@ def app():
     # Disable rate limiting for general tests to avoid flaky failures
     flask_app.app.config.update({
         "TESTING": True,
-        "ENABLE_RATE_LIMIT": False
+        "ENABLE_RATE_LIMIT": False,
+        "ENABLE_CSRF": False
     })
 
     # Reset rate limit history
