@@ -183,6 +183,23 @@
       overflow: hidden;
     }
 
+    .glass-plot {
+      /* Matte Liquid Panel */
+      background: rgba(255, 255, 255, 0.904);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+
+      box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+      position: relative;
+      overflow: hidden;
+    }
+
     /* Enhanced Shine */
     .glass::before {
       content: '';
@@ -210,7 +227,7 @@
 
 <!-- Background color -->
 <body
-  class="bg-[linear-gradient(180deg,hsla(192,100%,86%,1)_0%,hsla(354,100%,85%,1)_100%)] text-black min-h-screen bg-fixed">
+  class="bg-[linear-gradient(180deg,hsla(192,100%,86%,1)_0%,hsla(292,37%,88%,1)_100%)] text-black min-h-screen bg-fixed">
 
   <!-- Skip to content link -->
   <a href="#main-content"
@@ -687,10 +704,10 @@
         </div>
 
         <!-- Right Column: Viewer -->
-        <div class="w-full lg:w-2/3 glass-panel rounded-lg overflow-hidden relative" style="min-height: 500px;">
+        <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 500px;">
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
           <div id="geometryPlaceholder"
-            class="absolute inset-0 flex items-center justify-center pointer-events-none bg-gray-50">
+            class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="flex flex-col items-center justify-center h-full p-8 text-center">
               <div class="text-gray-600 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24"
@@ -1040,7 +1057,7 @@
             </button>
           </div>
         </div>
-        <div id="output" class="glass-panel rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
+        <div id="output" class="glass-plot rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
           role="log" aria-label="Console Output Log"></div>
       </div>
 
@@ -1197,7 +1214,7 @@
           </div>
 
           <!-- Right Column: Interactive Geometry Viewer -->
-          <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative"
+          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative"
             style="min-height: 400px;">
             <!-- Camera Controls -->
             <div id="cameraControls"
@@ -1358,7 +1375,7 @@
 
           <!-- Pressure Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="pressure-plot" class="w-full p-1" style="min-height: 300px;"></div>
 
             <button
@@ -1387,7 +1404,7 @@
 
           <!-- Velocity Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="velocity-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
@@ -1415,7 +1432,7 @@
 
           <!-- Turbulence Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="turbulence-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('turbulence-plot', 'turbulence_data.csv')"
@@ -1443,7 +1460,7 @@
 
           <!-- Residuals Plot -->
           <div
-            class="w-full glass-panel p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
+            class="w-full glass-plot p-2 rounded-xl hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 relative group">
             <div id="residuals-plot" class="w-full p-2" style="min-height: 300px;"></div>
 
             <button onclick="downloadPlotData('residuals-plot', 'residuals_data.csv')"
@@ -1634,7 +1651,7 @@
           </div>
 
           <!-- Right Column: Contour Viewer -->
-          <div class="w-full lg:w-2/3 bg-gray-50 border-2 border-gray-300 rounded-lg overflow-hidden relative"
+          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative"
             style="min-height: 600px;">
             <!-- Camera Controls -->
             <div id="contourCameraControls"
