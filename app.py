@@ -42,7 +42,7 @@ from backend.meshing.runner import MeshingRunner
 # Initialize Flask application
 app = Flask(__name__)
 
-# Security: Limit max upload size to 500MB to prevent DoS
+# Security: Set maximum upload size to 500MB to prevent DoS
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
 # Configure logging
