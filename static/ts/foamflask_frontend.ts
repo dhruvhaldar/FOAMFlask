@@ -1681,7 +1681,10 @@ const updatePlots = async (): Promise<void> => {
 
 // Geometry Functions
 const refreshGeometryList = async (btnElement?: HTMLElement) => {
-  if (!activeCase) return;
+  if (!activeCase) {
+    showNotification("No active case selected to list geometries", "warning", NOTIFY_LONG);
+    return;
+  }
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
@@ -2557,7 +2560,10 @@ const refreshPostList = async (btnElement?: HTMLElement) => {
 };
 
 const refreshPostListVTK = async (btnElement?: HTMLElement) => {
-  if (!activeCase) return;
+  if (!activeCase) {
+    showNotification("No active case selected to list VTK files", "warning", NOTIFY_LONG);
+    return;
+  }
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";

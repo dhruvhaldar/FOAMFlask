@@ -1427,8 +1427,10 @@ const updatePlots = async () => {
 };
 // Geometry Functions
 const refreshGeometryList = async (btnElement) => {
-    if (!activeCase)
+    if (!activeCase) {
+        showNotification("No active case selected to list geometries", "warning", NOTIFY_LONG);
         return;
+    }
     const btn = btnElement;
     let originalText = "";
     if (btn) {
@@ -2216,8 +2218,10 @@ const refreshPostList = async (btnElement) => {
     refreshPostListVTK(btnElement);
 };
 const refreshPostListVTK = async (btnElement) => {
-    if (!activeCase)
+    if (!activeCase) {
+        showNotification("No active case selected to list VTK files", "warning", NOTIFY_LONG);
         return;
+    }
     const btn = btnElement;
     let originalText = "";
     if (btn) {
