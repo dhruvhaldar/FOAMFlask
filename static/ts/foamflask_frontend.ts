@@ -1681,7 +1681,10 @@ const updatePlots = async (): Promise<void> => {
 
 // Geometry Functions
 const refreshGeometryList = async (btnElement?: HTMLElement) => {
-  if (!activeCase) return;
+  if (!activeCase) {
+    showNotification("No active case selected to list geometries", "warning", NOTIFY_LONG);
+    return;
+  }
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
@@ -1746,9 +1749,11 @@ const switchGeometryTab = (tab: "upload" | "resources") => {
 
     uploadBtn?.classList.remove(...inactiveTextClasses);
     uploadBtn?.classList.add(...activeTextClasses);
+    uploadBtn?.setAttribute("aria-selected", "true");
 
     resourceBtn?.classList.remove(...activeTextClasses);
     resourceBtn?.classList.add(...inactiveTextClasses);
+    resourceBtn?.setAttribute("aria-selected", "false");
   } else {
     if (track) track.style.transform = "translateX(-100%)";
     // Move pill to the second position (100% width + gap)
@@ -1756,9 +1761,11 @@ const switchGeometryTab = (tab: "upload" | "resources") => {
 
     resourceBtn?.classList.remove(...inactiveTextClasses);
     resourceBtn?.classList.add(...activeTextClasses);
+    resourceBtn?.setAttribute("aria-selected", "true");
 
     uploadBtn?.classList.remove(...activeTextClasses);
     uploadBtn?.classList.add(...inactiveTextClasses);
+    uploadBtn?.setAttribute("aria-selected", "false");
 
     loadResourceGeometries();
   }
@@ -2553,7 +2560,10 @@ const refreshPostList = async (btnElement?: HTMLElement) => {
 };
 
 const refreshPostListVTK = async (btnElement?: HTMLElement) => {
-  if (!activeCase) return;
+  if (!activeCase) {
+    showNotification("No active case selected to list VTK files", "warning", NOTIFY_LONG);
+    return;
+  }
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
@@ -2939,10 +2949,12 @@ const handleScroll = (): void => {
     // Active Style for Create
     createBtn.classList.remove(...inactiveTextClasses);
     createBtn.classList.add(...activeTextClasses);
+    createBtn.setAttribute("aria-selected", "true");
 
     // Inactive Style for Import
     importBtn.classList.remove(...activeTextClasses);
     importBtn.classList.add(...inactiveTextClasses);
+    importBtn.setAttribute("aria-selected", "false");
   } else {
     track.style.transform = "translateX(-100%)";
     if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
@@ -2950,10 +2962,12 @@ const handleScroll = (): void => {
     // Active Style for Import
     importBtn.classList.remove(...inactiveTextClasses);
     importBtn.classList.add(...activeTextClasses);
+    importBtn.setAttribute("aria-selected", "true");
 
     // Inactive Style for Create
     createBtn.classList.remove(...activeTextClasses);
     createBtn.classList.add(...inactiveTextClasses);
+    createBtn.setAttribute("aria-selected", "false");
   }
 };
 
