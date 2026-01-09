@@ -601,14 +601,31 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
   }
 };
 
+const setMobileMenuState = (isOpen: boolean): void => {
+  const menu = document.getElementById("mobile-menu");
+  const btn = document.getElementById("mobile-menu-btn");
+  const icon = document.getElementById("mobile-menu-icon");
+
+  if (menu) {
+    if (isOpen) {
+      menu.classList.remove("hidden");
+      btn?.setAttribute("aria-expanded", "true");
+      // Switch to X icon
+      icon?.setAttribute("d", "M6 18L18 6M6 6l12 12");
+    } else {
+      menu.classList.add("hidden");
+      btn?.setAttribute("aria-expanded", "false");
+      // Switch to Hamburger icon
+      icon?.setAttribute("d", "M4 6h16M4 12h16M4 18h16");
+    }
+  }
+};
+
 const toggleMobileMenu = () => {
   const menu = document.getElementById("mobile-menu");
   if (menu) {
-    if (menu.classList.contains("hidden")) {
-      menu.classList.remove("hidden");
-    } else {
-      menu.classList.add("hidden");
-    }
+    const isHidden = menu.classList.contains("hidden");
+    setMobileMenuState(isHidden);
   }
 };
 (window as any).toggleMobileMenu = toggleMobileMenu;
@@ -2785,8 +2802,7 @@ const init = () => {
     if (mobileButton) {
       mobileButton.addEventListener('click', () => {
         handler();
-        const menu = document.getElementById("mobile-menu");
-        if (menu) menu.classList.add("hidden");
+        setMobileMenuState(false);
       });
     }
   });
