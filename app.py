@@ -584,6 +584,20 @@ def set_security_headers(response: Response) -> Response:
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
+    # Content Security Policy (CSP)
+    # Allows external CDNs used by the frontend (Tailwind, Plotly, Google Fonts)
+    # 'unsafe-inline' and 'unsafe-eval' are required for Plotly and inline scripts/styles
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.plot.ly; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self'; "
+        "frame-src 'self'"
+    )
+    response.headers["Content-Security-Policy"] = csp_policy
+
     # Set CSRF cookie if not present
     if not request.cookies.get("csrf_token"):
         # Lax allows top-level navigation, Strict is better but might break if linked from elsewhere
