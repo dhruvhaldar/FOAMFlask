@@ -41,6 +41,8 @@ class MeshVisualizer:
         self.plotter: Optional[Plotter] = None
         self.current_mesh_path: Optional[str] = None
         self.current_mesh_mtime: Optional[float] = None
+        # ⚡ Bolt Optimization: Cache decimated meshes to avoid re-computation
+        self._decimated_cache: Dict[int, DataSet] = {}
 
     def __del__(self) -> None:
         """Clean up resources by closing the plotter if it exists."""
@@ -57,6 +59,11 @@ class MeshVisualizer:
         Returns:
             Decimated mesh.
         """
+        # ⚡ Bolt Optimization: Check cache first
+        # Only use cache if the mesh being decimated is the main loaded mesh
+        if mesh is self.mesh and target_faces in self._decimated_cache:
+            return self._decimated_cache[target_faces]
+
         if mesh.n_cells <= target_faces:
             return mesh
 
@@ -77,6 +84,10 @@ class MeshVisualizer:
 
                 logger.info(f"Decimating mesh from {mesh_poly.n_cells} to ~{target_faces} cells (reduction={reduction:.2f})")
                 mesh_poly = mesh_poly.decimate(reduction)
+
+            # ⚡ Bolt Optimization: Store result in cache only if it's the main mesh
+            if mesh is self.mesh:
+                self._decimated_cache[target_faces] = mesh_poly
 
             return mesh_poly
         except Exception as e:
@@ -130,6 +141,8 @@ class MeshVisualizer:
                 self.mesh = pv.read(path_str, progress_bar=False)
                 self.current_mesh_path = path_str
                 self.current_mesh_mtime = mtime
+                # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
+                self._decimated_cache.clear()
                 logger.info(
                     f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
                 )
