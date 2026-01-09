@@ -8,7 +8,10 @@ class TestCaseRootSecurity:
 
     @pytest.fixture
     def client(self):
-        app.config['TESTING'] = True
+        app.config.update({
+            "TESTING": True,
+            "ENABLE_CSRF": False
+        })
         with app.test_client() as client:
             yield client
 

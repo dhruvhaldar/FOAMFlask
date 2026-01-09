@@ -708,7 +708,18 @@ def api_list_cases() -> Response:
          return jsonify({"cases": []})
 
     # List subdirectories that look like cases (or just all dirs)
-    cases = [d.name for d in root.iterdir() if d.is_dir()]
+    # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
+    # This avoids creating Path objects for every entry and can save sys calls on some OSes
+    cases = []
+    try:
+        with os.scandir(str(root)) as entries:
+            for entry in entries:
+                if entry.is_dir():
+                    cases.append(entry.name)
+    except OSError as e:
+        logger.error(f"Error listing cases in {root}: {e}")
+        return jsonify({"cases": []})
+
     return jsonify({"cases": sorted(cases)})
 
 @app.route("/api/case/create", methods=["POST"])
