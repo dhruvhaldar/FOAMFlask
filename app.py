@@ -712,6 +712,7 @@ def api_list_cases() -> Response:
     return jsonify({"cases": sorted(cases)})
 
 @app.route("/api/case/create", methods=["POST"])
+@rate_limit(limit=5, window=60)
 def api_create_case() -> Union[Response, Tuple[Response, int]]:
     """
     Create a new OpenFOAM case with minimal structure.
@@ -752,6 +753,7 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
 # --- Geometry Routes ---
 
 @app.route("/api/geometry/upload", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
     """Upload an STL file to the current case."""
     if "file" not in request.files:
@@ -1573,6 +1575,7 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
 
 
 @app.route("/api/load_mesh", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     """
     Load a mesh file and return mesh information.
