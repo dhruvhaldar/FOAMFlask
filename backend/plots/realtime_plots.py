@@ -87,7 +87,7 @@ class OpenFOAMFieldParser:
         """Get all time directories sorted numerically."""
         path_str = str(self.case_dir)
         try:
-            mtime = self.case_dir.stat().st_mtime
+            mtime = os.stat(path_str).st_mtime
 
             # ⚡ Bolt Optimization: Check cache first
             if path_str in _TIME_DIRS_CACHE:
@@ -142,7 +142,7 @@ class OpenFOAMFieldParser:
                 field_path = field_entry
                 path_str = str(field_path)
                 filename = field_path.name
-                mtime = field_path.stat().st_mtime
+                mtime = os.stat(path_str).st_mtime
 
             # ⚡ Bolt Optimization: Check case-wide filename cache first
             # If we know 'p' is scalar in this case, we don't need to read '0.1/p', '0.2/p'...
@@ -200,7 +200,7 @@ class OpenFOAMFieldParser:
         """
         path_str = str(time_path)
         try:
-            mtime = time_path.stat().st_mtime
+            mtime = os.stat(path_str).st_mtime
 
             # ⚡ Bolt Optimization: Check cache first
             if path_str in _DIR_SCAN_CACHE:
@@ -287,7 +287,7 @@ class OpenFOAMFieldParser:
                 mtime = known_mtime
             elif check_mtime:
                 try:
-                    mtime = field_path.stat().st_mtime
+                    mtime = os.stat(path_str).st_mtime
                 except OSError:
                     # File might not exist
                     return None
@@ -411,7 +411,7 @@ class OpenFOAMFieldParser:
                 mtime = known_mtime
             elif check_mtime:
                 try:
-                    mtime = field_path.stat().st_mtime
+                    mtime = os.stat(path_str).st_mtime
                 except OSError:
                     return 0.0, 0.0, 0.0
             
@@ -774,7 +774,7 @@ class OpenFOAMFieldParser:
         # This saves 1 syscall per poll cycle.
 
         try:
-            stat = log_path.stat()
+            stat = os.stat(path_str)
             mtime = stat.st_mtime
             size = stat.st_size
 
