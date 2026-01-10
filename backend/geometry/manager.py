@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from werkzeug.utils import secure_filename
+from backend.utils import sanitize_error
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -41,7 +42,7 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error uploading Geometry: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": sanitize_error(e)}
 
     @staticmethod
     def list_stls(case_path: Union[str, Path]) -> Dict[str, Union[bool, List[str], str]]:
@@ -83,7 +84,7 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error listing STLs: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": sanitize_error(e)}
 
     @staticmethod
     def delete_stl(case_path: Union[str, Path], filename: str) -> Dict[str, Union[bool, str]]:
@@ -110,4 +111,4 @@ class GeometryManager:
 
         except Exception as e:
             logger.error(f"Error deleting STL: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": sanitize_error(e)}
