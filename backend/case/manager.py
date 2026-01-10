@@ -2,6 +2,7 @@ import os
 import logging
 from pathlib import Path
 from typing import Dict, Optional, Union
+from backend.utils import sanitize_error
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -49,7 +50,7 @@ class CaseManager:
 
         except Exception as e:
             logger.error(f"Error creating case structure: {e}")
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": sanitize_error(e)}
 
     @staticmethod
     def _create_default_control_dict(filepath: Path) -> None:

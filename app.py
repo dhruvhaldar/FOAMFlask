@@ -38,6 +38,7 @@ from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
 from backend.geometry.visualizer import GeometryVisualizer
 from backend.meshing.runner import MeshingRunner
+from backend.utils import sanitize_error
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -134,30 +135,6 @@ def rate_limit(limit: int = 5, window: int = 60):
             return f(*args, **kwargs)
         return wrapped
     return decorator
-
-
-def sanitize_error(e: Exception) -> str:
-    """
-    Sanitize exception messages to prevent information leakage.
-    Returns a generic message for unexpected errors, or the specific message
-    for safe errors (like ValueError from validation).
-    """
-    # Safe validation errors that we want to show to the user
-    if isinstance(e, (ValueError, TypeError)):
-        return str(e)
-
-    # Docker errors might be safe if they are connection errors, but API errors can leak paths.
-    # We'll trust DockerException messages for now as they are often needed for debugging config.
-    if isinstance(e, DockerException):
-        return str(e)
-
-    # Check for OSError/IOError which might contain paths (e.g. PermissionError, FileNotFoundError)
-    if isinstance(e, OSError):
-        # We mask the specific path information
-        return "An I/O error occurred. Please check the logs."
-
-    # Generic fallback for other exceptions
-    return "An internal server error occurred."
 
 
 # Security validation functions
@@ -718,7 +695,7 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         )
     except Exception as e:
         logger.error("Error setting case directory: %s", str(e))
-        return jsonify({"output": f"[FOAMFlask] [Error] {str(e)}"}), 400
+        return jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 400
 
 
 @app.route("/api/cases/list", methods=["GET"])
@@ -1191,7 +1168,7 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
 
     except Exception as e:
         logger.error(f"Error loading tutorial: {e}", exc_info=True)
-        return jsonify({"output": f"[FOAMFlask] [Error] {str(e)}"}), 500
+        return jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 500
 
     finally:
         if container:
@@ -1529,7 +1506,7 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
         return jsonify(data if data else {})
     except Exception as e:
         logger.error(f"Error getting latest data: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/residuals", methods=["GET"])
@@ -1606,7 +1583,7 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Error getting available meshes: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/load_mesh", methods=["POST"])
@@ -1772,6 +1749,7 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
             )
     except Exception as e:
         logger.error(f"Error generating interactive viewer: {e}", exc_info=True)
+        return jsonify({"success": False, "error": sanitize_error(e)}), 500
 
 
 @app.route("/run_foamtovtk", methods=["POST"])
@@ -1875,7 +1853,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
 
         except Exception as e:
             logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] {escape(str(e))}<br>"
+            yield f"[FOAMFlask] [Error] {escape(sanitize_error(e))}<br>"
 
         finally:
             if 'container' in locals():
@@ -1904,7 +1882,7 @@ def post_process() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"status": "success", "message": "Post processing endpoint"})
     except Exception as e:
         logger.error(f"Error during post-processing: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/contours/create", methods=["POST", "OPTIONS"])
@@ -2094,7 +2072,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             f"[FOAMFlask] [create_contour] Traceback:\n{traceback.format_exc()}"
         )
 
-        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+        return jsonify({"success": False, "error": f"Server error: {sanitize_error(e)}"}), 500
 
 
 @app.route("/api/upload_vtk", methods=["POST"])
@@ -2218,7 +2196,7 @@ def api_list_resource_geometry() -> Union[Response, Tuple[Response, int]]:
 
     except Exception as e:
         logger.error(f"Error listing resource geometry: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/resources/geometry/fetch", methods=["POST"])
