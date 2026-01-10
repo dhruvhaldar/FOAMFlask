@@ -136,6 +136,30 @@ def rate_limit(limit: int = 5, window: int = 60):
     return decorator
 
 
+def sanitize_error(e: Exception) -> str:
+    """
+    Sanitize exception messages to prevent information leakage.
+    Returns a generic message for unexpected errors, or the specific message
+    for safe errors (like ValueError from validation).
+    """
+    # Safe validation errors that we want to show to the user
+    if isinstance(e, (ValueError, TypeError)):
+        return str(e)
+
+    # Docker errors might be safe if they are connection errors, but API errors can leak paths.
+    # We'll trust DockerException messages for now as they are often needed for debugging config.
+    if isinstance(e, DockerException):
+        return str(e)
+
+    # Check for OSError/IOError which might contain paths (e.g. PermissionError, FileNotFoundError)
+    if isinstance(e, OSError):
+        # We mask the specific path information
+        return "An I/O error occurred. Please check the logs."
+
+    # Generic fallback for other exceptions
+    return "An internal server error occurred."
+
+
 # Security validation functions
 def is_safe_command(command: str) -> bool:
     """
@@ -758,7 +782,7 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
 
     except Exception as e:
         logger.error(f"Error in api_create_case: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": sanitize_error(e)}), 500
 
 
 # --- Geometry Routes ---
@@ -1346,7 +1370,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] Failed to start container: {e}<br>"
+            yield f"[FOAMFlask] [Error] Failed to start container: {sanitize_error(e)}<br>"
             return
 
         finally:
@@ -1394,7 +1418,7 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"fields": fields})
     except Exception as e:
         logger.error(f"Error in available_fields: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str]]:
@@ -1471,7 +1495,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         return response
     except Exception as e:
         logger.error(f"Error getting plot data: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/latest_data", methods=["GET"])
@@ -1551,7 +1575,7 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         return response
     except Exception as e:
         logger.error(f"Error getting residuals: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 # --- PyVista Mesh Visualization Endpoints ---
@@ -1632,7 +1656,7 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
         return jsonify(mesh_info)
     except Exception as e:
         logger.error(f"Error loading mesh: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/mesh_screenshot", methods=["POST"])
@@ -1699,7 +1723,7 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
             )
     except Exception as e:
         logger.error(f"Error generating mesh screenshot: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/mesh_interactive", methods=["POST"])
@@ -2132,7 +2156,7 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
     except Exception as e:
         logger.error(f"Error in upload_vtk: {str(e)}", exc_info=True)
         return (
-            jsonify({"success": False, "error": f"Error processing file: {str(e)}"}),
+            jsonify({"success": False, "error": f"Error processing file: {sanitize_error(e)}"}),
             500,
         )
     finally:
@@ -2260,7 +2284,7 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
 
     except Exception as e:
         logger.error(f"Error fetching resource geometry: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": sanitize_error(e)}), 500
 
 
 def main() -> None:

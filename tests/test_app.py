@@ -519,7 +519,8 @@ def test_api_residuals(client, tmp_path):
             assert response.status_code == 500
             data = response.get_json()
             assert 'error' in data
-            assert data['error'] == "Test error"
+            # Updated to expect sanitized error message
+            assert data['error'] == "An internal server error occurred."
 
 def test_api_latest_data(client, tmp_path):
     """Test the api_latest_data endpoint with various scenarios."""
@@ -584,7 +585,8 @@ def test_api_latest_data(client, tmp_path):
         assert response.status_code == 500
         data = response.get_json()
         assert 'error' in data
-        assert data['error'] == "Test error"
+        # Updated to expect sanitized error message
+        assert data['error'] == "An internal server error occurred."
 
     # Test 5: Empty data returned from parser
     with patch('app.CASE_ROOT', str(tmp_path)), \
