@@ -2997,6 +2997,10 @@ const handleScroll = (): void => {
     importBtn.classList.remove(...activeTextClasses);
     importBtn.classList.add(...inactiveTextClasses);
     importBtn.setAttribute("aria-selected", "false");
+
+    // Focus Input (UX Improvement)
+    const input = document.getElementById("newCaseName") as HTMLInputElement;
+    if (input && tab === "create") setTimeout(() => input.focus(), 300); // Wait for transition
   } else {
     track.style.transform = "translateX(-100%)";
     if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
@@ -3010,6 +3014,11 @@ const handleScroll = (): void => {
     createBtn.classList.remove(...activeTextClasses);
     createBtn.classList.add(...inactiveTextClasses);
     createBtn.setAttribute("aria-selected", "false");
+
+    // Focus Input (UX Improvement)
+    const select = document.getElementById("tutorialSelect") as HTMLSelectElement;
+    // Ensure we only focus if the tab is visible and it's the right element
+    if (select && tab === "import") setTimeout(() => select.focus(), 300); // Wait for transition
   }
 };
 
