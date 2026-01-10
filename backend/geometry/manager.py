@@ -62,10 +62,23 @@ class GeometryManager:
                 return {"success": True, "files": []}
 
             # List .stl, .obj, and .gz files
-            files = [
-                f.name for f in tri_surface_dir.iterdir() 
-                if f.is_file() and f.suffix.lower() in [".stl", ".obj", ".gz"]
-            ]
+            # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
+            # Significantly faster for directories with many files
+            files = []
+            allowed_extensions = {".stl", ".obj", ".gz"}
+
+            try:
+                with os.scandir(str(tri_surface_dir)) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            # Check extension efficiently
+                            name = entry.name
+                            ext = os.path.splitext(name)[1].lower()
+                            if ext in allowed_extensions:
+                                files.append(name)
+            except OSError:
+                pass # Directory might have been deleted concurrently
+
             return {"success": True, "files": sorted(files)}
 
         except Exception as e:
