@@ -60,7 +60,7 @@ const clearLog = () => {
     }
 };
 // Generic Copy to Clipboard Helper
-const copyTextFromElement = (elementId, successMessage) => {
+const copyTextFromElement = (elementId, successMessage, btnElement) => {
     const el = document.getElementById(elementId);
     if (!el)
         return;
@@ -70,16 +70,37 @@ const copyTextFromElement = (elementId, successMessage) => {
         showNotification("Content is empty", "info", NOTIFY_MEDIUM);
         return;
     }
+    const onSuccess = () => {
+        showNotification(successMessage, "success", NOTIFY_MEDIUM);
+        if (btnElement) {
+            const originalHTML = btnElement.innerHTML;
+            const originalTitle = btnElement.getAttribute('title');
+            // Visual feedback on the button
+            btnElement.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-green-600 font-medium">Copied!</span>
+      `;
+            btnElement.setAttribute('title', 'Copied to clipboard');
+            // Revert after 2 seconds
+            setTimeout(() => {
+                btnElement.innerHTML = originalHTML;
+                if (originalTitle)
+                    btnElement.setAttribute('title', originalTitle);
+                else
+                    btnElement.removeAttribute('title');
+            }, 2000);
+        }
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showNotification(successMessage, "success", NOTIFY_MEDIUM);
-        }).catch(() => fallbackCopyText(text, successMessage));
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyText(text, successMessage, onSuccess));
     }
     else {
-        fallbackCopyText(text, successMessage);
+        fallbackCopyText(text, successMessage, onSuccess);
     }
 };
-const fallbackCopyText = (text, successMessage) => {
+const fallbackCopyText = (text, successMessage, onSuccess) => {
     try {
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -91,22 +112,27 @@ const fallbackCopyText = (text, successMessage) => {
         textArea.select();
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        if (successful)
-            showNotification(successMessage, "success", NOTIFY_MEDIUM);
-        else
+        if (successful) {
+            if (onSuccess)
+                onSuccess();
+            else
+                showNotification(successMessage, "success", NOTIFY_MEDIUM);
+        }
+        else {
             showNotification("Failed to copy", "error");
+        }
     }
     catch (err) {
         showNotification("Failed to copy", "error");
     }
 };
 // Copy Console Log
-const copyLogToClipboard = () => {
-    copyTextFromElement("output", "Log copied to clipboard");
+const copyLogToClipboard = (btnElement) => {
+    copyTextFromElement("output", "Log copied to clipboard", btnElement);
 };
 // Copy Meshing Output
-const copyMeshingOutput = () => {
-    copyTextFromElement("meshingOutput", "Meshing output copied");
+const copyMeshingOutput = (btnElement) => {
+    copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
 };
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
