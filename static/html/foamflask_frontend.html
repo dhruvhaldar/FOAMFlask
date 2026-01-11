@@ -432,13 +432,19 @@
                   </div>
 
                   <form class="flex flex-col gap-1 w-full" onsubmit="event.preventDefault(); createNewCase()">
-                    <label for="newCaseName" class="text-sm font-medium text-gray-900">
-                      Case Name <span class="text-red-500" title="Required">*</span>
-                    </label>
+                    <div class="mb-1">
+                      <label for="newCaseName" class="text-sm font-medium text-gray-900">
+                        Case Name <span class="text-red-500" title="Required">*</span>
+                      </label>
+                      <p id="caseNameHelp" class="text-xs text-gray-500 mt-1">
+                        Alphanumeric characters, underscores, and dashes only.
+                      </p>
+                    </div>
                     <div class="flex flex-col sm:flex-row gap-2">
                       <input type="text" id="newCaseName" placeholder="e.g. my_case" required
                         pattern="^[a-zA-Z0-9_-]+$"
                         title="Alphanumeric characters, underscores, and dashes only (no spaces)"
+                        aria-describedby="caseNameHelp"
                         class="border border-gray-300 rounded-lg px-4 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:valid:ring-green-500 focus:valid:border-green-500 focus:invalid:ring-red-500 focus:invalid:border-red-500 invalid:border-red-500 invalid:text-red-600 transition-all">
                       <button type="submit" id="createCaseBtn"
                         class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-500/30 text-white px-6 py-2 rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap">
@@ -1318,7 +1324,8 @@
 
               <div class="flex justify-between items-center pb-2">
                 <h3 class="font-semibold text-black">Plot Appearance</h3>
-                <button onclick="toggleFontSettings()" class="text-gray-900 hover:text-gray-900">
+                <button onclick="toggleFontSettings()" class="text-gray-900 hover:text-gray-900"
+                  aria-label="Close font settings">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
                       d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
