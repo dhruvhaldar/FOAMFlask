@@ -1400,7 +1400,7 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"error": sanitize_error(e)}), 500
 
 
-def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str]]:
+def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str], Optional[os.stat_result]]:
     """
     Check if the resource at path_to_check has been modified since the
     time specified in the If-Modified-Since header.
@@ -1409,9 +1409,10 @@ def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str]]:
         path_to_check: Path to the file or directory to check.
 
     Returns:
-        Tuple[bool, str]: (is_not_modified, last_modified_http_date)
+        Tuple[bool, str, os.stat_result]: (is_not_modified, last_modified_http_date, stat_result)
         is_not_modified: True if client cache is valid (return 304), False otherwise.
         last_modified_http_date: The HTTP-formatted Last-Modified date string.
+        stat_result: The os.stat result object (or None if error), allowing callers to reuse it.
     """
     try:
         # ⚡ Bolt Optimization: Use os.stat() to reduce system calls (exists+is_file+stat -> single stat)
@@ -1423,12 +1424,12 @@ def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str]]:
         if_modified_since = request.headers.get("If-Modified-Since")
 
         if if_modified_since and if_modified_since == last_modified_str:
-            return True, last_modified_str
+            return True, last_modified_str, st
 
-        return False, last_modified_str
+        return False, last_modified_str, st
     except OSError:
         # File not found or permission error
-        return False, None
+        return False, None, None
 
 
 @app.route("/api/plot_data", methods=["GET"])
@@ -1462,7 +1463,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         # Checking 'log.foamRun' is a good proxy because the solver writes to it step-by-step.
         # If log hasn't changed, plots likely haven't either.
         log_file = case_dir / "log.foamRun"
-        is_not_modified, last_modified = check_cache(log_file)
+        is_not_modified, last_modified, _ = check_cache(log_file)
         if is_not_modified:
              return Response(status=304)
 
@@ -1542,12 +1543,13 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         # OpenFOAMFieldParser.get_residuals_from_log searches for 'log.foamRun' or 'log.*'.
         # We'll explicitly check 'log.foamRun' here as the primary target.
         log_file = case_dir / "log.foamRun"
-        is_not_modified, last_modified = check_cache(log_file)
+        is_not_modified, last_modified, stat_result = check_cache(log_file)
         if is_not_modified:
              return Response(status=304)
 
         parser = OpenFOAMFieldParser(str(case_dir))
-        residuals = parser.get_residuals_from_log()
+        # ⚡ Bolt Optimization: Pass the stat result from check_cache to avoid re-stat call
+        residuals = parser.get_residuals_from_log(known_stat=stat_result)
         response = jsonify(residuals)
         if last_modified:
              response.headers["Last-Modified"] = last_modified

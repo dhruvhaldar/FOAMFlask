@@ -764,8 +764,14 @@ class OpenFOAMFieldParser:
         q_inf = 0.5 * rho * u_inf**2
         return (p_field - p_inf) / q_inf if q_inf != 0 else 0.0
 
-    def get_residuals_from_log(self, log_file: str = "log.foamRun") -> Dict[str, List[float]]:
-        """Parse residuals from OpenFOAM log file incrementally."""
+    def get_residuals_from_log(self, log_file: str = "log.foamRun", known_stat: Optional[os.stat_result] = None) -> Dict[str, List[float]]:
+        """
+        Parse residuals from OpenFOAM log file incrementally.
+
+        Args:
+            log_file: Name of the log file.
+            known_stat: Optional os.stat_result if already available (avoids redundant syscall).
+        """
         log_path = self.case_dir / log_file
         path_str = str(log_path)
 
@@ -774,7 +780,12 @@ class OpenFOAMFieldParser:
         # This saves 1 syscall per poll cycle.
 
         try:
-            stat = os.stat(path_str)
+            # ⚡ Bolt Optimization: Use provided stat result if available to save a syscall
+            if known_stat:
+                stat = known_stat
+            else:
+                stat = os.stat(path_str)
+
             mtime = stat.st_mtime
             size = stat.st_size
 
