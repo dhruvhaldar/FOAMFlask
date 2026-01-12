@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from typing import Dict, Any, Tuple, List, Union
+from werkzeug.utils import secure_filename
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -36,7 +37,17 @@ class SnappyHexMeshGenerator:
 
             global_settings = config.get("global_settings", {})
             objects = config.get("objects", [])
-            location_in_mesh = config.get("location_in_mesh", [0, 0, 0])
+
+            # Security: Validate location_in_mesh
+            raw_location = config.get("location_in_mesh", [0, 0, 0])
+            if not isinstance(raw_location, (list, tuple)) or len(raw_location) != 3:
+                location_in_mesh = [0, 0, 0]
+            else:
+                try:
+                    # Force conversion to float to prevent injection
+                    location_in_mesh = [float(x) for x in raw_location]
+                except (ValueError, TypeError):
+                    location_in_mesh = [0, 0, 0]
 
             # If objects is empty but 'stl_filename' exists (legacy), construct objects
             if not objects and "stl_filename" in config:
@@ -53,37 +64,67 @@ class SnappyHexMeshGenerator:
                     "add_layers": False
                 }
 
+            # Security: Sanitize objects list
+            safe_objects = []
+            for obj in objects:
+                safe_obj = obj.copy()
+                raw_name = obj.get("name", "")
+                if not raw_name: continue
+
+                safe_name = secure_filename(str(raw_name))
+                if not safe_name: continue
+                safe_obj["name"] = safe_name
+
+                # Validate numeric fields
+                try:
+                    safe_obj["refinement_level_min"] = int(obj.get("refinement_level_min", 2))
+                    safe_obj["refinement_level_max"] = int(obj.get("refinement_level_max", 2))
+                    safe_obj["layers"] = int(obj.get("layers", 0))
+                except (ValueError, TypeError):
+                    safe_obj["refinement_level_min"] = 2
+                    safe_obj["refinement_level_max"] = 2
+                    safe_obj["layers"] = 0
+
+                safe_objects.append(safe_obj)
+            objects = safe_objects
+
+            def get_safe(settings, key, type_func, default):
+                try:
+                    return type_func(settings.get(key, default))
+                except (ValueError, TypeError):
+                    return default
+
             # Extract Global Settings with Defaults
             castellated = "true" if global_settings.get("castellated_mesh", True) else "false"
             snap = "true" if global_settings.get("snap", True) else "false"
             add_layers = "true" if global_settings.get("add_layers", False) else "false"
 
             # Castellated Controls
-            max_global_cells = global_settings.get("max_global_cells", 2000000)
-            resolve_feature_angle = global_settings.get("resolve_feature_angle", 30)
+            max_global_cells = get_safe(global_settings, "max_global_cells", int, 2000000)
+            resolve_feature_angle = get_safe(global_settings, "resolve_feature_angle", int, 30)
 
             # Snap Controls
-            n_smooth_patch = global_settings.get("n_smooth_patch", 3)
-            snap_tolerance = global_settings.get("tolerance", 2.0)
-            n_solve_iter = global_settings.get("n_solve_iter", 30)
-            n_relax_iter = global_settings.get("n_relax_iter", 5)
+            n_smooth_patch = get_safe(global_settings, "n_smooth_patch", int, 3)
+            snap_tolerance = get_safe(global_settings, "tolerance", float, 2.0)
+            n_solve_iter = get_safe(global_settings, "n_solve_iter", int, 30)
+            n_relax_iter = get_safe(global_settings, "n_relax_iter", int, 5)
             # Default to implicit feature snap
             implicit_feature_snap = "true"
             explicit_feature_snap = "false"
             multi_region_feature_snap = "false"
 
             # Add Layers Controls
-            expansion_ratio = global_settings.get("expansion_ratio", 1.0)
-            final_layer_thickness = global_settings.get("final_thickness", 0.3)
-            min_thickness = global_settings.get("min_thickness", 0.1)
-            layer_feature_angle = global_settings.get("feature_angle", 60)
+            expansion_ratio = get_safe(global_settings, "expansion_ratio", float, 1.0)
+            final_layer_thickness = get_safe(global_settings, "final_thickness", float, 0.3)
+            min_thickness = get_safe(global_settings, "min_thickness", float, 0.1)
+            layer_feature_angle = get_safe(global_settings, "feature_angle", int, 60)
 
             # Mesh Quality Controls
-            max_non_ortho = global_settings.get("max_non_ortho", 65)
-            max_boundary_skewness = global_settings.get("max_boundary_skewness", 20)
-            max_internal_skewness = global_settings.get("max_internal_skewness", 4)
-            min_triangle_twist = global_settings.get("min_triangle_twist", -1)
-            relaxed_max_non_ortho = global_settings.get("relaxed_max_non_ortho", 75)
+            max_non_ortho = get_safe(global_settings, "max_non_ortho", int, 65)
+            max_boundary_skewness = get_safe(global_settings, "max_boundary_skewness", int, 20)
+            max_internal_skewness = get_safe(global_settings, "max_internal_skewness", int, 4)
+            min_triangle_twist = get_safe(global_settings, "min_triangle_twist", float, -1)
+            relaxed_max_non_ortho = get_safe(global_settings, "relaxed_max_non_ortho", int, 75)
 
             # Construct Geometry Section
             geometry_str = ""
