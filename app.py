@@ -700,6 +700,34 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         return jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 400
 
 
+@app.route("/open_case_root", methods=["POST"])
+def open_case_root() -> Response:
+    """Open the current case root in the system file explorer."""
+    if not CASE_ROOT:
+        return jsonify({"output": "Case root is not set"}), 400
+
+    try:
+        path = os.path.abspath(CASE_ROOT)
+        if not os.path.exists(path):
+            return jsonify({"output": f"Directory not found: {path}"}), 404
+
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(path)
+        elif system == "Darwin":  # macOS
+            import subprocess
+            subprocess.run(["open", path], check=True)
+        else:  # Linux and others
+            import subprocess
+            subprocess.run(["xdg-open", path], check=True)
+            
+        return jsonify({"output": f"Opened {path} in file explorer"})
+        
+    except Exception as e:
+        logger.error(f"Failed to open file explorer: {e}")
+        return jsonify({"output": f"Error opening file explorer: {str(e)}"}), 500
+
+
 @app.route("/api/cases/list", methods=["GET"])
 def api_list_cases() -> Response:
     """List available cases in the CASE_ROOT."""

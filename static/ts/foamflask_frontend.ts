@@ -874,48 +874,7 @@ const flushOutputBuffer = (): void => {
 };
 
 // Setup Functions
-const setCase = async (btnElement?: HTMLElement): Promise<void> => {
-  const btn = btnElement as HTMLButtonElement | undefined;
-  let originalText = "";
 
-  if (btn) {
-    originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Setting Root...`;
-  }
-
-  try {
-    caseDir = (document.getElementById("caseDir") as HTMLInputElement).value;
-    const response = await fetch("/set_case", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir }) });
-    if (!response.ok) throw new Error();
-    const data = await response.json() as CaseRootResponse;
-    caseDir = data.caseDir;
-    (document.getElementById("caseDir") as HTMLInputElement).value = caseDir;
-
-    if (data.output) {
-      data.output.split("\n").forEach((line: string) => {
-        line = line.trim();
-        if (line.startsWith("INFO"))
-          appendOutput(line.replace("INFO", ""), "info");
-        else if (line.startsWith("Error")) appendOutput(line, "stderr");
-        else appendOutput(line, "stdout");
-      });
-    }
-
-    showNotification("Case directory set", "info");
-    refreshCaseList();
-  } catch (e) {
-    console.error(e);
-    showNotification("Failed to set case directory", "error");
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
-    }
-  }
-};
 
 const setDockerConfig = async (image: string, version: string, btnElement?: HTMLElement): Promise<void> => {
   const btn = btnElement as HTMLButtonElement | undefined;
@@ -1904,9 +1863,63 @@ const fetchResourceGeometry = async (btnElement?: HTMLElement) => {
     }
   }
 };
+(window as any).fetchResourceGeometry = fetchResourceGeometry;
 
+const setCase = (btn?: HTMLElement) => {
+  const caseDirInput = document.getElementById("caseDir") as HTMLInputElement;
+  const caseDir = caseDirInput.value.trim();
+
+  if (!caseDir) {
+    showNotification("Please enter a case directory path", "warning");
+    return;
+  }
+
+  const originalText = btn ? btn.innerText : "";
+  if (btn) btn.innerText = "Setting...";
+
+  fetchWithCache("/set_case", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ caseDir }),
+  })
+    .then((data) => {
+      if (data.caseDir) {
+        showNotification(`Case root set to: ${data.caseDir}`, "success");
+        refreshCaseList(); // Refresh the list of cases
+      } else if (data.output) {
+         showNotification(data.output, "info"); // Likely an error message from backend
+      }
+    })
+    .catch((err) => {
+      showNotification(`Error setting case root: ${getErrorMessage(err)}`, "error");
+    })
+    .finally(() => {
+      if (btn) btn.innerText = originalText;
+    });
+};
+(window as any).setCase = setCase;
+
+const openCaseRoot = (btn?: HTMLElement) => {
+  fetchWithCache("/open_case_root", {
+      method: "POST",
+  })
+  .then((data) => {
+      if (data.output) {
+          if (data.output.toLowerCase().includes("error") || data.output.toLowerCase().includes("failed")) {
+               showNotification(data.output, "error");
+          } else {
+               showNotification(data.output, "success");
+          }
+      }
+  })
+  .catch((err) => {
+      showNotification(`Failed to open case root: ${getErrorMessage(err)}`, "error");
+  });
+};
+(window as any).openCaseRoot = openCaseRoot;
 window.switchGeometryTab = switchGeometryTab;
-window.fetchResourceGeometry = fetchResourceGeometry;
 
 const uploadGeometry = async (btnElement?: HTMLElement) => {
   const input = document.getElementById("geometryUpload") as HTMLInputElement;
