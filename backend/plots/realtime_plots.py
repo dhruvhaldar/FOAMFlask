@@ -234,14 +234,15 @@ class OpenFOAMFieldParser:
             logger.error(f"Error scanning time directory {time_path}: {e}")
             return [], False, []
 
-    def _resolve_variable(self, content: Union[str, bytes], var_name: Union[str, bytes]) -> Optional[str]:
+    def _resolve_variable(self, content: Union[str, bytes, mmap.mmap], var_name: Union[str, bytes]) -> Optional[str]:
         """
         Attempt to resolve a variable definition within the file content.
         Looks for patterns like 'varName value;'
         """
-        is_bytes = isinstance(content, bytes)
+        # ⚡ Bolt Optimization: Handle mmap as binary
+        is_binary = not isinstance(content, str)
         
-        if is_bytes:
+        if is_binary:
             if isinstance(var_name, str):
                 var_name = var_name.encode('utf-8')
             clean_var = var_name.lstrip(b'$')
@@ -257,7 +258,7 @@ class OpenFOAMFieldParser:
         if match:
             value = match.group(1).strip()
             
-            if is_bytes:
+            if is_binary:
                 if value.startswith(b'$'):
                     return self._resolve_variable(content, value)
                 if b"#calc" in value:
@@ -357,9 +358,9 @@ class OpenFOAMFieldParser:
                                     var_match = _RE_SCALAR_UNIFORM_VAR.search(mm, idx, idx + 200)
                                     if var_match:
                                         var_name = var_match.group(1) # bytes
-                                        # We need full content for variable resolution, which is rare.
-                                        content = field_path.read_bytes() # Read as bytes
-                                        resolved_value = self._resolve_variable(content, var_name)
+                                        # ⚡ Bolt Optimization: Use mmap buffer directly for variable resolution
+                                        # Avoids reading entire file into memory with read_bytes()
+                                        resolved_value = self._resolve_variable(mm, var_name)
                                         if resolved_value:
                                             val = float(resolved_value)
 
