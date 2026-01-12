@@ -1,15 +1,8 @@
-"""
-FOAMFlask - A web interface for OpenFOAM simulations.
-
-This module provides a Flask-based web interface for interacting with
-OpenFOAM simulations, including running cases, visualizing results,
-and managing Docker containers.
-"""
-
 # Standard library imports
 import json
 import logging
 import os
+import shutil
 import threading
 import time
 import platform
@@ -57,7 +50,7 @@ CASE_ROOT: Optional[str] = None
 DOCKER_IMAGE: Optional[str] = None
 OPENFOAM_VERSION: Optional[str] = None
 docker_client: Optional[DockerClient] = None
-foamrun_logs: Dict[str, str] = {}  # Maps tutorial names to their log content
+# foamrun_logs global removed to prevent memory leaks
 STARTUP_STATUS = {"status": "starting", "message": "Initializing..."}
 
 # --- Rate Limiting Logic ---
@@ -523,12 +516,13 @@ def get_tutorials() -> List[str]:
     return []
 
 
-# --- Global storage for FoamRun logs ---
-foamrun_logs = {}  # { "<tutorial_name>": "<log content>" }
-
-
 def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
-    """Watch for log.foamRun, capture it in foamrun_logs and write to a file.
+    """Watch for log.foamRun and write to a file safely.
+
+    SECURITY FIX: This function previously read the entire file into memory and
+    stored it in a global dictionary, causing a memory leak and potential DoS
+    on large files. It has been refactored to copy the file efficiently
+    without memory unbounded growth.
 
     Args:
         tutorial: The name of the tutorial.
@@ -545,9 +539,10 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
     while elapsed < timeout:
         if host_log_path.exists():
             try:
-                log_content = host_log_path.read_text(encoding="utf-8")
-                foamrun_logs[tutorial] = log_content
-                output_file.write_text(log_content, encoding="utf-8")
+                # Use shutil.copyfile for efficient, streamed copying
+                # This avoids reading the whole file into memory
+                shutil.copyfile(host_log_path, output_file)
+
                 logger.info(
                     "[FOAMFlask] Captured log.foamRun for tutorial '%s' "
                     "and wrote to %s",
@@ -2320,4 +2315,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
