@@ -1,0 +1,101 @@
+Write-Host "=== FOAMFlask Installer ===" -ForegroundColor Cyan
+
+# Check for Winget
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "Error: 'winget' not found. Please ensure App Installer is installed from the Microsoft Store." -ForegroundColor Red
+    exit 1
+}
+
+# 1. Check & Install System Tools
+
+# --- Python ---
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    Write-Host "✓ Python found" -ForegroundColor Green
+} else {
+    Write-Host "Python not found. Installing..." -ForegroundColor Yellow
+    winget install Python.Python.3.12 -e --source winget
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to install Python. Please install manually." -ForegroundColor Red
+        exit 1
+    }
+    # Refresh env vars for current session
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+# --- Node.js ---
+if (Get-Command node -ErrorAction SilentlyContinue) {
+    Write-Host "✓ Node.js found" -ForegroundColor Green
+} else {
+    Write-Host "Node.js not found. Installing..." -ForegroundColor Yellow
+    winget install OpenJS.NodeJS.LTS -e --source winget
+    if ($LASTEXITCODE -ne 0) {
+         Write-Host "Failed to install Node.js. Please install manually." -ForegroundColor Red
+         exit 1
+    }
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+# --- Docker ---
+if (Get-Command docker -ErrorAction SilentlyContinue) {
+    Write-Host "✓ Docker found" -ForegroundColor Green
+} else {
+    Write-Host "Docker not found. Installing Docker Desktop..." -ForegroundColor Yellow
+    winget install Docker.DockerDesktop -e --source winget
+    if ($LASTEXITCODE -ne 0) {
+         Write-Host "Failed to install Docker Desktop. Please install manually." -ForegroundColor Red
+         Write-Host "Visit: https://www.docker.com/products/docker-desktop/"
+         exit 1
+    }
+    Write-Host "Docker installed. You may need to restart your computer and start Docker Desktop." -ForegroundColor Yellow
+}
+
+# 2. Check & Install pnpm
+if (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    Write-Host "✓ pnpm found" -ForegroundColor Green
+} else {
+    Write-Host "pnpm not found. Installing..." -ForegroundColor Yellow
+    # Try enabling corepack first
+    try {
+        corepack enable
+        Write-Host "Enabled pnpm via corepack" -ForegroundColor Green
+    } catch {
+        # Fallback to npm install
+        npm install -g pnpm
+    }
+}
+
+# 3. Setup Python Environment
+Write-Host "Setting up Python environment..." -ForegroundColor Cyan
+$VenvDir = "venv"
+if (-not (Test-Path $VenvDir)) {
+    python -m venv $VenvDir
+    Write-Host "Created virtual environment in $VenvDir" -ForegroundColor Green
+}
+
+# Activate venv
+# PowerShell activation script path
+$ActivateScript = "$VenvDir\Scripts\Activate.ps1"
+if (Test-Path $ActivateScript) {
+    # We invoke the rest of the commands inside a block that uses the venv python
+    # Because 'calling' the activate script in a script doesn't always persist to the parent scope easily
+    # A robust way is to use the venv python executable directly
+}
+
+$VenvPython = "$VenvDir\Scripts\python.exe"
+$VenvPip = "$VenvDir\Scripts\pip.exe"
+
+Write-Host "Installing Python dependencies..."
+& $VenvPip install --upgrade pip
+& $VenvPip install -r requirements.txt
+
+# 4. Build Frontend
+Write-Host "Building Frontend..." -ForegroundColor Cyan
+pnpm install
+pnpm run build
+
+# 5. Launch Application
+Write-Host "=== Installation Complete! ===" -ForegroundColor Cyan
+Write-Host "Starting FOAMFlask..." -ForegroundColor Green
+Write-Host "Access the app at: http://localhost:5000"
+
+& $VenvPython app.py

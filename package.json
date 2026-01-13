@@ -1,6 +1,9 @@
 {
   "name": "foamflask-frontend",
   "version": "1.0.0",
+  "engines": {
+    "pnpm": ">=8"
+  },
   "scripts": {
     "build": "tsc",
     "postbuild": "node copy-built-js.mjs",
