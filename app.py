@@ -11,7 +11,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator
-from functools import wraps
+from functools import wraps, lru_cache
 import email.utils
 import secrets
 
@@ -248,6 +248,15 @@ def is_safe_script_name(script_name: str) -> bool:
     return True
 
 
+@lru_cache(maxsize=32)
+def _resolve_path_cached(path_str: str) -> Path:
+    """
+    Cache the resolution of base directories to reduce syscalls.
+    Only used for the base directory which changes infrequently.
+    """
+    return Path(path_str).resolve()
+
+
 def validate_safe_path(base_dir: str, relative_path: str) -> Path:
     """
     Validate and resolve a path to ensure it remains within the base directory.
@@ -265,8 +274,12 @@ def validate_safe_path(base_dir: str, relative_path: str) -> Path:
     if not relative_path:
         raise ValueError("No path specified")
 
-    base = Path(base_dir).resolve()
+    # ⚡ Bolt Optimization: Use cached resolution for base_dir
+    # resolving the base path every time adds significant overhead (syscalls)
+    base = _resolve_path_cached(base_dir)
+
     # Resolve the target path. Note: (base / relative).resolve() handles '..'
+    # We always resolve target freshly to ensure we catch symlink changes or other filesystem tricks
     target = (base / relative_path).resolve()
 
     # Check if the resolved target starts with the resolved base path
