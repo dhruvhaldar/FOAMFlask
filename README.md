@@ -31,121 +31,74 @@
 
 ## Installation
 
+You have two options: Download a pre-built binary (easiest) or build from source using the automated installer.
+
+### Option 1: Standalone Application (Recommended)
+
+1. Go to the [Releases](https://github.com/dhruvhaldar/FOAMFlask/releases) page.
+2. Download the executable for your OS:
+   - **Windows**: `FOAMFlask-Windows.exe`
+   - **Linux**: `FOAMFlask-Linux`
+   - **macOS**: `FOAMFlask-MacOS`
+3. **Prerequisite**: Ensure [Docker Desktop](https://www.docker.com/products/docker-desktop/) is installed and running.
+4. Run the executable. It will automatically launch the server.
+
+### Option 2: Build from Source (Automated)
+
+Clone the repository and run the installer script. This will automatically check for and attempt to install dependencies (Python, Node.js, pnpm), build the frontend, and start the app.
+
 <details>
 <summary><strong>Windows</strong></summary>
 
-### Step 1: Clone the repository
-
 ```powershell
 git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
-```
-
-### Step 2: Install Node.js dependencies and build frontend
-
-```powershell
-npm install
-npm run build
-```
-
-### Step 3: Create and activate Python virtual environment
-
-```powershell
-mkdir environments
-python3 -m venv .\environments\my-python313-venv-win
-.\environments\my-python313-venv-win\Scripts\activate.ps1
-```
-
-### Step 4: Install Python dependencies
-
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-### Step 5: Run the application
-
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
-```
-
-### Optional: Generate API Documentation
-
-Github-flavored Markdown is already generated under `docs` directory as `app.md`.
-
-To generate Python-related API documentation:
-
-```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m pdoc app.py --output-dir docs
-```
-
-(Note: Install pdoc first: `.\environments\my-python313-venv-win\Scripts\python.exe -m pip install pdoc`)
-
-### Generate Frontend Documentation
-
-```bash
-npm run docs
+.\install.ps1
 ```
 
 </details>
 
 <details>
-<summary><strong>Linux/MacOS</strong></summary>
-
-### Step 1: Clone the repository
+<summary><strong>Linux / macOS</strong></summary>
 
 ```bash
 git clone https://github.com/dhruvhaldar/FOAMFlask
 cd FOAMFlask
+chmod +x install.sh
+./install.sh
 ```
-
-### Step 2: Install Node.js dependencies and build frontend
-
-```bash
-npm install
-npm run build
-```
-
-### Step 3: Create and activate Python virtual environment
-
-```bash
-mkdir -p environments
-python3 -m venv ./environments/my-python313-venv-linux
-source ./environments/my-python313-venv-linux/bin/activate
-```
-
-### Step 4: Install Python dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Step 5: Run the application
-
-```bash
-python -m app 2>&1 | tee app.log
-```
-
-### Optional: Generate API Documentation
-
-Github-flavored Markdown is already generated under `docs` directory as `app.md`.
-
-To generate Python-related API documentation:
-
-```bash
-./environments/my-python313-venv-linux/bin/python3.13 -m pdoc app.py --output-dir docs
-```
-
-(Note: Install pdoc first: `./environments/my-python313-venv-linux/bin/python3.13 -m pip install pdoc`)
 
 </details>
 
+### Option 3: Manual Installation (Developers)
+
+If you prefer to manage the environment yourself:
+
+1. **Install Prerequisites**: Python 3.12+, Node.js 20+, pnpm 8+, and Docker.
+2. **Install Frontend**:
+   ```bash
+   pnpm install
+   pnpm run build
+   ```
+3. **Install Backend**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or .\venv\Scripts\activate on Windows
+   pip install -r requirements.txt
+   ```
+4. **Run**:
+   ```bash
+   python app.py
+   ```
+
 ## Usage
 
-1. **Run the server (activate virtual environment first if using one)**:
+1. **Start the Application**:
+   - If using the binary, just double-click it.
+   - If using source, run `python app.py`.
 
-```bash
-python app.py
-```
+2. **Access the web interface**:
+   Open your browser and navigate to `http://localhost:5000`.
 
 2. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.

@@ -8,6 +8,7 @@ import time
 import platform
 import posixpath
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator
 from functools import wraps
@@ -42,6 +43,24 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("FOAMFlask")
+
+def get_resource_path(relative_path: str) -> Path:
+    """
+    Get absolute path to resource, works for dev and for PyInstaller.
+
+    Args:
+        relative_path: Relative path to the resource (e.g. "static/html/template.html")
+
+    Returns:
+        Resolved absolute Path object
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS) # type: ignore
+    except AttributeError:
+        base_path = Path(app.root_path)
+
+    return (base_path / relative_path).resolve()
 
 # Global configuration
 CONFIG_FILE = Path("case_config.json")
@@ -413,7 +432,7 @@ def run_startup_check() -> None:
 
 
 # Load HTML template
-TEMPLATE_FILE = Path("static/html/foamflask_frontend.html")
+TEMPLATE_FILE = get_resource_path("static/html/foamflask_frontend.html")
 try:
     with TEMPLATE_FILE.open("r", encoding="utf-8") as f:
         TEMPLATE = f.read()
@@ -638,7 +657,8 @@ def get_startup_status() -> Response:
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    static_dir = get_resource_path("static")
+    return send_from_directory(static_dir, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 @app.route("/get_case_root", methods=["GET"])
