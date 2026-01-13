@@ -2899,6 +2899,8 @@ const init = () => {
 
   // Scroll Listener for Navbar
   window.addEventListener("scroll", handleScroll);
+
+  initLogScrollObserver();
 };
 
 const handleScroll = (): void => {
@@ -2916,6 +2918,53 @@ const handleScroll = (): void => {
       navbar.classList.add("glass");
     }
   }
+};
+
+// Scroll to Bottom Logic
+const scrollToLogBottom = (): void => {
+  const output = document.getElementById("output");
+  if (output) {
+    // Check if scrollTo options are supported (native smooth scroll)
+    try {
+      output.scrollTo({ top: output.scrollHeight, behavior: "smooth" });
+    } catch (e) {
+      // Fallback for older browsers
+      output.scrollTop = output.scrollHeight;
+    }
+  }
+};
+(window as any).scrollToLogBottom = scrollToLogBottom;
+
+const initLogScrollObserver = (): void => {
+  const output = document.getElementById("output");
+  const btn = document.getElementById("scrollToBottomBtn");
+  if (!output || !btn) return;
+
+  const handleLogScroll = () => {
+    // Show button if we are more than 100px from the bottom
+    const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight;
+    // Use a small tolerance for "at bottom" check, but larger for showing the button
+    const shouldShow = distanceToBottom > 150;
+
+    if (shouldShow) {
+      btn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
+      btn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+    } else {
+      btn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
+      btn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+    }
+  };
+
+  let ticking = false;
+  output.addEventListener("scroll", () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        handleLogScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
 };
 
 // --- Font Settings Logic ---
