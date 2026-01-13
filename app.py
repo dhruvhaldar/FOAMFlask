@@ -2331,10 +2331,12 @@ def main() -> None:
     # but re-running is safe.
     threading.Thread(target=run_startup_check, daemon=True).start()
 
-    host = os.environ.get("FLASK_HOST", "0.0.0.0") # nosec B104
+    # Security: Default to localhost to prevent exposure to the network.
+    # Users can override this by setting the FLASK_HOST environment variable.
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
     port = 5000
     print(f"FOAMFlask listening on: {host}:{port}")
-    app.run(host=host, port=port, debug=False) # nosec B104
+    app.run(host=host, port=port, debug=False)
 
 
 if __name__ == "__main__":
