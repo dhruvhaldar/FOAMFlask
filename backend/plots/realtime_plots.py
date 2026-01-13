@@ -137,7 +137,8 @@ class OpenFOAMFieldParser:
                 path_str = field_entry.path
                 filename = field_entry.name
                 mtime = field_entry.stat().st_mtime
-                field_path = Path(path_str)
+                # ⚡ Bolt Optimization: Avoid Path object creation
+                # field_path = Path(path_str) # REMOVED
             else:
                 field_path = field_entry
                 path_str = str(field_path)
@@ -169,7 +170,8 @@ class OpenFOAMFieldParser:
             # ⚡ Bolt Optimization: Reduced read size to 2048 bytes (enough for header + banner).
             # The class definition is almost always in the first few lines, but banner can be large.
             # ⚡ Bolt Optimization: Read bytes to avoid decode overhead during type check
-            with field_path.open("rb") as f:
+            # ⚡ Bolt Optimization: Use built-in open() with string path to avoid Path object overhead
+            with open(path_str, "rb") as f:
                 header = f.read(2048)
             
             field_type = None
