@@ -170,4 +170,24 @@ describe('FoamFlask Frontend', () => {
     const container = document.getElementById('notificationContainer');
     expect(container?.textContent).toContain('Console log cleared');
   });
+
+  it('scrollToLogBottom should scroll output to bottom', () => {
+    const { scrollToLogBottom } = window as any;
+    const output = document.getElementById('output') as HTMLElement;
+
+    // Mock scrollHeight
+    Object.defineProperty(output, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(output, 'scrollTop', { value: 0, writable: true });
+    // Mock scrollTo
+    output.scrollTo = vi.fn((options: any) => {
+        if (options && typeof options === 'object') {
+            output.scrollTop = options.top;
+        }
+    });
+
+    scrollToLogBottom();
+
+    expect(output.scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: 'smooth' });
+    expect(output.scrollTop).toBe(1000);
+  });
 });

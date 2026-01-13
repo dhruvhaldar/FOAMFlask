@@ -1046,7 +1046,7 @@
       </div>
 
       <!-- Console Log -->
-      <div class="flex flex-col">
+      <div class="flex flex-col relative group">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-xl font-semibold flex items-center">Console Log
             <div class="relative group ml-1">
@@ -1084,6 +1084,15 @@
         </div>
         <div id="output" class="glass-plot rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
           role="log" aria-label="Console Output Log"></div>
+
+        <!-- Scroll to Bottom Button -->
+        <button id="scrollToBottomBtn" onclick="scrollToLogBottom()"
+          class="absolute bottom-4 right-6 bg-cyan-600/90 hover:bg-cyan-700 text-white rounded-full p-2 shadow-lg transition-all duration-300 opacity-0 translate-y-2 pointer-events-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 z-10"
+          aria-label="Scroll to bottom of log" title="Scroll to bottom">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+        </button>
       </div>
 
     </div>
