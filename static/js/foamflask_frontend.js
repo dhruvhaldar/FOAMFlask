@@ -583,6 +583,55 @@ const removeNotification = (id) => {
         setTimeout(() => notification.remove(), 300);
     }
 };
+// Confirmation Modal
+const showConfirmModal = (title, message) => {
+    return new Promise((resolve) => {
+        const modal = document.createElement("div");
+        modal.className = "fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity opacity-0";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "confirm-title");
+        modal.setAttribute("aria-describedby", "confirm-desc");
+        modal.innerHTML = `
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-200">
+        <div class="p-6">
+          <h3 id="confirm-title" class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+          <p id="confirm-desc" class="text-gray-600 mb-6">${message}</p>
+          <div class="flex justify-end gap-3">
+            <button id="confirm-cancel" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300">Cancel</button>
+            <button id="confirm-ok" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm">Confirm</button>
+          </div>
+        </div>
+      </div>
+    `;
+        document.body.appendChild(modal);
+        // Animation
+        requestAnimationFrame(() => {
+            modal.classList.remove("opacity-0");
+            modal.querySelector("div")?.classList.remove("scale-95");
+            modal.querySelector("div")?.classList.add("scale-100");
+        });
+        const close = (result) => {
+            modal.classList.add("opacity-0");
+            setTimeout(() => modal.remove(), 200);
+            resolve(result);
+            document.removeEventListener("keydown", handleKey);
+        };
+        const handleKey = (e) => {
+            if (e.key === "Escape")
+                close(false);
+            if (e.key === "Enter")
+                close(true);
+        };
+        document.addEventListener("keydown", handleKey);
+        const cancelBtn = modal.querySelector("#confirm-cancel");
+        const okBtn = modal.querySelector("#confirm-ok");
+        cancelBtn.onclick = () => close(false);
+        okBtn.onclick = () => close(true);
+        // Focus management
+        setTimeout(() => cancelBtn.focus(), 50);
+    });
+};
 // Network
 const fetchWithCache = async (url, options = {}) => {
     const cacheKey = `${url}${JSON.stringify(options)}`;
@@ -891,6 +940,15 @@ const createNewCase = async () => {
             btn.innerHTML = originalText;
         }
     }
+};
+const confirmRunCommand = async (cmd, btnElement) => {
+    // Check for destructive commands
+    if (cmd.includes("Allclean") || cmd.includes("clean")) {
+        const confirmed = await showConfirmModal("Run Command", `Are you sure you want to run '${cmd}'? This may delete generated files.`);
+        if (!confirmed)
+            return;
+    }
+    runCommand(cmd, btnElement);
 };
 const runCommand = async (cmd, btnElement) => {
     if (!cmd) {
@@ -1708,7 +1766,8 @@ const deleteGeometry = async () => {
     const filename = document.getElementById("geometrySelect")?.value;
     if (!filename || !activeCase)
         return;
-    if (!confirm("Delete?"))
+    const confirmed = await showConfirmModal("Delete Geometry", `Are you sure you want to delete ${filename}?`);
+    if (!confirmed)
         return;
     try {
         await fetch("/api/geometry/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
@@ -2440,6 +2499,7 @@ window.runFoamToVTK = runFoamToVTK;
 window.refreshPostList = refreshPostList;
 window.toggleAeroPlots = toggleAeroPlots;
 window.runCommand = runCommand;
+window.confirmRunCommand = confirmRunCommand;
 window.toggleInteractiveMode = toggleInteractiveMode;
 window.setCameraView = setCameraView;
 window.resetCamera = resetCamera;
