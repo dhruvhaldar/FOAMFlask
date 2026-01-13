@@ -601,6 +601,10 @@ def set_security_headers(response: Response) -> Response:
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
+    # Permissions Policy
+    # Disable sensitive features not used by the app
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=(), payment=(), usb=()"
+
     # Content Security Policy (CSP)
     # Allows external CDNs used by the frontend (Tailwind, Plotly, Google Fonts)
     # 'unsafe-inline' and 'unsafe-eval' are required for Plotly and inline scripts/styles
