@@ -273,9 +273,13 @@ class OpenFOAMFieldParser:
             
         return None
 
-    def parse_scalar_field(self, field_path: Path, check_mtime: bool = True, known_mtime: Optional[float] = None) -> Optional[float]:
+    def parse_scalar_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None) -> Optional[float]:
         """Parse a scalar field file and return average value with caching."""
-        path_str = str(field_path)
+        if isinstance(field_path, str):
+            path_str = field_path
+        else:
+            path_str = str(field_path)
+
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
             # If check_mtime is False and we have it in cache, return immediately
@@ -304,7 +308,7 @@ class OpenFOAMFieldParser:
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files to avoid reading entire file into memory.
                 # This is ~3x faster for large fields and reduces memory pressure significantly.
-                with field_path.open("rb") as f:
+                with open(path_str, "rb") as f:
                     # mmap can fail for empty files or if file is too small
                     # ⚡ Bolt Optimization: Use os.fstat(fd) instead of Path.stat() to avoid extra syscall
                     if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
@@ -379,7 +383,8 @@ class OpenFOAMFieldParser:
             # Fallback for complex cases (e.g. comments inside list breaking numpy)
             if val is None:
                 try:
-                    content = field_path.read_text(encoding="utf-8")
+                    with open(path_str, "r", encoding="utf-8") as f:
+                        content = f.read()
                     if "nonuniform" in content:
                         match = _RE_NONUNIFORM_LIST.search(content)
                         if match:
@@ -395,12 +400,16 @@ class OpenFOAMFieldParser:
             return val
 
         except Exception as e:
-            logger.error(f"Error parsing scalar field {field_path}: {e}")
+            logger.error(f"Error parsing scalar field {path_str}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Path, check_mtime: bool = True, known_mtime: Optional[float] = None) -> Tuple[float, float, float]:
+    def parse_vector_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None) -> Tuple[float, float, float]:
         """Parse a vector field file and return average components with caching."""
-        path_str = str(field_path)
+        if isinstance(field_path, str):
+            path_str = field_path
+        else:
+            path_str = str(field_path)
+
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
             if not check_mtime and path_str in _FILE_CACHE:
@@ -426,7 +435,7 @@ class OpenFOAMFieldParser:
 
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files
-                with field_path.open("rb") as f:
+                with open(path_str, "rb") as f:
                     # ⚡ Bolt Optimization: Use os.fstat(fd) instead of Path.stat() to avoid extra syscall
                     if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
@@ -499,7 +508,8 @@ class OpenFOAMFieldParser:
             # Fallback
             if val == (0.0, 0.0, 0.0):
                 try:
-                    content = field_path.read_text(encoding="utf-8")
+                    with open(path_str, "r", encoding="utf-8") as f:
+                        content = f.read()
                     if "nonuniform" in content:
                         match = _RE_NONUNIFORM_LIST.search(content)
                         if match:
@@ -521,7 +531,7 @@ class OpenFOAMFieldParser:
             return val
 
         except Exception as e:
-            logger.error(f"Error parsing vector field {field_path}: {e}")
+            logger.error(f"Error parsing vector field {path_str}: {e}")
             return 0.0, 0.0, 0.0
 
     def get_latest_time_data(self) -> Optional[Dict[str, Any]]:
@@ -546,12 +556,14 @@ class OpenFOAMFieldParser:
 
                         if field_type == "scalar":
                             # Pass mtime from entry to avoid re-stat
-                            val = self.parse_scalar_field(Path(entry.path), known_mtime=entry.stat().st_mtime)
+                            # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
+                            val = self.parse_scalar_field(entry.path, known_mtime=entry.stat().st_mtime)
                             if val is not None:
                                 data[entry.name] = val
 
                         elif field_type == "vector" and entry.name == "U":
-                             ux, uy, uz = self.parse_vector_field(Path(entry.path), known_mtime=entry.stat().st_mtime)
+                             # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
+                             ux, uy, uz = self.parse_vector_field(entry.path, known_mtime=entry.stat().st_mtime)
                              data["Ux"] = ux
                              data["Uy"] = uy
                              data["Uz"] = uz
@@ -637,7 +649,10 @@ class OpenFOAMFieldParser:
             # Process new stable steps and append to cache (working copy)
             try:
                 for time_dir in stable_dirs_to_process:
-                    time_path = self.case_dir / time_dir
+                    # ⚡ Bolt Optimization: Use os.path.join instead of Path / operator
+                    # time_path = self.case_dir / time_dir
+                    time_path_str = os.path.join(case_path_str, time_dir)
+
                     time_val = float(time_dir)
 
                     cached_data["time"].append(time_val)
@@ -648,15 +663,21 @@ class OpenFOAMFieldParser:
                         if field not in cached_data:
                             cached_data[field] = [0.0] * (len(cached_data["time"]) - 1)
 
-                        field_path = time_path / field
+                        # field_path = time_path / field
+                        field_path_str = os.path.join(time_path_str, field)
+
                         # Skip check_mtime for stable steps (assumed immutable)
-                        val = self.parse_scalar_field(field_path, check_mtime=False)
+                        # Pass string directly
+                        val = self.parse_scalar_field(field_path_str, check_mtime=False)
                         cached_data[field].append(val if val is not None else 0.0)
 
                     # Parse U
                     if has_U:
-                        u_path = time_path / "U"
-                        ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False)
+                        # u_path = time_path / "U"
+                        u_path_str = os.path.join(time_path_str, "U")
+
+                        # Pass string directly
+                        ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False)
 
                         # Ensure vector fields exist in cache
                         for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
@@ -735,6 +756,8 @@ class OpenFOAMFieldParser:
 
             # Pass known_mtime. If missing (file deleted?), parse_scalar_field handles it by stat-ing again (if None)
             if known_mtime is not None:
+                # Pass string (actually field_path is Path here, we could optimize this loop too but it's small)
+                # For consistency with other opts, let's keep it as is, or use os.path.join
                 val = self.parse_scalar_field(field_path, check_mtime=False, known_mtime=known_mtime)
             else:
                  val = self.parse_scalar_field(field_path, check_mtime=True)
@@ -821,7 +844,7 @@ class OpenFOAMFieldParser:
 
             # ⚡ Bolt Optimization: Stream file line-by-line to avoid loading massive files into RAM.
             # This reduces memory usage from O(N) to O(1) for log parsing.
-            with log_path.open("rb") as f:
+            with open(path_str, "rb") as f:
                 if start_offset > 0:
                     f.seek(start_offset)
 
