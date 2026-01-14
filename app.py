@@ -1527,11 +1527,44 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         if is_not_modified:
              return Response(status=304)
 
+        # ⚡ Bolt Optimization: Secondary check using ETag based on directory mtimes.
+        # Even if log changed (simulation running), field data might not have been written yet.
+        # We check case_dir mtime (for new time dirs) and latest_time_dir mtime (for new fields).
+
         parser = OpenFOAMFieldParser(str(case_dir))
+
+        # Get time directories (cached if case mtime matches)
+        time_dirs = parser.get_time_directories()
+
+        etag = None
+        if time_dirs:
+            latest_time = time_dirs[-1]
+            latest_time_path = case_dir / latest_time
+
+            # Get mtimes for ETag
+            # We use case_dir mtime and latest_time_dir mtime.
+            try:
+                # Use os.stat for speed
+                case_mtime = os.stat(str(case_dir)).st_mtime
+                latest_dir_mtime = os.stat(str(latest_time_path)).st_mtime
+
+                # Construct ETag
+                etag = f'"{case_mtime}-{latest_dir_mtime}"'
+
+                if request.headers.get("If-None-Match") == etag:
+                     response = Response(status=304)
+                     response.headers["ETag"] = etag
+                     return response
+
+            except OSError:
+                pass
+
         data = parser.get_all_time_series_data(max_points=100)
         response = jsonify(data)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
+        if etag:
+            response.headers["ETag"] = etag
         return response
     except Exception as e:
         logger.error(f"Error getting plot data: {e}", exc_info=True)
