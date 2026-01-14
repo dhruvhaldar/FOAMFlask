@@ -968,16 +968,27 @@
       <div class="mt-6">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-sm font-semibold">Meshing Output</h3>
-          <button onclick="copyMeshingOutput(this)"
-            class="text-xs text-cyan-600 hover:text-cyan-800 flex items-center gap-1 focus:outline-none focus:underline"
-            aria-label="Copy meshing output">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Copy
-          </button>
+          <div class="flex gap-3">
+            <button onclick="clearMeshingOutput()"
+              class="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 focus:outline-none focus:underline"
+              aria-label="Clear meshing output">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear
+            </button>
+            <button onclick="copyMeshingOutput(this)"
+              class="text-xs text-cyan-600 hover:text-cyan-800 flex items-center gap-1 focus:outline-none focus:underline"
+              aria-label="Copy meshing output">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copy
+            </button>
+          </div>
         </div>
         <div id="meshingOutput" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded h-40 overflow-auto"
           tabindex="0" role="log" aria-label="Meshing Output Log">

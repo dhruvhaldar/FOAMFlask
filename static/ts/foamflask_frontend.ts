@@ -53,6 +53,7 @@ declare global {
     refreshMeshes: (btn?: HTMLElement) => void;
     viewMesh: () => void;
     copyRunOutput: () => void;
+    clearMeshingOutput: () => void;
   }
 }
 
@@ -260,6 +261,15 @@ const copyLogToClipboard = (btnElement?: HTMLElement): void => {
 // Copy Meshing Output
 const copyMeshingOutput = (btnElement?: HTMLElement): void => {
   copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
+};
+
+// Clear Meshing Output
+const clearMeshingOutput = (): void => {
+  const outputDiv = document.getElementById("meshingOutput");
+  if (outputDiv) {
+    outputDiv.innerText = "Ready...";
+    showNotification("Meshing output cleared", "info", NOTIFY_SHORT);
+  }
 };
 
 // Storage for Console Log
@@ -2156,7 +2166,10 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
     if (data.success) {
       showNotification("Meshing completed successfully", "success");
       const div = document.getElementById("meshingOutput");
-      if (div) div.innerText += `\n${data.output}`;
+      if (div) {
+        div.innerText += `\n${data.output}`;
+        div.scrollTop = div.scrollHeight;
+      }
     }
   } catch (e) {
     showNotification("Meshing failed", "error");
@@ -2791,6 +2804,7 @@ window.onload = async () => {
 (window as any).clearLog = clearLog;
 (window as any).copyLogToClipboard = copyLogToClipboard;
 (window as any).copyMeshingOutput = copyMeshingOutput;
+(window as any).clearMeshingOutput = clearMeshingOutput;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
 

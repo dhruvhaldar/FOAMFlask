@@ -134,6 +134,14 @@ const copyLogToClipboard = (btnElement) => {
 const copyMeshingOutput = (btnElement) => {
     copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
 };
+// Clear Meshing Output
+const clearMeshingOutput = () => {
+    const outputDiv = document.getElementById("meshingOutput");
+    if (outputDiv) {
+        outputDiv.innerText = "Ready...";
+        showNotification("Meshing output cleared", "info", NOTIFY_SHORT);
+    }
+};
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
 // Global state
@@ -1891,8 +1899,10 @@ const runMeshingCommand = async (cmd, btnElement) => {
         if (data.success) {
             showNotification("Meshing completed successfully", "success");
             const div = document.getElementById("meshingOutput");
-            if (div)
+            if (div) {
                 div.innerText += `\n${data.output}`;
+                div.scrollTop = div.scrollHeight;
+            }
         }
     }
     catch (e) {
@@ -2453,6 +2463,7 @@ window.runPostOperation = runPostOperation;
 window.clearLog = clearLog;
 window.copyLogToClipboard = copyLogToClipboard;
 window.copyMeshingOutput = copyMeshingOutput;
+window.clearMeshingOutput = clearMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
 const init = () => {
