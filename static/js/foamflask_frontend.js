@@ -130,6 +130,14 @@ const fallbackCopyText = (text, successMessage, onSuccess) => {
 const copyLogToClipboard = (btnElement) => {
     copyTextFromElement("output", "Log copied to clipboard", btnElement);
 };
+// Clear Meshing Output
+const clearMeshingOutput = () => {
+    const div = document.getElementById("meshingOutput");
+    if (div) {
+        div.innerText = "Ready...";
+        showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);
+    }
+};
 // Copy Meshing Output
 const copyMeshingOutput = (btnElement) => {
     copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
@@ -2452,6 +2460,7 @@ window.showNotification = showNotification;
 window.runPostOperation = runPostOperation;
 window.clearLog = clearLog;
 window.copyLogToClipboard = copyLogToClipboard;
+window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;

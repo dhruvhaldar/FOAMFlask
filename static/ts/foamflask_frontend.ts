@@ -49,6 +49,7 @@ declare global {
     uploadGeometry: (btn?: HTMLElement) => void;
     refreshGeometryList: (btn?: HTMLElement) => void;
     runCommand: (cmd: string, btn?: HTMLElement) => void;
+    clearMeshingOutput: () => void;
     copyMeshingOutput: () => void;
     refreshMeshes: (btn?: HTMLElement) => void;
     viewMesh: () => void;
@@ -255,6 +256,15 @@ const fallbackCopyText = (text: string, successMessage: string, onSuccess?: () =
 // Copy Console Log
 const copyLogToClipboard = (btnElement?: HTMLElement): void => {
   copyTextFromElement("output", "Log copied to clipboard", btnElement);
+};
+
+// Clear Meshing Output
+const clearMeshingOutput = (): void => {
+  const div = document.getElementById("meshingOutput");
+  if (div) {
+    div.innerText = "Ready...";
+    showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);
+  }
 };
 
 // Copy Meshing Output
@@ -2790,6 +2800,7 @@ window.onload = async () => {
 (window as any).runPostOperation = runPostOperation;
 (window as any).clearLog = clearLog;
 (window as any).copyLogToClipboard = copyLogToClipboard;
+(window as any).clearMeshingOutput = clearMeshingOutput;
 (window as any).copyMeshingOutput = copyMeshingOutput;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
