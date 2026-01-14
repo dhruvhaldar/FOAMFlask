@@ -28,6 +28,11 @@ class MeshingRunner:
             Dict with success status and message.
         """
         try:
+            # Although BlockMeshGenerator now performs validation, it's good practice to ensure
+            # we pass valid types from the API runner layer as well, or at least handle the conversion.
+            # We rely on BlockMeshGenerator validation to raise errors or handle it, but here we construct the call.
+
+            # Using tuple(...) on list from JSON is fine, validation inside Generator catches issues.
             min_point = tuple(config.get("min_point", [-1, -1, -1]))
             max_point = tuple(config.get("max_point", [1, 1, 1]))
             cells = tuple(config.get("cells", [10, 10, 10]))
