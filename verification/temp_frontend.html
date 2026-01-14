@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
 
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="icon" href="" type="image/x-icon">
 
   <style>
     :root {
@@ -477,7 +477,7 @@
                         <select id="tutorialSelect"
                           class="appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all bg-white"
                           aria-label="Select Tutorial">
-                          {{ options|safe }}
+                          <option>Mock Tutorial</option>
                         </select>
                         <div
                           class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-900">
@@ -1807,10 +1807,10 @@
 
   <!-- JS loading (compiled from TypeScript) -->
   <!-- Load isosurface module first (required by foamflask_frontend.js) -->
-  <script type="module" src="{{ url_for('static', filename='js/frontend/isosurface.js') }}"></script>
+  <script type="module" src=""></script>
 
   <!-- Main frontend script -->
-  <script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>
+  <script type="module" src=""></script>
 
 
   <footer class="py-4 glass border-t border-gray-200/50 mt-8 rounded-none">
@@ -1829,19 +1829,19 @@
 
           <a href="https://pyvista.org/" target="_blank" rel="noopener noreferrer"
             class="flex items-center text-cyan-800 hover:text-cyan-900 transition-colors">
-            <img src="{{ url_for('static', filename='icons/Pyvista-logo.avif') }}" alt="PyVista" class="h-8 w-auto">
+            <img src="" alt="PyVista" class="h-8 w-auto">
           </a>
           <span class="text-black">|</span>
 
           <a href="https://plotly.com/" target="_blank" rel="noopener noreferrer"
             class="flex items-center text-cyan-800 hover:text-cyan-900 transition-colors">
-            <img src="{{ url_for('static', filename='icons/Plotly-logo.avif') }}" alt="Plotly" class="h-8 w-auto">
+            <img src="" alt="Plotly" class="h-8 w-auto">
           </a>
           <span class="text-black">|</span>
 
           <a href="https://docker.com/" target="_blank" rel="noopener noreferrer"
             class="flex items-center text-cyan-600 hover:text-cyan-800 transition-colors">
-            <img src="{{ url_for('static', filename='icons/docker-logo.avif') }}" alt="Docker" class="h-8 w-auto">
+            <img src="" alt="Docker" class="h-8 w-auto">
           </a>
 
         </div>
