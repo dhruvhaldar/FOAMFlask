@@ -10,7 +10,7 @@
 
 ## 2024-05-24 - Path Traversal in Geometry and Meshing Endpoints
 **Vulnerability:** Several API endpoints (`/api/geometry/list`, `/api/geometry/upload`, `/api/geometry/delete`, `/api/meshing/blockMesh/config`, `/api/meshing/snappyHexMesh/config`, `/api/meshing/run`) accepted a `caseName` parameter and constructed file paths using `Path(CASE_ROOT) / case_name` without validation. This allowed path traversal (e.g., `caseName=../secret`) to access or modify files outside the intended case root directory.
-**Learning:** Relying on `request.form.get()` or `request.get_json()` input directly for path construction is dangerous. Even if `CASE_ROOT` is safe, appending a user-controlled `../` segment bypasses the root restriction. This pattern was repeated across multiple endpoints, indicating a need for a centralized validation mechanism to be applied consistently.
+**Learning:** Relying on `request.form.get()` or `request.get_json()` input directly for path construction is dangerous. Even "creation" logic can be a vector for traversal if it involves creating directories at user-controlled paths.
 **Prevention:** Applied `validate_safe_path(CASE_ROOT, case_name)` to all affected endpoints in `app.py`. This function resolves the path and explicitly checks if it `is_relative_to(CASE_ROOT)`. Future endpoints handling file paths must use this validation utility before any filesystem operations.
 
 ## 2026-01-11 - Brace Expansion in Command Validation
@@ -27,3 +27,8 @@
 **Vulnerability:** The `MeshingRunner` constructed shell commands by interpolating the `command` variable directly into a `bash -c '...'` string. While `app.py` restricted the input to a whitelist, the library code itself was vulnerable to shell injection if reused with unsafe input (e.g., `blockMesh; echo INJECTED`).
 **Learning:** String interpolation for shell commands is inherently dangerous, even with surrounding quotes, as injection can escape the quotes or occur if the variable itself contains control characters.
 **Prevention:** I modified `MeshingRunner` to use the `list` format for `docker_client.containers.run`, passing arguments safely to `bash` via positional parameters (`source "$1" && cd "$2" && $3`). This ensures that the command is treated as a single argument by the shell and not parsed for control operators, preventing injection while still allowing path handling.
+
+## 2026-05-15 - Windows Path Handling in Case Root Validation
+**Vulnerability:** The `set_case` endpoint utilized a hardcoded list of forbidden prefixes (e.g., `/etc`, `/bin`) to prevent users from setting the workspace root to system directories. However, this list only contained POSIX paths. On Windows, a user could set the case root to `C:\Windows`, bypassing the check entirely as the string matching logic did not account for drive letters or Windows path separators.
+**Learning:** Security controls that rely on path validation must be platform-aware. Hardcoding OS-specific paths (like POSIX-only lists) creates blind spots in cross-platform applications.
+**Prevention:** Introduced `is_safe_case_root` helper function in `app.py` that detects the operating system via `platform.system()`. On Windows, it now explicitly checks against drive roots (e.g., `C:\`) and common system directories (`C:\Windows`, `C:\Program Files`), ensuring robust protection across both Linux and Windows environments.
