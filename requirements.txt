@@ -119,3 +119,4 @@ widgetsnbextension==4.0.15
 wslink==2.5.0
 xyzservices==2025.10.0
 yarl==1.22.0
+orjson==3.10.7
