@@ -1102,4 +1102,4 @@ def test_main_startup(monkeypatch, tmp_path):
         flask_app.main()
 
         mkdir_mock.assert_called()
-        run_mock.assert_called_once_with(host="0.0.0.0", port=5000, debug=False)
+        run_mock.assert_called_once_with(host="127.0.0.1", port=5000, debug=False)
