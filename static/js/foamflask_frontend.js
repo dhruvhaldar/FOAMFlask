@@ -135,6 +135,7 @@ const clearMeshingOutput = () => {
     const div = document.getElementById("meshingOutput");
     if (div) {
         div.innerText = "Ready...";
+        div.scrollTop = 0; // Reset scroll position
         showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);
     }
 };
@@ -1957,13 +1958,21 @@ const runMeshingCommand = async (cmd, btnElement) => {
         const data = await res.json();
         if (data.success) {
             showNotification("Meshing completed successfully", "success");
+        }
+        else {
+            showNotification(data.message || "Meshing failed", "error");
+        }
+        if (data.output) {
             const div = document.getElementById("meshingOutput");
-            if (div)
+            if (div) {
                 div.innerText += `\n${data.output}`;
+                div.scrollTop = div.scrollHeight; // Auto-scroll to bottom
+            }
         }
     }
     catch (e) {
-        showNotification("Meshing failed", "error");
+        console.error(e);
+        showNotification("Meshing failed to execute", "error");
     }
     finally {
         if (btn) {
