@@ -264,6 +264,7 @@ const clearMeshingOutput = (): void => {
   const div = document.getElementById("meshingOutput");
   if (div) {
     div.innerText = "Ready...";
+    div.scrollTop = 0; // Reset scroll position
     showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);
   }
 };
@@ -2232,13 +2233,23 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
   try {
     const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
     const data = await res.json();
+
     if (data.success) {
       showNotification("Meshing completed successfully", "success");
+    } else {
+      showNotification(data.message || "Meshing failed", "error");
+    }
+
+    if (data.output) {
       const div = document.getElementById("meshingOutput");
-      if (div) div.innerText += `\n${data.output}`;
+      if (div) {
+        div.innerText += `\n${data.output}`;
+        div.scrollTop = div.scrollHeight; // Auto-scroll to bottom
+      }
     }
   } catch (e) {
-    showNotification("Meshing failed", "error");
+    console.error(e);
+    showNotification("Meshing failed to execute", "error");
   } finally {
     if (btn) {
       btn.disabled = false;
