@@ -633,9 +633,20 @@ class OpenFOAMFieldParser:
 
         if needs_update:
             # Full Copy and Update Path
-            cached_dirs = src_dirs[:valid_cache_len]
-            # Slice all lists in cached_data
-            cached_data = {k: v[:valid_cache_len] for k, v in src_data.items()}
+
+            # ⚡ Bolt Optimization: Zero-copy update for append-only case
+            # If the cache is valid (just needs extending), we shallow-copy the dict
+            # but reuse the list objects, appending in-place.
+            # Readers use slice limits based on the old directory list, so they won't see partial updates.
+            # WARNING: Lists in cached_data alias src_data lists! Mutation here affects the global cache history.
+            if valid_cache_len == len(src_dirs):
+                cached_dirs = src_dirs
+                cached_data = src_data.copy()
+            else:
+                # Divergence detected: Full copy and slice required
+                cached_dirs = src_dirs[:valid_cache_len]
+                # Slice all lists in cached_data
+                cached_data = {k: v[:valid_cache_len] for k, v in src_data.items()}
 
             # Initialize cached_data if empty
             if not cached_data:
