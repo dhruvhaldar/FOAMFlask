@@ -10,16 +10,17 @@ import posixpath
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Generator
+from typing import Dict, List, Optional, Tuple, Union, Generator, Any
 from functools import wraps, lru_cache
 import email.utils
 import secrets
 
 # Third-party imports
 import docker
+import orjson
 from docker import DockerClient
 from docker.errors import DockerException
-from flask import Flask, Response, jsonify, render_template_string, request, send_from_directory
+from flask import Flask, Response, render_template_string, request, send_from_directory
 from markupsafe import escape
 from werkzeug.utils import secure_filename
 
@@ -43,6 +44,28 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("FOAMFlask")
+
+
+def fast_jsonify(data: Any, status: int = 200) -> Response:
+    """
+    Drop-in replacement for flask.jsonify using orjson for high performance.
+
+    Args:
+        data: Data to serialize (dict, list, etc.)
+        status: HTTP status code
+
+    Returns:
+        Flask Response object with application/json mimetype
+    """
+    # orjson.dumps returns bytes
+    # OPT_SERIALIZE_NUMPY: Handles numpy arrays automatically
+    # OPT_NAIVE_UTC: Assumes naive datetime is UTC
+    json_bytes = orjson.dumps(
+        data,
+        option=orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NAIVE_UTC
+    )
+    return Response(json_bytes, status=status, mimetype='application/json')
+
 
 def get_resource_path(relative_path: str) -> Path:
     """
@@ -136,7 +159,7 @@ def rate_limit(limit: int = 5, window: int = 60):
 
             if len(history) >= limit:
                 logger.warning(f"Security: Rate limit exceeded for {ip} on {request.endpoint}")
-                return jsonify({
+                return fast_jsonify({
                     "error": "Too many requests. Please try again later.",
                     "retry_after": int(window - (now - history[0])) if history else window
                 }), 429
@@ -447,7 +470,7 @@ def docker_unavailable_response() -> Tuple[Response, int]:
         "[FOAMFlask] [Error] Docker daemon not available. "
         "Please start Docker Desktop and reload the page."
     )
-    return jsonify({"output": error_msg}), 503
+    return fast_jsonify({"output": error_msg}), 503
 
 
 def get_docker_user_config() -> Dict[str, str]:
@@ -666,7 +689,7 @@ def csrf_protect():
         token = request.cookies.get("csrf_token")
         header_token = request.headers.get("X-CSRFToken")
         if not token or token != header_token:
-            return jsonify({"error": "CSRF token missing or invalid"}), 403
+            return fast_jsonify({"error": "CSRF token missing or invalid"}), 403
 
 @app.after_request
 def set_security_headers(response: Response) -> Response:
@@ -733,7 +756,7 @@ def get_startup_status() -> Response:
     Returns:
         JSON response with status and message.
     """
-    return jsonify(STARTUP_STATUS)
+    return fast_jsonify(STARTUP_STATUS)
 
 
 @app.route('/favicon.ico')
@@ -749,7 +772,7 @@ def get_case_root() -> Response:
     Returns:
         JSON response containing the case root directory.
     """
-    return jsonify({"caseDir": CASE_ROOT})
+    return fast_jsonify({"caseDir": CASE_ROOT})
 
 
 @app.route("/set_case", methods=["POST"])
@@ -763,7 +786,7 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
 
     data = request.get_json()
     if not data or "caseDir" not in data or not data["caseDir"]:
-        return jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"}), 400
+        return fast_jsonify({"output": "[FOAMFlask] [Error] No caseDir provided"}), 400
 
     try:
         case_dir_path = Path(data["caseDir"]).resolve()
@@ -773,13 +796,13 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
 
         if not is_safe_case_root(resolved_str):
             logger.warning(f"Security: Attempt to set case root to system directory blocked: {resolved_str}")
-            return jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system directory"}), 400
+            return fast_jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system directory"}), 400
 
         case_dir_path.mkdir(parents=True, exist_ok=True)
         CASE_ROOT = str(case_dir_path)
         save_config({"CASE_ROOT": CASE_ROOT})
 
-        return jsonify(
+        return fast_jsonify(
             {
                 "output": f"INFO::[FOAMFlask] Case root set to: {CASE_ROOT}",
                 "caseDir": CASE_ROOT,
@@ -787,19 +810,19 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         )
     except Exception as e:
         logger.error("Error setting case directory: %s", str(e))
-        return jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 400
+        return fast_jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 400
 
 
 @app.route("/open_case_root", methods=["POST"])
 def open_case_root() -> Response:
     """Open the current case root in the system file explorer."""
     if not CASE_ROOT:
-        return jsonify({"output": "Case root is not set"}), 400
+        return fast_jsonify({"output": "Case root is not set"}), 400
 
     try:
         path = os.path.abspath(CASE_ROOT)
         if not os.path.exists(path):
-            return jsonify({"output": f"Directory not found: {path}"}), 404
+            return fast_jsonify({"output": f"Directory not found: {path}"}), 404
 
         system = platform.system()
         if system == "Windows":
@@ -811,22 +834,22 @@ def open_case_root() -> Response:
             import subprocess
             subprocess.run(["xdg-open", path], check=True)
             
-        return jsonify({"output": f"Opened {path} in file explorer"})
+        return fast_jsonify({"output": f"Opened {path} in file explorer"})
         
     except Exception as e:
         logger.error(f"Failed to open file explorer: {e}")
-        return jsonify({"output": f"Error opening file explorer: {str(e)}"}), 500
+        return fast_jsonify({"output": f"Error opening file explorer: {str(e)}"}), 500
 
 
 @app.route("/api/cases/list", methods=["GET"])
 def api_list_cases() -> Response:
     """List available cases in the CASE_ROOT."""
     if not CASE_ROOT:
-         return jsonify({"cases": []})
+         return fast_jsonify({"cases": []})
 
     root = Path(CASE_ROOT)
     if not root.exists():
-         return jsonify({"cases": []})
+         return fast_jsonify({"cases": []})
 
     # List subdirectories that look like cases (or just all dirs)
     # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
@@ -839,9 +862,9 @@ def api_list_cases() -> Response:
                     cases.append(entry.name)
     except OSError as e:
         logger.error(f"Error listing cases in {root}: {e}")
-        return jsonify({"cases": []})
+        return fast_jsonify({"cases": []})
 
-    return jsonify({"cases": sorted(cases)})
+    return fast_jsonify({"cases": sorted(cases)})
 
 @app.route("/api/case/create", methods=["POST"])
 @rate_limit(limit=5, window=60)
@@ -856,30 +879,30 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
     case_name = data.get("caseName")
 
     if not case_name:
-        return jsonify({"success": False, "message": "No case name provided"}), 400
+        return fast_jsonify({"success": False, "message": "No case name provided"}), 400
 
     try:
         # Use globally set CASE_ROOT
         if not CASE_ROOT:
-             return jsonify({"success": False, "message": "Case root not set"}), 500
+             return fast_jsonify({"success": False, "message": "Case root not set"}), 500
 
         try:
             # Security: Validate path is within CASE_ROOT
             # validate_safe_path resolves the path, checking for traversal
             full_path = validate_safe_path(CASE_ROOT, case_name)
         except ValueError as e:
-            return jsonify({"success": False, "message": str(e)}), 400
+            return fast_jsonify({"success": False, "message": str(e)}), 400
 
         result = CaseManager.create_case_structure(full_path)
 
         if result["success"]:
-            return jsonify(result)
+            return fast_jsonify(result)
         else:
-            return jsonify(result), 500
+            return fast_jsonify(result), 500
 
     except Exception as e:
         logger.error(f"Error in api_create_case: {e}")
-        return jsonify({"success": False, "message": sanitize_error(e)}), 500
+        return fast_jsonify({"success": False, "message": sanitize_error(e)}), 500
 
 
 # --- Geometry Routes ---
@@ -889,11 +912,11 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
 def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
     """Upload an STL file to the current case."""
     if "file" not in request.files:
-        return jsonify({"success": False, "message": "No file part"}), 400
+        return fast_jsonify({"success": False, "message": "No file part"}), 400
 
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"success": False, "message": "No selected file"}), 400
+        return fast_jsonify({"success": False, "message": "No selected file"}), 400
 
     # Get the current case path from request or global state
     # Ideally, the frontend should send the current case directory or name
@@ -930,38 +953,38 @@ def api_upload_geometry() -> Union[Response, Tuple[Response, int]]:
             case_dir_path = validate_safe_path(CASE_ROOT, case_name)
             case_dir = str(case_dir_path)
         else:
-             return jsonify({"success": False, "message": "No case name or directory specified"}), 400
+             return fast_jsonify({"success": False, "message": "No case name or directory specified"}), 400
 
     except ValueError as e:
         logger.warning(f"Security: Blocked upload attempt: {e}")
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     result = GeometryManager.upload_stl(case_dir, file, file.filename)
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 @app.route("/api/geometry/list", methods=["GET"])
 def api_list_geometry() -> Union[Response, Tuple[Response, int]]:
     """List STL files in the current case."""
     case_name = request.args.get("caseName")
     if not case_name:
-         return jsonify({"success": False, "message": "No case name specified"}), 400
+         return fast_jsonify({"success": False, "message": "No case name specified"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         case_dir_path = validate_safe_path(CASE_ROOT, case_name)
         case_dir = str(case_dir_path)
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     result = GeometryManager.list_stls(case_dir)
 
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 @app.route("/api/geometry/delete", methods=["POST"])
 def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
@@ -971,21 +994,21 @@ def api_delete_geometry() -> Union[Response, Tuple[Response, int]]:
     filename = data.get("filename")
 
     if not case_name or not filename:
-        return jsonify({"success": False, "message": "Missing parameters"}), 400
+        return fast_jsonify({"success": False, "message": "Missing parameters"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         case_dir_path = validate_safe_path(CASE_ROOT, case_name)
         case_dir = str(case_dir_path)
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     result = GeometryManager.delete_stl(case_dir, filename)
 
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 def validate_geometry_path(case_name: str, filename: str) -> Union[Path, Tuple[Response, int]]:
     """
@@ -995,7 +1018,7 @@ def validate_geometry_path(case_name: str, filename: str) -> Union[Path, Tuple[R
         Resolved Path object or error response tuple.
     """
     if not case_name or not filename:
-        return jsonify({"success": False, "message": "Missing parameters"}), 400
+        return fast_jsonify({"success": False, "message": "Missing parameters"}), 400
 
     # Sanitize inputs
     case_name = secure_filename(case_name)
@@ -1009,7 +1032,7 @@ def validate_geometry_path(case_name: str, filename: str) -> Union[Path, Tuple[R
     
     if not resolved_path.is_relative_to(base_path):
         logger.warning(f"Security: Path traversal attempt blocked. Path: {resolved_path}, Base: {base_path}")
-        return jsonify({"success": False, "message": "Access denied"}), 400
+        return fast_jsonify({"success": False, "message": "Access denied"}), 400
     
     return resolved_path
 
@@ -1033,7 +1056,7 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     if html_content:
         return Response(html_content, mimetype="text/html")
     else:
-        return jsonify({"success": False, "message": "Failed to generate view"}), 500
+        return fast_jsonify({"success": False, "message": "Failed to generate view"}), 500
 
 @app.route("/api/geometry/info", methods=["POST"])
 def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
@@ -1049,7 +1072,7 @@ def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
     resolved_path = path_or_error
 
     info = GeometryVisualizer.get_mesh_info(resolved_path)
-    return jsonify(info)
+    return fast_jsonify(info)
 
 
 # --- Meshing Routes ---
@@ -1062,20 +1085,20 @@ def api_meshing_blockmesh_config() -> Union[Response, Tuple[Response, int]]:
     config = data.get("config", {})
 
     if not case_name:
-         return jsonify({"success": False, "message": "No case name specified"}), 400
+         return fast_jsonify({"success": False, "message": "No case name specified"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         case_path = validate_safe_path(CASE_ROOT, case_name)
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     result = MeshingRunner.configure_blockmesh(case_path, config)
 
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 @app.route("/api/meshing/snappyHexMesh/config", methods=["POST"])
 def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
@@ -1085,20 +1108,20 @@ def api_meshing_snappyhexmesh_config() -> Union[Response, Tuple[Response, int]]:
     config = data.get("config", {})
 
     if not case_name:
-         return jsonify({"success": False, "message": "No case name specified"}), 400
+         return fast_jsonify({"success": False, "message": "No case name specified"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         case_path = validate_safe_path(CASE_ROOT, case_name)
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     result = MeshingRunner.configure_snappyhexmesh(case_path, config)
 
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 @app.route("/api/meshing/run", methods=["POST"])
 @rate_limit(limit=10, window=60)
@@ -1109,16 +1132,16 @@ def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
     command = data.get("command") # "blockMesh" or "snappyHexMesh"
 
     if not case_name or not command:
-         return jsonify({"success": False, "message": "Missing parameters"}), 400
+         return fast_jsonify({"success": False, "message": "Missing parameters"}), 400
 
     if command not in ["blockMesh", "snappyHexMesh"]:
-        return jsonify({"success": False, "message": "Invalid command"}), 400
+        return fast_jsonify({"success": False, "message": "Invalid command"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         case_path = validate_safe_path(CASE_ROOT, case_name)
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     client = get_docker_client()
     user_config = get_docker_user_config()
@@ -1133,9 +1156,9 @@ def api_meshing_run() -> Union[Response, Tuple[Response, int]]:
     )
 
     if result["success"]:
-        return jsonify(result)
+        return fast_jsonify(result)
     else:
-        return jsonify(result), 500
+        return fast_jsonify(result), 500
 
 
 @app.route("/get_docker_config", methods=["GET"])
@@ -1145,7 +1168,7 @@ def get_docker_config() -> Response:
     Returns:
         JSON response containing Docker image and OpenFOAM version.
     """
-    return jsonify({"dockerImage": DOCKER_IMAGE, "openfoamVersion": OPENFOAM_VERSION})
+    return fast_jsonify({"dockerImage": DOCKER_IMAGE, "openfoamVersion": OPENFOAM_VERSION})
 
 
 @app.route("/set_docker_config", methods=["POST"])
@@ -1160,7 +1183,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
     data = request.get_json()
     if not data:
         return (
-            jsonify({"output": "[FOAMFlask] [Error] No configuration data provided"}),
+            fast_jsonify({"output": "[FOAMFlask] [Error] No configuration data provided"}),
             400,
         )
 
@@ -1170,7 +1193,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
         # Allow alphanumeric, underscore, hyphen, dot, slash, colon
         image_str = str(data["dockerImage"])
         if not re.match(r'^[a-zA-Z0-9_./:-]+$', image_str):
-            return jsonify({"output": "[FOAMFlask] [Error] Invalid Docker image string"}), 400
+            return fast_jsonify({"output": "[FOAMFlask] [Error] Invalid Docker image string"}), 400
 
         DOCKER_IMAGE = image_str
         updates["DOCKER_IMAGE"] = DOCKER_IMAGE
@@ -1180,7 +1203,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
         # Allow alphanumeric, dot, hyphen
         version_str = str(data["openfoamVersion"])
         if not re.match(r'^[a-zA-Z0-9.-]+$', version_str):
-             return jsonify({"output": "[FOAMFlask] [Error] Invalid OpenFOAM version string"}), 400
+             return fast_jsonify({"output": "[FOAMFlask] [Error] Invalid OpenFOAM version string"}), 400
 
         OPENFOAM_VERSION = version_str
         updates["OPENFOAM_VERSION"] = OPENFOAM_VERSION
@@ -1188,7 +1211,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
     if updates:
         save_config(updates)
 
-    return jsonify(
+    return fast_jsonify(
         {
             "output": "INFO::[FOAMFlask] Docker config updated",
             "dockerImage": DOCKER_IMAGE,
@@ -1214,12 +1237,12 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     tutorial = data.get("tutorial")
 
     if not tutorial:
-        return jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
+        return fast_jsonify({"output": "[FOAMFlask] [Error] No tutorial selected"})
 
     # SECURITY FIX: Validate tutorial path to prevent command injection
     if not is_safe_tutorial_path(tutorial):
         logger.warning(f"Security: Invalid tutorial path rejected: {tutorial}")
-        return jsonify({"output": "[FOAMFlask] [Error] Invalid tutorial path detected"}), 400
+        return fast_jsonify({"output": "[FOAMFlask] [Error] Invalid tutorial path detected"}), 400
 
     client = get_docker_client()
     if client is None:
@@ -1284,11 +1307,11 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
         else:
             output = f"[FOAMFlask] [Error] Failed to load tutorial {tutorial}\n{logs}"
 
-        return jsonify({"output": output, "caseDir": CASE_ROOT})
+        return fast_jsonify({"output": output, "caseDir": CASE_ROOT})
 
     except Exception as e:
         logger.error(f"Error loading tutorial: {e}", exc_info=True)
-        return jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 500
+        return fast_jsonify({"output": f"[FOAMFlask] [Error] {sanitize_error(e)}"}), 500
 
     finally:
         if container:
@@ -1499,23 +1522,23 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     """
     tutorial = request.args.get("tutorial")
     if not tutorial:
-        return jsonify({"error": "No tutorial specified"}), 400
+        return fast_jsonify({"error": "No tutorial specified"}), 400
 
     try:
         tutorial_name = posixpath.basename(tutorial)
         case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return fast_jsonify({"error": str(e)}), 400
 
     if not case_dir.exists():
-        return jsonify({"error": "Case directory not found"}), 404
+        return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
         fields = get_available_fields(str(case_dir))
-        return jsonify({"fields": fields})
+        return fast_jsonify({"fields": fields})
     except Exception as e:
         logger.error(f"Error in available_fields: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str], Optional[os.stat_result]]:
@@ -1564,16 +1587,16 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     """
     tutorial = request.args.get("tutorial")
     if not tutorial:
-        return jsonify({"error": "No tutorial specified"}), 400
+        return fast_jsonify({"error": "No tutorial specified"}), 400
 
     try:
         tutorial_name = posixpath.basename(tutorial)
         case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return fast_jsonify({"error": str(e)}), 400
 
     if not case_dir.exists():
-        return jsonify({"error": "Case directory not found"}), 404
+        return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
         # Optimization: Check if data has changed (proxy: postProcessing directory or log file)
@@ -1618,7 +1641,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
                 pass
 
         data = parser.get_all_time_series_data(max_points=100)
-        response = jsonify(data)
+        response = fast_jsonify(data)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
         if etag:
@@ -1626,7 +1649,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         return response
     except Exception as e:
         logger.error(f"Error getting plot data: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/latest_data", methods=["GET"])
@@ -1643,24 +1666,24 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     """
     tutorial = request.args.get("tutorial")
     if not tutorial:
-        return jsonify({"error": "No tutorial specified"}), 400
+        return fast_jsonify({"error": "No tutorial specified"}), 400
 
     try:
         tutorial_name = posixpath.basename(tutorial)
         case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return fast_jsonify({"error": str(e)}), 400
 
     if not case_dir.exists():
-        return jsonify({"error": "Case directory not found"}), 404
+        return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
         parser = OpenFOAMFieldParser(str(case_dir))
         data = parser.get_latest_time_data()
-        return jsonify(data if data else {})
+        return fast_jsonify(data if data else {})
     except Exception as e:
         logger.error(f"Error getting latest data: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/residuals", methods=["GET"])
@@ -1677,16 +1700,16 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
     """
     tutorial = request.args.get("tutorial")
     if not tutorial:
-        return jsonify({"error": "No tutorial specified"}), 400
+        return fast_jsonify({"error": "No tutorial specified"}), 400
 
     try:
         tutorial_name = posixpath.basename(tutorial)
         case_dir = validate_safe_path(CASE_ROOT, tutorial_name)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return fast_jsonify({"error": str(e)}), 400
 
     if not case_dir.exists():
-        return jsonify({"error": "Case directory not found"}), 404
+        return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
         # Optimization: Check if log file has changed
@@ -1701,13 +1724,13 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         parser = OpenFOAMFieldParser(str(case_dir))
         # ⚡ Bolt Optimization: Pass the stat result from check_cache to avoid re-stat call
         residuals = parser.get_residuals_from_log(known_stat=stat_result)
-        response = jsonify(residuals)
+        response = fast_jsonify(residuals)
         if last_modified:
              response.headers["Last-Modified"] = last_modified
         return response
     except Exception as e:
         logger.error(f"Error getting residuals: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 # --- PyVista Mesh Visualization Endpoints ---
@@ -1724,7 +1747,7 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
     """
     tutorial = request.args.get("tutorial")
     if not tutorial:
-        return jsonify({"error": "No tutorial specified"}), 400
+        return fast_jsonify({"error": "No tutorial specified"}), 400
 
     try:
         # Validate that the tutorial path is safe
@@ -1733,12 +1756,12 @@ def api_available_meshes() -> Union[Response, Tuple[Response, int]]:
         # mesh_visualizer expects strings for paths currently
         tutorial_name = posixpath.basename(tutorial)
         mesh_files = mesh_visualizer.get_available_meshes(CASE_ROOT, tutorial_name)
-        return jsonify({"meshes": mesh_files})
+        return fast_jsonify({"meshes": mesh_files})
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return fast_jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Error getting available meshes: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/load_mesh", methods=["POST"])
@@ -1760,14 +1783,14 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
     )  # Get the for_contour flag, default to False
 
     if not file_path:
-        return jsonify({"error": "No file path provided"}), 400
+        return fast_jsonify({"error": "No file path provided"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         try:
             validated_path = validate_safe_path(CASE_ROOT, file_path)
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return fast_jsonify({"error": str(e)}), 400
 
         logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
         mesh_info = mesh_visualizer.load_mesh(validated_path)
@@ -1783,12 +1806,12 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
                 # Add any contour-specific processing here if needed
             except Exception as e:
                 logger.error(f"Error loading mesh for contour: {e}", exc_info=True)
-                return jsonify({"error": str(e)}), 500
+                return fast_jsonify({"error": str(e)}), 500
 
-        return jsonify(mesh_info)
+        return fast_jsonify(mesh_info)
     except Exception as e:
         logger.error(f"Error loading mesh: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/mesh_screenshot", methods=["POST"])
@@ -1817,25 +1840,25 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     camera_position = data.get("camera_position", None)
 
     if not file_path:
-        return jsonify({"error": "No file path provided"}), 400
+        return fast_jsonify({"error": "No file path provided"}), 400
 
     # Security: Validate dimensions to prevent DoS
     if not isinstance(width, int) or not isinstance(height, int):
-        return jsonify({"error": "Width and height must be integers"}), 400
+        return fast_jsonify({"error": "Width and height must be integers"}), 400
 
     MAX_DIMENSION = 4096
     if width > MAX_DIMENSION or height > MAX_DIMENSION:
-        return jsonify({"error": f"Dimensions too large (max {MAX_DIMENSION}px)"}), 400
+        return fast_jsonify({"error": f"Dimensions too large (max {MAX_DIMENSION}px)"}), 400
 
     if width < 1 or height < 1:
-        return jsonify({"error": "Dimensions must be positive"}), 400
+        return fast_jsonify({"error": "Dimensions must be positive"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         try:
             validated_path = validate_safe_path(CASE_ROOT, file_path)
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return fast_jsonify({"error": str(e)}), 400
 
         # Add delay for first call
         if not hasattr(api_mesh_screenshot, "_has_been_called"):
@@ -1847,15 +1870,15 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
         )
 
         if img_str:
-            return jsonify({"success": True, "image": img_str})
+            return fast_jsonify({"success": True, "image": img_str})
         else:
             return (
-                jsonify({"success": False, "error": "Failed to generate screenshot"}),
+                fast_jsonify({"success": False, "error": "Failed to generate screenshot"}),
                 500,
             )
     except Exception as e:
         logger.error(f"Error generating mesh screenshot: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/mesh_interactive", methods=["POST"])
@@ -1877,14 +1900,14 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
     color = data.get("color", "lightblue")
 
     if not file_path:
-        return jsonify({"error": "No file path provided"}), 400
+        return fast_jsonify({"error": "No file path provided"}), 400
 
     try:
         # Security: Validate path is within CASE_ROOT
         try:
             validated_path = validate_safe_path(CASE_ROOT, file_path)
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return fast_jsonify({"error": str(e)}), 400
 
         # Add a small delay to prevent race conditions
         time.sleep(2)  # 2 second delay
@@ -1897,14 +1920,14 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
             return Response(html_content, mimetype="text/html")
         else:
             return (
-                jsonify(
+                fast_jsonify(
                     {"success": False, "error": "Failed to generate interactive viewer"}
                 ),
                 500,
             )
     except Exception as e:
         logger.error(f"Error generating interactive viewer: {e}", exc_info=True)
-        return jsonify({"success": False, "error": sanitize_error(e)}), 500
+        return fast_jsonify({"success": False, "error": sanitize_error(e)}), 500
 
 
 @app.route("/run_foamtovtk", methods=["POST"])
@@ -2034,10 +2057,10 @@ def post_process() -> Union[Response, Tuple[Response, int]]:
     """
     try:
         # Add your post-processing logic here
-        return jsonify({"status": "success", "message": "Post processing endpoint"})
+        return fast_jsonify({"status": "success", "message": "Post processing endpoint"})
     except Exception as e:
         logger.error(f"Error during post-processing: {e}", exc_info=True)
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/contours/create", methods=["POST", "OPTIONS"])
@@ -2062,7 +2085,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
                 f"[FOAMFlask] [create_contour] Content-Type: {request.content_type}"
             )
             return (
-                jsonify(
+                fast_jsonify(
                     {
                         "success": False,
                         "error": f"Expected JSON, got {request.content_type}",
@@ -2088,12 +2111,12 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if not tutorial:
             error_msg = "Tutorial not specified"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 400
+            return fast_jsonify({"success": False, "error": error_msg}), 400
 
         if not case_dir_str:
             error_msg = "Case directory not specified"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 400
+            return fast_jsonify({"success": False, "error": error_msg}), 400
 
         # Normalize and validate path
         try:
@@ -2101,7 +2124,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         except ValueError as e:
             error_msg = str(e)
             logger.warning(f"[FOAMFlask] [create_contour] Security: {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 400
+            return fast_jsonify({"success": False, "error": error_msg}), 400
 
         logger.info(
             f"[FOAMFlask] [create_contour] Normalized case directory: {case_dir}"
@@ -2110,7 +2133,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if not case_dir.exists():
             error_msg = f"Case directory not found: {case_dir}"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 404
+            return fast_jsonify({"success": False, "error": error_msg}), 404
 
         logger.info(f"[FOAMFlask] [create_contour] Case directory exists")
 
@@ -2128,7 +2151,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if not vtk_files:
             error_msg = f"No VTK files found in {case_dir}"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 404
+            return fast_jsonify({"success": False, "error": error_msg}), 404
 
         # Get latest VTK file
         latest_vtk = max(vtk_files, key=os.path.getmtime)
@@ -2141,7 +2164,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if not mesh_info.get("success"):
             error_msg = f"Failed to load mesh: {mesh_info.get('error')}"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 500
+            return fast_jsonify({"success": False, "error": error_msg}), 500
 
         logger.info(
             f"[FOAMFlask] [create_contour] Mesh loaded: {mesh_info['n_points']} points"
@@ -2156,7 +2179,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if scalar_field not in available_fields:
             error_msg = f"Scalar field '{scalar_field}' not found. Available: {available_fields}"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 400
+            return fast_jsonify({"success": False, "error": error_msg}), 400
 
         logger.info(f"[FOAMFlask] [create_contour] Scalar field '{scalar_field}' found")
 
@@ -2187,7 +2210,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
                 f"Failed to generate isosurfaces: {isosurface_info.get('error')}"
             )
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 500
+            return fast_jsonify({"success": False, "error": error_msg}), 500
 
         logger.info(
             f"[FOAMFlask] [create_contour] Isosurfaces generated: {isosurface_info['n_points']} points"
@@ -2208,7 +2231,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if not html_content:
             error_msg = "Empty HTML content generated"
             logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return jsonify({"success": False, "error": error_msg}), 500
+            return fast_jsonify({"success": False, "error": error_msg}), 500
 
         logger.info(
             f"[FOAMFlask] [create_contour] HTML generated: {len(html_content)} bytes"
@@ -2227,7 +2250,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             f"[FOAMFlask] [create_contour] Traceback:\n{traceback.format_exc()}"
         )
 
-        return jsonify({"success": False, "error": f"Server error: {sanitize_error(e)}"}), 500
+        return fast_jsonify({"success": False, "error": f"Server error: {sanitize_error(e)}"}), 500
 
 
 @app.route("/api/upload_vtk", methods=["POST"])
@@ -2239,17 +2262,17 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
     """
     logger.info("[FOAMFlask] [upload_vtk] Received file upload request")
     if "file" not in request.files:
-        return jsonify({"success": False, "error": "No file part"}), 400
+        return fast_jsonify({"success": False, "error": "No file part"}), 400
 
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"success": False, "error": "No selected file"}), 400
+        return fast_jsonify({"success": False, "error": "No selected file"}), 400
 
     temp_dir = Path("temp_uploads")
     temp_dir.mkdir(exist_ok=True)
 
     if not file.filename:
-        return jsonify({"success": False, "error": "Invalid filename"}), 400
+        return fast_jsonify({"success": False, "error": "Invalid filename"}), 400
 
     filepath = temp_dir / secure_filename(file.filename)
 
@@ -2263,7 +2286,7 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
 
         if not result.get("success", False):
             return (
-                jsonify(
+                fast_jsonify(
                     {
                         "success": False,
                         "error": result.get("error", "Failed to load mesh"),
@@ -2272,7 +2295,7 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
                 400,
             )
 
-        return jsonify(
+        return fast_jsonify(
             {
                 "success": True,
                 "filename": file.filename,
@@ -2289,7 +2312,7 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
     except Exception as e:
         logger.error(f"Error in upload_vtk: {str(e)}", exc_info=True)
         return (
-            jsonify({"success": False, "error": f"Error processing file: {sanitize_error(e)}"}),
+            fast_jsonify({"success": False, "error": f"Error processing file: {sanitize_error(e)}"}),
             500,
         )
     finally:
@@ -2314,7 +2337,7 @@ def api_list_resource_geometry() -> Union[Response, Tuple[Response, int]]:
     # Check cache if not refreshing
     if not refresh and _RESOURCE_GEOMETRY_CACHE.get("files"):
         logger.debug("[FOAMFlask] Returning cached resource geometry list")
-        return jsonify({"files": _RESOURCE_GEOMETRY_CACHE["files"]})
+        return fast_jsonify({"files": _RESOURCE_GEOMETRY_CACHE["files"]})
 
     try:
         client = get_docker_client()
@@ -2347,11 +2370,11 @@ def api_list_resource_geometry() -> Union[Response, Tuple[Response, int]]:
         # Update cache
         _RESOURCE_GEOMETRY_CACHE["files"] = files
         
-        return jsonify({"files": files})
+        return fast_jsonify({"files": files})
 
     except Exception as e:
         logger.error(f"Error listing resource geometry: {e}")
-        return jsonify({"error": sanitize_error(e)}), 500
+        return fast_jsonify({"error": sanitize_error(e)}), 500
 
 
 @app.route("/api/resources/geometry/fetch", methods=["POST"])
@@ -2363,11 +2386,11 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
 
     if not filename or not case_name:
         logger.error(f"Fetch failed: Missing filename ({filename}) or caseName ({case_name})")
-        return jsonify({"success": False, "message": "Missing filename or caseName"}), 400
+        return fast_jsonify({"success": False, "message": "Missing filename or caseName"}), 400
 
     if not is_safe_script_name(filename):
          logger.error(f"Fetch failed: Invalid filename ({filename})")
-         return jsonify({"success": False, "message": "Invalid filename"}), 400
+         return fast_jsonify({"success": False, "message": "Invalid filename"}), 400
 
     try:
         case_dir_path = validate_safe_path(CASE_ROOT, case_name)
@@ -2375,7 +2398,7 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
         tri_surface_dir.mkdir(parents=True, exist_ok=True)
     except ValueError as e:
         logger.error(f"Fetch failed: Path validation error ({e})")
-        return jsonify({"success": False, "message": str(e)}), 400
+        return fast_jsonify({"success": False, "message": str(e)}), 400
 
     try:
         client = get_docker_client()
@@ -2411,13 +2434,13 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
 
         expected_file = tri_surface_dir / filename
         if expected_file.exists():
-             return jsonify({"success": True, "message": f"Fetched {filename}"})
+             return fast_jsonify({"success": True, "message": f"Fetched {filename}"})
         else:
-             return jsonify({"success": False, "message": "File copy failed"}), 500
+             return fast_jsonify({"success": False, "message": "File copy failed"}), 500
 
     except Exception as e:
         logger.error(f"Error fetching resource geometry: {e}")
-        return jsonify({"success": False, "message": sanitize_error(e)}), 500
+        return fast_jsonify({"success": False, "message": sanitize_error(e)}), 500
 
 
 def main() -> None:
