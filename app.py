@@ -257,6 +257,62 @@ def _resolve_path_cached(path_str: str) -> Path:
     return Path(path_str).resolve()
 
 
+def is_safe_case_root(path_str: str) -> bool:
+    """
+    Check if the path is safe to use as a case root.
+    Blocks system directories on Linux and Windows.
+
+    Args:
+        path_str: The resolved absolute path string.
+
+    Returns:
+        True if safe, False if system directory.
+    """
+    # Normalize path separators
+    normalized = os.path.normpath(path_str)
+
+    system = platform.system()
+
+    if system == "Windows":
+        # Windows system directories
+        # Normalize to lower case for case-insensitive comparison
+        norm_lower = normalized.lower()
+
+        # Check for drive root (e.g. C:\)
+        # Regex: ^[a-z]:\\?$ or ^[a-z]:$
+        if re.match(r'^[a-z]:\\?$', norm_lower):
+            return False
+
+        forbidden_prefixes = [
+            "c:\\windows",
+            "c:\\program files",
+            "c:\\program files (x86)",
+            "c:\\users\\public",
+            "c:\\inetpub",
+        ]
+
+        # Check specific prefixes
+        for p in forbidden_prefixes:
+            if norm_lower == p or norm_lower.startswith(p + "\\"):
+                return False
+
+    else:
+        # Linux/Unix system directories
+        forbidden_prefixes = [
+            "/bin", "/boot", "/dev", "/etc", "/lib", "/lib64",
+            "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var"
+        ]
+
+        if normalized == "/":
+            return False
+
+        for p in forbidden_prefixes:
+            if normalized == p or normalized.startswith(p + os.sep):
+                return False
+
+    return True
+
+
 def validate_safe_path(base_dir: str, relative_path: str) -> Path:
     """
     Validate and resolve a path to ensure it remains within the base directory.
@@ -713,16 +769,10 @@ def set_case() -> Union[Response, Tuple[Response, int]]:
         case_dir_path = Path(data["caseDir"]).resolve()
 
         # Security: Prevent setting CASE_ROOT to system directories
-        forbidden_prefixes = [
-            "/bin", "/boot", "/dev", "/etc", "/lib", "/lib64",
-            "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var"
-        ]
         resolved_str = str(case_dir_path)
 
-        if resolved_str == "/":
-            return jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system root"}), 400
-
-        if any(resolved_str == p or resolved_str.startswith(p + os.sep) for p in forbidden_prefixes):
+        if not is_safe_case_root(resolved_str):
+            logger.warning(f"Security: Attempt to set case root to system directory blocked: {resolved_str}")
             return jsonify({"output": "[FOAMFlask] [Error] Cannot set case root to system directory"}), 400
 
         case_dir_path.mkdir(parents=True, exist_ok=True)
