@@ -173,6 +173,7 @@ let lastErrorNotificationTime = 0;
 const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000;
 // Plotting variables
 let plotUpdateInterval = null;
+let wsConnection = null; // ⚡ Bolt Optimization: WebSocket for realtime data
 let plotsVisible = true;
 let aeroVisible = false;
 let isUpdatingPlots = false;
@@ -1081,16 +1082,71 @@ const toggleAeroPlots = () => {
             btn.textContent = "Show Aero Plots";
     }
 };
+const connectWebSocket = (tutorial) => {
+    if (wsConnection) {
+        // If already connected to same tutorial, do nothing
+        if (wsConnection.url.includes(`tutorial=${encodeURIComponent(tutorial)}`) &&
+            (wsConnection.readyState === WebSocket.OPEN || wsConnection.readyState === WebSocket.CONNECTING)) {
+            return;
+        }
+        wsConnection.close();
+    }
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/data?tutorial=${encodeURIComponent(tutorial)}`;
+    try {
+        wsConnection = new WebSocket(wsUrl);
+        wsConnection.onmessage = (event) => {
+            // ⚡ Bolt Optimization: WebSocket push updates
+            if (document.hidden || !plotsInViewport)
+                return;
+            try {
+                const payload = JSON.parse(event.data);
+                if (payload.plot_data)
+                    updatePlots(payload.plot_data);
+                if (payload.residuals)
+                    updateResidualsPlot(tutorial, payload.residuals);
+            }
+            catch (e) {
+                console.error("WS Error", e);
+            }
+        };
+        wsConnection.onclose = () => {
+            wsConnection = null;
+            // Fallback to polling if WS dies during simulation
+            if (isSimulationRunning) {
+                console.warn("WS Closed, reverting to polling");
+                startPolling();
+            }
+        };
+    }
+    catch (e) {
+        console.error("Failed to connect WS", e);
+        startPolling();
+    }
+};
 const startPlotUpdates = () => {
+    const selectedTutorial = document.getElementById("tutorialSelect")?.value;
+    if (!selectedTutorial)
+        return;
+    // Try WebSocket first
+    connectWebSocket(selectedTutorial);
+    // Also start polling as fallback / heartbeat or for initial load check
+    startPolling();
+};
+const startPolling = () => {
     if (plotUpdateInterval)
         return;
     plotUpdateInterval = setInterval(() => {
-        // ⚡ Bolt Optimization: Pause polling when tab is hidden to save resources
+        // ⚡ Bolt Optimization: Pause polling when tab is hidden
         if (document.hidden)
             return;
-        // Stop polling if simulation is not running
-        if (!isSimulationRunning) {
+        // Stop if simulation not running AND no WS connection (if WS exists, it handles updates)
+        if (!isSimulationRunning && !wsConnection) {
             stopPlotUpdates();
+            return;
+        }
+        // If WS is active and open, we don't need to poll for data
+        if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
             return;
         }
         if (!plotsInViewport)
@@ -1106,10 +1162,17 @@ const stopPlotUpdates = () => {
         clearInterval(plotUpdateInterval);
         plotUpdateInterval = null;
     }
+    if (wsConnection) {
+        wsConnection.close();
+        wsConnection = null;
+    }
 };
-const updateResidualsPlot = async (tutorial) => {
+const updateResidualsPlot = async (tutorial, injectedData) => {
     try {
-        const data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+        let data = injectedData;
+        if (!data) {
+            data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+        }
         if (data.error || !data.time || data.time.length === 0) {
             return;
         }
@@ -1260,16 +1323,22 @@ const updateAeroPlots = async (preFetchedData) => {
         console.error("FOAMFlask Error updating aero plots", error);
     }
 };
-const updatePlots = async () => {
+const updatePlots = async (injectedData) => {
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial || isUpdatingPlots)
         return;
     isUpdatingPlots = true;
     try {
-        const data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        let data = injectedData;
+        if (!data) {
+            // ⚡ Bolt Optimization: Use fast API endpoint
+            data = await fetchWithCache(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
+        }
         if (data.error) {
             console.error("FOAMFlask Error fetching plot data", data.error);
-            showNotification("Error fetching plot data", "error");
+            // Only show notification if explicit fetch failed, to avoid WS spam
+            if (!injectedData)
+                showNotification("Error fetching plot data", "error");
             return;
         }
         // Pressure plot
@@ -1486,7 +1555,7 @@ const updatePlots = async () => {
         }
         if (pendingPlotUpdate) {
             pendingPlotUpdate = false;
-            requestAnimationFrame(updatePlots);
+            requestAnimationFrame(() => updatePlots());
         }
     }
 };
