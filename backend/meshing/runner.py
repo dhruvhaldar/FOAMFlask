@@ -112,11 +112,15 @@ class MeshingRunner:
 
             # Create command
             # Source bashrc, cd to case, run command
-            docker_cmd = (
-                f"bash -c 'source {bashrc} && "
-                f"cd {container_case_path} && "
-                f"{command}'"
-            )
+            # Security: Use list format with arguments to prevent shell injection and handle paths securely
+            docker_cmd = [
+                "bash", "-c",
+                "source \"$1\" && cd \"$2\" && $3",
+                "meshing_runner",  # $0
+                bashrc,           # $1
+                container_case_path, # $2
+                command           # $3
+            ]
 
             logger.info(f"Running meshing command: {command} in {container_case_path}")
 
