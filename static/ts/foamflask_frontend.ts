@@ -48,6 +48,8 @@ declare global {
     toggleMobileMenu: () => void;
     uploadGeometry: (btn?: HTMLElement) => void;
     refreshGeometryList: (btn?: HTMLElement) => void;
+    generateBlockMeshDict: (btn?: HTMLElement) => void;
+    generateSnappyHexMeshDict: (btn?: HTMLElement) => void;
     runCommand: (cmd: string, btn?: HTMLElement) => void;
     clearMeshingOutput: () => void;
     copyMeshingOutput: () => void;
@@ -2161,21 +2163,61 @@ const fillBoundsFromGeometry = async (btnElement?: HTMLElement) => {
   }
 };
 
-const generateBlockMeshDict = async () => {
-  if (!activeCase) return;
+const generateBlockMeshDict = async (btnElement?: HTMLElement) => {
+  if (!activeCase) {
+    showNotification("Please select an active case first", "warning");
+    return;
+  }
+
+  const btn = btnElement as HTMLButtonElement | undefined;
+  let originalText = "";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
+  }
+
   const minVal = (document.getElementById("bmMin") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
   const maxVal = (document.getElementById("bmMax") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
   const cells = (document.getElementById("bmCells") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
   const grading = (document.getElementById("bmGrading") as HTMLInputElement).value.trim().split(/\s+/).map(Number);
   try {
     await fetch("/api/meshing/blockMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { min_point: minVal, max_point: maxVal, cells, grading } }) });
-    showNotification("Generated", "success");
-  } catch (e) { }
+    showNotification("Generated blockMeshDict", "success");
+  } catch (e) {
+    showNotification("Failed to generate blockMeshDict", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalText;
+    }
+  }
 };
 
-const generateSnappyHexMeshDict = async () => {
+const generateSnappyHexMeshDict = async (btnElement?: HTMLElement) => {
   const filename = (document.getElementById("shmObjectList") as HTMLSelectElement)?.value;
-  if (!activeCase || !filename) return;
+  if (!activeCase) {
+    showNotification("Please select an active case first", "warning");
+    return;
+  }
+  if (!filename) {
+    showNotification("Please select a geometry object first", "warning");
+    return;
+  }
+
+  const btn = btnElement as HTMLButtonElement | undefined;
+  let originalText = "";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
+  }
+
   // Use default value 0 if element doesn't exist or is empty, though HTML doesn't have shmLevel
   // The HTML has shmObjRefMin/Max, but not a global shmLevel.
   // Wait, I am fixing selectShmObject.
@@ -2190,8 +2232,16 @@ const generateSnappyHexMeshDict = async () => {
   const location = locationInput ? locationInput.value.trim().split(/\s+/).map(Number) : [0, 0, 0];
   try {
     await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { stl_filename: filename, refinement_level: level, location_in_mesh: location } }) });
-    showNotification("Generated", "success");
-  } catch (e) { }
+    showNotification("Generated snappyHexMeshDict", "success");
+  } catch (e) {
+    showNotification("Failed to generate snappyHexMeshDict", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalText;
+    }
+  }
 };
 
 const selectShmObject = () => {
