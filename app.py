@@ -657,6 +657,14 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
 
     while elapsed < timeout:
         if host_log_path.exists():
+            # Security: Prevent symlink attacks
+            # The log file should be a regular file created by OpenFOAM, never a symlink.
+            if host_log_path.is_symlink():
+                logger.warning(
+                    "[FOAMFlask] Security: log.foamRun is a symlink. Ignoring to prevent file read vulnerability."
+                )
+                return
+
             try:
                 # Use shutil.copyfile for efficient, streamed copying
                 # This avoids reading the whole file into memory

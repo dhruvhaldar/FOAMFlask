@@ -821,6 +821,11 @@ class OpenFOAMFieldParser:
             if known_stat:
                 stat = known_stat
             else:
+                # Security: Check for symlinks to prevent path traversal/file read
+                if os.path.islink(path_str):
+                    logger.warning(f"Security: Ignoring symlinked log file: {path_str}")
+                    return {}
+
                 stat = os.stat(path_str)
 
             mtime = stat.st_mtime
