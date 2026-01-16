@@ -88,6 +88,17 @@ Write-Host "Installing Python dependencies..."
 & $VenvPip install --upgrade pip
 & $VenvPip install -r requirements.txt
 
+# Install Rust Accelerator
+if (Test-Path "backend/accelerator") {
+    Write-Host "Building Rust Accelerator..." -ForegroundColor Cyan
+    if (Get-Command cargo -ErrorAction SilentlyContinue) {
+        & $VenvPip install ./backend/accelerator
+        Write-Host "✓ Rust Accelerator installed" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Cargo not found. Rust accelerator will be skipped." -ForegroundColor Yellow
+    }
+}
+
 # 4. Build Frontend
 Write-Host "Building Frontend..." -ForegroundColor Cyan
 pnpm install
@@ -98,4 +109,4 @@ Write-Host "=== Installation Complete! ===" -ForegroundColor Cyan
 Write-Host "Starting FOAMFlask..." -ForegroundColor Green
 Write-Host "Access the app at: http://localhost:5000"
 
-& $VenvPython app.py
+& $VenvPython main.py

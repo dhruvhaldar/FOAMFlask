@@ -111,6 +111,17 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Install Rust Accelerator
+if [ -d "backend/accelerator" ]; then
+    echo -e "${BLUE}Building Rust Accelerator...${NC}"
+    if check_cmd cargo; then
+        pip install ./backend/accelerator
+        echo -e "${GREEN}✓ Rust Accelerator installed${NC}"
+    else
+        echo -e "${YELLOW}Warning: Cargo not found. Rust accelerator will be skipped (slower performance).${NC}"
+    fi
+fi
+
 # 5. Build Frontend
 echo -e "${BLUE}Building Frontend...${NC}"
 pnpm install
@@ -121,4 +132,5 @@ echo -e "${BLUE}=== Installation Complete! ===${NC}"
 echo -e "${GREEN}Starting FOAMFlask...${NC}"
 echo -e "Access the app at: http://localhost:5000"
 
-python app.py
+# Use python main.py for FastAPI + Flask
+python main.py

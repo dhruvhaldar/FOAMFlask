@@ -22,6 +22,7 @@ decorator==5.2.1
 docker==7.1.0
 execnet==2.1.2
 executing==2.2.1
+fastapi==0.109.0
 Flask==3.1.2
 fonttools==4.60.2
 frozenlist==1.8.0
@@ -44,6 +45,7 @@ Markdown==3.10
 markdown-it-py==4.0.0
 markdown2==2.5.4
 MarkupSafe==3.0.2
+maturin>=1.0.0
 matplotlib==3.10.7
 matplotlib-inline==0.2.1
 mdit-py-plugins==0.5.0
@@ -56,6 +58,7 @@ mypy_extensions==1.1.0
 nest-asyncio==1.6.0
 netCDF4==1.7.3
 numpy==2.3.4
+orjson==3.10.7
 packaging==25.0
 pandas==2.3.3
 panel==1.5.4
@@ -78,6 +81,7 @@ pytest-cov==5.0.0
 pytest-mock==3.14.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
+python-multipart>=0.0.9
 python_minifier==3.1.0
 pythreejs==2.4.2
 pytokens==0.3.0
@@ -111,12 +115,13 @@ typing_extensions==4.15.0
 tzdata==2025.2
 uc-micro-py==1.0.3
 urllib3==2.6.1
+uvicorn[standard]==0.27.0
 vtk==9.5.2
 wcwidth==0.2.14
 webencodings==0.5.1
+websockets>=12.0
 Werkzeug==3.1.4
 widgetsnbextension==4.0.15
 wslink==2.5.0
 xyzservices==2025.10.0
 yarl==1.22.0
-orjson==3.10.7

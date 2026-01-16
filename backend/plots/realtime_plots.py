@@ -11,6 +11,13 @@ import mmap
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
 
+# ⚡ Bolt Optimization: Import Rust accelerator if available
+try:
+    import accelerator
+    RUST_ACCELERATOR = True
+except ImportError:
+    RUST_ACCELERATOR = False
+
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
 
@@ -282,6 +289,12 @@ class OpenFOAMFieldParser:
         else:
             path_str = str(field_path)
 
+        # ⚡ Bolt Optimization: Use Rust accelerator if available
+        # Rust handles mmap and parsing significantly faster.
+        if RUST_ACCELERATOR and not check_mtime and path_str in _FILE_CACHE:
+             # Fast path: Skip everything if cache hit requested without checks
+             return _FILE_CACHE[path_str][1]
+
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
             # If check_mtime is False and we have it in cache, return immediately
@@ -306,6 +319,15 @@ class OpenFOAMFieldParser:
                     return cached_val
 
             val = None
+
+            if RUST_ACCELERATOR:
+                try:
+                    val = accelerator.parse_scalar_field(path_str)
+                    _FILE_CACHE[path_str] = (mtime, val)
+                    return val
+                except Exception as e:
+                    # Fallback to Python if Rust fails (unlikely)
+                    pass
 
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files to avoid reading entire file into memory.
@@ -412,6 +434,10 @@ class OpenFOAMFieldParser:
         else:
             path_str = str(field_path)
 
+        # ⚡ Bolt Optimization: Use Rust accelerator if available
+        if RUST_ACCELERATOR and not check_mtime and path_str in _FILE_CACHE:
+             return _FILE_CACHE[path_str][1]
+
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
             if not check_mtime and path_str in _FILE_CACHE:
@@ -434,6 +460,14 @@ class OpenFOAMFieldParser:
                     return cached_val
 
             val = (0.0, 0.0, 0.0)
+
+            if RUST_ACCELERATOR:
+                try:
+                    val = accelerator.parse_vector_field(path_str)
+                    _FILE_CACHE[path_str] = (mtime, val)
+                    return val
+                except Exception as e:
+                    pass
 
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files
