@@ -3039,6 +3039,9 @@ const init = () => {
     showEdgesCheck.addEventListener("change", onMeshParamChange);
   }
 
+  // Auto-format vector inputs
+  ['bmCells', 'bmGrading', 'bmMin', 'bmMax', 'shmLocation'].forEach(setupVectorInputAutoFormat);
+
   // Scroll Listener for Navbar
   window.addEventListener("scroll", handleScroll);
 
@@ -3059,6 +3062,25 @@ const handleScroll = (): void => {
       navbar.classList.remove("glass-plot");
       navbar.classList.add("glass");
     }
+  }
+};
+
+// Auto-format Vector Inputs (comma to space)
+const setupVectorInputAutoFormat = (elementId: string) => {
+  const el = document.getElementById(elementId) as HTMLInputElement;
+  if (el) {
+    el.addEventListener('blur', () => {
+      let val = el.value;
+      // Replace commas with spaces
+      val = val.replace(/,/g, ' ');
+      // Collapse multiple spaces
+      val = val.replace(/\s+/g, ' ');
+      val = val.trim();
+      if (val !== el.value) {
+        el.value = val;
+        // Visual feedback could be added here if needed
+      }
+    });
   }
 };
 
