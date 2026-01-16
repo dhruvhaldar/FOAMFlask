@@ -120,7 +120,7 @@ vtk==9.5.2
 wcwidth==0.2.14
 webencodings==0.5.1
 websockets>=12.0
-Werkzeug==3.1.4
+Werkzeug==3.1.5
 widgetsnbextension==4.0.15
 wslink==2.5.0
 xyzservices==2025.10.0
