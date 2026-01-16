@@ -576,24 +576,16 @@ def get_tutorials() -> List[str]:
             return []
 
         # Get the tutorials directory from OpenFOAM
+        # ⚡ Bolt Optimization: Combine finding tutorial root and listing cases into one command.
+        # This saves a full Docker container startup/teardown cycle (approx 0.5-1.0s).
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
-        result = client.containers.run(
-            DOCKER_IMAGE,
-            f"bash -c 'source {bashrc} && echo $FOAM_TUTORIALS'",
-            remove=True,
-            stdout=True,
-            stderr=True,
-            tty=True,
-        )
 
-        tutorial_root = result.decode().strip()
-        if not tutorial_root:
-            logger.warning("[FOAMFlask] No tutorial root found in OpenFOAM")
-            return []
-
-        # Find directories containing system/ and constant/ subdirectories
+        # We cd to $FOAM_TUTORIALS so find returns relative paths (./category/case)
+        # This avoids needing to know the absolute path of $FOAM_TUTORIALS in Python.
         find_cmd = (
-            f"find {tutorial_root} -mindepth 2 -maxdepth 2 -type d "
+            f"source {bashrc} && "
+            f"cd $FOAM_TUTORIALS && "
+            f"find . -mindepth 2 -maxdepth 2 -type d "
             "-exec test -d {}/system -a -d {}/constant \\; -print"
         )
 
@@ -606,14 +598,17 @@ def get_tutorials() -> List[str]:
             tty=True,
         )
 
+        # Output will be like ./incompressible/simpleFoam/pitzDaily
         cases = result.decode().splitlines()
 
-        # Normalize paths based on OS
-        if platform.system() == "Windows":
-            tutorials = [posixpath.relpath(c, tutorial_root) for c in cases]
-        else:
-            # Using posixpath.relpath because Docker paths are POSIX
-            tutorials = [posixpath.relpath(c, tutorial_root) for c in cases]
+        tutorials = []
+        for c in cases:
+            c = c.strip()
+            # Strip leading ./ if present
+            if c.startswith("./"):
+                c = c[2:]
+            if c:
+                tutorials.append(c)
 
         sorted_tutorials = sorted(tutorials)
 

@@ -25,20 +25,23 @@ def test_get_tutorials_is_cached():
 
         # Setup mock container run return values
         mock_container_run = mock_client.containers.run
+        # ⚡ Bolt Optimization: Only 1 call expected now
+        # Output mimics "find ." from inside FOAM_TUTORIALS
         mock_container_run.side_effect = [
-            b"/opt/openfoam/tutorials\n", # 1st call: echo $FOAM_TUTORIALS
-            b"/opt/openfoam/tutorials/incompressible/pimpleFoam/ras/pitzDaily\n/opt/openfoam/tutorials/basic/laplacianFoam/flange\n", # 2nd call: find ...
-            # Subsequent calls should not happen due to caching
+            b"./incompressible/pimpleFoam/ras/pitzDaily\n./basic/laplacianFoam/flange\n",
         ]
 
         # First call
         tutorials1 = get_tutorials()
         assert len(tutorials1) == 2
+        # Verify stripping of "./"
+        assert "incompressible/pimpleFoam/ras/pitzDaily" in tutorials1
+        assert "basic/laplacianFoam/flange" in tutorials1
 
         # Second call
         tutorials2 = get_tutorials()
         assert len(tutorials2) == 2
 
         # Verification
-        # We expect 2 calls to containers.run (only for the first call)
-        assert mock_container_run.call_count == 2
+        # We expect 1 call to containers.run (only for the first call)
+        assert mock_container_run.call_count == 1
