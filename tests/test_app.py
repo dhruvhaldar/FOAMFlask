@@ -730,9 +730,13 @@ def test_run_case_fallback_script(client, tmp_path):
         wrapper_script = bash_command[2]  # The script is the third part after 'bash' and '-c'
         
         # Verify the wrapper script contains the expected commands
-        assert "custom_script" in wrapper_script
-        assert "chmod +x custom_script" in wrapper_script
-        assert "./custom_script" in wrapper_script
+        # Update assertions to match new secure positional argument format
+        # bash -c '... && chmod +x "$3" && ./"$3"'
+        assert "chmod +x \"$3\"" in wrapper_script
+        assert "./'$3'" in wrapper_script
+
+        # Verify custom_script is passed as argument
+        assert "custom_script" in args[1]
 
     # Test 2: Unsafe script name
     with patch('app.is_safe_command', return_value=True), \
@@ -769,13 +773,17 @@ def test_run_case_fallback_script(client, tmp_path):
         bash_command = args[1]
         wrapper_script = bash_command[2]  # The script is the third part after 'bash' and '-c'
         
-        # Verify the bash script includes necessary setup
-        assert "source /opt/" in wrapper_script  # Should source OpenFOAM bashrc
-        # The test should check for /tmp/FOAM_Run as that is the container mount path
-        # Since is_direct_case_path is True (case_dir name matches tutorial name), path is just /tmp/FOAM_Run
-        assert "cd /tmp/FOAM_Run" in wrapper_script
-        assert "chmod +x setup_environment" in wrapper_script
-        assert "./setup_environment" in wrapper_script
+        # Verify the bash script includes necessary setup via positional args
+        assert "source \"$1\"" in wrapper_script
+        assert "cd \"$2\"" in wrapper_script
+        assert "chmod +x \"$3\"" in wrapper_script
+        assert "./\"$3\"" in wrapper_script
+
+        # Verify the actual values passed as arguments
+        # args[1] is the docker command list
+        assert "source /opt/" in args[1][4]  # $1 is bashrc
+        assert "/tmp/FOAM_Run" in args[1][5] # $2 is container_case_path
+        assert "setup_environment" in args[1][6] # $3 is script name
 
 def test_run_case_unsafe_script_name(client, tmp_path):
     """Test the run_case endpoint with an unsafe script name."""
