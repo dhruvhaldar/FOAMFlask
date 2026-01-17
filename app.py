@@ -2382,14 +2382,18 @@ def api_list_resource_geometry() -> Union[Response, Tuple[Response, int]]:
              return docker_unavailable_response()
 
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
-        cmd = (
-            f"bash -c 'source {bashrc} && "
-            "ls -1 $FOAM_TUTORIALS/resources/geometry'"
-        )
+        # Security: Use list-based command construction to prevent shell injection
+        # Even though there is no user input here, we maintain consistency
+        docker_cmd = [
+            "bash", "-c",
+            "source \"$1\" && ls -1 $FOAM_TUTORIALS/resources/geometry",
+            "list_geometry", # $0
+            bashrc          # $1
+        ]
 
         result = client.containers.run(
             DOCKER_IMAGE,
-            cmd,
+            docker_cmd,
             remove=True,
             stdout=True,
             stderr=True,
@@ -2450,10 +2454,15 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
             host_path_str: {"bind": "/output", "mode": "rw"}
         }
 
-        cmd = (
-            f"bash -c 'source {bashrc} && "
-            f"cp $FOAM_TUTORIALS/resources/geometry/{filename} /output/'"
-        )
+        # Security: Use list-based command construction to prevent shell injection
+        # Pass filename and bashrc as positional arguments to bash -c
+        docker_cmd = [
+            "bash", "-c",
+            "source \"$1\" && cp $FOAM_TUTORIALS/resources/geometry/\"$2\" /output/",
+            "fetcher",   # $0
+            bashrc,      # $1
+            filename     # $2
+        ]
         
         run_kwargs = {
             "volumes": volumes,
@@ -2465,7 +2474,7 @@ def api_fetch_resource_geometry() -> Union[Response, Tuple[Response, int]]:
 
         client.containers.run(
             DOCKER_IMAGE,
-            cmd,
+            docker_cmd,
             **run_kwargs
         )
 
