@@ -13,9 +13,12 @@ logger = logging.getLogger("FOAMFlask")
 
 ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 
-# Define cache directory for geometry HTML files
-CACHE_DIR = Path(tempfile.gettempdir()) / "foamflask_geometry_cache"
-CACHE_DIR.mkdir(exist_ok=True, parents=True)
+def _get_cache_dir() -> Path:
+    """Get the cache directory, creating it if it doesn't exist."""
+    cache_dir = Path(tempfile.gettempdir()) / "foamflask_geometry_cache"
+    cache_dir.mkdir(exist_ok=True, parents=True)
+    return cache_dir
+
 CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
 
 def _cleanup_cache():
@@ -23,12 +26,13 @@ def _cleanup_cache():
     Maintain cache size within limits by deleting oldest files.
     """
     try:
-        total_size = sum(f.stat().st_size for f in CACHE_DIR.iterdir() if f.is_file())
+        cache_dir = _get_cache_dir()
+        total_size = sum(f.stat().st_size for f in cache_dir.iterdir() if f.is_file())
         limit_bytes = CACHE_SIZE_LIMIT_MB * 1024 * 1024
 
         if total_size > limit_bytes:
             # Sort files by mtime (oldest first)
-            files = sorted([f for f in CACHE_DIR.iterdir() if f.is_file()], key=lambda f: f.stat().st_mtime)
+            files = sorted([f for f in cache_dir.iterdir() if f.is_file()], key=lambda f: f.stat().st_mtime)
 
             for f in files:
                 try:
@@ -151,7 +155,9 @@ class GeometryVisualizer:
                 mtime = path.stat().st_mtime
                 cache_key_str = f"{str(path)}_{mtime}_{color}_{opacity}"
                 cache_key = hashlib.sha256(cache_key_str.encode()).hexdigest()
-                cache_path = CACHE_DIR / f"{cache_key}.html"
+
+                cache_dir = _get_cache_dir()
+                cache_path = cache_dir / f"{cache_key}.html"
 
                 if cache_path.exists():
                     logger.debug(f"Serving geometry from cache: {cache_path}")
