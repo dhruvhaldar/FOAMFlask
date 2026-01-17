@@ -35,6 +35,27 @@ window.fetch = async (input, init) => {
     return originalFetch(input, init);
 };
 // Utility functions
+const detectSlowHardware = () => {
+    try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl)
+            return true; // Assume slow if no WebGL
+        const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+        if (!debugInfo)
+            return false;
+        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        if (!renderer)
+            return false;
+        const lowerRenderer = renderer.toLowerCase();
+        // Keywords for integrated/slow graphics
+        const slowKeywords = ["intel", "uhd", "iris", "integrated", "llvmpipe", "software"];
+        return slowKeywords.some(keyword => lowerRenderer.includes(keyword));
+    }
+    catch (e) {
+        return false; // Fail safe
+    }
+};
 const getElement = (id) => {
     return document.getElementById(id);
 };
@@ -1229,7 +1250,7 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
                 traces.push({
                     x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
                     y: fieldData,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines",
                     name: field,
                     line: { color: colors[idx], width: 2.5, shape: "linear" },
@@ -1298,7 +1319,7 @@ const updateAeroPlots = async (preFetchedData) => {
                 const cpTrace = {
                     x: data.time,
                     y: cp,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines+markers",
                     name: "Cp",
                     line: { color: plotlyColors.red, width: 2.5 },
@@ -1389,7 +1410,7 @@ const updatePlots = async (injectedData) => {
             const pressureTrace = {
                 x: data.time,
                 y: data.p,
-                type: "scatter",
+                type: "scattergl",
                 mode: "lines",
                 name: "Pressure",
                 line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
@@ -1428,7 +1449,7 @@ const updatePlots = async (injectedData) => {
                 {
                     x: data.time,
                     y: data.U_mag,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines",
                     name: "|U|",
                     line: { color: plotlyColors.red, ...lineStyle, width: 2.5 },
@@ -1438,7 +1459,7 @@ const updatePlots = async (injectedData) => {
                 traces.push({
                     x: data.time,
                     y: data.Ux,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines",
                     name: "Ux",
                     line: {
@@ -1453,7 +1474,7 @@ const updatePlots = async (injectedData) => {
                 traces.push({
                     x: data.time,
                     y: data.Uy,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines",
                     name: "Uy",
                     line: {
@@ -1468,7 +1489,7 @@ const updatePlots = async (injectedData) => {
                 traces.push({
                     x: data.time,
                     y: data.Uz,
-                    type: "scatter",
+                    type: "scattergl",
                     mode: "lines",
                     name: "Uz",
                     line: {
@@ -1506,7 +1527,7 @@ const updatePlots = async (injectedData) => {
             turbulenceTrace.push({
                 x: data.time,
                 y: data.nut,
-                type: "scatter",
+                type: "scattergl",
                 mode: "lines",
                 name: "nut",
                 line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 },
@@ -1516,7 +1537,7 @@ const updatePlots = async (injectedData) => {
             turbulenceTrace.push({
                 x: data.time,
                 y: data.nuTilda,
-                type: "scatter",
+                type: "scattergl",
                 mode: "lines",
                 name: "nuTilda",
                 line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 },
@@ -1526,7 +1547,7 @@ const updatePlots = async (injectedData) => {
             turbulenceTrace.push({
                 x: data.time,
                 y: data.k,
-                type: "scatter",
+                type: "scattergl",
                 mode: "lines",
                 name: "k",
                 line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 },
@@ -1536,7 +1557,7 @@ const updatePlots = async (injectedData) => {
             turbulenceTrace.push({
                 x: data.time,
                 y: data.omega,
-                type: "scatter",
+                type: "scattergl",
                 mode: "lines",
                 name: "omega",
                 line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 },
@@ -1898,7 +1919,12 @@ const loadGeometryView = async () => {
         return;
     showNotification("Loading...", "info");
     try {
-        const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        let optimize = false;
+        if (detectSlowHardware()) {
+            const userChoice = await showConfirmModal("Optimize Geometry?", "Integrated graphics detected. Optimize geometry for better performance? (This reduces detail)");
+            optimize = userChoice;
+        }
+        const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename, optimize }) });
         if (res.ok) {
             const html = await res.text();
             document.getElementById("geometryInteractive").srcdoc = html;

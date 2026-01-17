@@ -12,7 +12,7 @@ logger = logging.getLogger("FOAMFlask")
 
 ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 
-def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float):
+def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float, target_faces: int = 100000):
     """
     Helper function to be run in a separate process to generate the HTML.
     This avoids signal handling issues with trame/aiohttp in Flask threads.
@@ -33,17 +33,16 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         mesh = pv.read(read_path, progress_bar=False)
 
         # ⚡ Bolt Optimization: Decimate mesh if needed
-        TARGET_FACES = 100000
-        if mesh.n_cells > TARGET_FACES:
+        if mesh.n_cells > target_faces:
             try:
                 # Assuming mesh is likely PolyData for STL/OBJ
                 if not isinstance(mesh, pv.PolyData):
                     mesh = mesh.extract_surface()
 
-                reduction = 1.0 - (TARGET_FACES / mesh.n_cells)
+                reduction = 1.0 - (target_faces / mesh.n_cells)
                 reduction = max(0.0, min(0.95, reduction))
                 if reduction > 0.05: # Only decimate if reduction is significant
-                    print(f"Decimating geometry from {mesh.n_cells} to ~{TARGET_FACES} cells")
+                    print(f"Decimating geometry from {mesh.n_cells} to ~{target_faces} cells")
                     mesh = mesh.decimate(reduction)
             except Exception as e:
                 print(f"Decimation failed, using full mesh: {e}")
@@ -72,7 +71,7 @@ class GeometryVisualizer:
     """Visualizes geometry files (STL) using PyVista."""
 
     @staticmethod
-    def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0) -> Optional[str]:
+    def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0, optimize: bool = False) -> Optional[str]:
         """
         Generates an interactive HTML representation of the STL file.
 
@@ -80,12 +79,14 @@ class GeometryVisualizer:
             file_path: Path to the STL file.
             color: Color of the mesh.
             opacity: Opacity of the mesh.
+            optimize: If True, uses more aggressive decimation (50k faces) for slower hardware.
 
         Returns:
             HTML string content or None on error.
         """
         try:
             path = Path(file_path).resolve()
+            target_faces = 50000 if optimize else 100000
             
             # Security check: Ensure file extension is allowed
             suffixes = path.suffixes
@@ -110,7 +111,7 @@ class GeometryVisualizer:
             # Run generation in a separate process
             p = multiprocessing.Process(
                 target=_generate_html_process,
-                args=(str(path), temp_output_path, color, opacity)
+                args=(str(path), temp_output_path, color, opacity, target_faces)
             )
             p.start()
             p.join(timeout=60) # Increased timeout for large meshes
