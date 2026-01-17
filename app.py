@@ -1284,17 +1284,25 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
     host_path_str = host_path.as_posix() if is_windows else str(host_path)
 
     # Base docker command: create directory and copy tutorial
-    docker_cmd = (
-        f"bash -c 'source {bashrc} && "
-        f"mkdir -p {container_case_path} && "
-        f"cp -r $FOAM_TUTORIALS/{tutorial}/* {container_case_path}"
+    # Security: Use list format for command to prevent shell injection
+    shell_cmd = (
+        "source \"$1\" && "
+        "mkdir -p \"$2\" && "
+        "cp -r $FOAM_TUTORIALS/\"$3\"/* \"$2\""
     )
 
     # On Linux/macOS, add chmod; on Windows skip it
     if not is_windows:
-        docker_cmd += f" && chmod +x {container_case_path}/Allrun"
+        shell_cmd += " && chmod +x \"$2\"/Allrun"
 
-    docker_cmd += "'"
+    docker_cmd = [
+        "bash", "-c",
+        shell_cmd,
+        "load_tutorial",  # $0
+        bashrc,           # $1
+        container_case_path, # $2
+        tutorial          # $3
+    ]
 
     container = None
     try:
@@ -1458,20 +1466,25 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                     yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.<br>"
                     return
                 
-                # Create a secure wrapper script using string concatenation
-                wrapper_script = "#!/bin/bash\n"
-                wrapper_script += "source " + bashrc + "\n"
-                wrapper_script += "cd " + container_case_path + "\n"
-                wrapper_script += "chmod +x " + script_name + "\n"
-                wrapper_script += "./" + script_name + "\n"
-                docker_cmd = ["bash", "-c", wrapper_script]
+                # Security: Use positional arguments for bash -c to prevent injection
+                docker_cmd = [
+                    "bash", "-c",
+                    "source \"$1\" && cd \"$2\" && chmod +x \"$3\" && ./\"$3\"",
+                    "run_script",        # $0
+                    bashrc,              # $1
+                    container_case_path, # $2
+                    script_name          # $3
+                ]
             else:
-                # OpenFOAM command - create secure wrapper script
-                wrapper_script = "#!/bin/bash\n"
-                wrapper_script += "source " + bashrc + "\n"
-                wrapper_script += "cd " + container_case_path + "\n"
-                wrapper_script += command + "\n"
-                docker_cmd = ["bash", "-c", wrapper_script]
+                # OpenFOAM command - Security: Use positional arguments
+                docker_cmd = [
+                    "bash", "-c",
+                    "source \"$1\" && cd \"$2\" && $3",
+                    "run_foam_cmd",      # $0
+                    bashrc,              # $1
+                    container_case_path, # $2
+                    command              # $3
+                ]
         else:
             # Fallback - treat as script with validation
             if not is_safe_script_name(command):
@@ -1479,12 +1492,15 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.<br>"
                 return
             
-            wrapper_script = "#!/bin/bash\n"
-            wrapper_script += "source " + bashrc + "\n"
-            wrapper_script += "cd " + container_case_path + "\n"
-            wrapper_script += "chmod +x " + command + "\n"
-            wrapper_script += "./" + command + "\n"
-            docker_cmd = ["bash", "-c", wrapper_script]
+            # Security: Use positional arguments
+            docker_cmd = [
+                "bash", "-c",
+                "source \"$1\" && cd \"$2\" && chmod +x \"$3\" && ./\"$3\"",
+                "run_script_fallback", # $0
+                bashrc,                # $1
+                container_case_path,   # $2
+                command                # $3
+            ]
 
         try:
             run_kwargs = {
@@ -2020,14 +2036,14 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             }
         }
 
-        docker_cmd = (
-            f"bash -c '"
-            f"source {bashrc} && "
-            f"cd {container_case_path} && "
-            f"source {bashrc} && "  # Source bashrc again in case we need it
-            f"foamToVTK -case {container_case_path}"
-            f"'"
-        )
+        # Security: Use positional arguments
+        docker_cmd = [
+            "bash", "-c",
+            "source \"$1\" && cd \"$2\" && source \"$1\" && foamToVTK -case \"$2\"",
+            "foamtovtk_runner",  # $0
+            bashrc,              # $1
+            container_case_path  # $2
+        ]
 
         try:
             run_kwargs = {
