@@ -1200,24 +1200,13 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
         break;
       }
       const text = decoder.decode(value);
-      text.split("\n").forEach(line => {
-        if (line.trim()) {
-          // Parse HTML line if present (e.g. from app.py escaping)
-          // Actually app.py sends raw strings or HTML? It sends <br>.
-          // But appendOutput just adds to innerHTML.
-          // Wait, the previous logic parsed lines. Let's keep it simple.
-          let logLine = line;
-          if (logLine.startsWith("INFO::[FOAMFlask]")) {
-            // Special handling?
-          }
-          // Simple append
-          const output = document.getElementById("commandOutput");
-          if (output) {
-            output.innerHTML += line + "<br>";
-            output.scrollTop = output.scrollHeight;
-          }
-        }
-      });
+      // Backend sends chunks of HTML (escaped text + <br>), so we can append directly
+      // 🎨 Palette UX Fix: Target correct 'output' ID and avoid innerHTML reparsing
+      const output = document.getElementById("output");
+      if (output) {
+        output.insertAdjacentHTML("beforeend", text);
+        output.scrollTop = output.scrollHeight;
+      }
     }
   } catch (err) {
     console.error(err); // Keep console error for debugging
