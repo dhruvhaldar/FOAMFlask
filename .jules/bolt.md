@@ -9,3 +9,7 @@
 ## 2025-01-27 - [Append-Only Cache Optimization]
 **Learning:** For time-series data caches that grow monotonically (like simulation logs), re-copying the entire data structure on every update is O(N²).
 **Action:** Detect the "append-only" case (where the new state is a superset of the old state) and use a shallow copy of the container + in-place append for the internal lists. This reduces complexity to O(N) and significantly speeds up polling for long-running processes.
+
+## 2025-02-05 - [Docker Execution Consolidation]
+**Learning:** Running `client.containers.run` incurs significant overhead (often 500ms-1s) for container startup and shutdown. When multiple commands need to be run sequentially (e.g., sourcing environment variables then running a command), executing them in separate containers multiplies this latency.
+**Action:** Combine sequential shell commands into a single execution using `bash -c 'cmd1 && cmd2'` whenever possible to pay the startup cost only once. This is especially critical for frequently called endpoints or initialization routines.
