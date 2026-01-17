@@ -7,10 +7,41 @@ import tempfile
 import os
 import gzip
 import shutil
+import hashlib
 
 logger = logging.getLogger("FOAMFlask")
 
 ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
+
+# Define cache directory for geometry HTML files
+CACHE_DIR = Path(tempfile.gettempdir()) / "foamflask_geometry_cache"
+CACHE_DIR.mkdir(exist_ok=True, parents=True)
+CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
+
+def _cleanup_cache():
+    """
+    Maintain cache size within limits by deleting oldest files.
+    """
+    try:
+        total_size = sum(f.stat().st_size for f in CACHE_DIR.iterdir() if f.is_file())
+        limit_bytes = CACHE_SIZE_LIMIT_MB * 1024 * 1024
+
+        if total_size > limit_bytes:
+            # Sort files by mtime (oldest first)
+            files = sorted([f for f in CACHE_DIR.iterdir() if f.is_file()], key=lambda f: f.stat().st_mtime)
+
+            for f in files:
+                try:
+                    size = f.stat().st_size
+                    f.unlink()
+                    total_size -= size
+                    logger.debug(f"Deleted cache file {f} to free space")
+                    if total_size <= limit_bytes:
+                        break
+                except OSError:
+                    pass
+    except Exception as e:
+        logger.warning(f"Error during cache cleanup: {e}")
 
 def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float):
     """
@@ -33,7 +64,8 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         mesh = pv.read(read_path, progress_bar=False)
 
         # ⚡ Bolt Optimization: Decimate mesh if needed
-        TARGET_FACES = 100000
+        # Increased target faces for better visual quality on modern browsers
+        TARGET_FACES = 500000
         if mesh.n_cells > TARGET_FACES:
             try:
                 # Assuming mesh is likely PolyData for STL/OBJ
@@ -44,7 +76,17 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
                 reduction = max(0.0, min(0.95, reduction))
                 if reduction > 0.05: # Only decimate if reduction is significant
                     print(f"Decimating geometry from {mesh.n_cells} to ~{TARGET_FACES} cells")
-                    mesh = mesh.decimate(reduction)
+
+                    # ⚡ Bolt Optimization: Use fast decimate_pro if available (topology preserving, faster)
+                    if hasattr(mesh, "decimate_pro"):
+                         try:
+                             mesh = mesh.decimate_pro(reduction, preserve_topology=True)
+                         except Exception as e:
+                             print(f"decimate_pro failed ({e}), falling back to standard decimate")
+                             mesh = mesh.decimate(reduction)
+                    else:
+                         mesh = mesh.decimate(reduction)
+
             except Exception as e:
                 print(f"Decimation failed, using full mesh: {e}")
 
@@ -103,6 +145,23 @@ class GeometryVisualizer:
                 logger.error(f"STL file not found: {path}")
                 return None
 
+            # ⚡ Bolt Optimization: Caching
+            # Check cache based on file path, mtime, and visualization parameters
+            try:
+                mtime = path.stat().st_mtime
+                cache_key_str = f"{str(path)}_{mtime}_{color}_{opacity}"
+                cache_key = hashlib.sha256(cache_key_str.encode()).hexdigest()
+                cache_path = CACHE_DIR / f"{cache_key}.html"
+
+                if cache_path.exists():
+                    logger.debug(f"Serving geometry from cache: {cache_path}")
+                    # Update access time? Not strictly necessary for tmp cache but good practice
+                    # cache_path.touch()
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        return f.read()
+            except Exception as e:
+                logger.warning(f"Cache check failed: {e}")
+
             # Create a temp file for the output
             with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
                 temp_output_path = tmp.name
@@ -113,7 +172,7 @@ class GeometryVisualizer:
                 args=(str(path), temp_output_path, color, opacity)
             )
             p.start()
-            p.join(timeout=60) # Increased timeout for large meshes
+            p.join(timeout=120) # Increased timeout for large meshes/high res
 
             if p.is_alive():
                 p.terminate()
@@ -138,7 +197,20 @@ class GeometryVisualizer:
             with open(temp_output_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
-            os.remove(temp_output_path)
+            # ⚡ Bolt Optimization: Save to cache
+            try:
+                # Perform cleanup if needed
+                _cleanup_cache()
+
+                # Move temp file to cache path (atomic on same filesystem)
+                # If cache dir is on different FS, shutil.move handles copy-delete
+                shutil.move(temp_output_path, cache_path)
+            except Exception as e:
+                logger.warning(f"Failed to save to cache: {e}")
+                # If move failed, temp_output_path might still exist or be half-moved
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
+
             return html_content
 
         except Exception as e:
