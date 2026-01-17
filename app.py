@@ -1897,11 +1897,6 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
         except ValueError as e:
             return fast_jsonify({"error": str(e)}), 400
 
-        # Add delay for first call
-        if not hasattr(api_mesh_screenshot, "_has_been_called"):
-            time.sleep(4)  # 4 second delay for first call
-            api_mesh_screenshot._has_been_called = True
-
         img_str = mesh_visualizer.get_mesh_screenshot(
             validated_path, width, height, show_edges, color, camera_position
         )
@@ -1945,9 +1940,6 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
             validated_path = validate_safe_path(CASE_ROOT, file_path)
         except ValueError as e:
             return fast_jsonify({"error": str(e)}), 400
-
-        # Add a small delay to prevent race conditions
-        time.sleep(2)  # 2 second delay
 
         html_content = mesh_visualizer.get_interactive_viewer_html(
             validated_path, show_edges, color

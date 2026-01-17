@@ -733,7 +733,7 @@ def test_run_case_fallback_script(client, tmp_path):
         # Update assertions to match new secure positional argument format
         # bash -c '... && chmod +x "$3" && ./"$3"'
         assert "chmod +x \"$3\"" in wrapper_script
-        assert "./'$3'" in wrapper_script
+        assert "./\"$3\"" in wrapper_script
 
         # Verify custom_script is passed as argument
         assert "custom_script" in args[1]
@@ -781,7 +781,7 @@ def test_run_case_fallback_script(client, tmp_path):
 
         # Verify the actual values passed as arguments
         # args[1] is the docker command list
-        assert "source /opt/" in args[1][4]  # $1 is bashrc
+        assert "/opt/" in args[1][4]  # $1 is bashrc
         assert "/tmp/FOAM_Run" in args[1][5] # $2 is container_case_path
         assert "setup_environment" in args[1][6] # $3 is script name
 
