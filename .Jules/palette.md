@@ -7,3 +7,7 @@
 ## 2026-01-20 - Modal Focus Trapping
 **Learning:** Custom modals implemented as appended DOM elements often miss keyboard focus management, allowing users to Tab out of the modal into the background page, which violates accessibility standards and confuses screen reader users.
 **Action:** Always implement a focus trap loop (handling Tab and Shift+Tab) within custom modals and restore focus to the previously active element upon closure.
+
+## 2026-01-26 - Protecting Reproducible Data
+**Learning:** Even "view-only" data like simulation logs, which are expensive to reproduce (requiring re-running a simulation), should be treated as destructive deletions when cleared. Users often treat the log as a persistent record of the run.
+**Action:** Apply confirmation patterns not just to file deletions, but also to clearing significant UI state/logs that represent long-running processes.

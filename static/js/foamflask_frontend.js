@@ -44,9 +44,13 @@ const getErrorMessage = (error) => {
     return typeof error === "string" ? error : "Unknown error";
 };
 // Clear Console Log
-const clearLog = () => {
+const clearLog = async () => {
     const outputDiv = document.getElementById("output");
     if (outputDiv) {
+        // 🎨 Palette UX Improvement: Prevent accidental data loss
+        const confirmed = await showConfirmModal("Clear Console Log", "Are you sure you want to clear the console log? This cannot be undone.");
+        if (!confirmed)
+            return;
         outputDiv.innerHTML = "";
         cachedLogHTML = ""; // ⚡ Bolt Optimization: clear cache
         try {
@@ -131,9 +135,13 @@ const copyLogToClipboard = (btnElement) => {
     copyTextFromElement("output", "Log copied to clipboard", btnElement);
 };
 // Clear Meshing Output
-const clearMeshingOutput = () => {
+const clearMeshingOutput = async () => {
     const div = document.getElementById("meshingOutput");
     if (div) {
+        // 🎨 Palette UX Improvement: Prevent accidental data loss
+        const confirmed = await showConfirmModal("Clear Meshing Output", "Are you sure you want to clear the meshing output?");
+        if (!confirmed)
+            return;
         div.innerText = "Ready...";
         div.scrollTop = 0; // Reset scroll position
         showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);

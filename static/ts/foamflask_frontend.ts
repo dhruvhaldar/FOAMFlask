@@ -173,9 +173,13 @@ const getErrorMessage = (error: unknown): string => {
 };
 
 // Clear Console Log
-const clearLog = (): void => {
+const clearLog = async (): Promise<void> => {
   const outputDiv = document.getElementById("output");
   if (outputDiv) {
+    // 🎨 Palette UX Improvement: Prevent accidental data loss
+    const confirmed = await showConfirmModal("Clear Console Log", "Are you sure you want to clear the console log? This cannot be undone.");
+    if (!confirmed) return;
+
     outputDiv.innerHTML = "";
     cachedLogHTML = ""; // ⚡ Bolt Optimization: clear cache
     try {
@@ -262,9 +266,13 @@ const copyLogToClipboard = (btnElement?: HTMLElement): void => {
 };
 
 // Clear Meshing Output
-const clearMeshingOutput = (): void => {
+const clearMeshingOutput = async (): Promise<void> => {
   const div = document.getElementById("meshingOutput");
   if (div) {
+    // 🎨 Palette UX Improvement: Prevent accidental data loss
+    const confirmed = await showConfirmModal("Clear Meshing Output", "Are you sure you want to clear the meshing output?");
+    if (!confirmed) return;
+
     div.innerText = "Ready...";
     div.scrollTop = 0; // Reset scroll position
     showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);

@@ -155,13 +155,27 @@ describe('FoamFlask Frontend', () => {
     expect(toggleBtn?.classList.contains('-rotate-90')).toBe(true);
   });
 
-  it('clearLog should clear output div and storage', () => {
+  it('clearLog should clear output div and storage after confirmation', async () => {
     const { clearLog } = window as any;
     const output = document.getElementById('output') as HTMLElement;
     output.innerHTML = '<div>Some log</div>';
     localStorage.setItem('foamflask_console_log', '<div>Some log</div>');
 
-    clearLog();
+    // Start clearLog
+    const clearPromise = clearLog();
+
+    // Modal should appear
+    // Wait for microtask
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Check if modal exists
+    const confirmBtn = document.getElementById('confirm-ok');
+    expect(confirmBtn).toBeTruthy();
+
+    // Click confirm
+    confirmBtn?.click();
+
+    await clearPromise;
 
     expect(output.innerHTML).toBe('');
     expect(localStorage.getItem('foamflask_console_log')).toBeNull();
@@ -169,6 +183,31 @@ describe('FoamFlask Frontend', () => {
     // Should show notification
     const container = document.getElementById('notificationContainer');
     expect(container?.textContent).toContain('Console log cleared');
+  });
+
+  it('clearLog should NOT clear output div if cancelled', async () => {
+    const { clearLog } = window as any;
+    const output = document.getElementById('output') as HTMLElement;
+    output.innerHTML = '<div>Some log</div>';
+    localStorage.setItem('foamflask_console_log', '<div>Some log</div>');
+
+    // Start clearLog
+    const clearPromise = clearLog();
+
+    // Wait for microtask
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Check if modal exists
+    const cancelBtn = document.getElementById('confirm-cancel');
+    expect(cancelBtn).toBeTruthy();
+
+    // Click cancel
+    cancelBtn?.click();
+
+    await clearPromise;
+
+    expect(output.innerHTML).toBe('<div>Some log</div>');
+    expect(localStorage.getItem('foamflask_console_log')).toBe('<div>Some log</div>');
   });
 
   it('scrollToLogBottom should scroll output to bottom', () => {
