@@ -596,6 +596,8 @@ const removeNotification = (id) => {
 // Confirmation Modal
 const showConfirmModal = (title, message) => {
     return new Promise((resolve) => {
+        // Capture previous focus to restore later
+        const previousActiveElement = document.activeElement;
         const modal = document.createElement("div");
         modal.className = "fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity opacity-0";
         modal.setAttribute("role", "dialog");
@@ -626,16 +628,54 @@ const showConfirmModal = (title, message) => {
             setTimeout(() => modal.remove(), 200);
             resolve(result);
             document.removeEventListener("keydown", handleKey);
+            // Restore focus
+            if (previousActiveElement && typeof previousActiveElement.focus === "function") {
+                previousActiveElement.focus();
+            }
         };
+        const cancelBtn = modal.querySelector("#confirm-cancel");
+        const okBtn = modal.querySelector("#confirm-ok");
         const handleKey = (e) => {
             if (e.key === "Escape")
                 close(false);
-            if (e.key === "Enter")
+            // Only trigger confirm on Enter if we are not on the Cancel button
+            if (e.key === "Enter" && document.activeElement !== cancelBtn)
                 close(true);
+            // Focus Trap
+            if (e.key === "Tab") {
+                e.preventDefault();
+                const focusableElements = [cancelBtn, okBtn];
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                    }
+                    else {
+                        // Find previous element or default to last
+                        const idx = focusableElements.indexOf(document.activeElement);
+                        if (idx > 0)
+                            focusableElements[idx - 1].focus();
+                        else
+                            lastElement.focus();
+                    }
+                }
+                else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                    }
+                    else {
+                        // Find next element or default to first
+                        const idx = focusableElements.indexOf(document.activeElement);
+                        if (idx >= 0 && idx < focusableElements.length - 1)
+                            focusableElements[idx + 1].focus();
+                        else
+                            firstElement.focus();
+                    }
+                }
+            }
         };
         document.addEventListener("keydown", handleKey);
-        const cancelBtn = modal.querySelector("#confirm-cancel");
-        const okBtn = modal.querySelector("#confirm-ok");
         cancelBtn.onclick = () => close(false);
         okBtn.onclick = () => close(true);
         // Focus management
