@@ -577,36 +577,34 @@ def get_tutorials() -> List[str]:
 
         # Get the tutorials directory from OpenFOAM
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
-        result = client.containers.run(
-            DOCKER_IMAGE,
-            f"bash -c 'source {bashrc} && echo $FOAM_TUTORIALS'",
-            remove=True,
-            stdout=True,
-            stderr=True,
-            tty=True,
-        )
 
-        tutorial_root = result.decode().strip()
-        if not tutorial_root:
-            logger.warning("[FOAMFlask] No tutorial root found in OpenFOAM")
-            return []
-
-        # Find directories containing system/ and constant/ subdirectories
-        find_cmd = (
-            f"find {tutorial_root} -mindepth 2 -maxdepth 2 -type d "
+        # ⚡ Bolt Optimization: Combine fetching FOAM_TUTORIALS and running find into a single container execution.
+        # This saves ~500ms-1s of overhead by avoiding a second container startup/shutdown cycle.
+        # We output the root path first, then the list of cases.
+        cmd = (
+            f"source {bashrc} && "
+            "echo $FOAM_TUTORIALS && "
+            "find $FOAM_TUTORIALS -mindepth 2 -maxdepth 2 -type d "
             "-exec test -d {}/system -a -d {}/constant \\; -print"
         )
 
         result = client.containers.run(
             DOCKER_IMAGE,
-            f"bash -c '{find_cmd}'",
+            f"bash -c '{cmd}'",
             remove=True,
             stdout=True,
             stderr=True,
             tty=True,
         )
 
-        cases = result.decode().splitlines()
+        output = result.decode().strip()
+        if not output:
+            logger.warning("[FOAMFlask] No tutorial root found in OpenFOAM")
+            return []
+
+        lines = output.splitlines()
+        tutorial_root = lines[0].strip()
+        cases = lines[1:]
 
         # Normalize paths based on OS
         if platform.system() == "Windows":
