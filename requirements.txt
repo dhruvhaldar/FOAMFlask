@@ -44,7 +44,7 @@ linkify-it-py==2.0.3
 Markdown==3.10
 markdown-it-py==4.0.0
 markdown2==2.5.4
-MarkupSafe==3.0.2
+MarkupSafe==3.0.3
 maturin>=1.0.0
 matplotlib==3.10.7
 matplotlib-inline==0.2.1
@@ -114,13 +114,13 @@ trame-vuetify==3.1.0
 typing_extensions==4.15.0
 tzdata==2025.2
 uc-micro-py==1.0.3
-urllib3==2.6.1
+urllib3==2.6.3
 uvicorn[standard]==0.27.0
 vtk==9.5.2
 wcwidth==0.2.14
 webencodings==0.5.1
 websockets>=12.0
-Werkzeug==3.1.4
+Werkzeug==3.1.5
 widgetsnbextension==4.0.15
 wslink==2.5.0
 xyzservices==2025.10.0

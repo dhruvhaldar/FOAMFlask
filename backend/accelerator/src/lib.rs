@@ -254,7 +254,7 @@ fn parse_vector_field(py: Python, path: String) -> PyResult<(f64, f64, f64)> {
 }
 
 #[pymodule]
-fn accelerator(_py: Python, m: &PyModule) -> PyResult<()> {
+fn accelerator(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_scalar_field, m)?)?;
     m.add_function(wrap_pyfunction!(parse_vector_field, m)?)?;
     Ok(())
