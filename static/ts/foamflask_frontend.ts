@@ -1062,6 +1062,11 @@ const loadTutorial = async (): Promise<void> => {
       if (select) select.value = importedName;
       // UX: Default to "From Resources" tab for imported tutorials
       switchGeometryTab("resources");
+
+      // Background fetch of plot data and residuals to warm up cache
+      // We don't await these to avoid blocking the UI
+      void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => {});
+      void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => {});
     }
   } catch (e) {
     showNotification("Failed to load tutorial", "error");
