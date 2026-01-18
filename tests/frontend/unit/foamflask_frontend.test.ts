@@ -54,6 +54,7 @@ describe('FoamFlask Frontend', () => {
       <select id="caseSelect"><option value="">-- Select --</option></select>
       <input id="newCaseName" />
       <select id="tutorialSelect"><option value="tut1">Tut 1</option></select>
+      <select id="geometrySelect"><option value="">-- Select Geometry --</option></select>
 
       <div id="plotsContainer" class="hidden"></div>
       <div id="plotsLoading" class="hidden"></div>
@@ -229,4 +230,63 @@ describe('FoamFlask Frontend', () => {
     expect(output.scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: 'smooth' });
     expect(output.scrollTop).toBe(1000);
   });
+
+  it('deleteGeometry should show loading state on button', async () => {
+    const { deleteGeometry, selectCase } = window as any;
+
+    // Setup environment
+    selectCase('test_case');
+    const geometrySelect = document.getElementById('geometrySelect') as HTMLSelectElement;
+    if (geometrySelect) {
+        const option = document.createElement('option');
+        option.value = 'test.stl';
+        geometrySelect.appendChild(option);
+        geometrySelect.value = 'test.stl';
+    }
+
+    const btn = document.createElement('button');
+    btn.innerHTML = 'Delete';
+    document.body.appendChild(btn);
+
+    // Mock fetch to delay
+    let resolveFetch: any;
+    const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
+    (global.fetch as any).mockImplementation((url: string) => {
+        if (url.includes('/api/geometry/delete')) {
+            return fetchPromise.then(() => ({ ok: true, json: () => Promise.resolve({ success: true }) }));
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ files: [] }) });
+    });
+
+    // Start deleteGeometry
+    const deletePromise = deleteGeometry(btn);
+
+    // Wait for modal to appear (microtask)
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Confirm modal
+    const confirmBtn = document.getElementById('confirm-ok');
+    expect(confirmBtn).toBeTruthy();
+    confirmBtn?.click();
+
+    // Now button should be loading
+    // We need to wait for the microtask after click to process
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-busy')).toBe('true');
+    expect(btn.innerHTML).toContain('Deleting...');
+
+    // Resolve fetch
+    resolveFetch();
+
+    // Wait for deleteGeometry to finish
+    await deletePromise;
+
+    // Button should be restored
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute('aria-busy')).toBeNull();
+    expect(btn.innerHTML).toBe('Delete');
+  });
+
 });
