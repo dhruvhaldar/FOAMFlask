@@ -27,19 +27,33 @@ def _cleanup_cache():
     """
     try:
         cache_dir = _get_cache_dir()
-        total_size = sum(f.stat().st_size for f in cache_dir.iterdir() if f.is_file())
         limit_bytes = CACHE_SIZE_LIMIT_MB * 1024 * 1024
 
-        if total_size > limit_bytes:
-            # Sort files by mtime (oldest first)
-            files = sorted([f for f in cache_dir.iterdir() if f.is_file()], key=lambda f: f.stat().st_mtime)
+        files = []
+        total_size = 0
 
-            for f in files:
+        # ⚡ Bolt Optimization: Use os.scandir to avoid redundant stat calls
+        # Gather all file stats in a single pass instead of iterating twice (sum + sort)
+        try:
+            with os.scandir(str(cache_dir)) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        stat = entry.stat()
+                        total_size += stat.st_size
+                        files.append((entry.path, stat.st_mtime, stat.st_size))
+        except OSError:
+            # Cache directory might have issues, skip cleanup
+            return
+
+        if total_size > limit_bytes:
+            # Sort by mtime (oldest first)
+            files.sort(key=lambda x: x[1])
+
+            for path, _, size in files:
                 try:
-                    size = f.stat().st_size
-                    f.unlink()
+                    os.unlink(path)
                     total_size -= size
-                    logger.debug(f"Deleted cache file {f} to free space")
+                    logger.debug(f"Deleted cache file {path} to free space")
                     if total_size <= limit_bytes:
                         break
                 except OSError:

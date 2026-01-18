@@ -27,7 +27,7 @@ class TestCaseRootSecurity:
 
             assert response.status_code == 400
             data = response.get_json()
-            assert "Cannot set case root to system root" in data['output']
+            assert "Cannot set case root to system directory" in data['output']
 
     def test_set_root_to_system_dir_rejected(self, client):
         """Test that setting CASE_ROOT to system directories (e.g., /etc) is rejected."""
