@@ -1065,6 +1065,7 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     filename = data.get("filename")
     color = data.get("color", "lightblue")
     opacity = data.get("opacity", 1.0)
+    optimize = data.get("optimize", False)
 
     path_or_error = validate_geometry_path(case_name, filename)
     if isinstance(path_or_error, tuple):
@@ -1072,7 +1073,7 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     
     resolved_path = path_or_error
 
-    html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity)
+    html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity, optimize)
 
     if html_content:
         return Response(html_content, mimetype="text/html")

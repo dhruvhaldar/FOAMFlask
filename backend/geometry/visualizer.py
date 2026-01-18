@@ -61,7 +61,7 @@ def _cleanup_cache():
     except Exception as e:
         logger.warning(f"Error during cache cleanup: {e}")
 
-def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float):
+def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float, optimize: bool):
     """
     Helper function to be run in a separate process to generate the HTML.
     This avoids signal handling issues with trame/aiohttp in Flask threads.
@@ -82,8 +82,9 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         mesh = pv.read(read_path, progress_bar=False)
 
         # ⚡ Bolt Optimization: Decimate mesh if needed
-        # Increased target faces for better visual quality on modern browsers
-        TARGET_FACES = 500000
+        # Adaptive optimization based on client capabilities
+        TARGET_FACES = 50000 if optimize else 100000
+
         if mesh.n_cells > TARGET_FACES:
             try:
                 # Assuming mesh is likely PolyData for STL/OBJ
@@ -132,7 +133,7 @@ class GeometryVisualizer:
     """Visualizes geometry files (STL) using PyVista."""
 
     @staticmethod
-    def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0) -> Optional[str]:
+    def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0, optimize: bool = False) -> Optional[str]:
         """
         Generates an interactive HTML representation of the STL file.
 
@@ -140,6 +141,7 @@ class GeometryVisualizer:
             file_path: Path to the STL file.
             color: Color of the mesh.
             opacity: Opacity of the mesh.
+            optimize: Whether to optimize mesh for slower hardware.
 
         Returns:
             HTML string content or None on error.
@@ -167,7 +169,7 @@ class GeometryVisualizer:
             # Check cache based on file path, mtime, and visualization parameters
             try:
                 mtime = path.stat().st_mtime
-                cache_key_str = f"{str(path)}_{mtime}_{color}_{opacity}"
+                cache_key_str = f"{str(path)}_{mtime}_{color}_{opacity}_{optimize}"
                 cache_key = hashlib.sha256(cache_key_str.encode()).hexdigest()
 
                 cache_dir = _get_cache_dir()
@@ -189,7 +191,7 @@ class GeometryVisualizer:
             # Run generation in a separate process
             p = multiprocessing.Process(
                 target=_generate_html_process,
-                args=(str(path), temp_output_path, color, opacity)
+                args=(str(path), temp_output_path, color, opacity, optimize)
             )
             p.start()
             p.join(timeout=120) # Increased timeout for large meshes/high res
