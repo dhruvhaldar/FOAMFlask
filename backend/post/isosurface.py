@@ -60,7 +60,16 @@ class IsosurfaceVisualizer:
                 reduction = max(0.0, min(0.95, reduction))
 
                 logger.info(f"Decimating mesh from {mesh_poly.n_cells} to ~{target_faces} cells (reduction={reduction:.2f})")
-                mesh_poly = mesh_poly.decimate(reduction)
+
+                # ⚡ Bolt Optimization: Use fast decimate_pro if available (topology preserving, faster)
+                if hasattr(mesh_poly, "decimate_pro"):
+                    try:
+                        mesh_poly = mesh_poly.decimate_pro(reduction, preserve_topology=True)
+                    except Exception as e:
+                        logger.warning(f"decimate_pro failed ({e}), falling back to standard decimate")
+                        mesh_poly = mesh_poly.decimate(reduction)
+                else:
+                    mesh_poly = mesh_poly.decimate(reduction)
 
             return mesh_poly
         except Exception as e:
