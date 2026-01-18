@@ -172,6 +172,27 @@ const getErrorMessage = (error: unknown): string => {
   return typeof error === "string" ? error : "Unknown error";
 };
 
+// Detect slow hardware (e.g. integrated graphics)
+const detectSlowHardware = (): boolean => {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return true; // Assume slow if no WebGL
+
+    const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
+    if (!debugInfo) return false;
+
+    const renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    if (!renderer) return false;
+
+    // Check for common integrated/software renderers
+    const slowRenderers = ['intel', 'swiftshader', 'llvmpipe', 'mesa', 'software'];
+    return slowRenderers.some(r => renderer.toLowerCase().includes(r));
+  } catch (e) {
+    return false; // Fail safe
+  }
+};
+
 // Clear Console Log
 const clearLog = async (): Promise<void> => {
   const outputDiv = document.getElementById("output");
@@ -1437,7 +1458,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
         traces.push({
           x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
           y: fieldData,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines",
           name: field,
           line: { color: colors[idx], width: 2.5, shape: "linear" },
@@ -1515,7 +1536,7 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
         const cpTrace: any = {
           x: data.time,
           y: cp,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines+markers",
           name: "Cp",
           line: { color: plotlyColors.red, width: 2.5 },
@@ -1626,7 +1647,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
       const pressureTrace: PlotTrace = {
         x: data.time,
         y: data.p,
-        type: "scatter",
+        type: "scattergl",
         mode: "lines",
         name: "Pressure",
         line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
@@ -1677,7 +1698,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
         {
           x: data.time,
           y: data.U_mag,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines",
           name: "|U|",
           line: { color: plotlyColors.red, ...lineStyle, width: 2.5 },
@@ -1688,7 +1709,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
         traces.push({
           x: data.time,
           y: data.Ux,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines",
           name: "Ux",
           line: {
@@ -1704,7 +1725,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
         traces.push({
           x: data.time,
           y: data.Uy,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines",
           name: "Uy",
           line: {
@@ -1720,7 +1741,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
         traces.push({
           x: data.time,
           y: data.Uz,
-          type: "scatter",
+          type: "scattergl",
           mode: "lines",
           name: "Uz",
           line: {
@@ -1766,7 +1787,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
       turbulenceTrace.push({
         x: data.time,
         y: data.nut,
-        type: "scatter",
+        type: "scattergl",
         mode: "lines",
         name: "nut",
         line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 },
@@ -1776,7 +1797,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
       turbulenceTrace.push({
         x: data.time,
         y: data.nuTilda,
-        type: "scatter",
+        type: "scattergl",
         mode: "lines",
         name: "nuTilda",
         line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 },
@@ -1786,7 +1807,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
       turbulenceTrace.push({
         x: data.time,
         y: data.k,
-        type: "scatter",
+        type: "scattergl",
         mode: "lines",
         name: "k",
         line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 },
@@ -1796,7 +1817,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
       turbulenceTrace.push({
         x: data.time,
         y: data.omega,
-        type: "scatter",
+        type: "scattergl",
         mode: "lines",
         name: "omega",
         line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 },
@@ -2197,9 +2218,20 @@ const deleteGeometry = async (btnElement?: HTMLElement) => {
 const loadGeometryView = async () => {
   const filename = (document.getElementById("geometrySelect") as HTMLSelectElement)?.value;
   if (!filename || !activeCase) return;
+
+  // Check for slow hardware
+  let optimize = false;
+  if (detectSlowHardware()) {
+    optimize = await showConfirmModal("Optimize for Performance?", "Slow graphics hardware detected. Enable geometry optimization (decimation)? This reduces detail but improves frame rate.");
+  }
+
   showNotification("Loading...", "info");
   try {
-    const res = await fetch("/api/geometry/view", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+    const res = await fetch("/api/geometry/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseName: activeCase, filename, optimize })
+    });
     if (res.ok) {
       const html = await res.text();
       (document.getElementById("geometryInteractive") as HTMLIFrameElement).srcdoc = html;
