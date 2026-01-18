@@ -1451,7 +1451,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         # Validate and sanitize command input to prevent injection
         if not is_safe_command(command):
-            yield f"[FOAMFlask] [Error] Unsafe command detected: {command}<br>"
+            yield f"[FOAMFlask] [Error] Unsafe command detected: {escape(command)}<br>"
             yield "[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.<br>"
             return
 
@@ -1463,7 +1463,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 # Script file - validate path and execute safely
                 script_name = command[2:]  # Remove "./" prefix
                 if not is_safe_script_name(script_name):
-                    yield f"[FOAMFlask] [Error] Unsafe script name: {script_name}<br>"
+                    yield f"[FOAMFlask] [Error] Unsafe script name: {escape(script_name)}<br>"
                     yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.<br>"
                     return
                 
@@ -1489,7 +1489,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         else:
             # Fallback - treat as script with validation
             if not is_safe_script_name(command):
-                yield f"[FOAMFlask] [Error] Unsafe command name: {command}<br>"
+                yield f"[FOAMFlask] [Error] Unsafe command name: {escape(command)}<br>"
                 yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.<br>"
                 return
             
