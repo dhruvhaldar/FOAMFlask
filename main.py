@@ -19,10 +19,12 @@ from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fiel
 # Initialize FastAPI
 app = FastAPI()
 
+ALLOWED_ORIGINS = ["http://localhost:5000", "http://127.0.0.1:5000"]
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,6 +54,13 @@ def validate_path(tutorial: str) -> Path:
 
 @app.websocket("/ws/data")
 async def websocket_endpoint(websocket: WebSocket):
+    # Security: Validate Origin to prevent Cross-Site WebSocket Hijacking
+    origin = websocket.headers.get("origin")
+    if origin and origin not in ALLOWED_ORIGINS:
+        logger.warning(f"Rejected WebSocket connection from untrusted origin: {origin}")
+        await websocket.close(code=4003) # Forbidden
+        return
+
     await websocket.accept()
 
     tutorial = websocket.query_params.get("tutorial")
