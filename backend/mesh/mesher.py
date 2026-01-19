@@ -13,6 +13,7 @@ import os
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
+from collections import OrderedDict
 
 # Third-party imports
 import pyvista as pv
@@ -43,6 +44,9 @@ class MeshVisualizer:
         self.current_mesh_mtime: Optional[float] = None
         # ⚡ Bolt Optimization: Cache decimated meshes to avoid re-computation
         self._decimated_cache: Dict[int, DataSet] = {}
+        # ⚡ Bolt Optimization: Cache screenshots (LRU)
+        self._screenshot_cache: OrderedDict = OrderedDict()
+        self._screenshot_cache_max_size = 32
 
     def __del__(self) -> None:
         """Clean up resources by closing the plotter if it exists."""
@@ -198,6 +202,24 @@ class MeshVisualizer:
 
             path = Path(file_path)
 
+            # Check if file exists and get mtime for cache key
+            if not path.exists():
+                return None
+            mtime = path.stat().st_mtime
+
+            # ⚡ Bolt Optimization: Check screenshot cache
+            # Key includes mtime to automatically invalidate if file changes
+            # Ensure components are hashable (convert lists to tuples)
+            h_color = tuple(color) if isinstance(color, list) else color
+            h_cam = tuple(camera_position) if isinstance(camera_position, list) else camera_position
+
+            cache_key = (str(path), mtime, width, height, show_edges, h_color, h_cam)
+
+            if cache_key in self._screenshot_cache:
+                logger.debug(f"[FOAMFlask] Serving cached screenshot for {path}")
+                self._screenshot_cache.move_to_end(cache_key)
+                return self._screenshot_cache[cache_key]
+
             # Load mesh (uses caching)
             mesh_info = self.load_mesh(path)
             if not mesh_info.get("success"):
@@ -238,6 +260,11 @@ class MeshVisualizer:
             buffered = BytesIO()
             PIL.Image.fromarray(img_bytes).save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
+
+            # ⚡ Bolt Optimization: Update cache
+            if len(self._screenshot_cache) >= self._screenshot_cache_max_size:
+                self._screenshot_cache.popitem(last=False) # Remove oldest
+            self._screenshot_cache[cache_key] = img_str
 
             return img_str
 
