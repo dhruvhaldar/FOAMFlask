@@ -61,6 +61,9 @@ describe('FoamFlask Frontend', () => {
       <button id="togglePlotsBtn"></button>
       <button id="toggleAeroBtn"></button>
 
+      <div id="fontSettingsMenu" class="hidden"></div>
+      <button id="fontSettingsBtn"></button>
+
       <div id="mySection" class="hidden"></div>
       <button id="mySectionToggle">▶</button>
     `;
@@ -287,6 +290,53 @@ describe('FoamFlask Frontend', () => {
     expect(btn.disabled).toBe(false);
     expect(btn.getAttribute('aria-busy')).toBeNull();
     expect(btn.innerHTML).toBe('Delete');
+  });
+
+  it('toggleFontSettings should toggle visibility and close on Escape', async () => {
+    const { toggleFontSettings } = window as any;
+    const menu = document.getElementById('fontSettingsMenu');
+    const btn = document.getElementById('fontSettingsBtn');
+
+    // Open
+    toggleFontSettings();
+    expect(menu?.classList.contains('hidden')).toBe(false);
+    expect(btn?.getAttribute('aria-expanded')).toBe('true');
+
+    // Wait for microtask (listeners are added in setTimeout)
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Press Escape
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+    document.dispatchEvent(escapeEvent);
+
+    expect(menu?.classList.contains('hidden')).toBe(true);
+    expect(btn?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('toggleFontSettings rapid toggle should handle listeners correctly', async () => {
+    const { toggleFontSettings } = window as any;
+    const menu = document.getElementById('fontSettingsMenu');
+
+    // Open
+    toggleFontSettings();
+    expect(menu?.classList.contains('hidden')).toBe(false);
+
+    // Immediate Close (before timeout)
+    toggleFontSettings();
+    expect(menu?.classList.contains('hidden')).toBe(true);
+
+    // Wait for timeout that would have fired
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Re-open
+    toggleFontSettings();
+    expect(menu?.classList.contains('hidden')).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 10)); // Allow listeners to attach
+
+    // Close via Escape
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+    document.dispatchEvent(escapeEvent);
+    expect(menu?.classList.contains('hidden')).toBe(true);
   });
 
 });
