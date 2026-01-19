@@ -9,7 +9,11 @@ visualizations with various customization options.
 import logging
 import os
 import tempfile
-from typing import Dict, List, Optional, Tuple, Union
+import multiprocessing
+import hashlib
+import shutil
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union, Any
 
 # Third-party imports
 import numpy as np
@@ -18,6 +22,192 @@ from pyvista import DataSet, PolyData, Plotter
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
+
+CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
+
+def _get_cache_dir() -> Path:
+    """Get the cache directory, creating it if it doesn't exist."""
+    cache_dir = Path(tempfile.gettempdir()) / "foamflask_isosurface_cache"
+    cache_dir.mkdir(exist_ok=True, parents=True)
+    return cache_dir
+
+def _cleanup_cache():
+    """
+    Maintain cache size within limits by deleting oldest files.
+    """
+    try:
+        cache_dir = _get_cache_dir()
+        limit_bytes = CACHE_SIZE_LIMIT_MB * 1024 * 1024
+
+        files = []
+        total_size = 0
+
+        # ⚡ Bolt Optimization: Use os.scandir to avoid redundant stat calls
+        try:
+            with os.scandir(str(cache_dir)) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        stat = entry.stat()
+                        total_size += stat.st_size
+                        files.append((entry.path, stat.st_mtime, stat.st_size))
+        except OSError:
+            return
+
+        if total_size > limit_bytes:
+            # Sort by mtime (oldest first)
+            files.sort(key=lambda x: x[1])
+
+            for path, _, size in files:
+                try:
+                    os.unlink(path)
+                    total_size -= size
+                    if total_size <= limit_bytes:
+                        break
+                except OSError:
+                    pass
+    except Exception as e:
+        logger.warning(f"Error during cache cleanup: {e}")
+
+def _decimate_mesh_helper(mesh: DataSet, target_faces: int = 100000) -> DataSet:
+    """Decimate mesh helper for subprocess."""
+    if mesh.n_cells <= target_faces:
+        return mesh
+
+    try:
+        if not isinstance(mesh, pv.PolyData):
+            mesh_poly = mesh.extract_surface()
+        else:
+            mesh_poly = mesh
+
+        if mesh_poly.n_cells > target_faces:
+            reduction = 1.0 - (target_faces / mesh_poly.n_cells)
+            reduction = max(0.0, min(0.95, reduction))
+
+            if reduction > 0.05:
+                # ⚡ Bolt Optimization: Use fast decimate_pro if available
+                if hasattr(mesh_poly, "decimate_pro"):
+                    try:
+                        return mesh_poly.decimate_pro(reduction, preserve_topology=True)
+                    except Exception:
+                        return mesh_poly.decimate(reduction)
+                else:
+                    return mesh_poly.decimate(reduction)
+
+        return mesh_poly
+    except Exception as e:
+        print(f"Mesh decimation failed: {e}")
+        return mesh
+
+def _generate_isosurface_html_process(
+    file_path: str,
+    output_path: str,
+    params: Dict[str, Any]
+):
+    """
+    Helper function to be run in a separate process to generate the HTML.
+
+    Args:
+        file_path: Path to the VTK file.
+        output_path: Path to write the HTML output.
+        params: Dictionary containing visualization parameters.
+    """
+    try:
+        scalar_field = params.get("scalar_field", "U_Magnitude")
+        show_base_mesh = params.get("show_base_mesh", True)
+        base_mesh_opacity = params.get("base_mesh_opacity", 0.25)
+        contour_opacity = params.get("contour_opacity", 0.8)
+        contour_color = params.get("contour_color", "red")
+        colormap = params.get("colormap", "viridis")
+        show_isovalue_slider = params.get("show_isovalue_slider", True)
+        window_size = params.get("window_size", (1200, 800))
+
+        # Load mesh
+        # ⚡ Bolt Optimization: Disable progress bar
+        mesh = pv.read(file_path, progress_bar=False)
+
+        # Compute scalar field if needed (e.g. U_Magnitude)
+        if scalar_field == "U_Magnitude" and "U_Magnitude" not in mesh.point_data and "U" in mesh.point_data:
+            mesh.point_data["U_Magnitude"] = np.linalg.norm(mesh.point_data["U"], axis=1)
+
+        if scalar_field not in mesh.point_data:
+            raise ValueError(f"Scalar field '{scalar_field}' not found")
+
+        # Create plotter
+        plotter = pv.Plotter(notebook=False, off_screen=True, window_size=list(window_size))
+
+        # Add base mesh
+        if show_base_mesh:
+            display_mesh = _decimate_mesh_helper(mesh, target_faces=100000)
+            plotter.add_mesh(
+                display_mesh,
+                opacity=base_mesh_opacity,
+                scalars=scalar_field,
+                show_scalar_bar=True,
+                cmap=colormap,
+                label="Base Mesh",
+                 scalar_bar_args={
+                        "title": scalar_field,
+                        "title_font_size": 20,
+                        "label_font_size": 16,
+                        "shadow": True,
+                        "n_labels": 5,
+                        "fmt": "%.2f",
+                        "position_x": 0.85,
+                        "position_y": 0.05,
+                    },
+            )
+
+        # Add isosurfaces
+        if show_isovalue_slider:
+             widget_mesh = _decimate_mesh_helper(mesh, target_faces=200000)
+             plotter.add_mesh_isovalue(
+                widget_mesh,
+                scalars=scalar_field,
+                compute_normals=True,
+                compute_gradients=False,
+                compute_scalars=True,
+                opacity=contour_opacity,
+                color=contour_color,
+                show_scalar_bar=False,
+            )
+        else:
+            # Static contours logic re-implementation for subprocess
+            isovalues = params.get("isovalues")
+            custom_range = params.get("custom_range")
+            num_isosurfaces = params.get("num_isosurfaces", 5)
+
+            scalars = mesh.point_data[scalar_field]
+            min_val = float(np.min(scalars))
+            max_val = float(np.max(scalars))
+
+            if isovalues is not None:
+                values = np.array(isovalues)
+            elif custom_range is not None:
+                values = np.linspace(custom_range[0], custom_range[1], num_isosurfaces)
+            else:
+                values = np.linspace(min_val, max_val, num_isosurfaces + 2)[1:-1]
+
+            contours = mesh.contour(isosurfaces=values.tolist(), scalars=scalar_field)
+            if contours.n_points > 0:
+                display_contours = _decimate_mesh_helper(contours, target_faces=100000)
+                plotter.add_mesh(
+                    display_contours,
+                    opacity=contour_opacity,
+                    show_scalar_bar=False,
+                    color=contour_color,
+                    label="Isosurfaces",
+                )
+
+        plotter.add_axes(xlabel="X", ylabel="Y", zlabel="Z", line_width=2, labels_off=False)
+        plotter.camera_position = "iso"
+
+        plotter.export_html(output_path)
+        plotter.close()
+
+    except Exception as e:
+        print(f"Error in subprocess: {e}")
+        if os.path.exists(output_path):
+            os.remove(output_path)
 
 
 class IsosurfaceVisualizer:
@@ -46,26 +236,8 @@ class IsosurfaceVisualizer:
 
     def _decimate_mesh(self, mesh: DataSet, target_faces: int = 100000) -> DataSet:
         """Decimate mesh to reduce size for web visualization."""
-        if mesh.n_cells <= target_faces:
-            return mesh
-
-        try:
-            if not isinstance(mesh, pv.PolyData):
-                mesh_poly = mesh.extract_surface()
-            else:
-                mesh_poly = mesh
-
-            if mesh_poly.n_cells > target_faces:
-                reduction = 1.0 - (target_faces / mesh_poly.n_cells)
-                reduction = max(0.0, min(0.95, reduction))
-
-                logger.info(f"Decimating mesh from {mesh_poly.n_cells} to ~{target_faces} cells (reduction={reduction:.2f})")
-                mesh_poly = mesh_poly.decimate(reduction)
-
-            return mesh_poly
-        except Exception as e:
-            logger.warning(f"Mesh decimation failed: {e}")
-            return mesh
+        # Kept for in-process usage if needed, though subprocess uses helper
+        return _decimate_mesh_helper(mesh, target_faces)
 
     def load_mesh(
         self, file_path: str
@@ -79,15 +251,7 @@ class IsosurfaceVisualizer:
             file_path: Path to the VTK/VTP/VTU file.
 
         Returns:
-            Dictionary containing mesh information with keys:
-                - success: Whether loading succeeded
-                - n_points: Number of mesh points
-                - n_cells: Number of mesh cells
-                - bounds: Mesh spatial bounds
-                - point_arrays: Available point data arrays
-                - cell_arrays: Available cell data arrays
-                - u_magnitude: Statistics for velocity magnitude
-                - error: Error message (if success is False)
+            Dictionary containing mesh information.
         """
         try:
             if not os.path.exists(file_path):
@@ -175,10 +339,9 @@ class IsosurfaceVisualizer:
 
         Args:
             scalar_field: Name of the scalar field to create isosurfaces for.
-            num_isosurfaces: Number of evenly-spaced isosurfaces (ignored if
-                custom_range or isovalues is provided).
-            custom_range: Custom [min, max] range for evenly-spaced isosurfaces.
-            isovalues: Explicit list of isovalues to generate contours at.
+            num_isosurfaces: Number of evenly-spaced isosurfaces.
+            custom_range: Custom [min, max] range.
+            isovalues: Explicit list of isovalues.
 
         Returns:
             Dictionary containing information about the generated isosurfaces.
@@ -206,28 +369,14 @@ class IsosurfaceVisualizer:
             # Determine isovalues to use
             if isovalues is not None:
                 values = np.array(isovalues)
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"Using explicit isovalues: {values}"
-                )
             elif custom_range is not None:
                 if len(custom_range) != 2:
                     raise ValueError(
                         "custom_range must be a list of [min, max] values."
                     )
                 values = np.linspace(custom_range[0], custom_range[1], num_isosurfaces)
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"Using custom range: {custom_range} "
-                    f"with {num_isosurfaces} isosurfaces"
-                )
             else:
                 values = np.linspace(min_val, max_val, num_isosurfaces + 2)[1:-1]
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"Using {num_isosurfaces} evenly-spaced isosurfaces "
-                    f"in range [{min_val:.3f}, {max_val:.3f}]"
-                )
 
             # Generate isosurfaces using contour filter
             self.contours = self.mesh.contour(
@@ -245,12 +394,6 @@ class IsosurfaceVisualizer:
                 "bounds": tuple(float(b) for b in self.contours.bounds),
             }
 
-            logger.info(
-                f"[FOAMFlask] [IsosurfaceVisualizer] "
-                f"Generated {result['num_isosurfaces']} isosurfaces: "
-                f"{result['n_points']} points, {result['n_cells']} cells"
-            )
-
             return result
 
         except Exception as e:
@@ -263,15 +406,7 @@ class IsosurfaceVisualizer:
     def get_scalar_field_info(
         self, scalar_field: Optional[str] = None
     ) -> Dict[str, Dict[str, Union[str, float, Dict[str, float]]]]:
-        """Get statistical information about scalar fields in the mesh.
-
-        Args:
-            scalar_field: Specific field to get info for. If None, returns
-                info for all fields.
-
-        Returns:
-            Dictionary with scalar field statistics.
-        """
+        """Get statistical information about scalar fields in the mesh."""
         try:
             if self.mesh is None:
                 raise ValueError("No mesh loaded. Call load_mesh() first.")
@@ -345,195 +480,101 @@ class IsosurfaceVisualizer:
     ) -> str:
         """Generate an interactive HTML visualization of mesh and isosurfaces.
 
-        Args:
-            scalar_field: The scalar field to visualize.
-            show_base_mesh: Whether to show the base mesh.
-            base_mesh_opacity: Opacity of the base mesh (0-1).
-            contour_opacity: Opacity of the isosurfaces (0-1).
-            contour_color: Color of the isosurfaces.
-            colormap: Name of the colormap to use.
-            show_isovalue_slider: Whether to show interactive slider.
-            custom_range: Custom range for the isosurfaces [min, max].
-            num_isosurfaces: Number of isosurfaces to generate.
-            isovalues: List of specific isovalues to use.
-            window_size: Width and height of the plotter window in pixels.
-
-        Returns:
-            HTML content for the interactive visualization.
-
-        Raises:
-            ValueError: If no mesh is loaded or if the scalar field is invalid.
+        ⚡ Bolt Optimization: Uses subprocess and caching to prevent blocking the main thread.
         """
         try:
-            # Validate that mesh is loaded
-            if self.mesh is None:
+            # Validate that mesh is loaded or path is known
+            if self.current_mesh_path is None:
                 raise ValueError("No mesh loaded. Call load_mesh() first.")
 
-            # Validate scalar field exists
-            if scalar_field not in self.mesh.point_data:
-                raise ValueError(
-                    f"Scalar field '{scalar_field}' not found in point data. "
-                    f"Available fields: {list(self.mesh.point_data.keys())}"
-                )
+            path = Path(self.current_mesh_path).resolve()
 
-            logger.info(
-                f"[FOAMFlask] [IsosurfaceVisualizer] [get_interactive_html] "
-                f"Creating interactive viewer for '{scalar_field}'"
-            )
+            if not path.exists():
+                raise ValueError(f"Mesh file no longer exists: {path}")
 
-            # Create plotter with specified window size
-            plotter = pv.Plotter(notebook=False, window_size=list(window_size))
+            mtime = path.stat().st_mtime
 
-            # Add base mesh if requested
-            if show_base_mesh:
-                # ⚡ Bolt Optimization: Decimate base mesh for display
-                display_mesh = self._decimate_mesh(self.mesh, target_faces=100000)
+            # ⚡ Bolt Optimization: Caching logic
+            # Create a cache key based on all parameters
+            params = {
+                "scalar_field": scalar_field,
+                "show_base_mesh": show_base_mesh,
+                "base_mesh_opacity": base_mesh_opacity,
+                "contour_opacity": contour_opacity,
+                "contour_color": contour_color,
+                "colormap": colormap,
+                "show_isovalue_slider": show_isovalue_slider,
+                "custom_range": custom_range,
+                "num_isosurfaces": num_isosurfaces,
+                "isovalues": isovalues,
+                "window_size": window_size,
+                "file_path": str(path),
+                "mtime": mtime
+            }
 
-                plotter.add_mesh(
-                    display_mesh,
-                    opacity=base_mesh_opacity,
-                    scalars=scalar_field,
-                    show_scalar_bar=True,
-                    cmap=colormap,
-                    label="Base Mesh",
-                    scalar_bar_args={
-                        "title": scalar_field,
-                        "title_font_size": 20,
-                        "label_font_size": 16,
-                        "shadow": True,
-                        "n_labels": 5,
-                        "fmt": "%.2f",
-                        "position_x": 0.85,
-                        "position_y": 0.05,
-                    },
-                )
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"[get_interactive_html] "
-                    f"Added base mesh with opacity {base_mesh_opacity}"
-                )
-
-            # Add isosurfaces with slider OR static contours
-            if show_isovalue_slider:
-                # Note: add_mesh_isovalue requires the mesh.
-                # Decimating before isosurfacing might reduce quality of the contour itself.
-                # However, for web interactivity, performance is key.
-                # Since we compute isosurfaces on the fly in the browser (via trame?),
-                # passing a huge mesh is slow.
-                # PyVista's `add_mesh_isovalue` uses a widget in Python side?
-                # If backend is pythreejs or similar, it might pre-compute.
-                # Since we use `export_html` (trame backend embedded), it likely embeds the full mesh if we use the widget.
-                # To be safe and performant, we use the decimated mesh for the widget source too if mesh is huge.
-
-                widget_mesh = self._decimate_mesh(self.mesh, target_faces=200000)
-
-                plotter.add_mesh_isovalue(
-                    widget_mesh,
-                    scalars=scalar_field,
-                    compute_normals=True,
-                    compute_gradients=False,
-                    compute_scalars=True,
-                    opacity=contour_opacity,
-                    color=contour_color,
-                    show_scalar_bar=False,
-                )
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"[get_interactive_html] "
-                    f"Added interactive isovalue slider"
-                )
-            else:
-                result = self.generate_isosurfaces(
-                    scalar_field=scalar_field,
-                    num_isosurfaces=num_isosurfaces,
-                    custom_range=custom_range,
-                    isovalues=isovalues,
-                )
-
-                if not result.get("success"):
-                    raise ValueError(
-                        f"Failed to generate isosurfaces: " f"{result.get('error')}"
-                    )
-
-                if self.contours is not None and self.contours.n_points > 0:
-                    # Decimate contours if they are huge
-                    display_contours = self._decimate_mesh(self.contours, target_faces=100000)
-
-                    plotter.add_mesh(
-                        display_contours,
-                        opacity=contour_opacity,
-                        show_scalar_bar=False,
-                        color=contour_color,
-                        label="Isosurfaces",
-                    )
-                    logger.info(
-                        f"[FOAMFlask] [IsosurfaceVisualizer] "
-                        f"[get_interactive_html] "
-                        f"Added {result['num_isosurfaces']} "
-                        f"static isosurfaces"
-                    )
-                else:
-                    logger.warning(
-                        "[FOAMFlask] [IsosurfaceVisualizer] "
-                        "[get_interactive_html] "
-                        "No contour points generated"
-                    )
-
-            # Add axes with labels
-            plotter.add_axes(
-                xlabel="X", ylabel="Y", zlabel="Z", line_width=2, labels_off=False
-            )
-
-            # Set isometric camera position
-            plotter.camera_position = "iso"
-
-            # Export to HTML using temporary file
             try:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".html", delete=False, encoding="utf-8"
-                ) as tmp_file:
-                    tmp_path = tmp_file.name
+                # Deterministic JSON representation for hashing
+                import json
+                # Handle types that might not be JSON serializable (like tuple)
+                cache_str = json.dumps(params, sort_keys=True, default=str)
+                cache_key = hashlib.sha256(cache_str.encode()).hexdigest()
 
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"[get_interactive_html] "
-                    f"Exporting to temporary file: {tmp_path}"
-                )
+                cache_dir = _get_cache_dir()
+                cache_path = cache_dir / f"{cache_key}.html"
 
-                # Export to the temporary file
-                plotter.export_html(tmp_path)
-                plotter.close()
-
-                # Read the HTML content
-                with open(tmp_path, "r", encoding="utf-8") as f:
-                    html_content = f.read()
-
-                # Clean up temporary file
-                try:
-                    os.unlink(tmp_path)
-                except OSError as e:
-                    logger.warning(
-                        f"[FOAMFlask] [IsosurfaceVisualizer] "
-                        f"[get_interactive_html] "
-                        f"Error cleaning up temporary file: {str(e)}"
-                    )
-
-                logger.info(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"[get_interactive_html] "
-                    f"Generated HTML content: {len(html_content)} bytes"
-                )
-
-                return html_content
-
+                if cache_path.exists():
+                    logger.debug(f"Serving isosurface from cache: {cache_path}")
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        return f.read()
             except Exception as e:
-                logger.error(
-                    f"[FOAMFlask] [IsosurfaceVisualizer] "
-                    f"[get_interactive_html] "
-                    f"Error during HTML export: {str(e)}"
-                )
-                plotter.close()
-                raise
+                logger.warning(f"Cache check failed: {e}")
+
+            # Create a temp file for the output
+            with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
+                temp_output_path = tmp.name
+
+            # Run generation in a separate process
+            # ⚡ Bolt Optimization: Offload blocking VTK/serialization work
+            p = multiprocessing.Process(
+                target=_generate_isosurface_html_process,
+                args=(str(path), temp_output_path, params)
+            )
+            p.start()
+            p.join(timeout=300) # Give it reasonable time for large meshes
+
+            if p.is_alive():
+                p.terminate()
+                p.join()
+                logger.error("Isosurface HTML generation timed out")
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
+                return self._generate_error_html("Generation timed out", scalar_field)
+
+            if p.exitcode != 0:
+                logger.error("Isosurface HTML generation process failed")
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
+                return self._generate_error_html("Generation process failed", scalar_field)
+
+            if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) == 0:
+                 logger.error("Isosurface HTML output file is empty or missing")
+                 if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
+                 return self._generate_error_html("Generation failed (empty output)", scalar_field)
+
+            with open(temp_output_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+
+            # ⚡ Bolt Optimization: Save to cache
+            try:
+                _cleanup_cache()
+                shutil.move(temp_output_path, cache_path)
+            except Exception as e:
+                logger.warning(f"Failed to save to cache: {e}")
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
+
+            return html_content
 
         except Exception as e:
             logger.error(
@@ -541,12 +582,6 @@ class IsosurfaceVisualizer:
                 f"[get_interactive_html] "
                 f"Failed to generate HTML viewer: {e}"
             )
-
-            # Clean up plotter if it exists
-            if "plotter" in locals():
-                plotter.close()
-
-            # Return a user-friendly error message as HTML
             return self._generate_error_html(str(e), scalar_field)
 
     def _generate_error_html(self, error_message, scalar_field=""):
@@ -559,7 +594,7 @@ class IsosurfaceVisualizer:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {{
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
             padding: 40px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             margin: 0;
@@ -596,13 +631,12 @@ class IsosurfaceVisualizer:
 </head>
 <body>
     <div class="error-container">
-        <h2>[FOAMFlask][isosurface.py][IsosurfaceVisualizer][_generate_error_html] ⚠️ Error Generating 3D Visualization</h2>
+        <h2>⚠️ Error Generating 3D Visualization</h2>
         <div class="error-message">
             <strong>Error:</strong><br>
             {error_message}
         </div>
         <p>Scalar field: <code>{scalar_field}</code></p>
-        <p>Please check the server logs for more details.</p>
     </div>
 </body>
 </html>
@@ -644,11 +678,8 @@ class IsosurfaceVisualizer:
         if hasattr(self, "plotter") and self.plotter is not None:
             try:
                 self.plotter.close()
-                logger.info(
-                    "[FOAMFlask] [IsosurfaceVisualizer] " "Cleaned up plotter resources"
-                )
-            except Exception as e:
-                logger.warning(f"[FOAMFlask] [IsosurfaceVisualizer] Error during cleanup: {e}")
+            except Exception:
+                pass
 
 
 # Global instance for use as a singleton
