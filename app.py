@@ -698,7 +698,7 @@ def csrf_protect():
             return
         token = request.cookies.get("csrf_token")
         header_token = request.headers.get("X-CSRFToken")
-        if not token or token != header_token:
+        if not token or not header_token or not secrets.compare_digest(token, header_token):
             return fast_jsonify({"error": "CSRF token missing or invalid"}), 403
 
 @app.after_request
