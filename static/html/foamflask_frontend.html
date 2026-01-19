@@ -606,8 +606,8 @@
                 <div id="tab-geo-upload" role="tabpanel" aria-labelledby="tab-btn-geo-upload" class="flex flex-col gap-2">
                   <label for="geometryUpload" class="text-sm font-medium">Upload Geometry File (stl, obj,
                     obj.gz)</label>
-                  <p class="text-xs text-gray-600 mb-2">Max file size: 500MB</p>
-                  <input type="file" id="geometryUpload" accept=".stl,.obj,.obj.gz" class="block w-full text-sm text-gray-900
+                  <p id="geometryUploadHelp" class="text-xs text-gray-600 mb-2">Max file size: 500MB</p>
+                  <input type="file" id="geometryUpload" accept=".stl,.obj,.obj.gz" aria-describedby="geometryUploadHelp" class="block w-full text-sm text-gray-900
                     file:mr-4 file:py-2 file:px-4
                     file:rounded-full file:border-0
                     file:text-sm file:font-semibold
@@ -1429,7 +1429,7 @@
 
       <!-- Main Plots Container -->
       <div id="plotsContainer" class="w-full relative">
-        <div id="plotsLoading"
+        <div id="plotsLoading" role="status" aria-live="polite"
           class="absolute inset-0 flex flex-col items-center justify-center glass z-50 hidden transition-opacity duration-300">
           <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mb-3"></div>
           <span class="text-lg font-semibold text-gray-900">Loading Plot Data...</span>
@@ -1616,7 +1616,7 @@
                 <div class="flex flex-col gap-2">
                   <div class="flex flex-col sm:flex-row gap-2 w-full">
                     <div class="flex-1 min-w-0">
-                      <input type="file" id="vtkFileBrowser" accept=".vtk,.vtp,.vtu,.vtm,.pvtu"
+                      <input type="file" id="vtkFileBrowser" accept=".vtk,.vtp,.vtu,.vtm,.pvtu" aria-label="Upload custom VTK file"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate">
                     </div>
                     <button onclick="loadCustomVTKFile()"

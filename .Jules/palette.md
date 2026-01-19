@@ -11,3 +11,7 @@
 ## 2026-01-26 - Protecting Reproducible Data
 **Learning:** Even "view-only" data like simulation logs, which are expensive to reproduce (requiring re-running a simulation), should be treated as destructive deletions when cleared. Users often treat the log as a persistent record of the run.
 **Action:** Apply confirmation patterns not just to file deletions, but also to clearing significant UI state/logs that represent long-running processes.
+
+## 2025-10-26 - File Input Accessibility Gaps
+**Learning:** File inputs hidden inside custom UI widgets (like accordions or custom uploaders) often lose their semantic labeling, leaving screen reader users guessing what the "Choose File" button is for.
+**Action:** Always verify that `<input type="file">` elements have either a visible `<label>` via `for/id` or an `aria-label` if the UI implies the label contextually.
