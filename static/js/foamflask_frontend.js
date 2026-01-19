@@ -2912,35 +2912,56 @@ const initLogScrollObserver = () => {
     });
 };
 // --- Font Settings Logic ---
+let fontSettingsCleanup = null;
+let fontSettingsTimer = null;
 window.toggleFontSettings = () => {
     const menu = document.getElementById("fontSettingsMenu");
     const btn = document.getElementById("fontSettingsBtn");
-    if (menu) {
-        const isHidden = menu.classList.contains("hidden");
-        if (isHidden) {
-            menu.classList.remove("hidden");
-            if (btn)
-                btn.setAttribute("aria-expanded", "true");
-            // Close on click outside
-            setTimeout(() => {
-                const closeHandler = (e) => {
-                    if (!menu.contains(e.target) &&
-                        e.target.id !== "fontSettingsBtn" &&
-                        !e.target.closest("#fontSettingsBtn")) {
-                        menu.classList.add("hidden");
-                        if (btn)
-                            btn.setAttribute("aria-expanded", "false");
-                        document.removeEventListener("click", closeHandler);
-                    }
-                };
-                document.addEventListener("click", closeHandler);
-            }, 10);
+    if (!menu)
+        return;
+    const closeMenu = () => {
+        menu.classList.add("hidden");
+        if (btn)
+            btn.setAttribute("aria-expanded", "false");
+        if (fontSettingsTimer !== null) {
+            clearTimeout(fontSettingsTimer);
+            fontSettingsTimer = null;
         }
-        else {
-            menu.classList.add("hidden");
-            if (btn)
-                btn.setAttribute("aria-expanded", "false");
+        if (fontSettingsCleanup) {
+            fontSettingsCleanup();
+            fontSettingsCleanup = null;
         }
+    };
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+        menu.classList.remove("hidden");
+        if (btn)
+            btn.setAttribute("aria-expanded", "true");
+        const clickHandler = (e) => {
+            if (!menu.contains(e.target) &&
+                !btn?.contains(e.target)) {
+                closeMenu();
+            }
+        };
+        const keyHandler = (e) => {
+            if (e.key === "Escape") {
+                closeMenu();
+                btn?.focus();
+            }
+        };
+        // Delay to prevent immediate close if triggered by click
+        fontSettingsTimer = window.setTimeout(() => {
+            fontSettingsTimer = null;
+            document.addEventListener("click", clickHandler);
+            document.addEventListener("keydown", keyHandler);
+        }, 0);
+        fontSettingsCleanup = () => {
+            document.removeEventListener("click", clickHandler);
+            document.removeEventListener("keydown", keyHandler);
+        };
+    }
+    else {
+        closeMenu();
     }
 };
 window.changePlotFont = (fontFamily) => {

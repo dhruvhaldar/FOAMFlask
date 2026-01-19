@@ -3296,31 +3296,64 @@ const initLogScrollObserver = (): void => {
 
 // --- Font Settings Logic ---
 
+let fontSettingsCleanup: (() => void) | null = null;
+let fontSettingsTimer: number | null = null;
+
 (window as any).toggleFontSettings = (): void => {
   const menu = document.getElementById("fontSettingsMenu");
   const btn = document.getElementById("fontSettingsBtn");
-  if (menu) {
-    const isHidden = menu.classList.contains("hidden");
-    if (isHidden) {
-      menu.classList.remove("hidden");
-      if (btn) btn.setAttribute("aria-expanded", "true");
-      // Close on click outside
-      setTimeout(() => {
-        const closeHandler = (e: MouseEvent) => {
-          if (!menu.contains(e.target as Node) &&
-            (e.target as HTMLElement).id !== "fontSettingsBtn" &&
-            !(e.target as HTMLElement).closest("#fontSettingsBtn")) {
-            menu.classList.add("hidden");
-            if (btn) btn.setAttribute("aria-expanded", "false");
-            document.removeEventListener("click", closeHandler);
-          }
-        };
-        document.addEventListener("click", closeHandler);
-      }, 10);
-    } else {
-      menu.classList.add("hidden");
-      if (btn) btn.setAttribute("aria-expanded", "false");
+
+  if (!menu) return;
+
+  const closeMenu = () => {
+    menu.classList.add("hidden");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+
+    if (fontSettingsTimer !== null) {
+      clearTimeout(fontSettingsTimer);
+      fontSettingsTimer = null;
     }
+
+    if (fontSettingsCleanup) {
+      fontSettingsCleanup();
+      fontSettingsCleanup = null;
+    }
+  };
+
+  const isHidden = menu.classList.contains("hidden");
+
+  if (isHidden) {
+    menu.classList.remove("hidden");
+    if (btn) btn.setAttribute("aria-expanded", "true");
+
+    const clickHandler = (e: MouseEvent) => {
+      if (!menu.contains(e.target as Node) &&
+        !btn?.contains(e.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeMenu();
+        btn?.focus();
+      }
+    };
+
+    // Delay to prevent immediate close if triggered by click
+    fontSettingsTimer = window.setTimeout(() => {
+      fontSettingsTimer = null;
+      document.addEventListener("click", clickHandler);
+      document.addEventListener("keydown", keyHandler);
+    }, 0);
+
+    fontSettingsCleanup = () => {
+      document.removeEventListener("click", clickHandler);
+      document.removeEventListener("keydown", keyHandler);
+    };
+
+  } else {
+    closeMenu();
   }
 };
 
