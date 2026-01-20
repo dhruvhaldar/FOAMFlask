@@ -21,6 +21,7 @@ describe('FoamFlask Frontend', () => {
   let frontend: any;
 
   beforeEach(async () => {
+    vi.resetModules();
     // Reset DOM
     document.body.innerHTML = `
       <div id="page-setup" class="page"></div>
@@ -56,6 +57,9 @@ describe('FoamFlask Frontend', () => {
       <select id="tutorialSelect"><option value="tut1">Tut 1</option></select>
       <select id="geometrySelect"><option value="">-- Select Geometry --</option></select>
 
+      <input id="bmCells" aria-describedby="bmCellsHelp" />
+      <p id="bmCellsHelp">Format: x y z</p>
+
       <div id="plotsContainer" class="hidden"></div>
       <div id="plotsLoading" class="hidden"></div>
       <button id="togglePlotsBtn"></button>
@@ -67,9 +71,6 @@ describe('FoamFlask Frontend', () => {
       <div id="mySection" class="hidden"></div>
       <button id="mySectionToggle">▶</button>
     `;
-
-    // Mock fetch
-    global.fetch = vi.fn();
 
     // Mock LocalStorage
     const localStorageMock = (function() {
@@ -96,6 +97,9 @@ describe('FoamFlask Frontend', () => {
     // but for now let's just import it.
     // Note: In a real scenario, we might need to use `vi.resetModules()` and dynamic import.
     await import('../../../static/ts/foamflask_frontend.ts');
+
+    // Mock fetch AFTER import to override the monkey-patch
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
@@ -123,9 +127,12 @@ describe('FoamFlask Frontend', () => {
   it('showNotification should add element to container', () => {
     const { showNotification } = window as any;
 
+    // Clear any background notifications
+    const container = document.getElementById('notificationContainer');
+    if (container) container.innerHTML = '';
+
     showNotification('Test Message', 'success');
 
-    const container = document.getElementById('notificationContainer');
     expect(container?.children.length).toBe(1);
     const notification = container?.querySelector('.notification');
     expect(notification).toBeTruthy();
@@ -337,6 +344,36 @@ describe('FoamFlask Frontend', () => {
     const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
     document.dispatchEvent(escapeEvent);
     expect(menu?.classList.contains('hidden')).toBe(true);
+  });
+
+  it('setupVectorInputAutoFormat should format input and provide visual feedback', async () => {
+    const input = document.getElementById('bmCells') as HTMLInputElement;
+    const help = document.getElementById('bmCellsHelp') as HTMLElement;
+
+    // Simulate user typing
+    input.value = '10,  20, 30 ';
+
+    // Trigger blur event
+    const blurEvent = new Event('blur');
+    input.dispatchEvent(blurEvent);
+
+    // Check formatting
+    expect(input.value).toBe('10 20 30');
+
+    // Check visual feedback (input classes)
+    expect(input.classList.contains('border-green-500')).toBe(true);
+    expect(input.classList.contains('bg-green-50')).toBe(true);
+
+    // Check help text update
+    expect(help.textContent).toContain('Auto-formatted');
+    expect(help.classList.contains('text-green-600')).toBe(true);
+
+    // Fast-forward timers to check revert
+    // Since we are using real timers in browser environment (jsdom), we'd need to mock timers or wait.
+    // Vitest uses fake timers if enabled.
+
+    // For this test, verifying the initial state change is sufficient to prove the feature works.
+    // The revert logic uses setTimeout which is hard to test without enabling fake timers globally or for this test.
   });
 
 });
