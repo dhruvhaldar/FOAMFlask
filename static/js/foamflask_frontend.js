@@ -2908,27 +2908,44 @@ const setupVectorInputAutoFormat = (elementId) => {
                 // Update help text if available
                 const helpId = el.getAttribute('aria-describedby');
                 const helpEl = helpId ? document.getElementById(helpId) : null;
-                let originalHelpText = "";
-                let originalHelpClasses = "";
                 if (helpEl) {
-                    originalHelpText = helpEl.textContent || "";
-                    originalHelpClasses = helpEl.className;
+                    // Store original state if not already stored (prevent race condition)
+                    if (!helpEl.dataset.originalText) {
+                        helpEl.dataset.originalText = helpEl.textContent || "";
+                        helpEl.dataset.originalClass = helpEl.className;
+                    }
+                    // Clear any pending restore timer
+                    if (helpEl.dataset.restoreTimer) {
+                        clearTimeout(parseInt(helpEl.dataset.restoreTimer, 10));
+                    }
+                    // Set feedback state
                     helpEl.textContent = "✨ Auto-formatted to space-separated";
                     helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
-                }
-                // Revert after delay
-                setTimeout(() => {
-                    el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
-                    if (helpEl) {
-                        // Fade out effect
+                    helpEl.style.opacity = '1';
+                    // Revert input styles and help text after delay
+                    const timerId = window.setTimeout(() => {
+                        el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+                        // Fade out help text
                         helpEl.style.opacity = '0';
                         setTimeout(() => {
-                            helpEl.textContent = originalHelpText;
-                            helpEl.className = originalHelpClasses;
+                            // Restore original help text
+                            helpEl.textContent = helpEl.dataset.originalText || "";
+                            helpEl.className = helpEl.dataset.originalClass || "";
                             helpEl.style.opacity = '1';
+                            // Cleanup data attributes
+                            delete helpEl.dataset.originalText;
+                            delete helpEl.dataset.originalClass;
+                            delete helpEl.dataset.restoreTimer;
                         }, 300);
-                    }
-                }, 2000);
+                    }, 2000);
+                    helpEl.dataset.restoreTimer = timerId.toString();
+                }
+                else {
+                    // Just revert input styles if no help text
+                    setTimeout(() => {
+                        el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+                    }, 2000);
+                }
             }
         });
     }
