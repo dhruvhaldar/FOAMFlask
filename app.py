@@ -33,7 +33,7 @@ from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
 from backend.geometry.visualizer import GeometryVisualizer
 from backend.meshing.runner import MeshingRunner
-from backend.utils import sanitize_error
+from backend.utils import sanitize_error, is_safe_command
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -173,52 +173,6 @@ def rate_limit(limit: int = 5, window: int = 60):
 
 
 # Security validation functions
-def is_safe_command(command: str) -> bool:
-    """
-    Validate command input to prevent shell injection.
-    
-    Args:
-        command: User-provided command string
-        
-    Returns:
-        True if command is safe, False otherwise
-    """
-    if not command or not isinstance(command, str):
-        return False
-    
-    # Check for dangerous shell metacharacters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
-    # Add newline characters to prevent command injection
-    dangerous_chars.extend(['\n', '\r'])
-    # Add brace expansion to prevent unexpected file creation
-    dangerous_chars.extend(['{', '}'])
-
-    if any(char in command for char in dangerous_chars):
-        return False
-    
-    # Check for path traversal attempts
-    if '..' in command:
-        return False
-    
-    # Check for command substitution
-    if '$(' in command or '`' in command:
-        return False
-    
-    # Check for file descriptor redirection
-    if re.search(r'[0-9]+[<>]', command):
-        return False
-    
-    # Check for background/foreground operators
-    if '&' in command or '%' in command:
-        return False
-    
-    # Length check to prevent extremely long commands
-    if len(command) > 100:
-        return False
-    
-    return True
-
-
 def is_safe_tutorial_path(path: str) -> bool:
     """
     Validate tutorial path to prevent command injection.

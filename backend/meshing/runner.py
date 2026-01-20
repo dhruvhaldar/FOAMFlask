@@ -7,6 +7,7 @@ import posixpath
 
 from .blockmesh import BlockMeshGenerator
 from .snappyhexmesh import SnappyHexMeshGenerator
+from backend.utils import is_safe_command
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -87,6 +88,10 @@ class MeshingRunner:
         try:
             if not docker_client:
                  return {"success": False, "message": "Docker client not available"}
+
+            # Security: Validate command input to prevent shell injection
+            if not is_safe_command(command):
+                 return {"success": False, "message": "Invalid command detected. Potential security risk."}
 
             # Setup paths
             container_run_path = "/tmp/FOAM_Run" # nosec B108
