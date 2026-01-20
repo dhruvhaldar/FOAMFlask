@@ -42,3 +42,8 @@
 **Vulnerability:** The FastAPI application (`main.py`) was configured with `allow_origins=["*"]`, allowing any website to access the API via CORS. Additionally, the WebSocket endpoint `/ws/data` did not validate the `Origin` header, making it vulnerable to Cross-Site WebSocket Hijacking (CSWSH).
 **Learning:** `allow_origins=["*"]` is extremely dangerous even for local tools, as it allows drive-by attacks from malicious websites. WebSockets do not automatically enforce Same-Origin Policy and require explicit Origin validation during the handshake.
 **Prevention:** I restricted `allow_origins` to `["http://localhost:5000", "http://127.0.0.1:5000"]` and implemented a manual Origin check in the WebSocket endpoint to reject untrusted connections.
+
+## 2026-06-17 - Centralized Command Validation
+**Vulnerability:** The `is_safe_command` validation logic was defined only in `app.py`, leaving backend components like `MeshingRunner` (which executes shell commands) unprotected if called from other contexts. While `MeshingRunner` used positional arguments (preventing some injection), it still allowed arbitrary commands (like `rm -rf /`) without any validation.
+**Learning:** Security validation functions must be reusable and applied at the execution point (Defense in Depth), not just at the API boundary. This ensures that internal components remain secure even if the API layer changes or is bypassed.
+**Prevention:** Refactored `is_safe_command` to `backend/utils.py` and applied it in `MeshingRunner.run_meshing_command`. This enforces validation (blocking `..`, `;`, `&`, etc.) directly in the runner, preventing path traversal and shell metacharacters in the command execution.
