@@ -2888,6 +2888,10 @@ const handleScroll = () => {
 const setupVectorInputAutoFormat = (elementId) => {
     const el = document.getElementById(elementId);
     if (el) {
+        // Add transition class for smooth color change if not present
+        if (!el.classList.contains('transition-colors')) {
+            el.classList.add('transition-colors', 'duration-500');
+        }
         el.addEventListener('blur', () => {
             let val = el.value;
             // Replace commas with spaces
@@ -2895,9 +2899,36 @@ const setupVectorInputAutoFormat = (elementId) => {
             // Collapse multiple spaces
             val = val.replace(/\s+/g, ' ');
             val = val.trim();
-            if (val !== el.value) {
+            if (val !== el.value && val.length > 0) {
                 el.value = val;
-                // Visual feedback could be added here if needed
+                // 🎨 Palette UX Improvement: Visual feedback for auto-formatting
+                // Flash input green
+                const originalClasses = el.className;
+                el.classList.add('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+                // Update help text if available
+                const helpId = el.getAttribute('aria-describedby');
+                const helpEl = helpId ? document.getElementById(helpId) : null;
+                let originalHelpText = "";
+                let originalHelpClasses = "";
+                if (helpEl) {
+                    originalHelpText = helpEl.textContent || "";
+                    originalHelpClasses = helpEl.className;
+                    helpEl.textContent = "✨ Auto-formatted to space-separated";
+                    helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
+                }
+                // Revert after delay
+                setTimeout(() => {
+                    el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+                    if (helpEl) {
+                        // Fade out effect
+                        helpEl.style.opacity = '0';
+                        setTimeout(() => {
+                            helpEl.textContent = originalHelpText;
+                            helpEl.className = originalHelpClasses;
+                            helpEl.style.opacity = '1';
+                        }, 300);
+                    }
+                }, 2000);
             }
         });
     }
