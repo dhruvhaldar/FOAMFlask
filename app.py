@@ -23,6 +23,7 @@ from docker.errors import DockerException
 from flask import Flask, Response, render_template_string, request, send_from_directory
 from markupsafe import escape
 from werkzeug.utils import secure_filename
+from flask_compress import Compress
 
 # Local application imports
 from backend.mesh.mesher import mesh_visualizer
@@ -37,6 +38,18 @@ from backend.utils import sanitize_error, is_safe_command
 
 # Initialize Flask application
 app = Flask(__name__)
+
+# Configure Compression
+app.config["COMPRESS_MIMETYPES"] = [
+    "text/html",
+    "text/css",
+    "text/xml",
+    "application/json",
+    "application/javascript",
+]
+app.config["COMPRESS_LEVEL"] = 6
+app.config["COMPRESS_MIN_SIZE"] = 500
+compress = Compress(app)
 
 # Security: Set maximum upload size to 500MB to prevent DoS
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -1030,7 +1043,10 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity, optimize)
 
     if html_content:
-        return Response(html_content, mimetype="text/html")
+        response = Response(html_content, mimetype="text/html")
+        # Optimization: Exclude visual graphics from compression
+        response.headers["Content-Encoding"] = "identity"
+        return response
     else:
         return fast_jsonify({"success": False, "message": "Failed to generate view"}), 500
 
@@ -1857,7 +1873,10 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
         )
 
         if img_str:
-            return fast_jsonify({"success": True, "image": img_str})
+            response = fast_jsonify({"success": True, "image": img_str})
+            # Optimization: Exclude visual graphics from compression
+            response.headers["Content-Encoding"] = "identity"
+            return response
         else:
             return (
                 fast_jsonify({"success": False, "error": "Failed to generate screenshot"}),
@@ -1901,7 +1920,10 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
         )
 
         if html_content:
-            return Response(html_content, mimetype="text/html")
+            response = Response(html_content, mimetype="text/html")
+            # Optimization: Exclude visual graphics from compression
+            response.headers["Content-Encoding"] = "identity"
+            return response
         else:
             return (
                 fast_jsonify(
@@ -2223,7 +2245,10 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
 
         # Return HTML
         logger.info(f"[FOAMFlask] [create_contour] Returning HTML response")
-        return Response(html_content, mimetype="text/html")
+        response = Response(html_content, mimetype="text/html")
+        # Optimization: Exclude visual graphics from compression
+        response.headers["Content-Encoding"] = "identity"
+        return response
 
     except Exception as e:
         logger.error(f"[FOAMFlask] [create_contour] Exception: {str(e)}")
