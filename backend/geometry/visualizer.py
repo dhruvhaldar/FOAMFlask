@@ -8,6 +8,7 @@ import os
 import gzip
 import shutil
 import hashlib
+import stat
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -16,7 +17,52 @@ ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 def _get_cache_dir() -> Path:
     """Get the cache directory, creating it if it doesn't exist."""
     cache_dir = Path(tempfile.gettempdir()) / "foamflask_geometry_cache"
-    cache_dir.mkdir(exist_ok=True, parents=True)
+
+    # Security: Ensure directory exists with secure permissions (0700)
+    if not cache_dir.exists():
+        try:
+            cache_dir.mkdir(parents=True, mode=0o700)
+        except OSError:
+            # If mkdir fails (e.g. race condition), check permissions below
+            pass
+
+    # Ensure permissions are set (mkdir mode might be ignored or modified by umask)
+    # We do this always to ensure security even if directory already existed
+    try:
+        os.chmod(cache_dir, 0o700)
+    except OSError as e:
+        # If we can't chmod (e.g. not owner), we'll catch it in the ownership check below
+        logger.debug(f"Security: Failed to set permissions on cache dir: {e}")
+
+    # Check permissions and ownership
+    try:
+        st = cache_dir.stat()
+
+        # Check if owned by current user (POSIX only)
+        if hasattr(os, "getuid"):
+            if st.st_uid != os.getuid():
+                logger.warning(
+                    f"Security: Cache directory {cache_dir} is not owned by current user. "
+                    "Using a temporary directory instead."
+                )
+                return Path(tempfile.mkdtemp(prefix="foamflask_geo_"))
+
+        # Check permissions (rwx------) (POSIX only)
+        if os.name == "posix":
+            if st.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+                logger.warning(
+                    f"Security: Cache directory {cache_dir} has insecure permissions. "
+                    "Attempting to fix."
+                )
+                try:
+                    os.chmod(cache_dir, 0o700)
+                except OSError as e:
+                    logger.warning(f"Security: Failed to fix permissions: {e}")
+                    return Path(tempfile.mkdtemp(prefix="foamflask_geo_"))
+    except OSError as e:
+        logger.warning(f"Security: Error checking cache dir permissions: {e}")
+        return Path(tempfile.mkdtemp(prefix="foamflask_geo_"))
+
     return cache_dir
 
 CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
