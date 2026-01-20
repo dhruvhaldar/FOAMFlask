@@ -90,11 +90,15 @@ class OpenFOAMFieldParser:
     def __init__(self, case_dir: Union[str, Path]) -> None:
         self.case_dir = Path(case_dir)
 
-    def get_time_directories(self) -> List[str]:
+    def get_time_directories(self, known_mtime: Optional[float] = None) -> List[str]:
         """Get all time directories sorted numerically."""
         path_str = str(self.case_dir)
         try:
-            mtime = os.stat(path_str).st_mtime
+            # ⚡ Bolt Optimization: Use known mtime if provided to save syscall
+            if known_mtime is not None:
+                mtime = known_mtime
+            else:
+                mtime = os.stat(path_str).st_mtime
 
             # ⚡ Bolt Optimization: Check cache first
             if path_str in _TIME_DIRS_CACHE:
@@ -610,9 +614,9 @@ class OpenFOAMFieldParser:
 
         return data
 
-    def get_all_time_series_data(self, max_points: int = 100) -> Dict[str, List[float]]:
+    def get_all_time_series_data(self, max_points: int = 100, known_case_mtime: Optional[float] = None) -> Dict[str, List[float]]:
         """Get time series data for all available fields dynamically."""
-        all_time_dirs = self.get_time_directories()
+        all_time_dirs = self.get_time_directories(known_mtime=known_case_mtime)
         if not all_time_dirs:
             return {}
 
