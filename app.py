@@ -28,6 +28,9 @@ from werkzeug.utils import secure_filename
 from backend.mesh.mesher import mesh_visualizer
 from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
 from backend.post.isosurface import IsosurfaceVisualizer, isosurface_visualizer
+from backend.post.slice import SliceVisualizer
+from backend.post.streamline import StreamlineVisualizer
+from backend.post.surface_projection import SurfaceProjectionVisualizer
 from backend.startup import run_initial_setup_checks, check_docker_permissions
 from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
@@ -2045,6 +2048,32 @@ def post_process() -> Union[Response, Tuple[Response, int]]:
     except Exception as e:
         logger.error(f"Error during post-processing: {e}", exc_info=True)
         return fast_jsonify({"error": sanitize_error(e)}), 500
+
+
+@app.route("/api/slice/create", methods=["POST"])
+def create_slice() -> Union[Response, Tuple[Response, int]]:
+    """Placeholder for slice creation."""
+    data = request.get_json() or {}
+    parent_id = data.get("parent_id")
+    # For now, just pass to placeholder class to verify signature
+    result = SliceVisualizer().process("", {}, parent_id=parent_id)
+    return fast_jsonify({"status": "coming_soon", "message": "Slice visualization coming soon", "details": result}), 501
+
+@app.route("/api/streamline/create", methods=["POST"])
+def create_streamline() -> Union[Response, Tuple[Response, int]]:
+    """Placeholder for streamline creation."""
+    data = request.get_json() or {}
+    parent_id = data.get("parent_id")
+    result = StreamlineVisualizer().process("", {}, parent_id=parent_id)
+    return fast_jsonify({"status": "coming_soon", "message": "Streamline visualization coming soon", "details": result}), 501
+
+@app.route("/api/surface_projection/create", methods=["POST"])
+def create_surface_projection() -> Union[Response, Tuple[Response, int]]:
+    """Placeholder for surface projection creation."""
+    data = request.get_json() or {}
+    parent_id = data.get("parent_id")
+    result = SurfaceProjectionVisualizer().process("", {}, parent_id=parent_id)
+    return fast_jsonify({"status": "coming_soon", "message": "Surface projection visualization coming soon", "details": result}), 501
 
 
 @app.route("/api/contours/create", methods=["POST", "OPTIONS"])
