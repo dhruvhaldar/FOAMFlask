@@ -13,6 +13,7 @@ import multiprocessing
 import hashlib
 import shutil
 import stat
+import random
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 
@@ -85,6 +86,12 @@ def _cleanup_cache():
     Maintain cache size within limits by deleting oldest files.
     """
     try:
+        # ⚡ Bolt Optimization: Probabilistic cleanup
+        # Scanning the directory is expensive (O(N) syscalls).
+        # We only run cleanup 10% of the time to amortize the cost.
+        if random.random() > 0.1:
+            return
+
         cache_dir = _get_cache_dir()
         limit_bytes = CACHE_SIZE_LIMIT_MB * 1024 * 1024
 
