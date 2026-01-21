@@ -70,6 +70,10 @@ describe('FoamFlask Frontend', () => {
 
       <div id="mySection" class="hidden"></div>
       <button id="mySectionToggle">▶</button>
+
+      <!-- Post Processing Views -->
+      <div id="post-landing-view"></div>
+      <div id="post-contour-view" class="hidden"></div>
     `;
 
     // Mock LocalStorage
@@ -376,4 +380,19 @@ describe('FoamFlask Frontend', () => {
     // The revert logic uses setTimeout which is hard to test without enabling fake timers globally or for this test.
   });
 
+  it('switchPostView should toggle between landing and contour views', () => {
+    const { switchPostView } = window as any;
+    const landing = document.getElementById('post-landing-view') as HTMLElement;
+    const contour = document.getElementById('post-contour-view') as HTMLElement;
+
+    // Switch to contour
+    switchPostView('contour');
+    expect(landing.classList.contains('hidden')).toBe(true);
+    expect(contour.classList.contains('hidden')).toBe(false);
+
+    // Switch back to landing
+    switchPostView('landing');
+    expect(landing.classList.contains('hidden')).toBe(false);
+    expect(contour.classList.contains('hidden')).toBe(true);
+  });
 });

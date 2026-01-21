@@ -57,6 +57,7 @@ declare global {
     viewMesh: () => void;
     copyRunOutput: () => void;
     confirmRunCommand: (cmd: string, btn?: HTMLElement) => void;
+    switchPostView: (view: "landing" | "contour") => void;
   }
 }
 
@@ -2954,6 +2955,143 @@ function resetCamera(): void {
 }
 
 // Post Processing
+
+interface PipelineNode {
+  id: string;
+  type: "contour" | "slice" | "streamline" | "surface_projection" | "root";
+  name: string;
+  parentId: string | null;
+}
+
+// Initial state: Root node represents the base mesh
+let postPipeline: PipelineNode[] = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
+let activePipelineId: string = "root";
+
+const renderPipeline = (): void => {
+  const container = document.getElementById("post-pipeline-view");
+  if (!container) return;
+
+  // Clear container
+  container.innerHTML = "";
+
+  // Build tree structure (linear for now based on active path, or just list all nodes)
+  // For simplicity, we just render the list as a sequence since user asked for "metro stations map"
+  // If we support branching, this logic needs to be more complex.
+  // Assuming a linear flow for the MVP UI visualization or just showing the path to the active node.
+
+  // Render full pipeline (assuming linear for MVP)
+  // In a real tree, we would need to handle branches.
+  // Since we push linearly in switchPostView, we can just render the array.
+
+  postPipeline.forEach((node, index) => {
+    // Node
+    const nodeEl = document.createElement("button");
+    nodeEl.className = `flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors whitespace-nowrap ${
+      node.id === activePipelineId
+        ? "bg-cyan-600 text-white border-cyan-600 shadow-md"
+        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-cyan-400"
+    }`;
+
+    // Icon based on type
+    let icon = "";
+    if (node.type === "root") icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>`; // Cube-ish
+    else if (node.type === "contour") icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`;
+    else icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"></circle></svg>`;
+
+    nodeEl.innerHTML = `${icon} <span>${node.name}</span>`;
+    nodeEl.onclick = () => selectPipelineStep(node.id);
+    container.appendChild(nodeEl);
+
+    // Connector (if not last)
+    if (index < postPipeline.length - 1) {
+      const line = document.createElement("div");
+      line.className = "w-8 h-0.5 bg-gray-300 mx-1 flex-shrink-0";
+      container.appendChild(line);
+    }
+
+    // Add "Add" button if this is the active node (to branch off)
+    if (node.id === activePipelineId) {
+        const line = document.createElement("div");
+        line.className = "w-8 h-0.5 bg-gray-300 mx-1 flex-shrink-0 border-t-2 border-dashed border-gray-300";
+        container.appendChild(line);
+
+        const addBtn = document.createElement("div");
+        addBtn.className = "w-6 h-6 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-400 text-xs";
+        addBtn.innerHTML = "+";
+        addBtn.title = "Add function to this step";
+        container.appendChild(addBtn);
+    }
+  });
+};
+
+const selectPipelineStep = (id: string): void => {
+  activePipelineId = id;
+  const node = postPipeline.find(n => n.id === id);
+  if (!node) return;
+
+  renderPipeline();
+
+  // Show config for this step
+  const landing = document.getElementById("post-landing-view");
+  const contour = document.getElementById("post-contour-view");
+
+  if (!landing || !contour) return;
+
+  // If selecting a "contour" node, show contour view
+  if (node.type === "contour") {
+    landing.classList.add("hidden");
+    contour.classList.remove("hidden");
+    refreshPostList(); // Refresh VTK list
+  }
+  // If selecting root or any node where we want to add a child (conceptually), show landing
+  // For this simplified logic: clicking a node shows its config.
+  // How do we add new?
+  // Let's say if you click "Back to Selection" or select "Mesh" (root), you get the landing view to ADD a new child to ROOT.
+  // Actually, standard behavior: selecting a node shows its settings.
+  // To add a new one, we need an "Add" mechanism.
+  // For now, let's treat the Landing View as the "Add Child to Current Node" view if we are at a leaf or explicitly adding.
+  // But to keep it simple and consistent with previous turn:
+  // If we are at ROOT, show Landing View to start a chain.
+  // If we are at a Leaf, showing the Config View.
+
+  else if (node.type === "root") {
+      // Root node -> Show selection to add new filter
+      landing.classList.remove("hidden");
+      contour.classList.add("hidden");
+  }
+  else {
+      // Placeholder for other types
+      landing.classList.add("hidden");
+      contour.classList.add("hidden");
+      // Could show a "Not implemented" view here
+  }
+};
+
+const switchPostView = (view: "landing" | "contour"): void => {
+  if (view === "contour") {
+      // Add a new contour node to the pipeline
+      const newNodeId = `contour_${Date.now()}`;
+      postPipeline.push({
+          id: newNodeId,
+          type: "contour",
+          name: "Contour",
+          parentId: activePipelineId
+      });
+      selectPipelineStep(newNodeId);
+  } else {
+      // "Back" means go to parent or root?
+      // Or just go to root to add another branch?
+      // Let's assume "Back" means go up one level
+      const current = postPipeline.find(n => n.id === activePipelineId);
+      if (current && current.parentId) {
+          selectPipelineStep(current.parentId);
+      } else {
+          selectPipelineStep("root");
+      }
+  }
+};
+(window as any).switchPostView = switchPostView;
+
 const refreshPostList = async (btnElement?: HTMLElement) => {
   refreshPostListVTK(btnElement);
 };

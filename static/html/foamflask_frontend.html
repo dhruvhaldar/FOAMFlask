@@ -1569,14 +1569,88 @@
     </div>
 
     <!-- Post Processing Page -->
-    <div id="page-post" class="page hidden max-w-7xl mx-auto glass shadow-lg rounded-lg p-4">
-      <div class="flex justify-between items-center mb-3">
+    <div id="page-post" class="page hidden max-w-7xl mx-auto glass shadow-lg rounded-lg p-6">
+      <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-black">Post Processing</h2>
       </div>
 
-      <!-- Contour Visualization Section -->
-      <div class="mb-8">
-        <h3 class="text-xl font-semibold mb-4">Contour Visualization</h3>
+      <!-- Pipeline Visualization (Metro Map) -->
+      <div id="post-pipeline-view" class="mb-6 p-4 glass-panel rounded-lg flex items-center overflow-x-auto">
+        <!-- Pipeline steps will be injected here by JS -->
+        <div class="text-gray-500 text-sm italic">Pipeline empty. Select a function below to start.</div>
+      </div>
+
+      <!-- Landing View: Feature Selection Grid -->
+      <div id="post-landing-view" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+        <!-- Contour Card (Active) -->
+        <button onclick="switchPostView('contour')" class="glass-panel p-4 text-left hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 group border border-cyan-200 bg-white/40 flex flex-col h-full">
+          <div class="flex items-start justify-between mb-3">
+            <div class="p-2 rounded-lg bg-cyan-100 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-100 text-green-800 border border-green-200">Active</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-cyan-700">Contour</h3>
+          <p class="text-xs text-gray-600 flex-grow">Generate isosurfaces for scalar fields like Pressure and Velocity.</p>
+        </button>
+
+        <!-- Slice Card (Coming Soon) -->
+        <div class="glass-panel p-4 text-left opacity-75 border border-gray-200 bg-gray-50/50 cursor-not-allowed flex flex-col h-full">
+          <div class="flex items-start justify-between mb-3">
+            <div class="p-2 rounded-lg bg-gray-200 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+              </svg>
+            </div>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 border border-gray-300">Soon</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-500 mb-1">Slice</h3>
+          <p class="text-xs text-gray-500 flex-grow">Cut through the mesh with a plane to inspect internal values.</p>
+        </div>
+
+        <!-- Streamline Card (Coming Soon) -->
+        <div class="glass-panel p-4 text-left opacity-75 border border-gray-200 bg-gray-50/50 cursor-not-allowed flex flex-col h-full">
+          <div class="flex items-start justify-between mb-3">
+            <div class="p-2 rounded-lg bg-gray-200 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 border border-gray-300">Soon</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-500 mb-1">Streamline</h3>
+          <p class="text-xs text-gray-500 flex-grow">Visualize flow trajectories and particle paths.</p>
+        </div>
+
+        <!-- Surface Projection Card (Coming Soon) -->
+        <div class="glass-panel p-4 text-left opacity-75 border border-gray-200 bg-gray-50/50 cursor-not-allowed flex flex-col h-full">
+          <div class="flex items-start justify-between mb-3">
+            <div class="p-2 rounded-lg bg-gray-200 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 border border-gray-300">Soon</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-500 mb-1">Surface Projection</h3>
+          <p class="text-xs text-gray-500 flex-grow">Project scalar values onto boundary surfaces.</p>
+        </div>
+      </div>
+
+      <!-- Contour Visualization Section (Hidden by default) -->
+      <div id="post-contour-view" class="hidden mb-8 animate-[slideIn_0.3s_ease-out]">
+        <div class="flex items-center gap-2 mb-4">
+          <button onclick="switchPostView('landing')" class="p-2 rounded-full hover:bg-gray-100 text-gray-600 hover:text-cyan-700 transition-colors" aria-label="Back to selection">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <h3 class="text-xl font-semibold">Contour Visualization</h3>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-6">
           <!-- Left Sidebar: Controls -->
           <div class="w-full lg:w-1/3 flex flex-col gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
