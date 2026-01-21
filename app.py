@@ -1501,7 +1501,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] Failed to start container: {sanitize_error(e)}<br>"
+            yield f"[FOAMFlask] [Error] Failed to start container: {escape(sanitize_error(e))}<br>"
             return
 
         finally:
