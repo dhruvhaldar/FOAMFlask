@@ -15,3 +15,7 @@
 ## 2025-10-26 - File Input Accessibility Gaps
 **Learning:** File inputs hidden inside custom UI widgets (like accordions or custom uploaders) often lose their semantic labeling, leaving screen reader users guessing what the "Choose File" button is for.
 **Action:** Always verify that `<input type="file">` elements have either a visible `<label>` via `for/id` or an `aria-label` if the UI implies the label contextually.
+
+## 2025-10-27 - Styling Native Details
+**Learning:** Native `<details>` elements are extremely hard to style consistently across browsers, especially the `marker` (triangle).
+**Action:** Hide the default marker with `list-none` and `[&::-webkit-details-marker]:hidden`, then use a flex container with a custom SVG icon that rotates using `group-open:rotate-180` for a clean, animated accordion.
