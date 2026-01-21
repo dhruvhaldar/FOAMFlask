@@ -866,92 +866,110 @@ class OpenFOAMFieldParser:
         # stat() raises FileNotFoundError if file is missing, which we can catch.
         # This saves 1 syscall per poll cycle.
 
+        fd = None
         try:
-            # ⚡ Bolt Optimization: Use provided stat result if available to save a syscall
-            if known_stat:
-                stat = known_stat
-            else:
-                # Security: Check for symlinks to prevent path traversal/file read
-                if os.path.islink(path_str):
+            # Security & Optimization: Atomic open + fstat
+            # We open with O_NOFOLLOW to prevent TOCTOU symlink attacks.
+            # We explicitly ignore known_stat here to ensure we don't bypass symlink checks.
+            # While known_stat avoids a syscall, it relies on os.stat() which follows symlinks.
+
+            import errno
+            try:
+                fd = os.open(path_str, os.O_RDONLY | os.O_NOFOLLOW)
+            except OSError as e:
+                if e.errno == errno.ELOOP:
                     logger.warning(f"Security: Ignoring symlinked log file: {path_str}")
                     return {}
+                # Rethrow other errors (e.g. FileNotFoundError)
+                raise
 
-                stat = os.stat(path_str)
+            # Use fstat on the open FD - atomic and trustable
+            try:
+                stat = os.fstat(fd)
+                mtime = stat.st_mtime
+                size = stat.st_size
 
-            mtime = stat.st_mtime
-            size = stat.st_size
+                start_offset = 0
+                residuals: Dict[str, List[float]] = {
+                    "time": [],
+                    "Ux": [],
+                    "Uy": [],
+                    "Uz": [],
+                    "p": [],
+                    "k": [],
+                    "epsilon": [],
+                    "omega": [],
+                }
 
-            start_offset = 0
-            residuals: Dict[str, List[float]] = {
-                "time": [],
-                "Ux": [],
-                "Uy": [],
-                "Uz": [],
-                "p": [],
-                "k": [],
-                "epsilon": [],
-                "omega": [],
-            }
+                # ⚡ Bolt Optimization: Check cache first for incremental update
+                if path_str in _RESIDUALS_CACHE:
+                    cached_mtime, cached_size, cached_offset, cached_data = _RESIDUALS_CACHE[path_str]
 
-            # ⚡ Bolt Optimization: Check cache first for incremental update
-            if path_str in _RESIDUALS_CACHE:
-                cached_mtime, cached_size, cached_offset, cached_data = _RESIDUALS_CACHE[path_str]
+                    # Case 1: File unchanged
+                    if cached_mtime == mtime and cached_size == size:
+                        # Close FD since we don't need to read
+                        os.close(fd)
+                        fd = None
+                        return cached_data
 
-                # Case 1: File unchanged
-                if cached_mtime == mtime and cached_size == size:
-                    return cached_data
+                    # Case 2: File grew (append) - Reuse cached data and offset
+                    if size > cached_size and cached_size > 0:
+                        start_offset = cached_offset
+                        residuals = cached_data # Reference to existing mutable dict
 
-                # Case 2: File grew (append) - Reuse cached data and offset
-                if size > cached_size and cached_size > 0:
-                    start_offset = cached_offset
-                    residuals = cached_data # Reference to existing mutable dict
+                    # Case 3: File shrank or reset - Start over (defaults apply)
 
-                # Case 3: File shrank or reset - Start over (defaults apply)
+                new_offset = start_offset
 
-            new_offset = start_offset
+                # ⚡ Bolt Optimization: Stream file line-by-line to avoid loading massive files into RAM.
+                # This reduces memory usage from O(N) to O(1) for log parsing.
 
-            # ⚡ Bolt Optimization: Stream file line-by-line to avoid loading massive files into RAM.
-            # This reduces memory usage from O(N) to O(1) for log parsing.
-            with open(path_str, "rb") as f:
-                if start_offset > 0:
-                    f.seek(start_offset)
+                # Use os.fdopen to wrap the existing FD
+                with os.fdopen(fd, "rb") as f:
+                    fd = None # Ownership transferred to file object
+                    if start_offset > 0:
+                        f.seek(start_offset)
 
-                for line in f:
-                    # Check for complete line (active writes might leave incomplete lines at EOF)
-                    if not line.endswith(b'\n'):
-                        break
+                    for line in f:
+                        # Check for complete line (active writes might leave incomplete lines at EOF)
+                        if not line.endswith(b'\n'):
+                            break
 
-                    line_len = len(line)
-                    try:
-                        # Decode single line
-                        # errors='replace' ensures we don't crash on binary garbage
-                        line_str = line.decode("utf-8", errors="replace")
+                        line_len = len(line)
+                        try:
+                            # Decode single line
+                            # errors='replace' ensures we don't crash on binary garbage
+                            line_str = line.decode("utf-8", errors="replace")
 
-                        # Optimized time matching
-                        if "Time =" in line_str:
-                            time_match = TIME_REGEX.search(line_str)
-                            if time_match:
-                                current_time = float(time_match.group(1))
-                                residuals["time"].append(current_time)
+                            # Optimized time matching
+                            if "Time =" in line_str:
+                                time_match = TIME_REGEX.search(line_str)
+                                if time_match:
+                                    current_time = float(time_match.group(1))
+                                    residuals["time"].append(current_time)
 
-                        # Optimized residual matching
-                        if "Initial residual" in line_str:
-                            # Optimization: Check if we have any time steps first
-                            if residuals["time"]:
-                                residual_match = RESIDUAL_REGEX.search(line_str)
-                                if residual_match:
-                                    field = residual_match.group(1)
-                                    value = float(residual_match.group(2))
-                                    if field in residuals:
-                                        residuals[field].append(value)
+                            # Optimized residual matching
+                            if "Initial residual" in line_str:
+                                # Optimization: Check if we have any time steps first
+                                if residuals["time"]:
+                                    residual_match = RESIDUAL_REGEX.search(line_str)
+                                    if residual_match:
+                                        field = residual_match.group(1)
+                                        value = float(residual_match.group(2))
+                                        if field in residuals:
+                                            residuals[field].append(value)
 
-                        # Only advance offset after successful processing attempt
-                        new_offset += line_len
+                            # Only advance offset after successful processing attempt
+                            new_offset += line_len
 
-                    except Exception as decode_error:
-                        logger.error(f"Error processing log line: {decode_error}")
-                        # Advance offset to avoid getting stuck on bad lines
-                        new_offset += line_len
+                        except Exception as decode_error:
+                            logger.error(f"Error processing log line: {decode_error}")
+                            # Advance offset to avoid getting stuck on bad lines
+                            new_offset += line_len
+
+            finally:
+                if fd is not None:
+                    os.close(fd)
 
             # Update cache
             _RESIDUALS_CACHE[path_str] = (mtime, size, new_offset, residuals)

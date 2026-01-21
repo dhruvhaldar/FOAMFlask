@@ -628,28 +628,36 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
     elapsed = 0
 
     while elapsed < timeout:
-        if host_log_path.exists():
-            # Security: Prevent symlink attacks
-            # The log file should be a regular file created by OpenFOAM, never a symlink.
-            if host_log_path.is_symlink():
+        # Security: Atomic check-and-open to prevent TOCTOU symlink attacks
+        try:
+            # O_NOFOLLOW ensures that if the last component is a symlink, open fails with ELOOP.
+            # This is safer than checking is_symlink() then opening.
+            import errno
+            fd = os.open(str(host_log_path), os.O_RDONLY | os.O_NOFOLLOW)
+
+            with os.fdopen(fd, "rb") as fsrc:
+                with open(output_file, "wb") as fdst:
+                    shutil.copyfileobj(fsrc, fdst)
+
+            logger.info(
+                "[FOAMFlask] Captured log.foamRun for tutorial '%s' "
+                "and wrote to %s",
+                tutorial,
+                output_file,
+            )
+            return
+
+        except OSError as e:
+            # Check specifically for symlink error (ELOOP)
+            if e.errno == errno.ELOOP:
                 logger.warning(
                     "[FOAMFlask] Security: log.foamRun is a symlink. Ignoring to prevent file read vulnerability."
                 )
                 return
-
-            try:
-                # Use shutil.copyfile for efficient, streamed copying
-                # This avoids reading the whole file into memory
-                shutil.copyfile(host_log_path, output_file)
-
-                logger.info(
-                    "[FOAMFlask] Captured log.foamRun for tutorial '%s' "
-                    "and wrote to %s",
-                    tutorial,
-                    output_file,
-                )
-                return
-            except (OSError, UnicodeDecodeError) as e:
+            elif e.errno == errno.ENOENT:
+                # File not found yet, wait and retry
+                pass
+            else:
                 logger.error("[FOAMFlask] Could not process foamrun_logs: %s", str(e))
                 return
 
