@@ -19,3 +19,7 @@
 ## 2025-10-27 - Styling Native Details
 **Learning:** Native `<details>` elements are extremely hard to style consistently across browsers, especially the `marker` (triangle).
 **Action:** Hide the default marker with `list-none` and `[&::-webkit-details-marker]:hidden`, then use a flex container with a custom SVG icon that rotates using `group-open:rotate-180` for a clean, animated accordion.
+
+## 2026-01-21 - Keyboard Shortcuts for Selection Inputs
+**Learning:** Users expect "Enter" to trigger the primary action associated with an input or selection, even if it's not in a `<form>`. Double-clicking items in a listbox is a standard pattern for "Select & Action" on desktop interfaces.
+**Action:** Always bind "Enter" on non-form inputs/selects to their primary action button, and "Double Click" on listbox elements (`size > 1`) to trigger the view/select action.
