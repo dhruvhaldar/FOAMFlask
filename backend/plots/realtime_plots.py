@@ -286,7 +286,7 @@ class OpenFOAMFieldParser:
             
         return None
 
-    def parse_scalar_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None) -> Optional[float]:
+    def parse_scalar_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None, store_cache: bool = True) -> Optional[float]:
         """Parse a scalar field file and return average value with caching."""
         if isinstance(field_path, str):
             path_str = field_path
@@ -327,7 +327,8 @@ class OpenFOAMFieldParser:
             if RUST_ACCELERATOR:
                 try:
                     val = accelerator.parse_scalar_field(path_str)
-                    _FILE_CACHE[path_str] = (mtime, val)
+                    if store_cache:
+                        _FILE_CACHE[path_str] = (mtime, val)
                     return val
                 except Exception as e:
                     # Fallback to Python if Rust fails (unlikely)
@@ -424,14 +425,15 @@ class OpenFOAMFieldParser:
                     pass
             
             # Update cache
-            _FILE_CACHE[path_str] = (mtime, val)
+            if store_cache:
+                _FILE_CACHE[path_str] = (mtime, val)
             return val
 
         except Exception as e:
             logger.error(f"Error parsing scalar field {path_str}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None) -> Tuple[float, float, float]:
+    def parse_vector_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None, store_cache: bool = True) -> Tuple[float, float, float]:
         """Parse a vector field file and return average components with caching."""
         if isinstance(field_path, str):
             path_str = field_path
@@ -468,7 +470,8 @@ class OpenFOAMFieldParser:
             if RUST_ACCELERATOR:
                 try:
                     val = accelerator.parse_vector_field(path_str)
-                    _FILE_CACHE[path_str] = (mtime, val)
+                    if store_cache:
+                        _FILE_CACHE[path_str] = (mtime, val)
                     return val
                 except Exception as e:
                     pass
@@ -567,7 +570,8 @@ class OpenFOAMFieldParser:
                     pass
             
             # Update cache
-            _FILE_CACHE[path_str] = (mtime, val)
+            if store_cache:
+                _FILE_CACHE[path_str] = (mtime, val)
             return val
 
         except Exception as e:
@@ -719,8 +723,13 @@ class OpenFOAMFieldParser:
 
                         # Skip check_mtime for stable steps (assumed immutable)
                         # Pass string directly
-                        val = self.parse_scalar_field(field_path_str, check_mtime=False)
+                        val = self.parse_scalar_field(field_path_str, check_mtime=False, store_cache=False)
                         cached_data[field].append(val if val is not None else 0.0)
+
+                        # ⚡ Bolt Optimization: Aggressive cache cleanup for stable steps
+                        # Since data is now archived in cached_data, we remove the file-level entry
+                        # to prevent unbounded growth of _FILE_CACHE for long-running simulations.
+                        _FILE_CACHE.pop(field_path_str, None)
 
                     # Parse U
                     if has_U:
@@ -728,7 +737,10 @@ class OpenFOAMFieldParser:
                         u_path_str = os.path.join(time_path_str, "U")
 
                         # Pass string directly
-                        ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False)
+                        ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False, store_cache=False)
+
+                        # ⚡ Bolt Optimization: Cleanup vector file cache
+                        _FILE_CACHE.pop(u_path_str, None)
 
                         # Ensure vector fields exist in cache
                         for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
