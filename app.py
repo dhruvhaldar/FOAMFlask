@@ -1625,19 +1625,26 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
 
         parser = OpenFOAMFieldParser(str(case_dir))
 
+        # ⚡ Bolt Optimization: Stat case directory once
+        # Move this up to avoid calling os.stat twice (inside get_time_directories and here)
+        case_mtime = None
+        try:
+            case_mtime = os.stat(str(case_dir)).st_mtime
+        except OSError:
+            pass
+
         # Get time directories (cached if case mtime matches)
-        time_dirs = parser.get_time_directories()
+        time_dirs = parser.get_time_directories(known_mtime=case_mtime)
 
         etag = None
-        if time_dirs:
+        if time_dirs and case_mtime is not None:
             latest_time = time_dirs[-1]
             latest_time_path = case_dir / latest_time
 
             # Get mtimes for ETag
             # We use case_dir mtime and latest_time_dir mtime.
             try:
-                # Use os.stat for speed
-                case_mtime = os.stat(str(case_dir)).st_mtime
+                # case_mtime is already known
                 latest_dir_mtime = os.stat(str(latest_time_path)).st_mtime
 
                 # Construct ETag
@@ -1651,7 +1658,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
             except OSError:
                 pass
 
-        data = parser.get_all_time_series_data(max_points=100)
+        data = parser.get_all_time_series_data(max_points=100, known_case_mtime=case_mtime)
         response = fast_jsonify(data)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
