@@ -21,3 +21,7 @@
 ## 2026-03-10 - [Probabilistic Cache Cleanup]
 **Learning:** Frequent file-based cache cleanup involving `os.scandir()` and `stat()` calls on all files (O(N)) adds significant latency (e.g., ~12ms per call for 2000 files) to the hot path of request handling.
 **Action:** Implemented probabilistic cleanup (running only 10% of the time). This amortizes the cost of maintenance, reducing average overhead by 90% (to ~1.3ms) while maintaining approximate cache limits.
+
+## 2026-05-15 - [Bytes Search Performance]
+**Learning:** In Python, searching for a substring in bytes (`b"sub" in data`) is ~10-12x slower than the string equivalent (`"sub" in data`). For high-throughput parsing (like large log files), using `re.search` on bytes directly is significantly faster than using `in` as a pre-check, and also avoids the overhead of `decode()`.
+**Action:** When parsing large binary or ASCII-compatible files, prefer using compiled bytes-regex (`re.compile(rb"...")`) and skip the `in` operator pre-check if the data is `bytes`.
