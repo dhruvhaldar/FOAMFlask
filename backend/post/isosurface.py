@@ -177,6 +177,8 @@ def _generate_isosurface_html_process(
         show_isovalue_slider = params.get("show_isovalue_slider", True)
         window_size = params.get("window_size", (1200, 800))
 
+        logger.debug(f"[isosurface.py] Generating isosurface for {file_path}, {params}")
+
         # Load mesh
         # ⚡ Bolt Optimization: Disable progress bar
         mesh = pv.read(file_path, progress_bar=False)
@@ -194,6 +196,7 @@ def _generate_isosurface_html_process(
         # Add base mesh
         if show_base_mesh:
             display_mesh = _decimate_mesh_helper(mesh, target_faces=100000)
+            print(f"[DEBUG] Adding base mesh: opacity={base_mesh_opacity}, scalars={scalar_field}, cmap={colormap}")
             plotter.add_mesh(
                 display_mesh,
                 opacity=base_mesh_opacity,
@@ -216,22 +219,13 @@ def _generate_isosurface_html_process(
         # Add isosurfaces
         if show_isovalue_slider:
              widget_mesh = _decimate_mesh_helper(mesh, target_faces=200000)
+             print(f"[DEBUG] Adding isovalue widget: scalars={scalar_field}, opacity=0.5")
              plotter.add_mesh_isovalue(
                 widget_mesh,
                 scalars=scalar_field,
-                compute_normals=True,
-                compute_gradients=False,
-                compute_scalars=True,
-                opacity=contour_opacity,
-                color=contour_color,
-                show_scalar_bar=False,
+                opacity=0.5,
             )
-        else:
-            # Static contours logic re-implementation for subprocess
-            isovalues = params.get("isovalues")
-            custom_range = params.get("custom_range")
-            num_isosurfaces = params.get("num_isosurfaces", 5)
-
+        if isovalues is not None or custom_range is not None or num_isosurfaces > 0:
             scalars = mesh.point_data[scalar_field]
             min_val = float(np.min(scalars))
             max_val = float(np.max(scalars))
@@ -239,18 +233,20 @@ def _generate_isosurface_html_process(
             if isovalues is not None:
                 values = np.array(isovalues)
             elif custom_range is not None:
-                values = np.linspace(custom_range[0], custom_range[1], num_isosurfaces)
+                values = np.linspace(custom_range[0], custom_range[1], int(num_isosurfaces))
             else:
-                values = np.linspace(min_val, max_val, num_isosurfaces + 2)[1:-1]
+                values = np.linspace(min_val, max_val, int(num_isosurfaces) + 2)[1:-1]
 
             contours = mesh.contour(isosurfaces=values.tolist(), scalars=scalar_field)
             if contours.n_points > 0:
                 display_contours = _decimate_mesh_helper(contours, target_faces=100000)
+                print(f"[DEBUG] Adding static contours: num={len(values.tolist())}, opacity={contour_opacity}, color={contour_color}, line_width=3")
                 plotter.add_mesh(
                     display_contours,
                     opacity=contour_opacity,
                     show_scalar_bar=False,
                     color=contour_color,
+                    line_width=3,
                     label="Isosurfaces",
                 )
 

@@ -2152,7 +2152,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         tutorial = request_data.get("tutorial")
         case_dir_str = request_data.get("caseDir")
         scalar_field = request_data.get("scalar_field", "U_Magnitude")
-        num_isosurfaces = int(request_data.get("num_isosurfaces", 5))
+        num_isosurfaces = int(request_data.get("num_isosurfaces", 0))
         vtk_file_path = request_data.get("vtk_file_path")
 
         logger.info(
@@ -2299,6 +2299,8 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             contour_color="red",
             colormap="viridis",
             show_isovalue_slider=True,
+            num_isosurfaces=num_isosurfaces,
+            custom_range=custom_range,
         )
 
         if not html_content:
