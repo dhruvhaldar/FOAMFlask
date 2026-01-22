@@ -4,12 +4,14 @@
  */
 
 // Type definitions
+// Type definitions
 interface ContourOptions {
     tutorial?: string | null;
     caseDir?: string | { value: string } | null;
     scalarField?: string;
     numIsosurfaces?: number;
     range?: [number, number];
+    vtkFilePath?: string | null;
 }
 
 interface ContourData {
@@ -18,6 +20,7 @@ interface ContourData {
     scalarField: string;
     numIsosurfaces: number;
     timestamp: string;
+    vtkFilePath?: string;
 }
 
 // Extend HTMLElement for custom properties
@@ -45,7 +48,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         tutorial = null,
         caseDir = null,
         scalarField = 'U_Magnitude',
-        numIsosurfaces = 10
+        numIsosurfaces = 10,
+        vtkFilePath = null
     } = options;
 
     try {
@@ -82,8 +86,28 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
 
         selectedCaseDir = String(selectedCaseDir).trim();
 
+        // Get VTK file path if not provided
+        let selectedVtkFilePath = vtkFilePath;
+        if (!selectedVtkFilePath) {
+            const vtkFileSelect = document.getElementById('vtkFileSelect') as MyHTMLElement | null;
+             // Check custom input if select is empty or "custom"
+            const vtkFileBrowser = document.getElementById('vtkFileBrowser') as HTMLInputElement | null;
+            
+            if (vtkFileBrowser && vtkFileBrowser.files && vtkFileBrowser.files.length > 0) {
+                 // For browser upload, we might handle it differently, but for now lets assume local path logic isn't used here 
+                 // actually standard vtkFileSelect is what we use for server-side files
+            }
+            
+            if (vtkFileSelect && vtkFileSelect.value) {
+                selectedVtkFilePath = vtkFileSelect.value;
+            }
+        }
+
         // Log for debugging
         console.log('[FOAMFlask] [generateContours] Using case directory:', selectedCaseDir);
+        if (selectedVtkFilePath) {
+             console.log('[FOAMFlask] [generateContours] Using VTK file:', selectedVtkFilePath);
+        }
 
         // Get range from input fields if not provided in options
         let range = options.range;
@@ -110,7 +134,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces,
-            range
+            range,
+            vtkFilePath: selectedVtkFilePath
         });
 
         // Prepare request data
@@ -118,7 +143,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
             scalarField,
-            numIsosurfaces
+            numIsosurfaces,
+            vtkFilePath: selectedVtkFilePath
         };
 
         if (range && Array.isArray(range) && range.length === 2) {
@@ -146,7 +172,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            vtkFilePath: selectedVtkFilePath || undefined
         };
 
         console.log('[FOAMFlask] [generateContours] Contours generated successfully!');
@@ -158,6 +185,99 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
     } catch (error: unknown) {
         console.error('[FOAMFlask] [generateContours] Error:', error);
         handleContourError(contourPlaceholder, contourViewer, error);
+    }
+}
+
+/**
+ * Load mesh metadata for contour configuration
+ * @param vtkFilePath - Path to the VTK file
+ */
+export async function loadContourMesh(vtkFilePath: string): Promise<void> {
+    if (!vtkFilePath) {
+        if (typeof showNotification === 'function') {
+            showNotification("Please select a VTK file first.", "warning");
+        }
+        return;
+    }
+
+    try {
+        console.log("[FOAMFlask] [loadContourMesh] Loading mesh for contour:", vtkFilePath);
+        
+        // Show loading notification
+        if (typeof showNotification === 'function') {
+            showNotification("Loading mesh metadata...", "info", 1000);
+        }
+
+        const response = await fetch('/api/load_mesh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                file_path: vtkFilePath,
+                for_contour: true
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server returned ${response.status}: ${errorText}`);
+        }
+
+        const meshInfo = await response.json();
+        console.log("[FOAMFlask] [loadContourMesh] Mesh info loaded:", meshInfo);
+
+        if (meshInfo.error) {
+            throw new Error(meshInfo.error);
+        }
+
+        // Populate Scalar Fields
+        const scalarFieldSelect = document.getElementById('scalarField') as HTMLSelectElement | null;
+        if (scalarFieldSelect && meshInfo.point_arrays) {
+            scalarFieldSelect.innerHTML = ''; // Clear existing
+            
+            // Add options
+            meshInfo.point_arrays.forEach((field: string) => {
+                const option = document.createElement('option');
+                option.value = field;
+                option.textContent = field;
+                option.classList.add('point-data-option'); // Add styling class
+                scalarFieldSelect.appendChild(option);
+            });
+            
+            // If U_Magnitude exists, select it by default, otherwise select first
+            if (meshInfo.point_arrays.includes('U_Magnitude')) {
+                scalarFieldSelect.value = 'U_Magnitude';
+            } else if (meshInfo.point_arrays.length > 0) {
+                 scalarFieldSelect.value = meshInfo.point_arrays[0];
+            }
+        }
+        
+        // Populate Info Box
+        const contourInfo = document.getElementById('contourInfo');
+        const contourInfoContent = document.getElementById('contourInfoContent');
+        if (contourInfo && contourInfoContent) {
+            contourInfo.classList.remove('hidden');
+            contourInfoContent.innerHTML = `
+                <div><span class="font-semibold">Points:</span> ${meshInfo.n_points}</div>
+                <div><span class="font-semibold">Cells:</span> ${meshInfo.n_cells}</div>
+                <div class="col-span-2"><span class="font-semibold">Fields:</span> ${meshInfo.point_arrays ? meshInfo.point_arrays.length : 0}</div>
+            `;
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification("Mesh loaded for contour configuration!", "success");
+        }
+
+        // Optionally clear ranges to suggest "Auto" or just leave them
+        // For now, let's not aggressively clear them unless requested
+
+    } catch (error: unknown) {
+        console.error('[FOAMFlask] [loadContourMesh] Error:', error);
+         if (typeof showNotification === 'function') {
+            const message = error instanceof Error ? error.message : String(error);
+            showNotification(`Error loading mesh: ${message}`, 'error');
+        }
     }
 }
 

@@ -2156,11 +2156,13 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         case_dir_str = request_data.get("caseDir")
         scalar_field = request_data.get("scalar_field", "U_Magnitude")
         num_isosurfaces = int(request_data.get("num_isosurfaces", 5))
+        vtk_file_path = request_data.get("vtk_file_path")
 
         logger.info(
             f"[FOAMFlask] [create_contour] Parsed parameters: "
             f"tutorial={tutorial}, caseDir={case_dir_str}, "
-            f"scalarField={scalar_field}, numIsosurfaces={num_isosurfaces}"
+            f"scalarField={scalar_field}, numIsosurfaces={num_isosurfaces}, "
+            f"vtkFilePath={vtk_file_path}"
         )
 
         if not tutorial:
@@ -2192,29 +2194,48 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
 
         logger.info(f"[FOAMFlask] [create_contour] Case directory exists")
 
-        # Find VTK files
-        logger.info(
-            f"[FOAMFlask] [create_contour] Searching for VTK files in {case_dir}"
-        )
-        vtk_files = []
-        for file in case_dir.rglob("*"):
-             if file.suffix in [".vtk", ".vtp", ".vtu"]:
-                 vtk_files.append(str(file))
+        target_vtk_file = None
 
-        logger.info(f"[FOAMFlask] [create_contour] Found {len(vtk_files)} VTK files")
+        if vtk_file_path:
+            # If specific file provided, validate and use it
+            try:
+                # Ensure the path is within the case directory or at least safe
+                # We can reuse validate_safe_path but we need to match it against CASE_ROOT
+                valid_vtk_path = validate_safe_path(CASE_ROOT, vtk_file_path)
+                
+                # Check if it actually exists
+                if not valid_vtk_path.exists():
+                     return fast_jsonify({"success": False, "error": f"Specified VTK file not found: {vtk_file_path}"}), 404
+                
+                target_vtk_file = str(valid_vtk_path)
+                logger.info(f"[FOAMFlask] [create_contour] Using specified VTK file: {target_vtk_file}")
 
-        if not vtk_files:
-            error_msg = f"No VTK files found in {case_dir}"
-            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return fast_jsonify({"success": False, "error": error_msg}), 404
+            except ValueError as e:
+                return fast_jsonify({"success": False, "error": f"Invalid VTK file path: {str(e)}"}), 400
+        else:
+            # Fallback: Find latest VTK file
+            logger.info(
+                f"[FOAMFlask] [create_contour] Searching for VTK files in {case_dir}"
+            )
+            vtk_files = []
+            for file in case_dir.rglob("*"):
+                 if file.suffix in [".vtk", ".vtp", ".vtu"]:
+                     vtk_files.append(str(file))
 
-        # Get latest VTK file
-        latest_vtk = max(vtk_files, key=os.path.getmtime)
-        logger.info(f"[FOAMFlask] [create_contour] Using VTK file: {latest_vtk}")
+            logger.info(f"[FOAMFlask] [create_contour] Found {len(vtk_files)} VTK files")
+
+            if not vtk_files:
+                error_msg = f"No VTK files found in {case_dir}"
+                logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
+                return fast_jsonify({"success": False, "error": error_msg}), 404
+
+            # Get latest VTK file
+            target_vtk_file = max(vtk_files, key=os.path.getmtime)
+            logger.info(f"[FOAMFlask] [create_contour] Using latest VTK file: {target_vtk_file}")
 
         # Load mesh
         logger.info(f"[FOAMFlask] [create_contour] Loading mesh...")
-        mesh_info = isosurface_visualizer.load_mesh(latest_vtk)
+        mesh_info = isosurface_visualizer.load_mesh(target_vtk_file)
 
         if not mesh_info.get("success"):
             error_msg = f"Failed to load mesh: {mesh_info.get('error')}"

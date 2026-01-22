@@ -2,7 +2,7 @@
  * FOAMFlask Frontend JavaScript
  */
 
-import { generateContours as generateContoursFn } from "./frontend/isosurface.js";
+import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
 import * as Plotly from "plotly.js";
 
 // CSRF Protection Helpers
@@ -3149,7 +3149,42 @@ const runPostOperation = async (operation: string) => {
   // Stub
 };
 const loadCustomVTKFile = async () => { };
-const loadContourVTK = async () => { };
+const loadContourVTK = async () => {
+  const vtkFileSelect = document.getElementById("vtkFileSelect") as HTMLSelectElement | null;
+  let fileToLoad = "";
+
+  if (vtkFileSelect && vtkFileSelect.value) {
+    fileToLoad = vtkFileSelect.value;
+  }
+
+  if (!fileToLoad) {
+    showNotification("Please select a VTK file to load.", "warning");
+    return;
+  }
+
+  // Show loading state on button
+  const btn = document.getElementById("loadContourVTKBtn") as HTMLButtonElement | null;
+  let originalText = "";
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Loading...`;
+  }
+
+  try {
+    await loadContourMesh(fileToLoad);
+    showNotification("Contour mesh loaded successfully.", "success");
+  } catch (e) {
+    console.error(e);
+    showNotification("Failed to load contour mesh.", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+};
+(window as any).loadContourVTK = loadContourVTK;
 
 
 // Check startup status
