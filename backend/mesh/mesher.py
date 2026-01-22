@@ -155,7 +155,7 @@ class MeshVisualizer:
             mesh_info = {
                 "n_points": self.mesh.n_points,
                 "n_cells": self.mesh.n_cells,
-                "bounds": list(self.mesh.bounds),
+                "bounds": [float(x) for x in self.mesh.bounds],
                 "center": self.mesh.center,
                 "length": self.mesh.length,
                 "volume": self.mesh.volume if hasattr(self.mesh, "volume") else None,

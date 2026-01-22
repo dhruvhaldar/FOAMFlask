@@ -2579,19 +2579,30 @@ function resetCamera() {
 // Initial state: Root node represents the base mesh
 let postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
 let activePipelineId = "root";
+const deletePipelineStep = (id) => {
+    if (id === 'root')
+        return; // Cannot delete root
+    // Find children recursively and delete them
+    const children = postPipeline.filter(n => n.parentId === id);
+    children.forEach(child => deletePipelineStep(child.id));
+    // Remove this node
+    postPipeline = postPipeline.filter(n => n.id !== id);
+    // If active node is no longer in pipeline (because it was deleted), reset to root
+    if (!postPipeline.find(n => n.id === activePipelineId)) {
+        selectPipelineStep('root');
+    }
+    else {
+        renderPipeline();
+    }
+};
+window.deletePipelineStep = deletePipelineStep;
 const renderPipeline = () => {
     const container = document.getElementById("post-pipeline-view");
     if (!container)
         return;
     // Clear container
     container.innerHTML = "";
-    // Build tree structure (linear for now based on active path, or just list all nodes)
-    // For simplicity, we just render the list as a sequence since user asked for "metro stations map"
-    // If we support branching, this logic needs to be more complex.
-    // Assuming a linear flow for the MVP UI visualization or just showing the path to the active node.
     // Render full pipeline (assuming linear for MVP)
-    // In a real tree, we would need to handle branches.
-    // Since we push linearly in switchPostView, we can just render the array.
     postPipeline.forEach((node, index) => {
         // Node
         const nodeEl = document.createElement("button");
@@ -2608,6 +2619,20 @@ const renderPipeline = () => {
             icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"></circle></svg>`;
         nodeEl.innerHTML = `${icon} <span>${node.name}</span>`;
         nodeEl.onclick = () => selectPipelineStep(node.id);
+        // Add Delete Button (if not root)
+        if (node.type !== 'root') {
+            const delBtn = document.createElement("span");
+            delBtn.className = "ml-2 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white text-gray-400 transition-colors cursor-pointer text-xs leading-none";
+            delBtn.innerText = "-"; // Minus button as requested
+            delBtn.title = "Delete this step and its children";
+            delBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent selection
+                if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
+                    deletePipelineStep(node.id);
+                }
+            };
+            nodeEl.appendChild(delBtn);
+        }
         container.appendChild(nodeEl);
         // Connector (if not last)
         if (index < postPipeline.length - 1) {
