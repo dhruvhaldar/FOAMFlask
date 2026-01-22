@@ -28,7 +28,7 @@ def main() -> None:
     # plotter.show()
 
     # Read the mesh
-    mesh_path = "run_folder/fluid/aerofoilNACA0012Steady/VTK/case_100.vtk"
+    mesh_path = "run_folder/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1100.vtk"
     mesh = pv.read(mesh_path, progress_bar=True)
     print(mesh)
     # Expected output:
@@ -114,7 +114,7 @@ def main() -> None:
     plotter.add_mesh_isovalue(
         mesh,
         scalars="U_Magnitude",
-        style_opacity=0.5
+        opacity=0.5
     )
     
     # Add axes and title
