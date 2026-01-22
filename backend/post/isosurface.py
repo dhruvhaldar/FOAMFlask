@@ -178,6 +178,7 @@ def _generate_isosurface_html_process(
         window_size = params.get("window_size", (1200, 800))
 
         logger.debug(f"[isosurface.py] Generating isosurface for {file_path}, {params}")
+        print(f"[DEBUG] Subprocess started. Params: {params.keys()}")
 
         # Load mesh
         # ⚡ Bolt Optimization: Disable progress bar
