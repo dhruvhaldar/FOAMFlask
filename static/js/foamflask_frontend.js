@@ -2410,21 +2410,18 @@ function displayMeshInfo(meshInfo) {
         },
     ];
     meshInfoContent.innerHTML = infoItems
-        .map((item) => `<div><strong>${item.label}:</strong> ${item.value}</div>`)
+        .map((item) => `<div><strong>${item.label}:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${item.value}</button></div>`)
         .join("");
     // Add bounds if available
     if (meshInfo.bounds && Array.isArray(meshInfo.bounds)) {
-        const boundsStr = `[${meshInfo.bounds
-            .map((b) => b.toFixed(2))
-            .join(", ")}]`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> ${boundsStr}</div>`;
+        // Space separated for easier pasting into vector fields
+        const boundsStr = `${meshInfo.bounds.map((b) => b.toFixed(2)).join(" ")}`;
+        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${boundsStr}</button></div>`;
     }
     // Add center if available
     if (meshInfo.center && Array.isArray(meshInfo.center)) {
-        const centerStr = `(${meshInfo.center
-            .map((c) => c.toFixed(2))
-            .join(", ")})`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> ${centerStr}</div>`;
+        const centerStr = `${meshInfo.center.map((c) => c.toFixed(2)).join(" ")}`;
+        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${centerStr}</button></div>`;
     }
     meshInfoDiv.classList.remove("hidden");
 }
@@ -3043,6 +3040,7 @@ const init = () => {
     window.addEventListener("scroll", handleScroll);
     initLogScrollObserver();
     setupQuickActions();
+    setupCopyableValues();
 };
 const handleScroll = () => {
     const navbar = document.getElementById("navbar");
@@ -3169,6 +3167,35 @@ const initLogScrollObserver = () => {
                 ticking = false;
             });
             ticking = true;
+        }
+    });
+};
+const setupCopyableValues = () => {
+    document.addEventListener("click", (e) => {
+        // Check if clicked element or parent is a copyable-value button
+        const target = e.target.closest(".copyable-value");
+        if (!target)
+            return;
+        const text = target.textContent?.trim();
+        if (!text)
+            return;
+        // Prevent default (focus mostly)
+        e.preventDefault();
+        const onSuccess = () => {
+            showNotification("Value copied", "success", NOTIFY_SHORT);
+            // Visual feedback
+            target.classList.add("bg-green-100", "text-green-800");
+            target.classList.remove("hover:bg-cyan-100", "hover:text-cyan-800");
+            setTimeout(() => {
+                target.classList.remove("bg-green-100", "text-green-800");
+                target.classList.add("hover:bg-cyan-100", "hover:text-cyan-800");
+            }, 500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyText(text, "Value copied", onSuccess));
+        }
+        else {
+            fallbackCopyText(text, "Value copied", onSuccess);
         }
     });
 };
