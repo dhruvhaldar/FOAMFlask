@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Tuple, Union, Any
 import numpy as np
 import pyvista as pv
 from pyvista import DataSet, PolyData, Plotter
+from markupsafe import escape
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
@@ -683,9 +684,9 @@ class IsosurfaceVisualizer:
         <h2>⚠️ Error Generating 3D Visualization</h2>
         <div class="error-message">
             <strong>Error:</strong><br>
-            {error_message}
+            {escape(error_message)}
         </div>
-        <p>Scalar field: <code>{scalar_field}</code></p>
+        <p>Scalar field: <code>{escape(scalar_field)}</code></p>
     </div>
 </body>
 </html>
