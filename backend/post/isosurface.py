@@ -193,56 +193,38 @@ def _generate_isosurface_html_process(
         # Create plotter
         plotter = pv.Plotter(notebook=False, off_screen=True, window_size=list(window_size))
 
-        # Add base mesh
         if show_base_mesh:
-            display_mesh = _decimate_mesh_helper(mesh, target_faces=100000)
             print(f"[DEBUG] Adding base mesh: opacity={base_mesh_opacity}, scalars={scalar_field}, cmap={colormap}")
+            scalar_bar_title = "Velocity Magnitude" if scalar_field == "U_Magnitude" else scalar_field
             plotter.add_mesh(
-                display_mesh,
+                mesh,
                 opacity=base_mesh_opacity,
                 scalars=scalar_field,
                 show_scalar_bar=True,
                 cmap=colormap,
                 label="Base Mesh",
-                 scalar_bar_args={
-                        "title": scalar_field,
-                        "title_font_size": 20,
-                        "label_font_size": 16,
-                        "shadow": True,
-                        "n_labels": 5,
-                        "fmt": "%.2f",
-                        "position_x": 0.85,
-                        "position_y": 0.05,
-                    },
+                 scalar_bar_args={"title": scalar_bar_title},
             )
 
         # Add isosurfaces
-        if show_isovalue_slider:
-             widget_mesh = _decimate_mesh_helper(mesh, target_faces=200000)
-             print(f"[DEBUG] Adding isovalue widget: scalars={scalar_field}, opacity=0.5")
-             plotter.add_mesh_isovalue(
-                widget_mesh,
-                scalars=scalar_field,
-                opacity=0.5,
-            )
+        isovalues = params.get("isovalues")
+        custom_range = params.get("custom_range")
+        num_isosurfaces = params.get("num_isosurfaces", 0)
+
         if isovalues is not None or custom_range is not None or num_isosurfaces > 0:
-            scalars = mesh.point_data[scalar_field]
-            min_val = float(np.min(scalars))
-            max_val = float(np.max(scalars))
-
             if isovalues is not None:
-                values = np.array(isovalues)
+                contours = mesh.contour(isosurfaces=isovalues, scalars=scalar_field)
+                debug_msg = f"values={len(isovalues)}"
             elif custom_range is not None:
-                values = np.linspace(custom_range[0], custom_range[1], int(num_isosurfaces))
+                contours = mesh.contour(isosurfaces=int(num_isosurfaces), rng=custom_range, scalars=scalar_field)
+                debug_msg = f"num={num_isosurfaces}, rng={custom_range}"
             else:
-                values = np.linspace(min_val, max_val, int(num_isosurfaces) + 2)[1:-1]
-
-            contours = mesh.contour(isosurfaces=values.tolist(), scalars=scalar_field)
+                contours = mesh.contour(isosurfaces=int(num_isosurfaces), scalars=scalar_field)
+                debug_msg = f"num={num_isosurfaces}"
             if contours.n_points > 0:
-                display_contours = _decimate_mesh_helper(contours, target_faces=100000)
-                print(f"[DEBUG] Adding static contours: num={len(values.tolist())}, opacity={contour_opacity}, color={contour_color}, line_width=3")
+                print(f"[DEBUG] Adding static contours: {debug_msg}, opacity={contour_opacity}, color={contour_color}, line_width=3")
                 plotter.add_mesh(
-                    display_contours,
+                    contours,
                     opacity=contour_opacity,
                     show_scalar_bar=False,
                     color=contour_color,
@@ -250,14 +232,28 @@ def _generate_isosurface_html_process(
                     label="Isosurfaces",
                 )
 
+        if show_isovalue_slider:
+             print(f"[DEBUG] Adding isovalue widget: scalars={scalar_field}, opacity=0.5")
+             plotter.add_mesh_isovalue(
+                mesh,
+                scalars=scalar_field,
+                opacity=0.5,
+            )
+
         plotter.add_axes(xlabel="X", ylabel="Y", zlabel="Z", line_width=2, labels_off=False)
-        plotter.camera_position = "iso"
+        plotter.add_title("Aerofoil NACA0012 - Velocity Magnitude")
+        plotter.reset_camera()
 
         plotter.export_html(output_path)
         plotter.close()
 
     except Exception as e:
+        import traceback
+        error_msg = f"Error: {e}\n{traceback.format_exc()}"
         print(f"Error in subprocess: {e}")
+        with open(r"E:\Misc\FOAMFlask\backend\post\subprocess_error.log", "w") as f:
+            f.write(error_msg)
+            
         if os.path.exists(output_path):
             os.remove(output_path)
 
