@@ -86,10 +86,12 @@ If you prefer to manage the environment yourself:
    source venv/bin/activate  # or .\venv\Scripts\activate on Windows
    pip install -r requirements.txt
    ```
-4. **Run**:
-   ```bash
-   python app.py
-   ```
+
+### Run FOAMFlask (Frontend and Backend)
+
+```powershell
+.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
+```
 
 ## Usage
 
@@ -100,27 +102,27 @@ If you prefer to manage the environment yourself:
 2. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.
 
-2. **Access the web interface**:
+3. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.
 
-3. **Set a case directory**:
+4. **Set a case directory**:
    Enter a path for your simulation cases.
    Click `Set Case Dir`.
 
-4. **Set OpenFOAM root directory**:
+5. **Set OpenFOAM root directory**:
    Enter a path for your OpenFOAM root directory.
    Click `Set OpenFOAM Root`.
 
-5. **Load a tutorial**:
+6. **Load a tutorial**:
    Select a tutorial from the dropdown.
    Click `Load Tutorial`.
    The tutorial will be copied to your selected case directory.
 
-6. **Run OpenFOAM commands**:
+7. **Run OpenFOAM commands**:
    Use the buttons (blockMesh, simpleFoam, pimpleFoam) to execute commands.
    Live output is shown in the console panel.
 
-7. **Realtime Plotting**:
+8. **Realtime Plotting**:
    - Click "Show Plots" to enable realtime polling of OpenFOAM results.
    - Plots update every 2 seconds.
    - For aerodynamic cases, click "Show Aero Plots" to see Pressure Coefficient (Cp) and Velocity Profiles.
@@ -210,7 +212,6 @@ FOAMFlask/
 This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
 - **Backend**:
-
   - **Python 3.13+**: Core logic.
   - **Flask**: Lightweight WSGI web application framework.
   - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
@@ -218,7 +219,6 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
   - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
 - **Frontend**:
-
   - **TypeScript**: For type-safe, maintainable client-side code.
   - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
   - **TailwindCSS**: Utility-first CSS framework for styling.
@@ -241,13 +241,11 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
 **Resolution**: Here's how to resolve this:
 
 1. Install Docker Desktop (if not already installed):
-
    - Download from [Docker's official website](https://www.docker.com/products/docker-desktop/)
    - Follow the installation instructions for your operating system
    - This build was tested on 4.45.0 (203075)
 
 2. Start Docker Desktop
-
    - Launch Docker Desktop before running the FOAMFlask application
    - Wait for Docker to fully start (you'll see the Docker icon `Docker Desktop running` in your system tray/menu bar)
 
@@ -270,7 +268,6 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
    ```
 
 2. Apply the group changes:
-
    - **Method A (Temporary)**: Run `newgrp docker` in your current terminal.
    - **Method B (Permanent)**: Log out and log back in (recommended).
    - **Method C**: Restart your computer.
