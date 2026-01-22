@@ -2982,6 +2982,7 @@ const init = () => {
     // Scroll Listener for Navbar
     window.addEventListener("scroll", handleScroll);
     initLogScrollObserver();
+    setupQuickActions();
 };
 const handleScroll = () => {
     const navbar = document.getElementById("navbar");
@@ -3240,6 +3241,35 @@ window.switchCaseCreationTab = (tab) => {
         if (select && tab === "import")
             setTimeout(() => select.focus(), 300); // Wait for transition
     }
+};
+const setupQuickActions = () => {
+    const bindings = [
+        { input: "tutorialSelect", btn: "loadTutorialBtn", events: ["keydown"] },
+        { input: "caseDir", btn: "setRootBtn", events: ["keydown"] },
+        { input: "geometrySelect", btn: "viewGeometryBtn", events: ["keydown", "dblclick"] },
+        { input: "resourceGeometrySelect", btn: "fetchResourceGeometryBtn", events: ["keydown"] },
+        { input: "meshSelect", btn: "loadMeshBtn", events: ["keydown"] },
+        { input: "vtkFileSelect", btn: "loadContourVTKBtn", events: ["keydown"] },
+    ];
+    bindings.forEach(({ input, btn, events }) => {
+        const inputEl = document.getElementById(input);
+        const btnEl = document.getElementById(btn);
+        if (!inputEl || !btnEl)
+            return;
+        if (events.includes("keydown")) {
+            inputEl.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault(); // Prevent form submission if any
+                    btnEl.click();
+                }
+            });
+        }
+        if (events.includes("dblclick")) {
+            inputEl.addEventListener("dblclick", () => {
+                btnEl.click();
+            });
+        }
+    });
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
