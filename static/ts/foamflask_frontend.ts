@@ -1424,6 +1424,9 @@ const startPlotUpdates = (): void => {
   // Try WebSocket first
   connectWebSocket(selectedTutorial);
 
+  // Initial fetch to ensure data is loaded even if simulation is stopped
+  updatePlots();
+
   // Also start polling as fallback / heartbeat or for initial load check
   startPolling();
 };
@@ -3233,6 +3236,9 @@ window.onload = async () => {
 
   } catch (e) { console.error(e); }
 };
+
+
+
 
 
 // Exports
