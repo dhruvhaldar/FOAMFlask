@@ -879,7 +879,7 @@ class OpenFOAMFieldParser:
 
             import errno
             try:
-                fd = os.open(path_str, os.O_RDONLY | os.O_NOFOLLOW)
+                fd = os.open(path_str, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
             except OSError as e:
                 if e.errno == errno.ELOOP:
                     logger.warning(f"Security: Ignoring symlinked log file: {path_str}")

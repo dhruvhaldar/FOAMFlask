@@ -633,10 +633,7 @@ def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
             # O_NOFOLLOW ensures that if the last component is a symlink, open fails with ELOOP.
             # This is safer than checking is_symlink() then opening.
             import errno
-            if platform.system() == "Windows":
-                 flags = os.O_RDONLY
-            else:
-                 flags = os.O_RDONLY | os.O_NOFOLLOW
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
             
             fd = os.open(str(host_log_path), flags)
 
