@@ -2,6 +2,7 @@ import logging
 import pyvista as pv
 from pathlib import Path
 from typing import Optional, Union, Dict, Any
+from collections import OrderedDict
 import multiprocessing
 import tempfile
 import os
@@ -185,6 +186,10 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
 class GeometryVisualizer:
     """Visualizes geometry files (STL) using PyVista."""
 
+    # ⚡ Bolt Optimization: LRU Cache for mesh info
+    _mesh_info_cache: OrderedDict = OrderedDict()
+    _mesh_info_cache_max_size: int = 100
+
     @staticmethod
     def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0, optimize: bool = False) -> Optional[str]:
         """
@@ -314,6 +319,19 @@ class GeometryVisualizer:
             if not path.exists():
                 return {"success": False, "error": "File not found"}
 
+            # ⚡ Bolt Optimization: Check cache
+            # Key based on file path and mtime to handle updates
+            cache_key = None
+            try:
+                mtime = path.stat().st_mtime
+                cache_key = (str(path), mtime)
+
+                if cache_key in GeometryVisualizer._mesh_info_cache:
+                    GeometryVisualizer._mesh_info_cache.move_to_end(cache_key)
+                    return GeometryVisualizer._mesh_info_cache[cache_key]
+            except Exception:
+                pass
+
             read_path = str(path)
             temp_read_path = None
             
@@ -331,13 +349,25 @@ class GeometryVisualizer:
                 bounds = mesh.bounds
                 center = mesh.center
 
-                return {
+                result = {
                     "success": True,
                     "bounds": bounds,
                     "center": center,
                     "n_points": mesh.n_points,
                     "n_cells": mesh.n_cells
                 }
+
+                # ⚡ Bolt Optimization: Update cache
+                if cache_key:
+                    try:
+                        GeometryVisualizer._mesh_info_cache[cache_key] = result
+                        if len(GeometryVisualizer._mesh_info_cache) > GeometryVisualizer._mesh_info_cache_max_size:
+                            GeometryVisualizer._mesh_info_cache.popitem(last=False)
+                    except Exception:
+                        pass
+
+                return result
+
             finally:
                 if temp_read_path and os.path.exists(temp_read_path):
                     try:
