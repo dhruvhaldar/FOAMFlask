@@ -8,6 +8,8 @@ import numpy as np
 import logging
 import os
 import mmap
+import platform
+import errno
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
 
@@ -87,6 +89,27 @@ _RE_VECTOR_COMPONENTS = re.compile(
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
 )
+
+def _secure_open(path_str: str, mode: str = "rb") -> Any:
+    """
+    Securely open a file, preventing symlink traversal (TOCTOU safe).
+    Returns a file object.
+    """
+    if platform.system() == "Windows":
+        flags = os.O_RDONLY
+    else:
+        flags = os.O_RDONLY | os.O_NOFOLLOW
+
+    try:
+        fd = os.open(path_str, flags)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            logger.warning(f"Security: Ignoring symlinked file: {path_str}")
+            # Raising FileNotFoundError will be caught by existing try-except blocks
+            raise FileNotFoundError(f"Symlink rejected: {path_str}")
+        raise
+
+    return os.fdopen(fd, mode)
 
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
@@ -186,7 +209,8 @@ class OpenFOAMFieldParser:
             # The class definition is almost always in the first few lines, but banner can be large.
             # ⚡ Bolt Optimization: Read bytes to avoid decode overhead during type check
             # ⚡ Bolt Optimization: Use built-in open() with string path to avoid Path object overhead
-            with open(path_str, "rb") as f:
+            # SECURITY: Use secure open to prevent symlink traversal
+            with _secure_open(path_str, "rb") as f:
                 header = f.read(2048)
             
             field_type = None
@@ -341,7 +365,8 @@ class OpenFOAMFieldParser:
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files to avoid reading entire file into memory.
                 # This is ~3x faster for large fields and reduces memory pressure significantly.
-                with open(path_str, "rb") as f:
+                # SECURITY: Use secure open
+                with _secure_open(path_str, "rb") as f:
                     # mmap can fail for empty files or if file is too small
                     # ⚡ Bolt Optimization: Use os.fstat(fd) instead of Path.stat() to avoid extra syscall
                     if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
@@ -416,7 +441,8 @@ class OpenFOAMFieldParser:
             # Fallback for complex cases (e.g. comments inside list breaking numpy)
             if val is None:
                 try:
-                    with open(path_str, "r", encoding="utf-8") as f:
+                    # SECURITY: Use secure open
+                    with _secure_open(path_str, "r") as f:
                         content = f.read()
                     if "nonuniform" in content:
                         match = _RE_NONUNIFORM_LIST.search(content)
@@ -482,7 +508,8 @@ class OpenFOAMFieldParser:
 
             try:
                 # ⚡ Bolt Optimization: Use mmap for large files
-                with open(path_str, "rb") as f:
+                # SECURITY: Use secure open
+                with _secure_open(path_str, "rb") as f:
                     # ⚡ Bolt Optimization: Use os.fstat(fd) instead of Path.stat() to avoid extra syscall
                     if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
                         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
@@ -555,7 +582,8 @@ class OpenFOAMFieldParser:
             # Fallback
             if val == (0.0, 0.0, 0.0):
                 try:
-                    with open(path_str, "r", encoding="utf-8") as f:
+                    # SECURITY: Use secure open
+                    with _secure_open(path_str, "r") as f:
                         content = f.read()
                     if "nonuniform" in content:
                         match = _RE_NONUNIFORM_LIST.search(content)
