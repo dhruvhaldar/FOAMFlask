@@ -141,15 +141,14 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
              # widget_color="black"
          )
 
-         plotter.add_axes()
+         # plotter.add_axes() # Removed to eliminate "blue square" artifact (orientation widget)
          plotter.reset_camera()
          
-         # Start Trame Server logic
          # Start Trame Server logic
          # from pyvista.trame.ui import get_viewer # Removed
          from trame.app import get_server
          from trame.ui.vuetify import VAppLayout
-         from trame.widgets import vuetify
+         from trame.widgets import vuetify, html
          from trame.widgets.vtk import VtkLocalView
 
          # We utilize a workaround to let the system pick a port or verify one
@@ -161,10 +160,16 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
          
          # Viewer with Layout
          with VAppLayout(server) as layout:
+             # Force clean layout via CSS
              with layout.root:
-                 with vuetify.VContainer(fluid=True, classes="pa-0 fill-height"):
+                 html.Style("""
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 """)
+                 with vuetify.VContainer(fluid=True, classes="pa-0 fill-height", style="overflow: hidden; width: 100%; height: 100%;"):
                      # Use VtkLocalView for client-side rendering (geometry based)
-                     # This avoids server-side rendering issues (405 on /paraview/)
                      VtkLocalView(plotter.ren_win)
          
          # We need to notify the parent process of the port

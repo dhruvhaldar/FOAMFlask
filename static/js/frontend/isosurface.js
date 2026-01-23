@@ -354,6 +354,7 @@ function displayContourVisualization(container, content) {
         // Create an iframe to contain the visualization
         const iframe = document.createElement('iframe');
         iframe.id = 'contourVisualizationFrame';
+        iframe.setAttribute('scrolling', 'no'); // Legacy attribute, still useful
         iframe.style.cssText = `
             width: 100%;
             height: 600px;
@@ -361,6 +362,7 @@ function displayContourVisualization(container, content) {
             border-radius: 0.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             background: white;
+            overflow: hidden; /* Ensure iframe container doesn't scroll */
         `;
         // Handle Trame URL
         if (content.mode === 'iframe' && content.src) {
