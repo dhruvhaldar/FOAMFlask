@@ -555,7 +555,8 @@ class IsosurfaceVisualizer:
                 "isovalues": isovalues,
                 "window_size": window_size,
                 "file_path": str(path),
-                "mtime": mtime
+                "mtime": mtime,
+                "code_mtime": os.path.getmtime(__file__) # Invalidate cache if code changes
             }
 
             try:
