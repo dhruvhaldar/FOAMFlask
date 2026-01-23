@@ -468,8 +468,13 @@ function displayContourVisualization(container: HTMLElement | null, content: any
 
         // Handle Trame URL
         if (content.mode === 'iframe' && content.src) {
-            console.log('[FOAMFlask] [displayContourVisualization] Embedding Trame URL:', content.src);
-            iframe.src = content.src;
+            // Append timestamp to force reload/prevent caching
+            const url = new URL(content.src);
+            url.searchParams.set('t', Date.now().toString());
+            const finalUrl = url.toString();
+
+            console.log('[FOAMFlask] [displayContourVisualization] Embedding Trame URL:', finalUrl);
+            iframe.src = finalUrl;
         } else {
             console.warn('[FOAMFlask] [displayContourVisualization] Unexpected content format', content);
             container.innerHTML = `
