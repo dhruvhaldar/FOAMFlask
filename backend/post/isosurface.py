@@ -215,6 +215,19 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                      ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
                  """)
                  
+                 # ⚡ Prevent Scroll Chaining: detailed JS to stop wheel events from bubbling to parent
+                 html.Script("""
+                 // Block all wheel events at the window level during the capture phase
+                 // This ensures we catch them before they trigger page scrolling
+                 ['wheel', 'mousewheel', 'DOMMouseScroll'].forEach(function(ev) {
+                     window.addEventListener(ev, function(e) {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         return false;
+                     }, { passive: false, capture: true });
+                 });
+                 """)
+                 
                  # Floating Toolbar (Top Center, Horizontal)
                  with vuetify.VCard(
                      elevation=4,

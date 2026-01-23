@@ -17,11 +17,12 @@ export default defineConfig({
     baseURL: 'http://localhost:5000',
   },
   webServer: {
-    command: 'python3 tests/frontend/e2e/mock_app.py',
-    port: 5000,
-    reuseExistingServer: !process.env.CI,
+    command: '.\\environments\\my-python313-venv-win\\Scripts\\python.exe -m app',
+    url: 'http://127.0.0.1:5000',
+    reuseExistingServer: true,
     stdout: 'pipe',
     stderr: 'pipe',
+    timeout: 120 * 1000,
   },
   projects: [
     {
