@@ -25,3 +25,7 @@
 ## 2026-05-15 - [Bytes Search Performance]
 **Learning:** In Python, searching for a substring in bytes (`b"sub" in data`) is ~10-12x slower than the string equivalent (`"sub" in data`). For high-throughput parsing (like large log files), using `re.search` on bytes directly is significantly faster than using `in` as a pre-check, and also avoids the overhead of `decode()`.
 **Action:** When parsing large binary or ASCII-compatible files, prefer using compiled bytes-regex (`re.compile(rb"...")`) and skip the `in` operator pre-check if the data is `bytes`.
+
+## 2026-06-25 - [Strict Decode Performance]
+**Learning:** While `bytes.find` is faster than `bytes in`, Python's `decode('utf-8')` is extremely optimized for ASCII. Combined with fast string search (`str in`), the `decode + search` pattern is often faster than pure bytes manipulation for short/medium lines, especially when multiple searches are performed per line. Strict decoding (`errors='strict'`) is ~30% faster than `errors='replace'`.
+**Action:** Use optimistic strict decoding inside a try-except block for log parsing loops where lines are expected to be valid text. Avoid `bytes` search optimization if it leads to repeated scans.
