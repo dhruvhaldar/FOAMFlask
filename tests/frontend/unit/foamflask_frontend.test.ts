@@ -51,6 +51,7 @@ describe('FoamFlask Frontend', () => {
 
       <div id="output"></div>
       <input id="caseDir" />
+      <input id="dockerImage" />
       <input id="openfoamRoot" />
       <select id="caseSelect"><option value="">-- Select --</option></select>
       <input id="newCaseName" />
@@ -394,5 +395,30 @@ describe('FoamFlask Frontend', () => {
     switchPostView('landing');
     expect(landing.classList.contains('hidden')).toBe(false);
     expect(contour.classList.contains('hidden')).toBe(true);
+  });
+
+  it('copyInputToClipboard should copy text and show visual feedback', async () => {
+    const { copyInputToClipboard } = window as any;
+    const input = document.getElementById('dockerImage') as HTMLInputElement;
+    input.value = 'my/image:tag';
+
+    const btn = document.createElement('button');
+    btn.innerHTML = 'Copy';
+
+    // Mock clipboard
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    copyInputToClipboard('dockerImage', btn);
+
+    // Wait for promise
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('my/image:tag');
+    expect(btn.dataset.isCopying).toBe('true');
+    expect(btn.innerHTML).toContain('<svg'); // Check for green checkmark icon
   });
 });
