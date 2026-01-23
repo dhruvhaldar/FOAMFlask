@@ -1007,9 +1007,22 @@ const refreshCaseList = async (btnElement) => {
         }
     }
 };
+const updateActiveCaseBadge = (caseName) => {
+    const badge = document.getElementById("activeCaseBadge");
+    if (badge) {
+        if (caseName) {
+            badge.textContent = `📂 ${caseName}`;
+            badge.classList.remove("hidden");
+        }
+        else {
+            badge.classList.add("hidden");
+        }
+    }
+};
 const selectCase = (val) => {
     activeCase = val;
     localStorage.setItem("lastSelectedCase", val);
+    updateActiveCaseBadge(val);
 };
 const createNewCase = async () => {
     const caseName = document.getElementById("newCaseName").value;
@@ -2889,6 +2902,7 @@ window.onload = async () => {
             if (exists) {
                 select.value = savedCase;
                 activeCase = savedCase;
+                updateActiveCaseBadge(savedCase);
             }
         }
         // Check if we need to restore any plot state or similar

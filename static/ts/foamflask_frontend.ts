@@ -1216,9 +1216,22 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
   }
 };
 
+const updateActiveCaseBadge = (caseName: string) => {
+  const badge = document.getElementById("activeCaseBadge");
+  if (badge) {
+    if (caseName) {
+      badge.textContent = `📂 ${caseName}`;
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+};
+
 const selectCase = (val: string) => {
   activeCase = val;
   localStorage.setItem("lastSelectedCase", val);
+  updateActiveCaseBadge(val);
 };
 
 const createNewCase = async () => {
@@ -3290,6 +3303,7 @@ window.onload = async () => {
       if (exists) {
         select.value = savedCase;
         activeCase = savedCase;
+        updateActiveCaseBadge(savedCase);
       }
     }
 

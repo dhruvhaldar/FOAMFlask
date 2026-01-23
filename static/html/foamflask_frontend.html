@@ -273,6 +273,10 @@
           <img src="{{ url_for('static', filename='icons/logo.svg') }}" alt="FOAMFlask Logo"
             class="h-8 w-8 rounded-md mr-2" />
           <h1 class="text-2xl font-bold text-black">FOAMFlask</h1>
+          <button id="activeCaseBadge" onclick="switchPage('setup')"
+            class="hidden ml-3 px-2 py-0.5 bg-cyan-100 hover:bg-cyan-200 text-cyan-800 text-xs font-mono rounded border border-cyan-200 truncate max-w-[150px] transition-colors cursor-pointer"
+            title="Active Case - Click to change in Setup">
+          </button>
         </div>
 
         <!-- Desktop Menu -->
