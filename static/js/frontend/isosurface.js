@@ -86,13 +86,17 @@ export async function generateContours(options = {}) {
             range,
             vtkFilePath: selectedVtkFilePath
         });
+        // Get showIsovalueWidget from checkbox
+        const showIsovalueWidgetCheckbox = document.getElementById('showIsovalueWidget');
+        const showIsovalueWidget = showIsovalueWidgetCheckbox ? showIsovalueWidgetCheckbox.checked : true;
         // Prepare request data
         const requestData = {
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces,
-            vtkFilePath: selectedVtkFilePath
+            vtkFilePath: selectedVtkFilePath,
+            showIsovalueWidget
         };
         if (range && Array.isArray(range) && range.length === 2) {
             requestData.range = range;
@@ -248,7 +252,8 @@ async function fetchContours(requestData) {
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
         num_isosurfaces: requestData.numIsosurfaces,
-        vtkFilePath: requestData.vtkFilePath
+        vtkFilePath: requestData.vtkFilePath,
+        showIsovalueWidget: requestData.showIsovalueWidget
     };
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
         requestBody.range = requestData.range;

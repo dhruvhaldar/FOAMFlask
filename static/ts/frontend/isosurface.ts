@@ -12,6 +12,7 @@ interface ContourOptions {
     numIsosurfaces?: number;
     range?: [number, number];
     vtkFilePath?: string | null;
+    showIsovalueWidget?: boolean;
 }
 
 interface ContourData {
@@ -138,13 +139,18 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             vtkFilePath: selectedVtkFilePath
         });
 
+        // Get showIsovalueWidget from checkbox
+        const showIsovalueWidgetCheckbox = document.getElementById('showIsovalueWidget') as HTMLInputElement | null;
+        const showIsovalueWidget = showIsovalueWidgetCheckbox ? showIsovalueWidgetCheckbox.checked : true;
+
         // Prepare request data
         const requestData: ContourOptions = {
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces,
-            vtkFilePath: selectedVtkFilePath
+            vtkFilePath: selectedVtkFilePath,
+            showIsovalueWidget
         };
 
         if (range && Array.isArray(range) && range.length === 2) {
@@ -328,12 +334,14 @@ async function fetchContours(requestData: ContourOptions) {
         num_isosurfaces?: number;
         range?: [number, number];
         vtkFilePath?: string | null;
+        showIsovalueWidget?: boolean;
     } = {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
         num_isosurfaces: requestData.numIsosurfaces,
-        vtkFilePath: requestData.vtkFilePath
+        vtkFilePath: requestData.vtkFilePath,
+        showIsovalueWidget: requestData.showIsovalueWidget
     };
 
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {

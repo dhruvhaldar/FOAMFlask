@@ -2289,6 +2289,10 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             f"[FOAMFlask] [create_contour] Isosurfaces generated: {isosurface_info['n_points']} points"
         )
 
+        # Get isovalue widget setting
+        show_isovalue_widget = request_data.get("showIsovalueWidget", True)
+        logger.info(f"[FOAMFlask] [create_contour] Show isovalue widget: {show_isovalue_widget}")
+
         # Generate HTML
         logger.info(f"[FOAMFlask] [create_contour] Generating interactive HTML...")
         html_content = isosurface_visualizer.get_interactive_html(
@@ -2298,7 +2302,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             contour_opacity=0.8,
             contour_color="red",
             colormap="viridis",
-            show_isovalue_slider=True,
+            show_isovalue_slider=show_isovalue_widget,
             num_isosurfaces=num_isosurfaces,
             custom_range=custom_range,
         )
