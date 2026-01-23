@@ -195,16 +195,13 @@ def _generate_isosurface_html_process(
         plotter = pv.Plotter(notebook=False, off_screen=True, window_size=list(window_size))
 
         if show_base_mesh:
-            print(f"[DEBUG] Adding base mesh: opacity={base_mesh_opacity}, scalars={scalar_field}, cmap={colormap}")
-            scalar_bar_title = "Velocity Magnitude" if scalar_field == "U_Magnitude" else scalar_field
             plotter.add_mesh(
                 mesh,
                 opacity=base_mesh_opacity,
                 scalars=scalar_field,
                 show_scalar_bar=True,
                 cmap=colormap,
-                label="Base Mesh",
-                 scalar_bar_args={"title": scalar_bar_title},
+                # label="Base Mesh",
             )
 
         # Add isosurfaces
@@ -230,7 +227,7 @@ def _generate_isosurface_html_process(
                     show_scalar_bar=False,
                     color=contour_color,
                     line_width=3,
-                    label="Isosurfaces",
+                    # label="Isosurfaces",
                 )
 
         if show_isovalue_slider:
@@ -241,8 +238,8 @@ def _generate_isosurface_html_process(
                 opacity=0.5,
             )
 
-        plotter.add_axes(xlabel="X", ylabel="Y", zlabel="Z", line_width=2, labels_off=False)
-        plotter.add_title("Aerofoil NACA0012 - Velocity Magnitude")
+        plotter.add_axes()
+        # plotter.add_title("Aerofoil NACA0012 - Velocity Magnitude")
         plotter.reset_camera()
 
         plotter.export_html(output_path)
