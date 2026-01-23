@@ -1454,8 +1454,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         # Validate and sanitize command input to prevent injection
         if not is_safe_command(command):
-            yield f"[FOAMFlask] [Error] Unsafe command detected: {escape(command)}<br>"
-            yield "[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.<br>"
+            yield f"<div>[FOAMFlask] [Error] Unsafe command detected: {escape(command)}</div>"
+            yield "<div>[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.</div>"
             return
 
         # Determine if command is an OpenFOAM command or a script file
@@ -1466,8 +1466,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 # Script file - validate path and execute safely
                 script_name = command[2:]  # Remove "./" prefix
                 if not is_safe_script_name(script_name):
-                    yield f"[FOAMFlask] [Error] Unsafe script name: {escape(script_name)}<br>"
-                    yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.<br>"
+                    yield f"<div>[FOAMFlask] [Error] Unsafe script name: {escape(script_name)}</div>"
+                    yield "<div>[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.</div>"
                     return
                 
                 # Security: Use positional arguments for bash -c to prevent injection
@@ -1492,8 +1492,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         else:
             # Fallback - treat as script with validation
             if not is_safe_script_name(command):
-                yield f"[FOAMFlask] [Error] Unsafe command name: {escape(command)}<br>"
-                yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.<br>"
+                yield f"<div>[FOAMFlask] [Error] Unsafe command name: {escape(command)}</div>"
+                yield "<div>[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.</div>"
                 return
             
             # Security: Use positional arguments
@@ -1525,13 +1525,13 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 for line in container.logs(stream=True):
                     decoded = line.decode(errors="ignore")
                     for subline in decoded.splitlines():
-                        yield f"{escape(subline)}<br>"
+                        yield f"<div>{escape(subline)}</div>"
             except Exception as e:
-                yield f"[FOAMFlask] [Error] Failed to stream container logs: {escape(str(e))}<br>"
+                yield f"<div>[FOAMFlask] [Error] Failed to stream container logs: {escape(str(e))}</div>"
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] Failed to start container: {escape(sanitize_error(e))}<br>"
+            yield f"<div>[FOAMFlask] [Error] Failed to start container: {escape(sanitize_error(e))}</div>"
             return
 
         finally:
@@ -2008,7 +2008,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
         """
         client = get_docker_client()
         if client is None:
-            yield "[FOAMFlask] [Error] Docker daemon not available. Please start Docker Desktop and try again.<br>"
+            yield "<div>[FOAMFlask] [Error] Docker daemon not available. Please start Docker Desktop and try again.</div>"
             return
 
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
@@ -2073,11 +2073,11 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             for line in container.logs(stream=True):
                 decoded = line.decode(errors="ignore")
                 for subline in decoded.splitlines():
-                    yield f"{escape(subline)}<br>"
+                    yield f"<div>{escape(subline)}</div>"
 
         except Exception as e:
             logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] {escape(sanitize_error(e))}<br>"
+            yield f"<div>[FOAMFlask] [Error] {escape(sanitize_error(e))}</div>"
 
         finally:
             if 'container' in locals():

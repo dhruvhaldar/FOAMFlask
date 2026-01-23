@@ -64,6 +64,15 @@ const detectSlowHardware = () => {
         return false; // Fail safe
     }
 };
+// ⚡ Bolt Optimization: Prevent DOM explosion by limiting log size
+const limitLogSize = (container) => {
+    const MAX_DOM_NODES = 2500;
+    // Use a while loop to remove excess nodes from the top
+    // Removing from DOM is relatively cheap if done in batch or small increments
+    while (container.childElementCount > MAX_DOM_NODES) {
+        container.firstElementChild?.remove();
+    }
+};
 // Clear Console Log
 const clearLog = async () => {
     const outputDiv = document.getElementById("output");
@@ -810,6 +819,7 @@ const flushOutputBuffer = () => {
         newHtmlChunks += `<div class="${className}">${safeMessage}</div>`;
     });
     container.insertAdjacentHTML("beforeend", newHtmlChunks);
+    limitLogSize(container); // ⚡ Bolt Optimization: Limit DOM nodes
     cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
     // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
     const MAX_LOG_LENGTH = MAX_LOG_SIZE; // 100KB
@@ -1103,6 +1113,7 @@ const runCommand = async (cmd, btnElement) => {
             const output = document.getElementById("output");
             if (output) {
                 output.insertAdjacentHTML("beforeend", text);
+                limitLogSize(output); // ⚡ Bolt Optimization: Limit DOM nodes
                 output.scrollTop = output.scrollHeight;
             }
         }

@@ -25,3 +25,7 @@
 ## 2026-05-15 - [Bytes Search Performance]
 **Learning:** In Python, searching for a substring in bytes (`b"sub" in data`) is ~10-12x slower than the string equivalent (`"sub" in data`). For high-throughput parsing (like large log files), using `re.search` on bytes directly is significantly faster than using `in` as a pre-check, and also avoids the overhead of `decode()`.
 **Action:** When parsing large binary or ASCII-compatible files, prefer using compiled bytes-regex (`re.compile(rb"...")`) and skip the `in` operator pre-check if the data is `bytes`.
+
+## 2026-06-01 - [DOM Log Virtualization/Capping]
+**Learning:** For streaming logs (like simulation output), appending thousands of lines to the DOM (`insertAdjacentHTML`) without limit causes severe browser slowdown and high memory usage (DOM explosion). `cachedLogHTML` string capping is insufficient if the visible DOM is not also capped.
+**Action:** Implemented a DOM node limit (e.g., 2500 lines) by removing oldest children (`container.firstElementChild.remove()`) when appending new data. Also changed backend to yield `<div>` blocks instead of `<br>` delimiters to facilitate cleaner DOM node management.
