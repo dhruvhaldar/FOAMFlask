@@ -215,32 +215,6 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                      ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
                  """)
                  
-                 # ⚡ Prevent Scroll Chaining: detailed JS to stop wheel events from bubbling to parent
-                 html.Script("""
-                 // Block all wheel events to prevent scrolling the parent page
-                 // We use preventDefault() to tell the browser "we handled this"
-                 ['wheel', 'mousewheel', 'DOMMouseScroll'].forEach(function(ev) {
-                     window.addEventListener(ev, function(e) {
-                         e.preventDefault();
-                         // e.stopPropagation(); // Removed to allow VTK to see the event if needed
-                         return false;
-                     }, { passive: false }); // Removed capture:true to be safe for internal listeners
-                 });
-
-                 // ⚡ Block Middle-Click Autoscroll (panning)
-                 // We must block 'pointerdown' for Edge/Chrome
-                 ['mousedown', 'auxclick', 'pointerdown'].forEach(function(ev) {
-                     window.addEventListener(ev, function(e) {
-                         // Button 1 is the middle mouse button (wheel click)
-                         if (e.button === 1) {
-                             e.preventDefault(); // Stop Autoscroll cursor
-                             // e.stopPropagation(); // Removed so VTK can still receive the event for Panning
-                             return false;
-                         }
-                     }, { passive: false, capture: true }); # Capture ensures we kill the default early
-                 });
-                 """)
-                 
                  # Floating Toolbar (Top Center, Horizontal)
                  with vuetify.VCard(
                      elevation=4,
@@ -272,7 +246,24 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                      with vuetify.VBtn(icon=True, x_small=True, click=view_fit):
                          vuetify.VIcon("mdi-fit-to-screen", title="Fit to View")
 
-                 with vuetify.VContainer(fluid=True, classes="pa-0 fill-height", style="overflow: hidden; width: 100%; height: 100%;"):
+                 # No-op callback for blocked events
+                 def noop(**kwargs):
+                     pass
+
+                 # Use Vue event modifiers to block scrolling and middle-click autoscroll
+                 # @wheel.prevent -> event.preventDefault() for wheel (stops page scroll)
+                 # @mousedown.middle.prevent -> prevents middle click autoscroll
+                 # @auxclick.middle.prevent -> extra safety
+                 with vuetify.VContainer(
+                     fluid=True, 
+                     classes="pa-0 fill-height", 
+                     style="overflow: hidden; width: 100%; height: 100%;",
+                     **{
+                         "wheel.prevent": noop, 
+                         "mousedown.middle.prevent": noop,
+                         "auxclick.prevent": noop
+                     }
+                 ):
                      # Use VtkLocalView for client-side rendering (geometry based)
                      view = VtkLocalView(plotter.ren_win)
                      # view.update() only syncs geometry/properties.
