@@ -158,6 +158,52 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
          server = get_server(name="foamflask_iso", client_type="vue2")
          state, ctrl = server.state, server.controller
          
+         # Camera Callbacks
+         def update_view():
+             # Force a render so the VTK window updates its pixel/geometry state
+             plotter.render()
+             # Signal the frontend to sync with the new state
+             ctrl.view_update()
+
+         def view_iso():
+             plotter.view_isometric()
+             plotter.reset_camera()
+             update_view()
+             
+         def view_top():
+             plotter.view_xy()
+             plotter.reset_camera()
+             update_view()
+
+         def view_bottom():
+             plotter.view_xy(negative=True)
+             plotter.reset_camera()
+             update_view()
+             
+         def view_front():
+             plotter.view_xz() 
+             plotter.reset_camera()
+             update_view()
+
+         def view_back():
+             plotter.view_xz(negative=True)
+             plotter.reset_camera()
+             update_view()
+             
+         def view_left():
+             plotter.view_yz(negative=True)
+             plotter.reset_camera()
+             update_view()
+             
+         def view_right():
+             plotter.view_yz()
+             plotter.reset_camera()
+             update_view()
+
+         def view_fit():
+             plotter.reset_camera()
+             update_view()
+
          # Viewer with Layout
          with VAppLayout(server) as layout:
              # Force clean layout via CSS
@@ -168,9 +214,44 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                      .fill-height { overflow: hidden !important; }
                      ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
                  """)
+                 
+                 # Floating Toolbar (Top Center, Horizontal)
+                 with vuetify.VCard(
+                     elevation=4,
+                     style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: row; gap: 4px; padding: 4px; background-color: rgba(255, 255, 255, 0.9);"
+                     ):
+                     # Iso
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_iso):
+                         vuetify.VIcon("mdi-cube-scan", title="Isometric")
+                     vuetify.VDivider(vertical=True)
+                     # Z Axis (Top/Bottom)
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_top):
+                         vuetify.VIcon("mdi-format-vertical-align-top", title="Top (+Z)")
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_bottom):
+                         vuetify.VIcon("mdi-format-vertical-align-bottom", title="Bottom (-Z)")
+                     vuetify.VDivider(vertical=True)
+                     # Y Axis (Front/Back)
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_front):
+                         vuetify.VIcon("mdi-alpha-f-box-outline", title="Front (+Y)")
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_back):
+                         vuetify.VIcon("mdi-alpha-b-box-outline", title="Back (-Y)")
+                     vuetify.VDivider(vertical=True)
+                     # X Axis (Left/Right)
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_left):
+                         vuetify.VIcon("mdi-chevron-left-box-outline", title="Left (-X)")
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_right):
+                         vuetify.VIcon("mdi-chevron-right-box-outline", title="Right (+X)")
+                     vuetify.VDivider(vertical=True)
+                     # Fit
+                     with vuetify.VBtn(icon=True, x_small=True, click=view_fit):
+                         vuetify.VIcon("mdi-fit-to-screen", title="Fit to View")
+
                  with vuetify.VContainer(fluid=True, classes="pa-0 fill-height", style="overflow: hidden; width: 100%; height: 100%;"):
                      # Use VtkLocalView for client-side rendering (geometry based)
-                     VtkLocalView(plotter.ren_win)
+                     view = VtkLocalView(plotter.ren_win)
+                     # view.update() only syncs geometry/properties.
+                     # To force camera sync from server -> client in LocalView, we need push_camera()
+                     ctrl.view_update = view.push_camera
          
          # We need to notify the parent process of the port
          # Trame start is blocking. We need a callback or start in thread?
