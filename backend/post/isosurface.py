@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 
 # Third-party imports
+from markupsafe import escape
 import numpy as np
 import pyvista as pv
 from pyvista import DataSet, PolyData, Plotter
@@ -675,9 +676,9 @@ class IsosurfaceVisualizer:
         <h2>⚠️ Error Generating 3D Visualization</h2>
         <div class="error-message">
             <strong>Error:</strong><br>
-            {error_message}
+            {escape(error_message)}
         </div>
-        <p>Scalar field: <code>{scalar_field}</code></p>
+        <p>Scalar field: <code>{escape(scalar_field)}</code></p>
     </div>
 </body>
 </html>
