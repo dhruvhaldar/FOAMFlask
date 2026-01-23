@@ -217,14 +217,27 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                  
                  # ⚡ Prevent Scroll Chaining: detailed JS to stop wheel events from bubbling to parent
                  html.Script("""
-                 // Block all wheel events at the window level during the capture phase
-                 // This ensures we catch them before they trigger page scrolling
+                 // Block all wheel events to prevent scrolling the parent page
+                 // We use preventDefault() to tell the browser "we handled this"
                  ['wheel', 'mousewheel', 'DOMMouseScroll'].forEach(function(ev) {
                      window.addEventListener(ev, function(e) {
                          e.preventDefault();
-                         e.stopPropagation();
+                         // e.stopPropagation(); // Removed to allow VTK to see the event if needed
                          return false;
-                     }, { passive: false, capture: true });
+                     }, { passive: false }); // Removed capture:true to be safe for internal listeners
+                 });
+
+                 // ⚡ Block Middle-Click Autoscroll (panning)
+                 // We must block 'pointerdown' for Edge/Chrome
+                 ['mousedown', 'auxclick', 'pointerdown'].forEach(function(ev) {
+                     window.addEventListener(ev, function(e) {
+                         // Button 1 is the middle mouse button (wheel click)
+                         if (e.button === 1) {
+                             e.preventDefault(); // Stop Autoscroll cursor
+                             // e.stopPropagation(); // Removed so VTK can still receive the event for Panning
+                             return false;
+                         }
+                     }, { passive: false, capture: true }); # Capture ensures we kill the default early
                  });
                  """)
                  

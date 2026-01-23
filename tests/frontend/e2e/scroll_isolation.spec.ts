@@ -18,7 +18,7 @@ test.describe('Visualization Scroll Isolation', () => {
         }
 
         // 3. Select "Contour" visualization
-        await page.click('button:has-text("Contour"), div:has-text("Contour")');
+        await page.click('#card-contour');
 
         // 4. Select a VTK file (Wait for list to populate)
         const select = page.locator('#vtkFileSelect');
