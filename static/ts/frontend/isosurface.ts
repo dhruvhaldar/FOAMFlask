@@ -90,14 +90,14 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         let selectedVtkFilePath = vtkFilePath;
         if (!selectedVtkFilePath) {
             const vtkFileSelect = document.getElementById('vtkFileSelect') as MyHTMLElement | null;
-             // Check custom input if select is empty or "custom"
+            // Check custom input if select is empty or "custom"
             const vtkFileBrowser = document.getElementById('vtkFileBrowser') as HTMLInputElement | null;
-            
+
             if (vtkFileBrowser && vtkFileBrowser.files && vtkFileBrowser.files.length > 0) {
-                 // For browser upload, we might handle it differently, but for now lets assume local path logic isn't used here 
-                 // actually standard vtkFileSelect is what we use for server-side files
+                // For browser upload, we might handle it differently, but for now lets assume local path logic isn't used here 
+                // actually standard vtkFileSelect is what we use for server-side files
             }
-            
+
             if (vtkFileSelect && vtkFileSelect.value) {
                 selectedVtkFilePath = vtkFileSelect.value;
             }
@@ -106,7 +106,7 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         // Log for debugging
         console.log('[FOAMFlask] [generateContours] Using case directory:', selectedCaseDir);
         if (selectedVtkFilePath) {
-             console.log('[FOAMFlask] [generateContours] Using VTK file:', selectedVtkFilePath);
+            console.log('[FOAMFlask] [generateContours] Using VTK file:', selectedVtkFilePath);
         }
 
         // Get range from input fields if not provided in options
@@ -202,7 +202,7 @@ export async function loadContourMesh(vtkFilePath: string): Promise<void> {
 
     try {
         console.log("[FOAMFlask] [loadContourMesh] Loading mesh for contour:", vtkFilePath);
-        
+
         // Show loading notification
         if (typeof showNotification === 'function') {
             showNotification("Loading mesh metadata...", "info", 1000);
@@ -235,7 +235,7 @@ export async function loadContourMesh(vtkFilePath: string): Promise<void> {
         const scalarFieldSelect = document.getElementById('scalarField') as HTMLSelectElement | null;
         if (scalarFieldSelect && meshInfo.point_arrays) {
             scalarFieldSelect.innerHTML = ''; // Clear existing
-            
+
             // Add options
             meshInfo.point_arrays.forEach((field: string) => {
                 const option = document.createElement('option');
@@ -244,15 +244,15 @@ export async function loadContourMesh(vtkFilePath: string): Promise<void> {
                 option.classList.add('point-data-option'); // Add styling class
                 scalarFieldSelect.appendChild(option);
             });
-            
+
             // If U_Magnitude exists, select it by default, otherwise select first
             if (meshInfo.point_arrays.includes('U_Magnitude')) {
                 scalarFieldSelect.value = 'U_Magnitude';
             } else if (meshInfo.point_arrays.length > 0) {
-                 scalarFieldSelect.value = meshInfo.point_arrays[0];
+                scalarFieldSelect.value = meshInfo.point_arrays[0];
             }
         }
-        
+
         // Populate Info Box
         const contourInfo = document.getElementById('contourInfo');
         const contourInfoContent = document.getElementById('contourInfoContent');
@@ -274,7 +274,7 @@ export async function loadContourMesh(vtkFilePath: string): Promise<void> {
 
     } catch (error: unknown) {
         console.error('[FOAMFlask] [loadContourMesh] Error:', error);
-         if (typeof showNotification === 'function') {
+        if (typeof showNotification === 'function') {
             const message = error instanceof Error ? error.message : String(error);
             showNotification(`Error loading mesh: ${message}`, 'error');
         }
@@ -293,7 +293,7 @@ function showLoadingState(container: HTMLElement | null, message = 'Loading...')
             <span class="ml-4 text-gray-600"></span>
         </div>
     `;
-    
+
     // Set message text safely
     const messageSpan = container.querySelector('span');
     if (messageSpan) {
@@ -327,11 +327,13 @@ async function fetchContours(requestData: ContourOptions) {
         scalar_field?: string;
         num_isosurfaces?: number;
         range?: [number, number];
+        vtkFilePath?: string | null;
     } = {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
-        num_isosurfaces: requestData.numIsosurfaces
+        num_isosurfaces: requestData.numIsosurfaces,
+        vtkFilePath: requestData.vtkFilePath
     };
 
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
@@ -453,7 +455,7 @@ function displayContourVisualization(container: HTMLElement | null, htmlContent:
                     <p class="text-xs mt-2 text-gray-600">Check browser console for details</p>
                 </div>
             `;
-            
+
             // Set error message safely
             const messageP = container.querySelector('p.text-sm');
             if (messageP) {
@@ -504,7 +506,7 @@ function handleContourError(
                 </button>
             </div>
         `;
-        
+
         // Set error message safely
         const errorDiv = viewer.querySelector('.text-gray-600.mb-4');
         if (errorDiv) {

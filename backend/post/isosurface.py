@@ -25,6 +25,7 @@ from pyvista import DataSet, PolyData, Plotter
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
 
+
 CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
 
 def _get_cache_dir() -> Path:
@@ -178,7 +179,6 @@ def _generate_isosurface_html_process(
         window_size = params.get("window_size", (1200, 800))
 
         logger.debug(f"[isosurface.py] Generating isosurface for {file_path}, {params}")
-        print(f"[DEBUG] Subprocess started. Params: {params.keys()}")
 
         # Load mesh
         # ⚡ Bolt Optimization: Disable progress bar
@@ -604,12 +604,6 @@ class IsosurfaceVisualizer:
                 if os.path.exists(temp_output_path):
                     os.remove(temp_output_path)
                 return self._generate_error_html("Generation process failed", scalar_field)
-
-            if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) == 0:
-                 logger.error("Isosurface HTML output file is empty or missing")
-                 if os.path.exists(temp_output_path):
-                    os.remove(temp_output_path)
-                 return self._generate_error_html("Generation failed (empty output)", scalar_field)
 
             with open(temp_output_path, "r", encoding="utf-8") as f:
                 html_content = f.read()

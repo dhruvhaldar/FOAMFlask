@@ -2153,7 +2153,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         case_dir_str = request_data.get("caseDir")
         scalar_field = request_data.get("scalar_field", "U_Magnitude")
         num_isosurfaces = int(request_data.get("num_isosurfaces", 0))
-        vtk_file_path = request_data.get("vtk_file_path")
+        vtk_file_path = request_data.get("vtkFilePath")
 
         logger.info(
             f"[FOAMFlask] [create_contour] Parsed parameters: "

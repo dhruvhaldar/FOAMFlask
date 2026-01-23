@@ -247,7 +247,8 @@ async function fetchContours(requestData) {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
-        num_isosurfaces: requestData.numIsosurfaces
+        num_isosurfaces: requestData.numIsosurfaces,
+        vtkFilePath: requestData.vtkFilePath
     };
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
         requestBody.range = requestData.range;
