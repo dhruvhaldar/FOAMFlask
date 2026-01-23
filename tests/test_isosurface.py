@@ -208,6 +208,21 @@ class TestIsosurfaceVisualizer:
         assert "test error message" in html.lower()
         assert "U_Magnitude" in html
 
+    def test_generate_error_html_escapes_xss(self, visualizer):
+        """Test that error HTML generation escapes XSS payloads."""
+        payload = "<script>alert('XSS')</script>"
+        html = visualizer._generate_error_html("Error occurred", payload)
+
+        # Verify payload is present but escaped
+        assert "&lt;script&gt;" in html
+        assert "<script>" not in html
+
+        # Verify error message is also escaped
+        error_payload = "<b>Bold Error</b>"
+        html_error = visualizer._generate_error_html(error_payload, "field")
+        assert "&lt;b&gt;" in html_error
+        assert "<b>" not in html_error
+
     def test_get_interactive_html_caching_and_process(self, visualizer, temp_vtk_file, mocker):
         """Test that get_interactive_html uses caching and subprocess."""
         visualizer.load_mesh(temp_vtk_file)

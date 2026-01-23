@@ -16,6 +16,7 @@ import stat
 import random
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
+import html
 
 # Third-party imports
 import numpy as np
@@ -983,9 +984,9 @@ class IsosurfaceVisualizer:
         <h2>⚠️ Error Generating 3D Visualization</h2>
         <div class="error-message">
             <strong>Error:</strong><br>
-            {error_message}
+            {html.escape(str(error_message))}
         </div>
-        <p>Scalar field: <code>{scalar_field}</code></p>
+        <p>Scalar field: <code>{html.escape(str(scalar_field))}</code></p>
     </div>
 </body>
 </html>
