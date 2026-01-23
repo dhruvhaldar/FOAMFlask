@@ -13,6 +13,7 @@ interface ContourOptions {
     range?: [number, number];
     vtkFilePath?: string | null;
     showIsovalueWidget?: boolean;
+    isovalues?: number[];
 }
 
 interface ContourData {
@@ -141,7 +142,26 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
 
         // Get showIsovalueWidget from checkbox
         const showIsovalueWidgetCheckbox = document.getElementById('showIsovalueWidget') as HTMLInputElement | null;
-        const showIsovalueWidget = showIsovalueWidgetCheckbox ? showIsovalueWidgetCheckbox.checked : true;
+        const showIsovalueWidget = showIsovalueWidgetCheckbox ? showIsovalueWidgetCheckbox.checked : false;
+
+        // Toggle slider visibility
+        const sliderContainer = document.getElementById('isovalueSliderContainer');
+        if (sliderContainer) {
+            if (showIsovalueWidget) {
+                sliderContainer.classList.remove('hidden');
+            } else {
+                sliderContainer.classList.add('hidden');
+            }
+        }
+
+        // Get slider value if enabled
+        let isovalues: number[] | undefined;
+        if (showIsovalueWidget) {
+            const slider = document.getElementById('isovalueSlider') as HTMLInputElement;
+            if (slider) {
+                isovalues = [parseFloat(slider.value)];
+            }
+        }
 
         // Prepare request data
         const requestData: ContourOptions = {
@@ -150,7 +170,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             scalarField,
             numIsosurfaces,
             vtkFilePath: selectedVtkFilePath,
-            showIsovalueWidget
+            showIsovalueWidget,
+            isovalues
         };
 
         if (range && Array.isArray(range) && range.length === 2) {
@@ -164,13 +185,13 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         console.log('[FOAMFlask] [generateContours] Calling fetchContours...');
         const response = await fetchContours(requestData);
 
-        // Await the response text
+        // Await the response JSON
         console.log('[FOAMFlask] [generateContours] Reading response content...');
-        const htmlContent = await response.text();
-        console.log('[FOAMFlask] [generateContours] Received HTML length:', htmlContent.length);
+        const vizInfo = await response.json();
+        console.log('[FOAMFlask] [generateContours] Received visualization info:', vizInfo);
 
         // Display the visualization
-        displayContourVisualization(contourViewer, htmlContent);
+        displayContourVisualization(contourViewer, vizInfo);
 
         // Store current data for export
         currentContourData = {
@@ -249,6 +270,30 @@ export async function loadContourMesh(vtkFilePath: string): Promise<void> {
                 option.textContent = field;
                 option.classList.add('point-data-option'); // Add styling class
                 scalarFieldSelect.appendChild(option);
+                if (field === 'U_Magnitude' && meshInfo.u_magnitude) {
+                    // Set slider range based on U_Magnitude stats
+                    const slider = document.getElementById('isovalueSlider') as HTMLInputElement;
+                    const display = document.getElementById('isovalueDisplay');
+                    if (slider && meshInfo.u_magnitude.min !== undefined && meshInfo.u_magnitude.max !== undefined) {
+                        slider.min = meshInfo.u_magnitude.min;
+                        slider.max = meshInfo.u_magnitude.max;
+                        slider.step = ((meshInfo.u_magnitude.max - meshInfo.u_magnitude.min) / 100).toString();
+                        slider.value = ((meshInfo.u_magnitude.max + meshInfo.u_magnitude.min) / 2).toString(); // Default to mid
+                        if (display) display.textContent = parseFloat(slider.value).toFixed(2);
+
+                        // Add listener
+                        slider.onchange = () => {
+                            if (display) display.textContent = parseFloat(slider.value).toFixed(2);
+                            const checkbox = document.getElementById('showIsovalueWidget') as HTMLInputElement;
+                            if (checkbox && checkbox.checked) {
+                                generateContours();
+                            }
+                        };
+                        slider.oninput = () => {
+                            if (display) display.textContent = parseFloat(slider.value).toFixed(2);
+                        };
+                    }
+                }
             });
 
             // If U_Magnitude exists, select it by default, otherwise select first
@@ -335,13 +380,15 @@ async function fetchContours(requestData: ContourOptions) {
         range?: [number, number];
         vtkFilePath?: string | null;
         showIsovalueWidget?: boolean;
+        isovalues?: number[];
     } = {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
         scalar_field: requestData.scalarField,
         num_isosurfaces: requestData.numIsosurfaces,
         vtkFilePath: requestData.vtkFilePath,
-        showIsovalueWidget: requestData.showIsovalueWidget
+        showIsovalueWidget: requestData.showIsovalueWidget,
+        isovalues: requestData.isovalues
     };
 
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
@@ -395,7 +442,7 @@ async function fetchContours(requestData: ContourOptions) {
 /**
  * Display the contour visualization in the viewer
  */
-function displayContourVisualization(container: HTMLElement | null, htmlContent: string) {
+function displayContourVisualization(container: HTMLElement | null, content: any) {
     if (!container) {
         console.error('[FOAMFlask] [displayContourVisualization] Container not found');
         return;
@@ -417,61 +464,42 @@ function displayContourVisualization(container: HTMLElement | null, htmlContent:
             background: white;
         `;
 
-        container.appendChild(iframe);
-
-        // Write the content to the iframe
-        const iframeDoc =
-            iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
-
-        if (!iframeDoc) {
-            console.error('[FOAMFlask] [displayContourVisualization] iframe document not available');
+        // Handle Trame URL
+        if (content.mode === 'iframe' && content.src) {
+            console.log('[FOAMFlask] [displayContourVisualization] Embedding Trame URL:', content.src);
+            iframe.src = content.src;
+        } else {
+            console.warn('[FOAMFlask] [displayContourVisualization] Unexpected content format', content);
+            container.innerHTML = `
+                <div class="p-4 text-red-600 bg-red-50 rounded-lg">
+                    <h3 class="font-semibold">Error displaying visualization</h3>
+                    <p class="text-sm mt-1">Received unexpected response format representing from server.</p>
+                </div>
+            `;
             return;
         }
-        iframeDoc.open();
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
 
-        iframe.onload = function () {
-            try {
-                if (iframe.contentWindow) {
-                    iframe.contentWindow.dispatchEvent(new Event('resize'));
-                }
-            } catch (e) {
-                console.error('[FOAMFlask] [displayContourVisualization] Error triggering resize:', e);
-            }
-        };
+        container.appendChild(iframe);
 
         setTimeout(() => {
-            try {
-                window.dispatchEvent(new Event('resize'));
-                if (iframe.contentWindow) {
-                    iframe.contentWindow.dispatchEvent(new Event('resize'));
-                }
-            } catch (e) {
-                console.warn('[FOAMFlask] [displayContourVisualization] Could not trigger iframe resize:', e);
-            }
+            window.dispatchEvent(new Event('resize'));
         }, 500);
 
-    } catch (error: unknown) {
+    } catch (error) {
         console.error('[FOAMFlask] [displayContourVisualization] Error:', error);
         if (container) {
             const message = error instanceof Error ? error.message : 'Unknown error occurred';
             container.innerHTML = `
                 <div class="p-4 text-red-600 bg-red-50 rounded-lg">
                     <h3 class="font-semibold">Error displaying visualization</h3>
-                    <p class="text-sm mt-1"></p>
-                    <p class="text-xs mt-2 text-gray-600">Check browser console for details</p>
+                    <p class="text-sm mt-1">${message}</p>
                 </div>
             `;
-
-            // Set error message safely
-            const messageP = container.querySelector('p.text-sm');
-            if (messageP) {
-                messageP.textContent = message;
-            }
         }
     }
 }
+
+
 
 /**
  * Handle errors during contour generation
@@ -487,7 +515,9 @@ function handleContourError(
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
     if (typeof showNotification === 'function') {
-        showNotification(`Error generating contours: ${errorMessage}`, 'error');
+        // Sanitize message to avoid selector errors if it contains quotes
+        const safeMessage = errorMessage.replace(/["']/g, '');
+        showNotification(`Error generating contours: ${safeMessage}`, 'error');
     }
 
     if (viewer) {
@@ -669,4 +699,40 @@ export function resetContourViewer() {
     }
 
     currentContourData = null;
+}
+
+/**
+ * Initialize the isovalue widget logic (event listeners)
+ */
+export function initIsovalueWidget(): void {
+    const showIsovalueWidgetCheckbox = document.getElementById('showIsovalueWidget') as HTMLInputElement | null;
+    const sliderContainer = document.getElementById('isovalueSliderContainer');
+
+    if (showIsovalueWidgetCheckbox && sliderContainer) {
+        // Initial state
+        if (showIsovalueWidgetCheckbox.checked) {
+            sliderContainer.classList.remove('hidden');
+        } else {
+            sliderContainer.classList.add('hidden');
+        }
+
+        // Event listener
+        showIsovalueWidgetCheckbox.addEventListener('change', () => {
+            if (showIsovalueWidgetCheckbox.checked) {
+                sliderContainer.classList.remove('hidden');
+            } else {
+                sliderContainer.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// Initialize on load
+// Initialize when DOM is ready or immediately if already loaded
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initIsovalueWidget);
+    } else {
+        initIsovalueWidget();
+    }
 }

@@ -1927,7 +1927,18 @@
             <div class="flex items-center gap-2 mt-2">
               <input type="checkbox" id="showIsovalueWidget"
                 class="w-4 h-4 text-cyan-600 bg-gray-100 border-gray-300 rounded focus:ring-cyan-500" checked />
-              <label for="showIsovalueWidget" class="text-sm font-medium text-gray-900">Show Isovalue Widget</label>
+              <label for="showIsovalueWidget" class="text-sm font-medium text-gray-900">Enable Interactive
+                Slider</label>
+            </div>
+
+            <!-- Interactive Slider (Visible by default) -->
+            <div id="isovalueSliderContainer" class="mt-2">
+              <label for="isovalueSlider" class="block text-sm font-medium text-gray-700">Isovalue</label>
+              <div class="flex items-center gap-2">
+                <input type="range" id="isovalueSlider"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <span id="isovalueDisplay" class="text-sm text-gray-600 w-16 text-right">0</span>
+              </div>
             </div>
 
             <!-- Generate Contours Button -->
@@ -2059,7 +2070,7 @@
 
   <!-- JS loading (compiled from TypeScript) -->
   <!-- Load isosurface module first (required by foamflask_frontend.js) -->
-  <script type="module" src="{{ url_for('static', filename='js/frontend/isosurface.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/frontend/isosurface.js') }}?v=7"></script>
 
   <!-- Main frontend script -->
   <script type="module" src="{{ url_for('static', filename='js/foamflask_frontend.js') }}"></script>

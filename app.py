@@ -62,6 +62,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("FOAMFlask")
 
 
+
 def fast_jsonify(data: Any, status: int = 200) -> Response:
     """
     Drop-in replacement for flask.jsonify using orjson for high performance.
@@ -81,6 +82,25 @@ def fast_jsonify(data: Any, status: int = 200) -> Response:
         option=orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NAIVE_UTC
     )
     return Response(json_bytes, status=status, mimetype='application/json')
+
+@app.after_request
+def add_security_headers(response):
+    """
+    Add security headers to all responses, including CSP.
+    Allows framing from 127.0.0.1 for Trame visualization.
+    """
+    # Allow scripts/styles from self and unpkg/handlers, verify Trame needs 
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com https://cdn.plot.ly https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self' ws: http://127.0.0.1:*; "
+        "frame-src 'self' http://127.0.0.1:* ws://127.0.0.1:*;"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    return response
 
 
 def get_resource_path(relative_path: str) -> Path:
@@ -2268,6 +2288,11 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
                 f"[FOAMFlask] [create_contour] Using custom range: {custom_range}"
             )
 
+        # Get specific isovalues if provided (for interactive slider)
+        isovalues = request_data.get("isovalues")
+        if isovalues:
+            logger.info(f"[FOAMFlask] [create_contour] Using specific isovalues: {isovalues}")
+
         # Generate isosurfaces
         logger.info(
             f"[FOAMFlask] [create_contour] Generating {num_isosurfaces} isosurfaces..."
@@ -2276,6 +2301,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             scalar_field=scalar_field,
             num_isosurfaces=num_isosurfaces,
             custom_range=custom_range,
+            isovalues=isovalues,
         )
 
         if not isosurface_info.get("success"):
@@ -2294,18 +2320,25 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         logger.info(f"[FOAMFlask] [create_contour] Show isovalue widget: {show_isovalue_widget}")
 
         # Generate HTML
-        logger.info(f"[FOAMFlask] [create_contour] Generating interactive HTML...")
-        html_content = isosurface_visualizer.get_interactive_html(
+        # Generate Trame Visualization (Embedded)
+        logger.info(f"[FOAMFlask] [create_contour] Starting Trame visualization...")
+        
+        # Start Trame server
+        viz_info = isosurface_visualizer.start_trame_visualization(
             scalar_field=scalar_field,
             show_base_mesh=True,
             base_mesh_opacity=0.25,
             contour_opacity=0.8,
             contour_color="red",
             colormap="viridis",
-            show_isovalue_slider=show_isovalue_widget,
-            num_isosurfaces=num_isosurfaces,
+            show_isovalue_slider=True,
             custom_range=custom_range,
+            num_isosurfaces=num_isosurfaces,
+            isovalues=isovalues,
         )
+        
+        # Return iframe configuration
+        return fast_jsonify(viz_info)
 
         if not html_content:
             error_msg = "Empty HTML content generated"

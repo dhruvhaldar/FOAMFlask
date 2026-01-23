@@ -25,6 +25,181 @@ from pyvista import DataSet, PolyData, Plotter
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
 
+# ⚡ Bolt Optimization: Process Management for Trame
+class VisualizationManager:
+    _instance = None
+    _process: Optional[multiprocessing.Process] = None
+    _current_port: Optional[int] = None
+    _process_metadata: Dict = {}
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = VisualizationManager()
+        return cls._instance
+
+    def start_visualization(self, mesh_path: str, params: Dict, host: str = "127.0.0.1") -> Dict:
+        """
+        Start a Trame visualization process for the given mesh and parameters.
+        Returns connection details (url, port).
+        """
+        self.stop_visualization()
+
+        # Find a free port (handled by system, passed back via queue)
+        port_queue = multiprocessing.Queue()
+
+        # Start process
+        p = multiprocessing.Process(
+            target=_run_trame_process,
+            args=(mesh_path, params, port_queue, host),
+            daemon=True # Ensure it dies with the main process
+        )
+        p.start()
+        self._process = p
+
+        try:
+            # Wait for port (timeout 10s)
+            result = port_queue.get(timeout=10)
+            if "error" in result:
+                raise RuntimeError(result["error"])
+            
+            self._current_port = result["port"]
+            self._process_metadata = {
+                "mesh_path": mesh_path,
+                "params": params,
+                "pid": p.pid
+            }
+            
+            return {
+                "mode": "iframe",
+                "src": f"http://{host}:{self._current_port}/index.html",
+                "port": self._current_port
+            }
+            
+        except Exception as e:
+            self.stop_visualization()
+            raise RuntimeError(f"Failed to start visualization server: {e}")
+
+    def stop_visualization(self):
+        """Stop the currently running visualization process."""
+        if self._process:
+            if self._process.is_alive():
+                logger.info(f"Terminating visualization process {self._process.pid}")
+                self._process.terminate()
+                self._process.join(timeout=2)
+                if self._process.is_alive():
+                    self._process.kill()
+            self._process = None
+            self._current_port = None
+            self._process_metadata = {}
+
+def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing.Queue, host: str):
+    """
+    Process target: Runs the Trame server with PyVista.
+    """
+    try:
+         # Use standard PyVista backend for this process, but offscreen false is debatable. 
+         # With Trame we do NOT need off_screen=True in the typical sense because Trame handles it.
+         # Actually for Trame to work we usually keep off_screen=True unless we want a local window pop.
+         # But Trame *is* the display.
+         
+         # Configure PyVista for Trame
+         pv.set_plot_theme("document")
+         
+         # Load mesh
+         mesh = pv.read(mesh_path)
+         scalar_field = params.get("scalar_field", "U_Magnitude")
+
+         # Compute U_Magnitude (or other derived fields) if missing
+         if scalar_field == "U_Magnitude" and scalar_field not in mesh.point_data and "U" in mesh.point_data:
+             logger.info(f"Computing {scalar_field} from U field in Trame process")
+             mesh.point_data[scalar_field] = np.linalg.norm(mesh.point_data["U"], axis=1)
+
+         if scalar_field not in mesh.point_data:
+             raise RuntimeError(f"Data array ({scalar_field}) not present in this dataset. Available: {mesh.point_data.keys()}")
+
+         # Create Plotter
+         plotter = pv.Plotter(off_screen=True) # Trame handles rendering
+         
+         # Add base mesh
+         if params.get("show_base_mesh", True):
+             plotter.add_mesh(
+                 mesh,
+                 opacity=params.get("base_mesh_opacity", 0.25),
+                 scalars=scalar_field,
+                 show_scalar_bar=True,
+                 cmap=params.get("colormap", "viridis"),
+             )
+
+         # Add Isosurface Widget (The Native One!)
+         # Note: add_mesh_isovalue adds a slider widget to the scene
+         plotter.add_mesh_isovalue(
+             mesh,
+             scalars=scalar_field,
+             opacity=params.get("contour_opacity", 0.8),
+             cmap=params.get("colormap", "viridis"),
+             # widget_color="black"
+         )
+
+         plotter.add_axes()
+         plotter.reset_camera()
+         
+         # Start Trame Server logic
+         # Start Trame Server logic
+         # from pyvista.trame.ui import get_viewer # Removed
+         from trame.app import get_server
+         from trame.ui.vuetify import VAppLayout
+         from trame.widgets import vuetify
+         from trame.widgets.vtk import VtkLocalView
+
+         # We utilize a workaround to let the system pick a port or verify one
+         # Trame usually picks a port if 0 is passed, or we can use socket to find one.
+         # For simplicity, let's bind to 0 and get the port.
+         
+         server = get_server(name="foamflask_iso", client_type="vue2")
+         state, ctrl = server.state, server.controller
+         
+         # Viewer with Layout
+         with VAppLayout(server) as layout:
+             with layout.root:
+                 with vuetify.VContainer(fluid=True, classes="pa-0 fill-height"):
+                     # Use VtkLocalView for client-side rendering (geometry based)
+                     # This avoids server-side rendering issues (405 on /paraview/)
+                     VtkLocalView(plotter.ren_win)
+         
+         # We need to notify the parent process of the port
+         # Trame start is blocking. We need a callback or start in thread?
+         # Server.start(port=0, start_thread=False) blocks.
+         # But we can get port before start if we bind manually? 
+         # Better: Start with wait_for_ready=False (if available) or use a helper.
+         # PyVista's `plotter.show(jupyter_backend='trame')` is usually for notebooks.
+         
+         # Correct approach: Bind socket to random port, get number, close socket, pass to trame.
+         import socket
+         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+             s.bind(('', 0))
+             port = s.getsockname()[1]
+             
+         port_queue.put({"port": port})
+         
+         logger.info(f"Starting Trame server on port {port}")
+         
+         # This blocks indefinitely
+         server.start(
+            port=port,
+            host=host,
+            open_browser=False,
+            disable_logging=True
+         )
+         
+    except Exception as e:
+        logger.error(f"Trame process error: {e}")
+        port_queue.put({"error": str(e)})
+        import traceback
+        traceback.print_exc()
+
+
+
 
 CACHE_SIZE_LIMIT_MB = 500  # Limit cache to 500MB
 
@@ -219,6 +394,7 @@ def _generate_isosurface_html_process(
             else:
                 contours = mesh.contour(isosurfaces=int(num_isosurfaces), scalars=scalar_field)
                 debug_msg = f"num={num_isosurfaces}"
+            
             if contours.n_points > 0:
                 print(f"[DEBUG] Adding static contours: {debug_msg}, opacity={contour_opacity}, color={contour_color}, line_width=3")
                 plotter.add_mesh(
@@ -230,13 +406,10 @@ def _generate_isosurface_html_process(
                     # label="Isosurfaces",
                 )
 
+        # Widget logic removed in favor of HTML slider
         if show_isovalue_slider:
-             print(f"[DEBUG] Adding isovalue widget: scalars={scalar_field}, opacity=0.5")
-             plotter.add_mesh_isovalue(
-                mesh,
-                scalars=scalar_field,
-                opacity=0.5,
-            )
+             print(f"[DEBUG] Isovalue widget logic skipped (handled by frontend)")
+
 
         plotter.add_axes()
         # plotter.add_title("Aerofoil NACA0012 - Velocity Magnitude")
@@ -449,6 +622,38 @@ class IsosurfaceVisualizer:
             )
             return {"success": False, "error": str(e)}
 
+    def start_trame_visualization(
+        self,
+        scalar_field: str = "U_Magnitude",
+        show_base_mesh: bool = True,
+        base_mesh_opacity: float = 0.25,
+        contour_opacity: float = 0.8,
+        contour_color: str = "red",
+        colormap: str = "viridis",
+        show_isovalue_slider: bool = True,
+        custom_range: Optional[Tuple[float, float]] = None,
+        num_isosurfaces: int = 5,
+        isovalues: Optional[List[float]] = None,
+        window_size: Tuple[int, int] = (1200, 800),
+    ) -> Dict:
+        """
+        Start the embedded Trame visualization.
+        """
+        if self.current_mesh_path is None:
+             raise ValueError("No mesh loaded. Call load_mesh() first.")
+             
+        params = {
+            "scalar_field": scalar_field,
+            "show_base_mesh": show_base_mesh,
+            "base_mesh_opacity": base_mesh_opacity,
+            "contour_opacity": contour_opacity,
+            "colormap": colormap,
+             # Trame specific params could go here
+        }
+        
+        manager = VisualizationManager.get_instance()
+        return manager.start_visualization(self.current_mesh_path, params)
+
     def get_scalar_field_info(
         self, scalar_field: Optional[str] = None
     ) -> Dict[str, Dict[str, Union[str, float, Dict[str, float]]]]:
@@ -556,7 +761,7 @@ class IsosurfaceVisualizer:
                 "window_size": window_size,
                 "file_path": str(path),
                 "mtime": mtime,
-                "code_mtime": os.path.getmtime(__file__) # Invalidate cache if code changes
+                "code_mtime": str(os.path.getmtime(__file__)) + "_v6", # Invalidate cache if code changes
             }
 
             try:
