@@ -38,7 +38,7 @@ from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
 from backend.geometry.visualizer import GeometryVisualizer
 from backend.meshing.runner import MeshingRunner
-from backend.utils import sanitize_error, is_safe_command
+from backend.utils import sanitize_error, is_safe_command, is_safe_color
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -1051,6 +1051,10 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     opacity = data.get("opacity", 1.0)
     optimize = data.get("optimize", False)
 
+    # Security: Validate color format
+    if not is_safe_color(color):
+        return fast_jsonify({"success": False, "message": "Invalid color format"}), 400
+
     path_or_error = validate_geometry_path(case_name, filename)
     if isinstance(path_or_error, tuple):
         return path_or_error
@@ -1874,6 +1878,10 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     color = data.get("color", "lightblue")
     camera_position = data.get("camera_position", None)
 
+    # Security: Validate color format
+    if not is_safe_color(color):
+        return fast_jsonify({"error": "Invalid color format"}), 400
+
     if not file_path:
         return fast_jsonify({"error": "No file path provided"}), 400
 
@@ -1931,6 +1939,10 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
     file_path = data.get("file_path")
     show_edges = data.get("show_edges", True)
     color = data.get("color", "lightblue")
+
+    # Security: Validate color format
+    if not is_safe_color(color):
+        return fast_jsonify({"error": "Invalid color format"}), 400
 
     if not file_path:
         return fast_jsonify({"error": "No file path provided"}), 400
@@ -2161,6 +2173,11 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         scalar_field = request_data.get("scalar_field", "U_Magnitude")
         num_isosurfaces = int(request_data.get("num_isosurfaces", 0))
         vtk_file_path = request_data.get("vtkFilePath")
+        colormap = request_data.get("colormap", "viridis")
+
+        # Security: Validate colormap format early
+        if not is_safe_color(colormap):
+            return fast_jsonify({"success": False, "error": "Invalid colormap format"}), 400
 
         logger.info(
             f"[FOAMFlask] [create_contour] Parsed parameters: "
@@ -2310,7 +2327,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         # Generate Trame Visualization (Embedded)
         logger.info(f"[FOAMFlask] [create_contour] Starting Trame visualization...")
         
-        colormap = request_data.get("colormap", "viridis")
+        # colormap already validated above
         logger.info(f"[FOAMFlask] [create_contour] Using colormap: {colormap}")
 
         # Start Trame server
