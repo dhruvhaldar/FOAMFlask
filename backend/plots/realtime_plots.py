@@ -941,27 +941,25 @@ class OpenFOAMFieldParser:
 
                         line_len = len(line)
                         try:
-                            # Decode single line
-                            # errors='replace' ensures we don't crash on binary garbage
-                            line_str = line.decode("utf-8", errors="replace")
+                            # ⚡ Bolt Optimization: Use bytes regex to avoid expensive decode() on every line
+                            # Previous implementation decoded every line which was CPU intensive.
 
-                            # Optimized time matching
-                            if "Time =" in line_str:
-                                time_match = TIME_REGEX.search(line_str)
-                                if time_match:
-                                    current_time = float(time_match.group(1))
-                                    residuals["time"].append(current_time)
+                            # Check time
+                            time_match = TIME_REGEX_BYTES.search(line)
+                            if time_match:
+                                current_time = float(time_match.group(1))
+                                residuals["time"].append(current_time)
 
-                            # Optimized residual matching
-                            if "Initial residual" in line_str:
-                                # Optimization: Check if we have any time steps first
-                                if residuals["time"]:
-                                    residual_match = RESIDUAL_REGEX.search(line_str)
-                                    if residual_match:
-                                        field = residual_match.group(1)
-                                        value = float(residual_match.group(2))
-                                        if field in residuals:
-                                            residuals[field].append(value)
+                            # Check residuals
+                            # Optimization: Check if we have any time steps first
+                            if residuals["time"]:
+                                residual_match = RESIDUAL_REGEX_BYTES.search(line)
+                                if residual_match:
+                                    # group(1) is field name (bytes), group(2) is value (bytes)
+                                    field = residual_match.group(1).decode("utf-8")
+                                    value = float(residual_match.group(2))
+                                    if field in residuals:
+                                        residuals[field].append(value)
 
                             # Only advance offset after successful processing attempt
                             new_offset += line_len
