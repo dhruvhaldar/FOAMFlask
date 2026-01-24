@@ -6,6 +6,14 @@ This document consolidates key learnings from the Sentinel (Security), Bolt (Per
 ### 2026-01-24 - [Flask-Only Architecture]
 **Decision:** The project strictly enforces a Flask-only architecture (`python -m app`). Hybrid setups involving Uvicorn/FastAPI (`main.py`) are explicitly banned to maintain simplicity and compatibility. All real-time features must use polling or Flask-compatible streaming rather than WebSockets.
 
+### 2026-01-24 - [Streaming Response Buffering]
+**Problem:** `Flask-Compress` middleware automatically buffers and compresses streaming responses (e.g., `text/html`), causing real-time logs to appear in a single chunk at the end of execution.
+**Decision:** Streaming endpoints must use `stream_with_context` from Flask and set an uncompressed MIME type (e.g., `text/plain`) or explicitly bypass compression to ensure immediate flushing of data chunks.
+
+### 2026-01-24 - [Stateful Cache Invalidation]
+**Problem:** Global in-memory caches for expensive parsers (like OpenFOAM fields) persist across "reset" actions (e.g., re-importing a tutorial), leading to stale data visualization.
+**Decision:** All "reset" or "load" operations must explicitly trigger a cache clearing routine (`clear_cache`) for the affected paths to maintain consistency between disk state and memory state.
+
 ## 🛡️ Sentinel's Security Journal
 
 ### 2026-01-24 - [Content Security Policy Header Conflicts]

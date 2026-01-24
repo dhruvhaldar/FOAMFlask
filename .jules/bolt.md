@@ -30,3 +30,11 @@
 **Learning:** Hybrid deployments (Flask + Uvicorn) introduced significant complexity and overhead for simple real-time needs.
 **Action:** Adopted a Flask-only architecture with `threaded=True`. Pure Flask with threading is sufficient for handling concurrent log streaming and plot polling without the complexity of a separate ASGI server or WebSocket layer.
 
+## 2026-01-24 - [Flask Streaming & Compression]
+**Learning:** `Flask-Compress` (gzip) buffers generator outputs until it has a "worthwhile" chunk or the stream ends. This kills real-time responsiveness for log streaming.
+**Action:** Use `stream_with_context` to keep the request context active and set `mimetype='text/plain'` (which is often excluded from default compression rules) to force immediate chunk delivery.
+
+## 2026-01-24 - [Docker Volume Permissions]
+**Learning:** Binding a host directory that doesn't exist causes Docker to create it as `root`. This causes "Permission denied" errors for the app running as a normal user.
+**Action:** Always verify/create directories with correct ownership on the host *before* passing them to `volumes` in `client.containers.run`.
+

@@ -28,3 +28,7 @@
 **Learning:** WebSocket connections often fail silenty or require complex error handling in corporate environments (proxies/firewalls), leading to "stuck" UIs.
 **Action:** Replaced WebSocket-based real-time updates with robust HTTP polling (`/api/plot_data`). While slightly less efficient, it drastically improves reliability and consistency of the user experience across different network configurations.
 
+## 2026-01-24 - [Console Log Expectations vs Technical Reality]
+**Learning:** Users expect a "Console Log" to show *container output*, even if the underlying tool (OpenFOAM) redirects its useful output to internal files. Merging internal logs into the console stream can be confusing if the user strictly expects standard output.
+**Action:** Respect the user's mental model of "Console Log". If the tool is silent, show silence (or a helper message), but don't magically merge hidden files unless explicitly requested or designed as a "Super Log". Simplicity and predictability outrank thoroughness in this context.
+
