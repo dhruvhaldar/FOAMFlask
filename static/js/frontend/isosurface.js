@@ -13,12 +13,24 @@ export async function generateContours(options = {}) {
     const contourPlaceholder = document.getElementById('contourPlaceholder');
     const contourViewer = document.getElementById('contourViewer');
     // Default options
-    const { tutorial = null, caseDir = null, scalarField = 'U_Magnitude', numIsosurfaces = 10, vtkFilePath = null } = options;
+    // Default options (don't default scalarField/numIsosurfaces yet, check DOM first)
+    const { tutorial = null, caseDir = null, vtkFilePath = null } = options;
+    let { scalarField, numIsosurfaces } = options;
     try {
         // Show loading state
         showLoadingState(contourViewer, 'Generating contours...');
         contourPlaceholder?.classList.add('hidden');
         contourViewer?.classList.remove('hidden');
+        // Resolve scalarField
+        if (scalarField === undefined) {
+            const scalarFieldSelect = document.getElementById('scalarField');
+            scalarField = scalarFieldSelect?.value || 'U_Magnitude';
+        }
+        // Resolve numIsosurfaces
+        if (numIsosurfaces === undefined) {
+            const numIsosurfacesInput = document.getElementById('numIsosurfaces');
+            numIsosurfaces = numIsosurfacesInput?.value ? parseInt(numIsosurfacesInput.value, 10) : 10;
+        }
         // Get tutorial from select if not provided
         const selectedTutorial = tutorial ?? getTutorialFromSelect() ?? '';
         if (!selectedTutorial) {
