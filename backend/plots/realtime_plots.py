@@ -1005,3 +1005,50 @@ def get_available_fields(case_dir: str) -> List[str]:
     _, _, all_files = parser._scan_time_dir(time_path)
 
     return sorted(all_files)
+
+
+def clear_cache(case_dir: str = None) -> None:
+    """Clear internal caches. If case_dir is provided, clear only for that case."""
+    global _FILE_CACHE, _RESIDUALS_CACHE, _FIELD_TYPE_CACHE, _TIME_DIRS_CACHE, _TIME_SERIES_CACHE, _DIR_SCAN_CACHE, _CASE_FIELD_TYPES
+
+    if case_dir is None:
+        _FILE_CACHE.clear()
+        _RESIDUALS_CACHE.clear()
+        _FIELD_TYPE_CACHE.clear()
+        _TIME_DIRS_CACHE.clear()
+        _TIME_SERIES_CACHE.clear()
+        _DIR_SCAN_CACHE.clear()
+        _CASE_FIELD_TYPES.clear()
+    else:
+        # Clear specific entries where possible
+        # Some caches are keyed by file path, others by case dir
+        
+        # 1. Time Series Cache (Key: case_dir)
+        _TIME_SERIES_CACHE.pop(case_dir, None)
+        
+        # 2. Time Dirs Cache (Key: case_dir)
+        _TIME_DIRS_CACHE.pop(case_dir, None)
+        
+        # 3. Case Field Types (Key: case_dir)
+        _CASE_FIELD_TYPES.pop(case_dir, None)
+        
+        # 4. Residuals (Key: log path)
+        # We iteration to find keys starting with case_dir
+        keys_to_remove = [k for k in _RESIDUALS_CACHE if k.startswith(case_dir)]
+        for k in keys_to_remove:
+            del _RESIDUALS_CACHE[k]
+            
+        # 5. File Cache (Key: file path)
+        file_keys = [k for k in _FILE_CACHE if k.startswith(case_dir)]
+        for k in file_keys:
+            del _FILE_CACHE[k]
+
+        # 6. Field Type Cache (Key: file path)
+        type_keys = [k for k in _FIELD_TYPE_CACHE if k.startswith(case_dir)]
+        for k in type_keys:
+            del _FIELD_TYPE_CACHE[k]
+            
+        # 7. Dir Scan Cache (Key: dir path)
+        scan_keys = [k for k in _DIR_SCAN_CACHE if k.startswith(case_dir)]
+        for k in scan_keys:
+            del _DIR_SCAN_CACHE[k]

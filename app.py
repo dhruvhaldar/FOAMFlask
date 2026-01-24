@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator, Any
 from functools import wraps, lru_cache
 import email.utils
+from queue import Queue, Empty
 import secrets
 
 # Third-party imports
@@ -20,14 +21,14 @@ import docker
 import orjson
 from docker import DockerClient
 from docker.errors import DockerException
-from flask import Flask, Response, render_template_string, request, send_from_directory
+from flask import Flask, Response, render_template_string, request, send_from_directory, stream_with_context
 from markupsafe import escape
 from werkzeug.utils import secure_filename
 from flask_compress import Compress
 
 # Local application imports
 from backend.mesh.mesher import mesh_visualizer
-from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
+from backend.plots.realtime_plots import OpenFOAMFieldParser, clear_cache as clear_plots_cache, get_available_fields
 from backend.post.isosurface import IsosurfaceVisualizer, isosurface_visualizer
 from backend.post.slice import SliceVisualizer
 from backend.post.streamline import StreamlineVisualizer
@@ -1291,6 +1292,9 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
         tutorial          # $3
     ]
 
+    # Clear plot caches to ensure fresh data on re-import
+    clear_plots_cache(host_path_str)
+
     container = None
     try:
         run_kwargs = {
@@ -1504,13 +1508,13 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 **run_kwargs
             )
 
+            # Stream container logs directly (stdout/stderr)
+            # User Preference: Do not tail internal log files, show only what the container prints.
             try:
                 for line in container.logs(stream=True):
-                    decoded = line.decode(errors="ignore")
-                    for subline in decoded.splitlines():
-                        yield f"{escape(subline)}<br>"
+                    yield f"{escape(line.decode(errors='ignore'))}<br>"
             except Exception as e:
-                yield f"[FOAMFlask] [Error] Failed to stream container logs: {escape(str(e))}<br>"
+                yield f"[FOAMFlask] [Error] Log stream interrupted: {escape(str(e))}<br>"
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
@@ -1528,7 +1532,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 except Exception as remove_err:
                     logger.error(f"[FOAMPilot] Could not remove container: {remove_err}")
 
-    return Response(stream_container_logs(), mimetype="text/html")
+    return Response(stream_with_context(stream_container_logs()), mimetype="text/plain")
 
 
 # --- Realtime Plotting Endpoints ---

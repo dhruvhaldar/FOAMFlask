@@ -96,7 +96,9 @@ If you prefer to manage the environment yourself:
 ```bash
 ./environments/my-python313-venv-linux/bin/python -m app 2>&1 | tee app.log
 ```
-
+```bash
+pkill -f "python -m app"; sleep 1; ./environments/my-python313-venv-linux/bin/python -m app > app_output.log 2>&1 &
+```
 ## Usage
 
 1. **Start the Application**:
