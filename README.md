@@ -93,6 +93,10 @@ If you prefer to manage the environment yourself:
 .\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
 ```
 
+```bash
+./environments/my-python313-venv-linux/bin/python -m app 2>&1 | tee app.log
+```
+
 ## Usage
 
 1. **Start the Application**:

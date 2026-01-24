@@ -83,24 +83,7 @@ def fast_jsonify(data: Any, status: int = 200) -> Response:
     )
     return Response(json_bytes, status=status, mimetype='application/json')
 
-@app.after_request
-def add_security_headers(response):
-    """
-    Add security headers to all responses, including CSP.
-    Allows framing from 127.0.0.1 for Trame visualization.
-    """
-    # Allow scripts/styles from self and unpkg/handlers, verify Trame needs 
-    csp = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com https://cdn.plot.ly https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: blob:; "
-        "connect-src 'self' ws: http://127.0.0.1:*; "
-        "frame-src 'self' http://127.0.0.1:* ws://127.0.0.1:*;"
-    )
-    response.headers['Content-Security-Policy'] = csp
-    return response
+
 
 
 def get_resource_path(relative_path: str) -> Path:
@@ -720,12 +703,12 @@ def set_security_headers(response: Response) -> Response:
     # 'unsafe-inline' and 'unsafe-eval' are required for Plotly and inline scripts/styles
     csp_policy = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.plot.ly; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdn.plot.ly https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: blob:; "
-        "connect-src 'self'; "
-        "frame-src 'self'"
+        "connect-src 'self' ws: http://127.0.0.1:*; "
+        "frame-src 'self' http://127.0.0.1:* ws://127.0.0.1:*;"
     )
     response.headers["Content-Security-Policy"] = csp_policy
 

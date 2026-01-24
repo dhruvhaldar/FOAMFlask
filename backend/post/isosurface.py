@@ -69,6 +69,10 @@ class VisualizationManager:
                 "params": params,
                 "pid": p.pid
             }
+
+            # Wait for server to actually start listening
+            if not self._wait_for_port(host, self._current_port):
+                 raise RuntimeError("Trame server failed to start listening on port")
             
             return {
                 "mode": "iframe",
@@ -92,6 +96,19 @@ class VisualizationManager:
             self._process = None
             self._current_port = None
             self._process_metadata = {}
+
+    def _wait_for_port(self, host: str, port: int, timeout: float = 5.0) -> bool:
+        """Wait for the port to be open."""
+        import socket
+        import time
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                with socket.create_connection((host, port), timeout=0.5):
+                    return True
+            except (OSError, ConnectionRefusedError):
+                time.sleep(0.1)
+        return False
 
 def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing.Queue, host: str):
     """
