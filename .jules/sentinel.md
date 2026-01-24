@@ -57,3 +57,8 @@
 **Vulnerability:** While explicit `is_symlink()` checks were added previously, the `monitor_foamrun_log` function in `app.py` and `get_residuals_from_log` in `backend/plots/realtime_plots.py` were still vulnerable to Time-of-Check Time-of-Use (TOCTOU) race conditions. An attacker could replace the log file with a symlink between the check (`is_symlink`) and the use (`open`), bypassing the check and reading sensitive files.
 **Learning:** Checking a file's properties before opening it is insecure if the file system state can change in between (TOCTOU). Security checks must be atomic with the operation.
 **Prevention:** Refactored file operations to use `os.open(path, os.O_RDONLY | os.O_NOFOLLOW)`. This atomically opens the file only if it is NOT a symlink, raising an `OSError` (ELOOP) otherwise. This eliminates the race window entirely. Also removed unsafe reliance on `known_stat` for file identity in `get_residuals_from_log`.
+
+## 2026-01-24 - [Content Security Policy Header Conflicts]
+**Vulnerability:** Defining CSP headers in multiple places (e.g., separate `after_request` callbacks) caused the browser to enforce the "intersection" of policies, effectively defaulting to the most restrictive one. A legacy `add_security_headers` function was overwriting a newer, more permissive `set_security_headers`, blocking `frame-src` for the Trame visualizer.
+**Learning:** Security headers should be centralized. "Stacking" them does not merge permissions; it typically restricts them further.
+**Prevention:** Removed redundant header injection functions and consolidated all CSP rules into a single `set_security_headers` callback in `app.py`.
