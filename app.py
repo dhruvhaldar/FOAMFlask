@@ -2571,7 +2571,7 @@ def main() -> None:
     host = os.environ.get("FLASK_HOST", "127.0.0.1")
     port = 5000
     print(f"FOAMFlask listening on: {host}:{port}")
-    app.run(host=host, port=port, debug=False)
+    app.run(host=host, port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":

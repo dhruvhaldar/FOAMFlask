@@ -2,6 +2,10 @@
 
 This document consolidates key learnings from the Sentinel (Security), Bolt (Performance), and Palette (UI/UX) personas, along with recent architectural discoveries.
 
+## 🏗️ Architectural Decisions
+### 2026-01-24 - [Flask-Only Architecture]
+**Decision:** The project strictly enforces a Flask-only architecture (`python -m app`). Hybrid setups involving Uvicorn/FastAPI (`main.py`) are explicitly banned to maintain simplicity and compatibility. All real-time features must use polling or Flask-compatible streaming rather than WebSockets.
+
 ## 🛡️ Sentinel's Security Journal
 
 ### 2026-01-24 - [Content Security Policy Header Conflicts]

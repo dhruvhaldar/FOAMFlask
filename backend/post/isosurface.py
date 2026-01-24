@@ -139,27 +139,28 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
          plotter = pv.Plotter(off_screen=True) # Trame handles rendering
          
          # Add base mesh
-         if params.get("show_base_mesh", True):
-             plotter.add_mesh(
-                 mesh,
-                 opacity=params.get("base_mesh_opacity", 0.25),
-                 scalars=scalar_field,
-                 show_scalar_bar=True,
-                 cmap=params.get("colormap", "viridis"),
-             )
+         if params.get("show_base_mesh", False):
+            plotter.add_mesh(
+                mesh,
+                opacity=params.get("base_mesh_opacity", 0.25),
+                scalars=scalar_field,
+                show_scalar_bar=True,
+                cmap=params.get("colormap", "viridis"),
+            )
 
          # Add Isosurface Widget (The Native One!)
          # Note: add_mesh_isovalue adds a slider widget to the scene
-         plotter.add_mesh_isovalue(
-             mesh,
-             scalars=scalar_field,
-             opacity=params.get("contour_opacity", 0.8),
-             cmap=params.get("colormap", "viridis"),
-             # widget_color="black"
-         )
+            plotter.add_mesh_isovalue(
+                mesh,
+                scalars=scalar_field,
+                opacity=params.get("contour_opacity", 0.8),
+                cmap=params.get("colormap", "viridis"),
+                show_scalar_bar=False
+                # widget_color="black"
+            )
 
          # plotter.add_axes() # Removed to eliminate "blue square" artifact (orientation widget)
-         plotter.reset_camera()
+            plotter.reset_camera()
          
          # Start Trame Server logic
          # from pyvista.trame.ui import get_viewer # Removed

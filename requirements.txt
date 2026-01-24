@@ -22,7 +22,6 @@ decorator==5.2.1
 docker==7.1.0
 execnet==2.1.2
 executing==2.2.1
-fastapi==0.109.0
 Flask==3.1.2
 fonttools==4.60.2
 frozenlist==1.8.0
@@ -115,7 +114,7 @@ typing_extensions==4.15.0
 tzdata==2025.2
 uc-micro-py==1.0.3
 urllib3==2.6.3
-uvicorn[standard]==0.27.0
+
 vtk==9.5.2
 wcwidth==0.2.14
 webencodings==0.5.1
