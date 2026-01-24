@@ -957,7 +957,18 @@ const fetchWithCache = async <T = any>(
       ...options,
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.message) errorMessage = errorData.message;
+        else if (errorData.error) errorMessage = errorData.error;
+        else if (errorData.output) errorMessage = errorData.output;
+      } catch (e) {
+        // Ignore json parse error
+      }
+      throw new Error(errorMessage);
+    }
     const data = await response.json();
     requestCache.set(cacheKey, { data, timestamp: Date.now() });
     return data as T;
@@ -1059,8 +1070,9 @@ const setDockerConfig = async (image: string, version: string, btnElement?: HTML
     dockerImage = image;
     openfoamVersion = version;
     const response = await fetch("/set_docker_config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dockerImage, openfoamVersion }) });
-    if (!response.ok) throw new Error();
     const data = await response.json() as DockerConfigResponse;
+    if (!response.ok) throw new Error(data.output || data.message || "Unknown error");
+
     dockerImage = data.dockerImage;
     openfoamVersion = data.openfoamVersion;
 
@@ -1071,7 +1083,7 @@ const setDockerConfig = async (image: string, version: string, btnElement?: HTML
 
     showNotification("Docker config updated", "success");
   } catch (e) {
-    showNotification("Failed to set Docker config", "error");
+    showNotification(`Failed to set Docker config: ${getErrorMessage(e)}`, "error");
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -1097,9 +1109,9 @@ const loadTutorial = async (): Promise<void> => {
     if (selected) localStorage.setItem("lastSelectedTutorial", selected);
     showNotification("Importing tutorial...", "info");
     const response = await fetch("/load_tutorial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tutorial: selected }) });
-    if (!response.ok) throw new Error();
-
     const data = await response.json() as TutorialLoadResponse;
+    if (!response.ok) throw new Error(data.output || data.message || "Unknown error");
+
     if (data.output) {
       data.output.split("\n").forEach((line: string) => {
         if (line.trim()) appendOutput(line.trim(), "info");
@@ -1122,7 +1134,7 @@ const loadTutorial = async (): Promise<void> => {
       void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
     }
   } catch (e) {
-    showNotification("Failed to load tutorial", "error");
+    showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
   } finally {
     if (btn) {
       btn.disabled = false;
