@@ -941,24 +941,22 @@ class OpenFOAMFieldParser:
 
                         line_len = len(line)
                         try:
-                            # Decode single line
-                            # errors='replace' ensures we don't crash on binary garbage
-                            line_str = line.decode("utf-8", errors="replace")
-
+                            # ⚡ Bolt Optimization: Process bytes directly to avoid decoding overhead.
                             # Optimized time matching
-                            if "Time =" in line_str:
-                                time_match = TIME_REGEX.search(line_str)
+                            if b"Time =" in line:
+                                time_match = TIME_REGEX_BYTES.search(line)
                                 if time_match:
                                     current_time = float(time_match.group(1))
                                     residuals["time"].append(current_time)
 
                             # Optimized residual matching
-                            if "Initial residual" in line_str:
+                            if b"Initial residual" in line:
                                 # Optimization: Check if we have any time steps first
                                 if residuals["time"]:
-                                    residual_match = RESIDUAL_REGEX.search(line_str)
+                                    residual_match = RESIDUAL_REGEX_BYTES.search(line)
                                     if residual_match:
-                                        field = residual_match.group(1)
+                                        # Decode field name (e.g. b'Ux' -> 'Ux') for dict lookup
+                                        field = residual_match.group(1).decode('utf-8')
                                         value = float(residual_match.group(2))
                                         if field in residuals:
                                             residuals[field].append(value)
