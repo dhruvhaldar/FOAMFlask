@@ -12,7 +12,9 @@ This document consolidates key learnings from the Sentinel (Security), Bolt (Per
 
 ### 2026-01-24 - [Stateful Cache Invalidation]
 **Problem:** Global in-memory caches for expensive parsers (like OpenFOAM fields) persist across "reset" actions (e.g., re-importing a tutorial), leading to stale data visualization.
-**Decision:** All "reset" or "load" operations must explicitly trigger a cache clearing routine (`clear_cache`) for the affected paths to maintain consistency between disk state and memory state.
+### 2026-01-24 - [Frontend Initialization Race Conditions]
+**Problem:** Single Page Applications (SPAs) often initialize page logic (e.g., polling) effectively in parallel with state restoration (reading `localStorage`), leading to race conditions where components act on default/stale state before the saved state is applied.
+**Decision:** Frontend initialization must strictly serialize state restoration *before* triggering any business logic or network calls. Using explicit ordering in a central `init` function is safer than relying on event listener registration order.
 
 ## 🛡️ Sentinel's Security Journal
 

@@ -32,3 +32,7 @@
 **Learning:** Users expect a "Console Log" to show *container output*, even if the underlying tool (OpenFOAM) redirects its useful output to internal files. Merging internal logs into the console stream can be confusing if the user strictly expects standard output.
 **Action:** Respect the user's mental model of "Console Log". If the tool is silent, show silence (or a helper message), but don't magically merge hidden files unless explicitly requested or designed as a "Super Log". Simplicity and predictability outrank thoroughness in this context.
 
+## 2026-01-24 - [State Restoration Ordering]
+**Learning:** In complex Dashboards, restoring user preferences (like "Selected Tutorial") must happen *synchronously* or strictly *before* any data fetching logic runs.
+**Action:** Move state restoration logic to the very top of the initialization chain (`init()`), guaranteeing that when the UI "wakes up" and requesting data, it asks for the *right* data immediately, avoiding 404s and flickering.
+
