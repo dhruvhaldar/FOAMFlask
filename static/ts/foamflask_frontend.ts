@@ -1592,7 +1592,11 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
   const selectedTutorial = (
     document.getElementById("tutorialSelect") as HTMLSelectElement
   )?.value;
-  if (!selectedTutorial || isUpdatingPlots) return;
+  console.log("DEBUG: updatePlots polling for tutorial:", selectedTutorial); // Debug log
+  if (!selectedTutorial || isUpdatingPlots) {
+    if (!selectedTutorial) console.warn("DEBUG: No tutorial selected, skipping update.");
+    return;
+  }
   isUpdatingPlots = true;
 
   try {
@@ -3289,6 +3293,35 @@ window.onload = async () => {
 
 
 const init = () => {
+  // Persist Tutorial Selection - Restore FIRST before any page logic runs
+  const tutorialSelect = document.getElementById('tutorialSelect') as HTMLSelectElement;
+  if (tutorialSelect) {
+    // Restore
+    const savedTutorial = localStorage.getItem('lastSelectedTutorial');
+    if (savedTutorial) {
+      // Check if option exists
+      let exists = false;
+      for (let i = 0; i < tutorialSelect.options.length; i++) {
+        if (tutorialSelect.options[i].value === savedTutorial) {
+          exists = true;
+          break;
+        }
+      }
+      if (exists) {
+        tutorialSelect.value = savedTutorial;
+        console.log("DEBUG: Restored tutorial selection:", savedTutorial);
+      } else {
+        console.warn("DEBUG: Saved tutorial not found in options:", savedTutorial);
+      }
+    }
+
+    // Save on change
+    tutorialSelect.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      localStorage.setItem('lastSelectedTutorial', target.value);
+    });
+  }
+
   // Determine initial page from URL
   const path = window.location.pathname;
   let initialPage = "setup";
@@ -3352,32 +3385,6 @@ const init = () => {
       }
     }
   });
-
-  // Persist Tutorial Selection
-  const tutorialSelect = document.getElementById('tutorialSelect') as HTMLSelectElement;
-  if (tutorialSelect) {
-    // Restore
-    const savedTutorial = localStorage.getItem('lastSelectedTutorial');
-    if (savedTutorial) {
-      // Check if option exists
-      let exists = false;
-      for (let i = 0; i < tutorialSelect.options.length; i++) {
-        if (tutorialSelect.options[i].value === savedTutorial) {
-          exists = true;
-          break;
-        }
-      }
-      if (exists) {
-        tutorialSelect.value = savedTutorial;
-      }
-    }
-
-    // Save on change
-    tutorialSelect.addEventListener('change', (e: Event) => {
-      const target = e.target as HTMLSelectElement;
-      localStorage.setItem('lastSelectedTutorial', target.value);
-    });
-  }
 
   // Interactive Mode Event Listeners
   const meshColorSelect = document.getElementById("meshColor");
