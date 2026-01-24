@@ -14,6 +14,7 @@ interface ContourOptions {
     vtkFilePath?: string | null;
     showIsovalueWidget?: boolean;
     isovalues?: number[];
+    colorMap?: string;
 }
 
 interface ContourData {
@@ -23,6 +24,7 @@ interface ContourData {
     numIsosurfaces: number;
     timestamp: string;
     vtkFilePath?: string;
+    colorMap?: string;
 }
 
 // Extend HTMLElement for custom properties
@@ -53,7 +55,7 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         vtkFilePath = null
     } = options;
 
-    let { scalarField, numIsosurfaces } = options;
+    let { scalarField, numIsosurfaces, colorMap } = options;
 
     try {
         // Show loading state
@@ -71,6 +73,12 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
         if (numIsosurfaces === undefined) {
             const numIsosurfacesInput = document.getElementById('numIsosurfaces') as MyHTMLElement | null;
             numIsosurfaces = numIsosurfacesInput?.value ? parseInt(numIsosurfacesInput.value, 10) : 10;
+        }
+
+        // Resolve colorMap
+        if (colorMap === undefined) {
+            const colorMapSelect = document.getElementById('colorMap') as MyHTMLElement | null;
+            colorMap = colorMapSelect?.value || 'viridis';
         }
 
         // Get tutorial from select if not provided
@@ -149,6 +157,7 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             caseDir: selectedCaseDir,
             scalarField,
             numIsosurfaces,
+            colorMap,
             range,
             vtkFilePath: selectedVtkFilePath
         });
@@ -184,7 +193,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             numIsosurfaces,
             vtkFilePath: selectedVtkFilePath,
             showIsovalueWidget,
-            isovalues
+            isovalues,
+            colorMap
         };
 
         if (range && Array.isArray(range) && range.length === 2) {
@@ -213,7 +223,8 @@ export async function generateContours(options: ContourOptions = {}): Promise<vo
             scalarField,
             numIsosurfaces,
             timestamp: new Date().toISOString(),
-            vtkFilePath: selectedVtkFilePath || undefined
+            vtkFilePath: selectedVtkFilePath || undefined,
+            colorMap
         };
 
         console.log('[FOAMFlask] [generateContours] Contours generated successfully!');
@@ -394,6 +405,7 @@ async function fetchContours(requestData: ContourOptions) {
         vtkFilePath?: string | null;
         showIsovalueWidget?: boolean;
         isovalues?: number[];
+        colormap?: string;
     } = {
         tutorial: requestData.tutorial,
         caseDir: requestData.caseDir,
@@ -401,7 +413,8 @@ async function fetchContours(requestData: ContourOptions) {
         num_isosurfaces: requestData.numIsosurfaces,
         vtkFilePath: requestData.vtkFilePath,
         showIsovalueWidget: requestData.showIsovalueWidget,
-        isovalues: requestData.isovalues
+        isovalues: requestData.isovalues,
+        colormap: requestData.colorMap // Map frontend camelCase to backend snake_case
     };
 
     if (requestData.range && Array.isArray(requestData.range) && requestData.range.length === 2) {
@@ -615,7 +628,8 @@ export async function generateContoursWithParams() {
             tutorial: selectedTutorial,
             caseDir: selectedCaseDir,
             scalarField,
-            numIsosurfaces
+            numIsosurfaces,
+            colorMap: (document.getElementById('colorMap') as MyHTMLElement)?.value
         });
     } catch (error: unknown) {
         if (typeof showNotification === 'function') {

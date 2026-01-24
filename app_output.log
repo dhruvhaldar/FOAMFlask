@@ -1,0 +1,890 @@
+FOAMFlask listening on: 127.0.0.1:5000
+ * Serving Flask app 'app'
+ * Debug mode: off
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+DEBUG:docker.utils.config:Trying paths: ['/home/dh_asus_rog/.docker/config.json', '/home/dh_asus_rog/.dockercfg']
+DEBUG:docker.utils.config:No config file found
+DEBUG:docker.utils.config:Trying paths: ['/home/dh_asus_rog/.docker/config.json', '/home/dh_asus_rog/.dockercfg']
+DEBUG:docker.utils.config:No config file found
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 823
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/_ping HTTP/1.1" 200 2
+INFO:FOAMFlask:[FOAMFlask] Connected to Docker daemon
+DEBUG:urllib3.connectionpool:http://localhost:None "POST /v1.52/containers/create HTTP/1.1" 201 88
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f/json HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:http://localhost:None "POST /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f/start HTTP/1.1" 204 0
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f/logs?stderr=1&stdout=1&timestamps=0&follow=1&tail=all HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f/json HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:http://localhost:None "POST /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f/wait HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:http://localhost:None "DELETE /v1.52/containers/7dec745e162e699f2aed9b682bc7a235bb981e7066aa43d7463160bb886f222f?v=False&link=False&force=False HTTP/1.1" 204 0
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "GET /post HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/icons/logo.svg HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/js/foamflask_frontend.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/js/frontend/isosurface.js?v=9 HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/icons/Pyvista-logo.avif HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/icons/Plotly-logo.avif HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:51] "[36mGET /static/icons/docker-logo.avif HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:52] "[36mGET /static/js/frontend/isosurface.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:52] "GET /api/startup_status HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:52] "GET /get_case_root HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:52] "GET /get_docker_config HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:10:52] "GET /api/cases/list HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:24:03] "GET /api/available_meshes?tutorial=aerofoilNACA0012Steady HTTP/1.1" 200 -
+INFO:FOAMFlask:[FOAMFlask] [api_load_mesh] Mesh loading called
+INFO:FOAMFlask:[FOAMFlask] [mesher] Loading mesh from /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [mesher] Loaded mesh: 32960 points, 16200 cells
+INFO:FOAMFlask:[FOAMFlask] [api_load_mesh] [for_contour] Mesh loading for contour called
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:24:29] "POST /api/load_mesh HTTP/1.1" 200 -
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'alphat', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'viridis', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=alphat, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Loading mesh from: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Successfully loaded mesh: 32960 points, 16200 cells
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Computed U_Magnitude from U field
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'alphat' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: alphat
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 0 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: viridis
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 42091
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+
+App running at:
+ - Local:   http://127.0.0.1:42091/
+ - Network: http://127.0.0.1:42091/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:24:50] "POST /api/contours/create HTTP/1.1" 200 -
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /index.html?t=1769230490388 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client 19aabbe2752e44ff8b9055aafbf27bed connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:42091/index.html?t=1769230490388" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:51 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:42091/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:51 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:42091/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:51 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:42091/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:5', 'method': 'viewport.geometry.array.get', 'args': ['24716408a047e7a8e170b49a24dc8eda_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:8', 'method': 'viewport.geometry.array.get', 'args': ['b8344e85d29e79572609af13e05a6bef_1260f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:9', 'method': 'viewport.geometry.array.get', 'args': ['5c490e1bec9b26abf96808c59fdcc2ff_1664L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c19aabbe2752e44ff8b9055aafbf27bed:10', 'method': 'viewport.geometry.array.get', 'args': ['d452ae7758ec8c31137528eeb5de161f_420f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client 19aabbe2752e44ff8b9055aafbf27bed disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:24:50 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'alphat', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'viridis', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=alphat, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'alphat' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: alphat
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 0 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: viridis
+INFO:FOAMFlask:Terminating visualization process 2089601
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 45727
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:25:16] "POST /api/contours/create HTTP/1.1" 200 -
+
+App running at:
+ - Local:   http://127.0.0.1:45727/
+ - Network: http://127.0.0.1:45727/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /index.html?t=1769230516100 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client 2e5233b34fd447b48a95cd56bee007cb connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:45727/index.html?t=1769230516100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:45727/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:45727/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:45727/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:5', 'method': 'viewport.geometry.array.get', 'args': ['24716408a047e7a8e170b49a24dc8eda_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:8', 'method': 'viewport.geometry.array.get', 'args': ['b8344e85d29e79572609af13e05a6bef_1260f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:9', 'method': 'viewport.geometry.array.get', 'args': ['5c490e1bec9b26abf96808c59fdcc2ff_1664L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c2e5233b34fd447b48a95cd56bee007cb:10', 'method': 'viewport.geometry.array.get', 'args': ['d452ae7758ec8c31137528eeb5de161f_420f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client 2e5233b34fd447b48a95cd56bee007cb disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:25:16 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'alphat', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'plasma', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=alphat, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'alphat' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: alphat
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 0 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: plasma
+INFO:FOAMFlask:Terminating visualization process 2090234
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 51921
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+
+App running at:
+ - Local:   http://127.0.0.1:51921/
+ - Network: http://127.0.0.1:51921/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:26:02] "POST /api/contours/create HTTP/1.1" 200 -
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /index.html?t=1769230562879 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client 9be76d754b554026907270bd2c4f863b connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:03 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:03 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:51921/index.html?t=1769230562879" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:03 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:51921/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:03 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:51921/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:03 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:51921/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:5', 'method': 'viewport.geometry.array.get', 'args': ['24716408a047e7a8e170b49a24dc8eda_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:8', 'method': 'viewport.geometry.array.get', 'args': ['b8344e85d29e79572609af13e05a6bef_1260f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:9', 'method': 'viewport.geometry.array.get', 'args': ['5c490e1bec9b26abf96808c59fdcc2ff_1664L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c9be76d754b554026907270bd2c4f863b:10', 'method': 'viewport.geometry.array.get', 'args': ['d452ae7758ec8c31137528eeb5de161f_420f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client 9be76d754b554026907270bd2c4f863b disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:02 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'alphat', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'magma', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=alphat, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'alphat' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: alphat
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 0 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: magma
+INFO:FOAMFlask:Terminating visualization process 2091380
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 33437
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+
+App running at:
+ - Local:   http://127.0.0.1:33437/
+ - Network: http://127.0.0.1:33437/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:26:08] "POST /api/contours/create HTTP/1.1" 200 -
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /index.html?t=1769230568548 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client 3b7cd622289c426999b8633bd868abc2 connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:33437/index.html?t=1769230568548" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:09 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:33437/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:09 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:33437/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:09 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:33437/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:5', 'method': 'viewport.geometry.array.get', 'args': ['24716408a047e7a8e170b49a24dc8eda_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:8', 'method': 'viewport.geometry.array.get', 'args': ['b8344e85d29e79572609af13e05a6bef_1260f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:9', 'method': 'viewport.geometry.array.get', 'args': ['5c490e1bec9b26abf96808c59fdcc2ff_1664L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c3b7cd622289c426999b8633bd868abc2:10', 'method': 'viewport.geometry.array.get', 'args': ['d452ae7758ec8c31137528eeb5de161f_420f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client 3b7cd622289c426999b8633bd868abc2 disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:08 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'U', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'cividis', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=U, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'U' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: U
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 50472 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: cividis
+INFO:FOAMFlask:Terminating visualization process 2091535
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 56117
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:26:15] "POST /api/contours/create HTTP/1.1" 200 -
+
+App running at:
+ - Local:   http://127.0.0.1:56117/
+ - Network: http://127.0.0.1:56117/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /index.html?t=1769230575269 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client 03fa1802fd574cf1a7268251481a18f2 connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:56117/index.html?t=1769230575269" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:56117/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:56117/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:56117/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:5', 'method': 'viewport.geometry.array.get', 'args': ['9cc5ab2044a24e46d666caa37502faf3_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:8', 'method': 'viewport.geometry.array.get', 'args': ['7670efed24a741bf508a0c4f79ea8d12_147021f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:9', 'method': 'viewport.geometry.array.get', 'args': ['68b3973070dcaa22f6a14c53c9b903fa_169480L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:c03fa1802fd574cf1a7268251481a18f2:10', 'method': 'viewport.geometry.array.get', 'args': ['fe47f7298daa3b403247b1b06cd8aca6_147021f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client 03fa1802fd574cf1a7268251481a18f2 disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:15 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'U', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'plasma', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=U, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'U' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: U
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 50472 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: plasma
+INFO:FOAMFlask:Terminating visualization process 2091713
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 52443
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:26:31] "POST /api/contours/create HTTP/1.1" 200 -
+
+App running at:
+ - Local:   http://127.0.0.1:52443/
+ - Network: http://127.0.0.1:52443/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /index.html?t=1769230591161 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client d83bd5c9bcb44c51b614541fafdad548 connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:52443/index.html?t=1769230591161" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:52443/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:52443/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:52443/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:5', 'method': 'viewport.geometry.array.get', 'args': ['9cc5ab2044a24e46d666caa37502faf3_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:8', 'method': 'viewport.geometry.array.get', 'args': ['7670efed24a741bf508a0c4f79ea8d12_147021f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:9', 'method': 'viewport.geometry.array.get', 'args': ['68b3973070dcaa22f6a14c53c9b903fa_169480L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd83bd5c9bcb44c51b614541fafdad548:10', 'method': 'viewport.geometry.array.get', 'args': ['fe47f7298daa3b403247b1b06cd8aca6_147021f', True], 'kwargs': {}}
+INFO:wslink.backends.aiohttp:client d83bd5c9bcb44c51b614541fafdad548 disconnected
+INFO:wslink.backends.aiohttp:No more connections, scheduling shutdown
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:31 +0530] "GET /ws HTTP/1.1" 101 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Route handler called
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Request data: {'tutorial': 'XiFluid/kivaTest', 'caseDir': '/home/dh_asus_rog/FOAMFlask/tutorial_cases', 'scalar_field': 'U', 'num_isosurfaces': 10, 'vtkFilePath': '/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk', 'showIsovalueWidget': True, 'isovalues': [50], 'colormap': 'viridis', 'range': [122.34, 168.2177]}
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Parsed parameters: tutorial=XiFluid/kivaTest, caseDir=/home/dh_asus_rog/FOAMFlask/tutorial_cases, scalarField=U, numIsosurfaces=10, vtkFilePath=/home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Normalized case directory: /home/dh_asus_rog/FOAMFlask/tutorial_cases
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Case directory exists
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specified VTK file: /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Loading mesh...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Using cached mesh for /home/dh_asus_rog/FOAMFlask/tutorial_cases/aerofoilNACA0012Steady/VTK/aerofoilNACA0012Steady_1150.vtk
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Mesh loaded: 32960 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Available fields: ['alphat', 'Ma', 'nut', 'rho', 'p', 'T', 'k', 'omega', 'U', 'U_Magnitude']
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Scalar field 'U' found
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using custom range: [122.34, 168.2177]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using specific isovalues: [50]
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Generating 10 isosurfaces...
+INFO:FOAMFlask:[FOAMFlask] [IsosurfaceVisualizer] Generating isosurfaces for field: U
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Isosurfaces generated: 50472 points
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Show isovalue widget: True
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Starting Trame visualization...
+INFO:FOAMFlask:[FOAMFlask] [create_contour] Using colormap: viridis
+INFO:FOAMFlask:Terminating visualization process 2092084
+INFO:trame_server.utils.namespace:Translator(prefix=None)
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_client.widgets.core:js_key = id
+INFO:trame_server.utils.namespace: token 
+                     html, body, #app { margin: 0; padding: 0; overflow: hidden !important; width: 100vw; height: 100vh; }
+                     .v-progress-linear, .trame__loader { display: none !important; } 
+                     .fill-height { overflow: hidden !important; }
+                     ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = elevation
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__1)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-cube-scan
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__2)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-top
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__3)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-format-vertical-align-bottom
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__4)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-f-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__5)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-alpha-b-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__6)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-left-box-outline
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__7)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-chevron-right-box-outline
+INFO:trame_client.widgets.core:js_key = vertical
+INFO:trame_client.widgets.core:js_key = icon
+INFO:trame_client.widgets.core:js_key = x-small
+INFO:trame_server.controller:trigger(trigger__8)
+INFO:trame_client.widgets.core:js_key = title
+INFO:trame_server.utils.namespace: token mdi-fit-to-screen
+INFO:trame_client.widgets.core:js_key = class
+INFO:trame_client.widgets.core:js_key = style
+INFO:trame_client.widgets.core:js_key = fluid
+INFO:FOAMFlask:Starting Trame server on port 41099
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:wslink.backends.aiohttp:awaiting runner setup
+INFO:wslink.backends.aiohttp:awaiting site startup
+
+App running at:
+ - Local:   http://127.0.0.1:41099/
+ - Network: http://127.0.0.1:41099/
+
+Note that for multi-users you need to use and configure a launcher.
+INFO:wslink.backends.aiohttp:Print WSLINK_READY_MSG
+INFO:wslink.backends.aiohttp:Schedule auto shutdown with timout 300
+INFO:wslink.backends.aiohttp:awaiting running future
+INFO:werkzeug:127.0.0.1 - - [24/Jan/2026 10:26:42] "POST /api/contours/create HTTP/1.1" 200 -
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /index.html?t=1769230602018 HTTP/1.1" 200 237 "http://127.0.0.1:5000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /vue.global.js HTTP/1.1" 200 247 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /css/app.0b077e70.css HTTP/1.1" 200 236 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /js/chunk-vendors.c3c88821.js HTTP/1.1" 200 247 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /js/app.7470eadf.js HTTP/1.1" 200 245 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /loading.tpl HTTP/1.1" 200 252 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "POST /paraview/ HTTP/1.1" 405 209 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:wslink.backends.aiohttp:client d46826ec8b8c46e6b39ee493d2e9534f connected
+INFO:wslink.protocol:Canceling shutdown task
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'system:c0:0', 'method': 'wslink.hello', 'args': [{'secret': '*****'}], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:0', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vuetify/trame-vuetify.css HTTP/1.1" 200 240 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vuetify/trame-vuetify.umd.min.js HTTP/1.1" 200 247 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vtk/trame-vtk.js HTTP/1.1" 200 249 "http://127.0.0.1:41099/index.html?t=1769230602018" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:1', 'method': 'trame.state.get', 'args': [], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:2', 'method': 'trame.lifecycle.update', 'args': ['client_connected'], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:3', 'method': 'viewport.geometry.array.get', 'args': ['e395d147e0b75de6fe5f7c89544ac056_98880f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:4', 'method': 'viewport.geometry.array.get', 'args': ['8a3894d562f78c823bb2b33ce4f28fff_164800L', True], 'kwargs': {}}
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500.1dfbc3db.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:41099/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vuetify/fonts/roboto-latin-500italic.7543a42b.woff2 HTTP/1.1" 200 254 "http://127.0.0.1:41099/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+INFO:aiohttp.access:127.0.0.1 [24/Jan/2026:10:26:42 +0530] "GET /__trame_vuetify/fonts/materialdesignicons-webfont.fbaef2a9.woff2 HTTP/1.1" 200 256 "http://127.0.0.1:41099/__trame_vuetify/trame-vuetify.css" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:5', 'method': 'viewport.geometry.array.get', 'args': ['9cc5ab2044a24e46d666caa37502faf3_32960f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:6', 'method': 'viewport.geometry.array.get', 'args': ['750b2b7c768e9d3b12b2dfb6f17e8f66_45f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:7', 'method': 'viewport.geometry.array.get', 'args': ['6ed20ee21bd33decf1b4230d4c3fe3bf_36L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:8', 'method': 'viewport.geometry.array.get', 'args': ['7670efed24a741bf508a0c4f79ea8d12_147021f', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:9', 'method': 'viewport.geometry.array.get', 'args': ['68b3973070dcaa22f6a14c53c9b903fa_169480L', True], 'kwargs': {}}
+DEBUG:wslink.protocol:wslink incoming msg {'wslink': '1.0', 'id': 'rpc:cd46826ec8b8c46e6b39ee493d2e9534f:10', 'method': 'viewport.geometry.array.get', 'args': ['fe47f7298daa3b403247b1b06cd8aca6_147021f', True], 'kwargs': {}}

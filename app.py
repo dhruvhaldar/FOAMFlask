@@ -2306,6 +2306,9 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         # Generate Trame Visualization (Embedded)
         logger.info(f"[FOAMFlask] [create_contour] Starting Trame visualization...")
         
+        colormap = request_data.get("colormap", "viridis")
+        logger.info(f"[FOAMFlask] [create_contour] Using colormap: {colormap}")
+
         # Start Trame server
         viz_info = isosurface_visualizer.start_trame_visualization(
             scalar_field=scalar_field,
@@ -2313,7 +2316,7 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
             base_mesh_opacity=0.25,
             contour_opacity=0.8,
             contour_color="red",
-            colormap="viridis",
+            colormap=colormap,
             show_isovalue_slider=True,
             custom_range=custom_range,
             num_isosurfaces=num_isosurfaces,
