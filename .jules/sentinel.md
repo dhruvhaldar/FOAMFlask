@@ -62,3 +62,9 @@
 **Vulnerability:** Defining CSP headers in multiple places (e.g., separate `after_request` callbacks) caused the browser to enforce the "intersection" of policies, effectively defaulting to the most restrictive one. A legacy `add_security_headers` function was overwriting a newer, more permissive `set_security_headers`, blocking `frame-src` for the Trame visualizer.
 **Learning:** Security headers should be centralized. "Stacking" them does not merge permissions; it typically restricts them further.
 **Prevention:** Removed redundant header injection functions and consolidated all CSP rules into a single `set_security_headers` callback in `app.py`.
+
+## 2026-01-24 - [Attack Surface Reduction via Single Server]
+**Vulnerability:** Running a hybrid setup with both Flask and Uvicorn/FastAPI exposes additional ports and protocol handlers (ASGI vs WSGI), increasing the attack surface and potential configuration drift (e.g., conflicting CORS policies).
+**Learning:** Simplifying the stack reduces the likelihood of security misconfigurations.
+**Prevention:** Enforced a strict Flask-only architecture (`python -m app`), removing the concurrent WebSocket server. This ensures a single point of entry for all traffic, allowing centralized enforcement of security headers, rate limiting, and authentication logic.
+

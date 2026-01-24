@@ -23,3 +23,8 @@
 ## 2026-01-21 - Keyboard Shortcuts for Selection Inputs
 **Learning:** Users expect "Enter" to trigger the primary action associated with an input or selection, even if it's not in a `<form>`. Double-clicking items in a listbox is a standard pattern for "Select & Action" on desktop interfaces.
 **Action:** Always bind "Enter" on non-form inputs/selects to their primary action button, and "Double Click" on listbox elements (`size > 1`) to trigger the view/select action.
+
+## 2026-01-24 - [Polling vs WebSockets for Reliability]
+**Learning:** WebSocket connections often fail silenty or require complex error handling in corporate environments (proxies/firewalls), leading to "stuck" UIs.
+**Action:** Replaced WebSocket-based real-time updates with robust HTTP polling (`/api/plot_data`). While slightly less efficient, it drastically improves reliability and consistency of the user experience across different network configurations.
+

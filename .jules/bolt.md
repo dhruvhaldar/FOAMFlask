@@ -25,3 +25,8 @@
 ## 2026-05-15 - [Bytes Search Performance]
 **Learning:** In Python, searching for a substring in bytes (`b"sub" in data`) is ~10-12x slower than the string equivalent (`"sub" in data`). For high-throughput parsing (like large log files), using `re.search` on bytes directly is significantly faster than using `in` as a pre-check, and also avoids the overhead of `decode()`.
 **Action:** When parsing large binary or ASCII-compatible files, prefer using compiled bytes-regex (`re.compile(rb"...")`) and skip the `in` operator pre-check if the data is `bytes`.
+
+## 2026-01-24 - [Flask-Only Concurrency Strategy]
+**Learning:** Hybrid deployments (Flask + Uvicorn) introduced significant complexity and overhead for simple real-time needs.
+**Action:** Adopted a Flask-only architecture with `threaded=True`. Pure Flask with threading is sufficient for handling concurrent log streaming and plot polling without the complexity of a separate ASGI server or WebSocket layer.
+

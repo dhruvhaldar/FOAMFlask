@@ -230,7 +230,7 @@ let lastErrorNotificationTime = 0;
 const ERROR_NOTIFICATION_COOLDOWN = 5 * 60 * 1000;
 // Plotting variables
 let plotUpdateInterval = null;
-let wsConnection = null; // ⚡ Bolt Optimization: WebSocket for realtime data
+// let wsConnection: WebSocket | null = null; // WebSocket removed in favor of polling // ⚡ Bolt Optimization: WebSocket for realtime data
 let plotsVisible = true;
 let aeroVisible = false;
 let isUpdatingPlots = false;
@@ -1099,7 +1099,6 @@ const runCommand = async (cmd, btnElement) => {
             }
             const text = decoder.decode(value);
             // Backend sends chunks of HTML (escaped text + <br>), so we can append directly
-            // 🎨 Palette UX Fix: Target correct 'output' ID and avoid innerHTML reparsing
             const output = document.getElementById("output");
             if (output) {
                 output.insertAdjacentHTML("beforeend", text);
@@ -1172,57 +1171,12 @@ const toggleAeroPlots = () => {
             btn.textContent = "Show Aero Plots";
     }
 };
-const connectWebSocket = (tutorial) => {
-    if (wsConnection) {
-        // If already connected to same tutorial, do nothing
-        if (wsConnection.url.includes(`tutorial=${encodeURIComponent(tutorial)}`) &&
-            (wsConnection.readyState === WebSocket.OPEN || wsConnection.readyState === WebSocket.CONNECTING)) {
-            return;
-        }
-        wsConnection.close();
-    }
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws/data?tutorial=${encodeURIComponent(tutorial)}`;
-    try {
-        wsConnection = new WebSocket(wsUrl);
-        wsConnection.onmessage = (event) => {
-            // ⚡ Bolt Optimization: WebSocket push updates
-            if (document.hidden || !plotsInViewport)
-                return;
-            try {
-                const payload = JSON.parse(event.data);
-                if (payload.plot_data)
-                    updatePlots(payload.plot_data);
-                if (payload.residuals)
-                    updateResidualsPlot(tutorial, payload.residuals);
-            }
-            catch (e) {
-                console.error("WS Error", e);
-            }
-        };
-        wsConnection.onclose = () => {
-            wsConnection = null;
-            // Fallback to polling if WS dies during simulation
-            if (isSimulationRunning) {
-                console.warn("WS Closed, reverting to polling");
-                startPolling();
-            }
-        };
-    }
-    catch (e) {
-        console.error("Failed to connect WS", e);
-        startPolling();
-    }
-};
 const startPlotUpdates = () => {
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial)
         return;
-    // Try WebSocket first
-    connectWebSocket(selectedTutorial);
-    // Initial fetch to ensure data is loaded even if simulation is stopped
+    // Flask-Only: Use polling directly
     updatePlots();
-    // Also start polling as fallback / heartbeat or for initial load check
     startPolling();
 };
 const startPolling = () => {
@@ -1232,13 +1186,9 @@ const startPolling = () => {
         // ⚡ Bolt Optimization: Pause polling when tab is hidden
         if (document.hidden)
             return;
-        // Stop if simulation not running AND no WS connection (if WS exists, it handles updates)
-        if (!isSimulationRunning && !wsConnection) {
+        // Stop if simulation not running
+        if (!isSimulationRunning) {
             stopPlotUpdates();
-            return;
-        }
-        // If WS is active and open, we don't need to poll for data
-        if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
             return;
         }
         if (!plotsInViewport)
@@ -1253,10 +1203,6 @@ const stopPlotUpdates = () => {
     if (plotUpdateInterval) {
         clearInterval(plotUpdateInterval);
         plotUpdateInterval = null;
-    }
-    if (wsConnection) {
-        wsConnection.close();
-        wsConnection = null;
     }
 };
 const updateResidualsPlot = async (tutorial, injectedData) => {

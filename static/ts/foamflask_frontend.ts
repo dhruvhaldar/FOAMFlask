@@ -30,7 +30,7 @@ window.fetch = async (input, init) => {
         } else if (Array.isArray(init.headers)) {
           (init.headers as string[][]).push(["X-CSRFToken", token]);
         } else {
-           init.headers = { ...init.headers, "X-CSRFToken": token };
+          init.headers = { ...init.headers, "X-CSRFToken": token };
         }
       }
     }
@@ -375,7 +375,7 @@ const ERROR_NOTIFICATION_COOLDOWN: number = 5 * 60 * 1000;
 
 // Plotting variables
 let plotUpdateInterval: ReturnType<typeof setInterval> | null = null;
-let wsConnection: WebSocket | null = null; // ⚡ Bolt Optimization: WebSocket for realtime data
+// let wsConnection: WebSocket | null = null; // WebSocket removed in favor of polling // ⚡ Bolt Optimization: WebSocket for realtime data
 let plotsVisible: boolean = true;
 let aeroVisible: boolean = false;
 let isUpdatingPlots: boolean = false;
@@ -920,10 +920,10 @@ const showConfirmModal = (title: string, message: string): Promise<boolean> => {
           if (document.activeElement === lastElement) {
             firstElement.focus();
           } else {
-             // Find next element or default to first
-             const idx = focusableElements.indexOf(document.activeElement as HTMLElement);
-             if (idx >= 0 && idx < focusableElements.length - 1) focusableElements[idx + 1].focus();
-             else firstElement.focus();
+            // Find next element or default to first
+            const idx = focusableElements.indexOf(document.activeElement as HTMLElement);
+            if (idx >= 0 && idx < focusableElements.length - 1) focusableElements[idx + 1].focus();
+            else firstElement.focus();
           }
         }
       }
@@ -1118,8 +1118,8 @@ const loadTutorial = async (): Promise<void> => {
 
       // Background fetch of plot data and residuals to warm up cache
       // We don't await these to avoid blocking the UI
-      void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => {});
-      void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => {});
+      void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
+      void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
     }
   } catch (e) {
     showNotification("Failed to load tutorial", "error");
@@ -1303,7 +1303,6 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
       }
       const text = decoder.decode(value);
       // Backend sends chunks of HTML (escaped text + <br>), so we can append directly
-      // 🎨 Palette UX Fix: Target correct 'output' ID and avoid innerHTML reparsing
       const output = document.getElementById("output");
       if (output) {
         output.insertAdjacentHTML("beforeend", text);
@@ -1374,60 +1373,12 @@ const toggleAeroPlots = (): void => {
   }
 };
 
-const connectWebSocket = (tutorial: string) => {
-  if (wsConnection) {
-    // If already connected to same tutorial, do nothing
-    if (wsConnection.url.includes(`tutorial=${encodeURIComponent(tutorial)}`) &&
-        (wsConnection.readyState === WebSocket.OPEN || wsConnection.readyState === WebSocket.CONNECTING)) {
-      return;
-    }
-    wsConnection.close();
-  }
-
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${window.location.host}/ws/data?tutorial=${encodeURIComponent(tutorial)}`;
-
-  try {
-    wsConnection = new WebSocket(wsUrl);
-
-    wsConnection.onmessage = (event) => {
-      // ⚡ Bolt Optimization: WebSocket push updates
-      if (document.hidden || !plotsInViewport) return;
-
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.plot_data) updatePlots(payload.plot_data);
-        if (payload.residuals) updateResidualsPlot(tutorial, payload.residuals);
-      } catch (e) {
-        console.error("WS Error", e);
-      }
-    };
-
-    wsConnection.onclose = () => {
-      wsConnection = null;
-      // Fallback to polling if WS dies during simulation
-      if (isSimulationRunning) {
-        console.warn("WS Closed, reverting to polling");
-        startPolling();
-      }
-    };
-  } catch (e) {
-    console.error("Failed to connect WS", e);
-    startPolling();
-  }
-};
-
 const startPlotUpdates = (): void => {
   const selectedTutorial = (document.getElementById("tutorialSelect") as HTMLSelectElement)?.value;
   if (!selectedTutorial) return;
 
-  // Try WebSocket first
-  connectWebSocket(selectedTutorial);
-
-  // Initial fetch to ensure data is loaded even if simulation is stopped
+  // Flask-Only: Use polling directly
   updatePlots();
-
-  // Also start polling as fallback / heartbeat or for initial load check
   startPolling();
 };
 
@@ -1437,15 +1388,10 @@ const startPolling = (): void => {
     // ⚡ Bolt Optimization: Pause polling when tab is hidden
     if (document.hidden) return;
 
-    // Stop if simulation not running AND no WS connection (if WS exists, it handles updates)
-    if (!isSimulationRunning && !wsConnection) {
+    // Stop if simulation not running
+    if (!isSimulationRunning) {
       stopPlotUpdates();
       return;
-    }
-
-    // If WS is active and open, we don't need to poll for data
-    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-        return;
     }
 
     if (!plotsInViewport) return;
@@ -1458,10 +1404,6 @@ const stopPlotUpdates = (): void => {
   if (plotUpdateInterval) {
     clearInterval(plotUpdateInterval);
     plotUpdateInterval = null;
-  }
-  if (wsConnection) {
-    wsConnection.close();
-    wsConnection = null;
   }
 };
 
@@ -2141,7 +2083,7 @@ const setCase = (btnElement?: HTMLElement) => {
         showNotification(`Case root set to: ${data.caseDir}`, "success");
         refreshCaseList(); // Refresh the list of cases
       } else if (data.output) {
-         showNotification(data.output, "info"); // Likely an error message from backend
+        showNotification(data.output, "info"); // Likely an error message from backend
       }
     })
     .catch((err) => {
@@ -2159,20 +2101,20 @@ const setCase = (btnElement?: HTMLElement) => {
 
 const openCaseRoot = (btn?: HTMLElement) => {
   fetchWithCache("/open_case_root", {
-      method: "POST",
+    method: "POST",
   })
-  .then((data) => {
+    .then((data) => {
       if (data.output) {
-          if (data.output.toLowerCase().includes("error") || data.output.toLowerCase().includes("failed")) {
-               showNotification(data.output, "error");
-          } else {
-               showNotification(data.output, "success");
-          }
+        if (data.output.toLowerCase().includes("error") || data.output.toLowerCase().includes("failed")) {
+          showNotification(data.output, "error");
+        } else {
+          showNotification(data.output, "success");
+        }
       }
-  })
-  .catch((err) => {
+    })
+    .catch((err) => {
       showNotification(`Failed to open case root: ${getErrorMessage(err)}`, "error");
-  });
+    });
 };
 (window as any).openCaseRoot = openCaseRoot;
 window.switchGeometryTab = switchGeometryTab;
@@ -2982,9 +2924,9 @@ const deletePipelineStep = (id: string): void => {
 
   // If active node is no longer in pipeline (because it was deleted), reset to root
   if (!postPipeline.find(n => n.id === activePipelineId)) {
-      selectPipelineStep('root');
+    selectPipelineStep('root');
   } else {
-      renderPipeline();
+    renderPipeline();
   }
 };
 (window as any).deletePipelineStep = deletePipelineStep;
@@ -3000,11 +2942,10 @@ const renderPipeline = (): void => {
   postPipeline.forEach((node, index) => {
     // Node
     const nodeEl = document.createElement("button");
-    nodeEl.className = `flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors whitespace-nowrap ${
-      node.id === activePipelineId
-        ? "bg-cyan-600 text-white border-cyan-600 shadow-md"
-        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-cyan-400"
-    }`;
+    nodeEl.className = `flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors whitespace-nowrap ${node.id === activePipelineId
+      ? "bg-cyan-600 text-white border-cyan-600 shadow-md"
+      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-cyan-400"
+      }`;
 
     // Icon based on type
     let icon = "";
@@ -3017,17 +2958,17 @@ const renderPipeline = (): void => {
 
     // Add Delete Button (if not root)
     if (node.type !== 'root') {
-        const delBtn = document.createElement("span");
-        delBtn.className = "ml-2 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white text-gray-400 transition-colors cursor-pointer text-xs leading-none";
-        delBtn.innerText = "-"; // Minus button as requested
-        delBtn.title = "Delete this step and its children";
-        delBtn.onclick = (e) => {
-            e.stopPropagation(); // Prevent selection
-            if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
-                deletePipelineStep(node.id);
-            }
-        };
-        nodeEl.appendChild(delBtn);
+      const delBtn = document.createElement("span");
+      delBtn.className = "ml-2 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white text-gray-400 transition-colors cursor-pointer text-xs leading-none";
+      delBtn.innerText = "-"; // Minus button as requested
+      delBtn.title = "Delete this step and its children";
+      delBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent selection
+        if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
+          deletePipelineStep(node.id);
+        }
+      };
+      nodeEl.appendChild(delBtn);
     }
 
     container.appendChild(nodeEl);
@@ -3041,15 +2982,15 @@ const renderPipeline = (): void => {
 
     // Add "Add" button if this is the active node (to branch off)
     if (node.id === activePipelineId) {
-        const line = document.createElement("div");
-        line.className = "w-8 h-0.5 bg-gray-300 mx-1 flex-shrink-0 border-t-2 border-dashed border-gray-300";
-        container.appendChild(line);
+      const line = document.createElement("div");
+      line.className = "w-8 h-0.5 bg-gray-300 mx-1 flex-shrink-0 border-t-2 border-dashed border-gray-300";
+      container.appendChild(line);
 
-        const addBtn = document.createElement("div");
-        addBtn.className = "w-6 h-6 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-400 text-xs";
-        addBtn.innerHTML = "+";
-        addBtn.title = "Add function to this step";
-        container.appendChild(addBtn);
+      const addBtn = document.createElement("div");
+      addBtn.className = "w-6 h-6 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-400 text-xs";
+      addBtn.innerHTML = "+";
+      addBtn.title = "Add function to this step";
+      container.appendChild(addBtn);
     }
   });
 };
@@ -3085,39 +3026,39 @@ const selectPipelineStep = (id: string): void => {
   // If we are at a Leaf, showing the Config View.
 
   else if (node.type === "root") {
-      // Root node -> Show selection to add new filter
-      landing.classList.remove("hidden");
-      contour.classList.add("hidden");
+    // Root node -> Show selection to add new filter
+    landing.classList.remove("hidden");
+    contour.classList.add("hidden");
   }
   else {
-      // Placeholder for other types
-      landing.classList.add("hidden");
-      contour.classList.add("hidden");
-      // Could show a "Not implemented" view here
+    // Placeholder for other types
+    landing.classList.add("hidden");
+    contour.classList.add("hidden");
+    // Could show a "Not implemented" view here
   }
 };
 
 const switchPostView = (view: "landing" | "contour"): void => {
   if (view === "contour") {
-      // Add a new contour node to the pipeline
-      const newNodeId = `contour_${Date.now()}`;
-      postPipeline.push({
-          id: newNodeId,
-          type: "contour",
-          name: "Contour",
-          parentId: activePipelineId
-      });
-      selectPipelineStep(newNodeId);
+    // Add a new contour node to the pipeline
+    const newNodeId = `contour_${Date.now()}`;
+    postPipeline.push({
+      id: newNodeId,
+      type: "contour",
+      name: "Contour",
+      parentId: activePipelineId
+    });
+    selectPipelineStep(newNodeId);
   } else {
-      // "Back" means go to parent or root?
-      // Or just go to root to add another branch?
-      // Let's assume "Back" means go up one level
-      const current = postPipeline.find(n => n.id === activePipelineId);
-      if (current && current.parentId) {
-          selectPipelineStep(current.parentId);
-      } else {
-          selectPipelineStep("root");
-      }
+    // "Back" means go to parent or root?
+    // Or just go to root to add another branch?
+    // Let's assume "Back" means go up one level
+    const current = postPipeline.find(n => n.id === activePipelineId);
+    if (current && current.parentId) {
+      selectPipelineStep(current.parentId);
+    } else {
+      selectPipelineStep("root");
+    }
   }
 };
 (window as any).switchPostView = switchPostView;
