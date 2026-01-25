@@ -115,12 +115,7 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
     Process target: Runs the Trame server with PyVista.
     """
     try:
-         # Use standard PyVista backend for this process, but offscreen false is debatable. 
-         # With Trame we do NOT need off_screen=True in the typical sense because Trame handles it.
-         # Actually for Trame to work we usually keep off_screen=True unless we want a local window pop.
-         # But Trame *is* the display.
-         
-         # Configure PyVista for Trame
+         # Use standard PyVista backend for this process
          pv.set_plot_theme("document")
          
          # Load mesh
@@ -163,11 +158,10 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
             plotter.reset_camera()
          
          # Start Trame Server logic
-         # from pyvista.trame.ui import get_viewer # Removed
          from trame.app import get_server
          from trame.ui.vuetify import VAppLayout
          from trame.widgets import vuetify, html
-         from trame.widgets.vtk import VtkLocalView
+         from trame.widgets.vtk import VtkRemoteView
 
          # We utilize a workaround to let the system pick a port or verify one
          # Trame usually picks a port if 0 is passed, or we can use socket to find one.
@@ -282,18 +276,9 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                          "auxclick.prevent": noop
                      }
                  ):
-                     # Use VtkLocalView for client-side rendering (geometry based)
-                     view = VtkLocalView(plotter.ren_win)
-                     # view.update() only syncs geometry/properties.
-                     # To force camera sync from server -> client in LocalView, we need push_camera()
-                     ctrl.view_update = view.push_camera
-         
-         # We need to notify the parent process of the port
-         # Trame start is blocking. We need a callback or start in thread?
-         # Server.start(port=0, start_thread=False) blocks.
-         # But we can get port before start if we bind manually? 
-         # Better: Start with wait_for_ready=False (if available) or use a helper.
-         # PyVista's `plotter.show(jupyter_backend='trame')` is usually for notebooks.
+                     # Use VtkRemoteView for server-side rendering (Massive Data Support)
+                     view = VtkRemoteView(plotter.ren_win)
+                     ctrl.view_update = view.update
          
          # Correct approach: Bind socket to random port, get number, close socket, pass to trame.
          import socket
