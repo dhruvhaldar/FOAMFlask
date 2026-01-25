@@ -14,6 +14,7 @@ import hashlib
 import shutil
 import stat
 import random
+import html
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 
@@ -526,10 +527,10 @@ def _generate_isosurface_html_process(
 
     except Exception as e:
         import traceback
-        error_msg = f"Error: {e}\n{traceback.format_exc()}"
+        # error_msg = f"Error: {e}\n{traceback.format_exc()}"
         print(f"Error in subprocess: {e}")
-        with open(r"E:\Misc\FOAMFlask\backend\post\subprocess_error.log", "w") as f:
-            f.write(error_msg)
+        # Log error to logger if possible or just print
+        # Avoid writing to hardcoded paths
             
         if os.path.exists(output_path):
             os.remove(output_path)
@@ -986,9 +987,9 @@ class IsosurfaceVisualizer:
         <h2>⚠️ Error Generating 3D Visualization</h2>
         <div class="error-message">
             <strong>Error:</strong><br>
-            {error_message}
+            {html.escape(error_message)}
         </div>
-        <p>Scalar field: <code>{scalar_field}</code></p>
+        <p>Scalar field: <code>{html.escape(scalar_field)}</code></p>
     </div>
 </body>
 </html>
