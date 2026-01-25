@@ -106,7 +106,10 @@ describe('FoamFlask Frontend', () => {
     await import('../../../static/ts/foamflask_frontend.ts');
 
     // Mock fetch AFTER import to override the monkey-patch
-    global.fetch = vi.fn();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ files: [], cases: [] })
+    });
   });
 
   afterEach(() => {

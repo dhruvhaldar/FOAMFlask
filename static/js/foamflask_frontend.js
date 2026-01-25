@@ -976,6 +976,19 @@ const toggleSection = (id) => {
     }
 };
 // Case Management
+const updateActiveCaseBadge = () => {
+    const badge = document.getElementById("activeCaseBadge");
+    if (badge) {
+        if (activeCase) {
+            badge.textContent = activeCase;
+            badge.classList.remove("hidden");
+            badge.title = `Active Case: ${activeCase}`;
+        }
+        else {
+            badge.classList.add("hidden");
+        }
+    }
+};
 const refreshCaseList = async (btnElement) => {
     const btn = btnElement;
     let originalText = "";
@@ -1042,6 +1055,7 @@ const refreshCaseList = async (btnElement) => {
 const selectCase = (val) => {
     activeCase = val;
     localStorage.setItem("lastSelectedCase", val);
+    updateActiveCaseBadge();
 };
 const createNewCase = async () => {
     const caseName = document.getElementById("newCaseName").value;
@@ -2871,6 +2885,7 @@ window.onload = async () => {
             if (exists) {
                 select.value = savedCase;
                 activeCase = savedCase;
+                updateActiveCaseBadge();
             }
         }
         // Check if we need to restore any plot state or similar
@@ -2927,6 +2942,7 @@ const init = () => {
     const savedCase = localStorage.getItem("lastSelectedCase");
     if (savedCase) {
         activeCase = savedCase;
+        updateActiveCaseBadge();
     }
     // Persist Tutorial Selection - Restore FIRST before any page logic runs
     const tutorialSelect = document.getElementById('tutorialSelect');
