@@ -72,6 +72,8 @@ describe('FoamFlask Frontend', () => {
       <div id="mySection" class="hidden"></div>
       <button id="mySectionToggle">▶</button>
 
+      <div id="no-case-state" class="hidden"></div>
+
       <!-- Post Processing Views -->
       <div id="post-landing-view"></div>
       <div id="post-contour-view" class="hidden"></div>
@@ -112,8 +114,11 @@ describe('FoamFlask Frontend', () => {
     document.body.innerHTML = '';
   });
 
-  it('switchPage should toggle classes correctly', () => {
-    const { switchPage } = window as any;
+  it('switchPage should toggle classes correctly when active case is set', () => {
+    const { switchPage, selectCase } = window as any;
+
+    // Set active case
+    selectCase('test_case');
 
     // Initial state: setup is visible
     const setupPage = document.getElementById('page-setup');
@@ -125,8 +130,31 @@ describe('FoamFlask Frontend', () => {
 
     expect(setupPage?.classList.contains('hidden')).toBe(true);
     expect(geometryPage?.classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('no-case-state')?.classList.contains('hidden')).toBe(true);
     expect(document.getElementById('nav-geometry')?.getAttribute('aria-current')).toBe('page');
     expect(document.getElementById('nav-setup')?.getAttribute('aria-current')).toBeNull();
+  });
+
+  it('switchPage should show empty state when no active case', () => {
+    const { switchPage, selectCase } = window as any;
+
+    // Ensure no active case
+    selectCase('');
+
+    const setupPage = document.getElementById('page-setup');
+    const geometryPage = document.getElementById('page-geometry');
+    const noCaseState = document.getElementById('no-case-state');
+
+    // Switch to geometry
+    switchPage('geometry');
+
+    // Setup hidden, Geometry hidden, No Case State visible
+    expect(setupPage?.classList.contains('hidden')).toBe(true);
+    expect(geometryPage?.classList.contains('hidden')).toBe(true);
+    expect(noCaseState?.classList.contains('hidden')).toBe(false);
+
+    // Nav should still update to show we are "on" the geometry tab (intent)
+    expect(document.getElementById('nav-geometry')?.getAttribute('aria-current')).toBe('page');
   });
 
   it('showNotification should add element to container', () => {
