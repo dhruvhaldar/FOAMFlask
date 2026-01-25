@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Any
 from docker.errors import DockerException
 
 logger = logging.getLogger("FOAMFlask")
@@ -30,6 +31,34 @@ def sanitize_error(e: Exception) -> str:
 
     # Generic fallback for other exceptions
     return "An internal server error occurred."
+
+def is_safe_color(color: Any) -> bool:
+    """
+    Validate color input to prevent XSS and injection.
+
+    Args:
+        color: Color string (name or hex) or RGB(A) list/tuple
+
+    Returns:
+        True if color is safe, False otherwise
+    """
+    # Allow RGB/RGBA lists or tuples
+    if isinstance(color, (list, tuple)):
+        return all(isinstance(c, (int, float)) for c in color)
+
+    if not isinstance(color, str):
+        return False
+
+    # Allow hex strings (e.g. #FFF, #FFFFFF)
+    if re.match(r'^#[0-9a-fA-F]{3,8}$', color):
+        return True
+
+    # Allow alphanumeric color names (e.g. "red", "lightblue", "tab:blue")
+    # Also allow underscores/hyphens for colormaps (e.g. "viridis")
+    if re.match(r'^[a-zA-Z0-9_:-]+$', color):
+        return True
+
+    return False
 
 def is_safe_command(command: str) -> bool:
     """
