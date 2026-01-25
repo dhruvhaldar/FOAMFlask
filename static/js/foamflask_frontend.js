@@ -1007,9 +1007,23 @@ const refreshCaseList = async (btnElement) => {
         }
     }
 };
+const updateActiveCaseBadge = (caseName) => {
+    const badge = document.getElementById("activeCaseBadge");
+    const nameSpan = document.getElementById("activeCaseName");
+    if (badge && nameSpan) {
+        if (caseName) {
+            nameSpan.textContent = caseName;
+            badge.classList.remove("opacity-0");
+        }
+        else {
+            badge.classList.add("opacity-0");
+        }
+    }
+};
 const selectCase = (val) => {
     activeCase = val;
     localStorage.setItem("lastSelectedCase", val);
+    updateActiveCaseBadge(val);
 };
 const createNewCase = async () => {
     const caseName = document.getElementById("newCaseName").value;
@@ -2839,6 +2853,7 @@ window.onload = async () => {
             if (exists) {
                 select.value = savedCase;
                 activeCase = savedCase;
+                updateActiveCaseBadge(savedCase);
             }
         }
         // Check if we need to restore any plot state or similar
@@ -2890,6 +2905,7 @@ window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
+window.updateActiveCaseBadge = updateActiveCaseBadge;
 const init = () => {
     // Persist Tutorial Selection - Restore FIRST before any page logic runs
     const tutorialSelect = document.getElementById('tutorialSelect');

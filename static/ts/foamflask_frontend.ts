@@ -1216,9 +1216,24 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
   }
 };
 
+const updateActiveCaseBadge = (caseName: string) => {
+  const badge = document.getElementById("activeCaseBadge");
+  const nameSpan = document.getElementById("activeCaseName");
+
+  if (badge && nameSpan) {
+    if (caseName) {
+      nameSpan.textContent = caseName;
+      badge.classList.remove("opacity-0");
+    } else {
+      badge.classList.add("opacity-0");
+    }
+  }
+};
+
 const selectCase = (val: string) => {
   activeCase = val;
   localStorage.setItem("lastSelectedCase", val);
+  updateActiveCaseBadge(val);
 };
 
 const createNewCase = async () => {
@@ -3235,6 +3250,7 @@ window.onload = async () => {
       if (exists) {
         select.value = savedCase;
         activeCase = savedCase;
+        updateActiveCaseBadge(savedCase);
       }
     }
 
@@ -3290,6 +3306,7 @@ window.onload = async () => {
 (window as any).copyMeshingOutput = copyMeshingOutput;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
+(window as any).updateActiveCaseBadge = updateActiveCaseBadge;
 
 
 const init = () => {

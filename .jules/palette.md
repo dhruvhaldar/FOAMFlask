@@ -36,3 +36,7 @@
 **Learning:** In complex Dashboards, restoring user preferences (like "Selected Tutorial") must happen *synchronously* or strictly *before* any data fetching logic runs.
 **Action:** Move state restoration logic to the very top of the initialization chain (`init()`), guaranteeing that when the UI "wakes up" and requesting data, it asks for the *right* data immediately, avoiding 404s and flickering.
 
+
+## 2026-01-28 - [Persistent Context Indicators]
+**Learning:** Users often lose context of their active workspace (e.g., Active Case) when navigating deep into tool tabs (Geometry/Meshing/Run).
+**Action:** Add a persistent badge in the global navigation bar that displays the current context (Active Case), updating automatically on selection or page load.
