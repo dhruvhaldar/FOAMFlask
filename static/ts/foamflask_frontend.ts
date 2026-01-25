@@ -631,8 +631,21 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
   const selectedNav = document.getElementById(`nav-${pageName}`);
   const selectedMobileNav = document.getElementById(`mobile-nav-${pageName}`);
   const navPill = document.getElementById("nav-pill");
+  const noCaseState = document.getElementById("no-case-state");
 
-  if (selectedPage) selectedPage.classList.remove("hidden");
+  // Palette UX: Enforce Active Case
+  const isProtectedPage = pageName !== "setup";
+  const hasActiveCase = !!activeCase;
+
+  if (isProtectedPage && !hasActiveCase) {
+    // Show empty state
+    if (noCaseState) noCaseState.classList.remove("hidden");
+    // Keep page hidden (it was hidden by loop above)
+  } else {
+    // Show page content
+    if (noCaseState) noCaseState.classList.add("hidden");
+    if (selectedPage) selectedPage.classList.remove("hidden");
+  }
 
   if (selectedNav) {
     // Update Text Color
@@ -655,6 +668,9 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
     selectedMobileNav.classList.add("bg-cyan-700", "text-white");
     selectedMobileNav.setAttribute("aria-current", "page");
   }
+
+  // Skip data refresh if we are showing the empty state (no active case)
+  if (isProtectedPage && !hasActiveCase) return;
 
   // Auto-refresh lists based on page
   switch (pageName) {
@@ -3293,6 +3309,12 @@ window.onload = async () => {
 
 
 const init = () => {
+  // Palette UX: Optimistically restore active case
+  const savedCase = localStorage.getItem("lastSelectedCase");
+  if (savedCase) {
+    activeCase = savedCase;
+  }
+
   // Persist Tutorial Selection - Restore FIRST before any page logic runs
   const tutorialSelect = document.getElementById('tutorialSelect') as HTMLSelectElement;
   if (tutorialSelect) {

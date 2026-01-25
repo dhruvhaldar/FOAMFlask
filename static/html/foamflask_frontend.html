@@ -2043,6 +2043,28 @@
         <!-- Other post-processing content will be loaded here by refreshPostList() -->
       </div>
     </div>
+
+    <!-- No Case Selected State (Shared Empty State) -->
+    <div id="no-case-state" class="hidden max-w-2xl mx-auto glass rounded-lg p-8 text-center mt-12 animate-[fadeIn_0.3s_ease-out]">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-cyan-100/50 mb-6 shadow-sm ring-1 ring-cyan-200">
+        <svg class="w-10 h-10 text-cyan-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </div>
+      <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">No Active Case Selected</h2>
+      <p class="text-gray-600 mb-8 text-lg max-w-md mx-auto leading-relaxed">
+        You need to select or create a case to access Geometry, Meshing, and Simulation tools.
+      </p>
+      <button onclick="switchPage('setup')"
+        class="bg-cyan-600 hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-500/30 text-white px-8 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 inline-flex items-center gap-2">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Go to Setup
+      </button>
+    </div>
   </div>
   <!-- End Main Content Area -->
 

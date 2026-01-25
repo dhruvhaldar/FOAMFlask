@@ -36,3 +36,6 @@
 **Learning:** In complex Dashboards, restoring user preferences (like "Selected Tutorial") must happen *synchronously* or strictly *before* any data fetching logic runs.
 **Action:** Move state restoration logic to the very top of the initialization chain (`init()`), guaranteeing that when the UI "wakes up" and requesting data, it asks for the *right* data immediately, avoiding 404s and flickering.
 
+## 2026-02-13 - [Empty States for Dependent Pages]
+**Learning:** In multi-page apps where subsequent pages depend on a selection made in the first page (e.g., "Select Case"), navigating ahead without a selection leads to confusing empty lists and error notifications. Users need explicit guidance.
+**Action:** Implement a persistent "No Selection" empty state that overlays or replaces the dependent page content, clearly explaining why the view is unavailable and providing a direct action button to fix it.
