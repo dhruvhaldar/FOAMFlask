@@ -2060,11 +2060,11 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
             for line in container.logs(stream=True):
                 decoded = line.decode(errors="ignore")
                 for subline in decoded.splitlines():
-                    yield f"{escape(subline)}<br>"
+                    yield f"{subline}\n"
 
         except Exception as e:
             logger.error(f"Error running foamToVTK: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] {escape(sanitize_error(e))}<br>"
+            yield f"[FOAMFlask] [Error] {sanitize_error(e)}\n"
 
         finally:
             if 'container' in locals():
@@ -2077,7 +2077,7 @@ def run_foamtovtk() -> Union[Response, Tuple[Dict, int]]:
                 except Exception:
                     logger.error("[FOAMFlask] Could not remove container")
 
-    return Response(stream_foamtovtk_logs(), mimetype="text/html")
+    return Response(stream_with_context(stream_foamtovtk_logs()), mimetype="text/plain")
 
 
 # --- PyVista Post Processing Visualization Endpoints ---
