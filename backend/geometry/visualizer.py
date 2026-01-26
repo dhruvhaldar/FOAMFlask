@@ -10,10 +10,16 @@ import shutil
 import hashlib
 import stat
 import random
+from collections import OrderedDict
 
 logger = logging.getLogger("FOAMFlask")
 
 ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
+
+# ⚡ Bolt Optimization: Cache for mesh info
+# Stores (path, mtime) -> mesh_info_dict
+_MESH_INFO_CACHE = OrderedDict()
+_MESH_INFO_CACHE_SIZE = 100
 
 def _get_cache_dir() -> Path:
     """Get the cache directory, creating it if it doesn't exist."""
@@ -314,6 +320,18 @@ class GeometryVisualizer:
             if not path.exists():
                 return {"success": False, "error": "File not found"}
 
+            # ⚡ Bolt Optimization: Check in-memory cache
+            try:
+                mtime = path.stat().st_mtime
+                cache_key = (str(path), mtime)
+                if cache_key in _MESH_INFO_CACHE:
+                    _MESH_INFO_CACHE.move_to_end(cache_key)
+                    logger.debug(f"Serving mesh info from cache for {path}")
+                    return _MESH_INFO_CACHE[cache_key]
+            except OSError:
+                # File access error, proceed to standard loading which handles errors
+                pass
+
             read_path = str(path)
             temp_read_path = None
             
@@ -331,13 +349,25 @@ class GeometryVisualizer:
                 bounds = mesh.bounds
                 center = mesh.center
 
-                return {
+                result = {
                     "success": True,
                     "bounds": bounds,
                     "center": center,
                     "n_points": mesh.n_points,
                     "n_cells": mesh.n_cells
                 }
+
+                # ⚡ Bolt Optimization: Update cache
+                # We do this after successful loading
+                try:
+                    _MESH_INFO_CACHE[cache_key] = result
+                    if len(_MESH_INFO_CACHE) > _MESH_INFO_CACHE_SIZE:
+                        _MESH_INFO_CACHE.popitem(last=False) # Remove oldest
+                except Exception:
+                    pass
+
+                return result
+
             finally:
                 if temp_read_path and os.path.exists(temp_read_path):
                     try:
