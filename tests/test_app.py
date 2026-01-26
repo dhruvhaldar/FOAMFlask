@@ -31,17 +31,19 @@ def test_is_safe_command():
     assert flask_app.is_safe_command("simple-command") is True
     assert flask_app.is_safe_command("command-with-dashes") is True
     assert flask_app.is_safe_command("command_with_underscores") is True
-    assert flask_app.is_safe_command("command with spaces") is True
     assert flask_app.is_safe_command("command123") is True
 
     # Test invalid commands
+    # Spaces are now disallowed to prevent argument injection
+    assert flask_app.is_safe_command("command with spaces") is False
+
     # Empty or None
     assert flask_app.is_safe_command("") is False
     assert flask_app.is_safe_command(None) is False
     assert flask_app.is_safe_command(123) is False  # Not a string
 
     # Test dangerous characters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%']
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%', '!', '*', '?', '[', ']', '~']
     for char in dangerous_chars:
         assert flask_app.is_safe_command(f"command{char}") is False, f"Failed for character: {char}"
 
@@ -147,14 +149,14 @@ def test_is_safe_command_with_substitution_and_redirection():
     assert flask_app.is_safe_command("command `rm -rf /`") is False
     assert flask_app.is_safe_command("`only_backticks`") is False
     assert flask_app.is_safe_command("$(only_command_sub)") is False
-    assert flask_app.is_safe_command("command normal") is True  # Control positive
+    assert flask_app.is_safe_command("command_normal") is True  # Control positive
 
     # File descriptor redirection
     assert flask_app.is_safe_command("command 2> error.log") is False
     assert flask_app.is_safe_command("command 1> output.log") is False
     assert flask_app.is_safe_command("command 0<input.txt") is False
     assert flask_app.is_safe_command("command 10> file") is False  # multi-digit fd
-    assert flask_app.is_safe_command("command without redirection") is True  # Control positive
+    assert flask_app.is_safe_command("command_without_redirection") is True  # Control positive
 
 def test_load_config_no_file(tmp_path):
     # Patch CONFIG_FILE to a non-existent file path

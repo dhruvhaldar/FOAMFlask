@@ -45,11 +45,17 @@ def is_safe_command(command: str) -> bool:
         return False
 
     # Check for dangerous shell metacharacters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '!']
     # Add newline characters to prevent command injection
     dangerous_chars.extend(['\n', '\r'])
     # Add brace expansion to prevent unexpected file creation
     dangerous_chars.extend(['{', '}'])
+    # Add globbing characters to prevent wildcard expansion
+    dangerous_chars.extend(['*', '?', '[', ']'])
+    # Add space to enforce single-word commands (prevents argument injection)
+    dangerous_chars.extend([' ', '\t'])
+    # Add tilde to prevent home directory expansion
+    dangerous_chars.append('~')
 
     if any(char in command for char in dangerous_chars):
         return False
