@@ -1828,20 +1828,27 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
             return fast_jsonify({"error": str(e)}), 400
 
         logger.info("[FOAMFlask] [api_load_mesh] Mesh loading called")
-        mesh_info = mesh_visualizer.load_mesh(validated_path)
 
         if for_contour:
             logger.info(
                 "[FOAMFlask] [api_load_mesh] [for_contour] Mesh loading for contour called"
             )
+            # Use IsosurfaceVisualizer to load the mesh and compute derived fields (e.g. U_Magnitude)
+            # This ensures that subsequent calls to get_scalar_field_info work on the correct data
+            mesh_info = isosurface_visualizer.load_mesh(str(validated_path))
 
             try:
-                # Ensure we have the required fields for contour generation
-                mesh_info.setdefault("point_arrays", mesh_info.get("array_names", []))
-                # Add any contour-specific processing here if needed
+                # Get detailed statistics for all scalar fields to support auto-ranging in frontend
+                field_stats = isosurface_visualizer.get_scalar_field_info()
+                mesh_info["field_stats"] = field_stats
+                # Ensure we have the required fields for contour generation (though isosurface_visualizer usually sets this)
+                mesh_info.setdefault("point_arrays", mesh_info.get("point_arrays", []))
             except Exception as e:
                 logger.error(f"Error loading mesh for contour: {e}", exc_info=True)
                 return fast_jsonify({"error": str(e)}), 500
+        else:
+            # Standard mesh loading for visualization
+            mesh_info = mesh_visualizer.load_mesh(validated_path)
 
         return fast_jsonify(mesh_info)
     except Exception as e:

@@ -4,6 +4,7 @@
  */
 // Global state
 let currentContourData = null;
+let currentFieldStats = null;
 /**
  * Generate isosurface contours for the loaded mesh
  * @param options - Configuration options
@@ -206,6 +207,10 @@ export async function loadContourMesh(vtkFilePath) {
         if (meshInfo.error) {
             throw new Error(meshInfo.error);
         }
+        // Store field stats for auto-ranging
+        if (meshInfo.field_stats) {
+            currentFieldStats = meshInfo.field_stats;
+        }
         // Populate Scalar Fields
         const scalarFieldSelect = document.getElementById('scalarField');
         if (scalarFieldSelect && meshInfo.point_arrays) {
@@ -217,32 +222,6 @@ export async function loadContourMesh(vtkFilePath) {
                 option.textContent = field;
                 option.classList.add('point-data-option'); // Add styling class
                 scalarFieldSelect.appendChild(option);
-                if (field === 'U_Magnitude' && meshInfo.u_magnitude) {
-                    // Set slider range based on U_Magnitude stats
-                    const slider = document.getElementById('isovalueSlider');
-                    const display = document.getElementById('isovalueDisplay');
-                    if (slider && meshInfo.u_magnitude.min !== undefined && meshInfo.u_magnitude.max !== undefined) {
-                        slider.min = meshInfo.u_magnitude.min;
-                        slider.max = meshInfo.u_magnitude.max;
-                        slider.step = ((meshInfo.u_magnitude.max - meshInfo.u_magnitude.min) / 100).toString();
-                        slider.value = ((meshInfo.u_magnitude.max + meshInfo.u_magnitude.min) / 2).toString(); // Default to mid
-                        if (display)
-                            display.textContent = parseFloat(slider.value).toFixed(2);
-                        // Add listener
-                        slider.onchange = () => {
-                            if (display)
-                                display.textContent = parseFloat(slider.value).toFixed(2);
-                            const checkbox = document.getElementById('showIsovalueWidget');
-                            if (checkbox && checkbox.checked) {
-                                generateContours();
-                            }
-                        };
-                        slider.oninput = () => {
-                            if (display)
-                                display.textContent = parseFloat(slider.value).toFixed(2);
-                        };
-                    }
-                }
             });
             // If U_Magnitude exists, select it by default, otherwise select first
             if (meshInfo.point_arrays.includes('U_Magnitude')) {
@@ -251,6 +230,9 @@ export async function loadContourMesh(vtkFilePath) {
             else if (meshInfo.point_arrays.length > 0) {
                 scalarFieldSelect.value = meshInfo.point_arrays[0];
             }
+            // Setup listeners and update ranges for the initial selection
+            setupScalarFieldListeners();
+            updateRangeInputs(scalarFieldSelect.value);
         }
         // Populate Info Box
         const contourInfo = document.getElementById('contourInfo');
@@ -601,6 +583,80 @@ export function resetContourViewer() {
         contourViewer.innerHTML = '';
     }
     currentContourData = null;
+}
+/**
+ * Update range inputs based on selected scalar field
+ */
+function updateRangeInputs(fieldName) {
+    if (!currentFieldStats || !currentFieldStats[fieldName])
+        return;
+    const stats = currentFieldStats[fieldName];
+    // Handle both vector (magnitude_stats) and scalar (direct stats)
+    const min = stats.type === 'vector' ? stats.magnitude_stats?.min : stats.min;
+    const max = stats.type === 'vector' ? stats.magnitude_stats?.max : stats.max;
+    if (min !== undefined && max !== undefined) {
+        const minInput = document.getElementById('rangeMin');
+        const maxInput = document.getElementById('rangeMax');
+        if (minInput)
+            minInput.value = parseFloat(min).toFixed(4);
+        if (maxInput)
+            maxInput.value = parseFloat(max).toFixed(4);
+        // Update slider as well
+        const slider = document.getElementById('isovalueSlider');
+        const display = document.getElementById('isovalueDisplay');
+        if (slider) {
+            slider.min = min.toString();
+            slider.max = max.toString();
+            slider.step = ((max - min) / 100).toString();
+            // Keep relative position or reset to center? Reset to center for now.
+            slider.value = ((max + min) / 2).toString();
+            if (display)
+                display.textContent = parseFloat(slider.value).toFixed(2);
+        }
+    }
+}
+/**
+ * Reset range inputs to global min/max for current field
+ */
+window.resetScalarRange = () => {
+    const scalarFieldSelect = document.getElementById('scalarField');
+    if (scalarFieldSelect && scalarFieldSelect.value) {
+        updateRangeInputs(scalarFieldSelect.value);
+        if (typeof showNotification === 'function') {
+            showNotification("Range reset to data bounds", "success", 1500);
+        }
+    }
+};
+/**
+ * Setup listeners for scalar field changes
+ */
+function setupScalarFieldListeners() {
+    const scalarFieldSelect = document.getElementById('scalarField');
+    if (scalarFieldSelect) {
+        // Remove old listener to avoid duplicates if called multiple times?
+        // Ideally we should use a named function or check if attached.
+        // For simplicity, we'll just set onchange (replacing old one)
+        scalarFieldSelect.onchange = () => {
+            updateRangeInputs(scalarFieldSelect.value);
+        };
+    }
+    // Also update slider display on input
+    const slider = document.getElementById('isovalueSlider');
+    const display = document.getElementById('isovalueDisplay');
+    if (slider && display) {
+        slider.oninput = () => {
+            display.textContent = parseFloat(slider.value).toFixed(2);
+        };
+        slider.onchange = () => {
+            display.textContent = parseFloat(slider.value).toFixed(2);
+            // Auto-update contour if widget enabled?
+            // The original code did this. Let's keep it consistent.
+            const checkbox = document.getElementById('showIsovalueWidget');
+            if (checkbox && checkbox.checked) {
+                generateContours();
+            }
+        };
+    }
 }
 /**
  * Initialize the isovalue widget logic (event listeners)
