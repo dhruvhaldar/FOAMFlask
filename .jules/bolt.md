@@ -38,3 +38,6 @@
 **Learning:** Binding a host directory that doesn't exist causes Docker to create it as `root`. This causes "Permission denied" errors for the app running as a normal user.
 **Action:** Always verify/create directories with correct ownership on the host *before* passing them to `volumes` in `client.containers.run`.
 
+## 2026-06-22 - [Flask-Compress & Streaming Performance]
+**Learning:** `Flask-Compress` buffers responses with `text/html` mimetype, destroying the real-time nature of streaming endpoints (like log tailing). This results in the user seeing nothing until the buffer fills or the stream ends.
+**Action:** For streaming endpoints, use `stream_with_context`, set mimetype to `text/plain` (or another uncompressed type), and ensure the client handles raw text streams (newline-delimited) instead of expecting HTML chunks. This bypasses compression buffering and ensures immediate delivery of each chunk.
