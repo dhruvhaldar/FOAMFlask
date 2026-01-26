@@ -1187,6 +1187,19 @@ const toggleSection = (id: string): void => {
 };
 
 // Case Management
+const updateActiveCaseBadge = () => {
+  const badge = document.getElementById("activeCaseBadge");
+  if (badge) {
+    if (activeCase) {
+      badge.textContent = activeCase;
+      badge.classList.remove("hidden");
+      badge.title = `Active Case: ${activeCase}`;
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+};
+
 const refreshCaseList = async (btnElement?: HTMLElement) => {
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
@@ -1247,6 +1260,7 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
 const selectCase = (val: string) => {
   activeCase = val;
   localStorage.setItem("lastSelectedCase", val);
+  updateActiveCaseBadge();
 };
 
 const createNewCase = async () => {
@@ -3263,6 +3277,7 @@ window.onload = async () => {
       if (exists) {
         select.value = savedCase;
         activeCase = savedCase;
+        updateActiveCaseBadge();
       }
     }
 
@@ -3325,6 +3340,7 @@ const init = () => {
   const savedCase = localStorage.getItem("lastSelectedCase");
   if (savedCase) {
     activeCase = savedCase;
+    updateActiveCaseBadge();
   }
 
   // Persist Tutorial Selection - Restore FIRST before any page logic runs
