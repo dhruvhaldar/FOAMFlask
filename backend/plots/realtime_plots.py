@@ -149,21 +149,26 @@ class OpenFOAMFieldParser:
             if isinstance(field_entry, os.DirEntry):
                 path_str = field_entry.path
                 filename = field_entry.name
-                mtime = field_entry.stat().st_mtime
                 # ⚡ Bolt Optimization: Avoid Path object creation
                 # field_path = Path(path_str) # REMOVED
             else:
                 field_path = field_entry
                 path_str = str(field_path)
                 filename = field_path.name
-                mtime = os.stat(path_str).st_mtime
 
             # ⚡ Bolt Optimization: Check case-wide filename cache first
             # If we know 'p' is scalar in this case, we don't need to read '0.1/p', '0.2/p'...
+            # ⚡ Bolt Optimization: We check this BEFORE calling stat() to save a syscall per file per scan.
             case_path_str = str(self.case_dir)
             if case_path_str in _CASE_FIELD_TYPES:
                 if filename in _CASE_FIELD_TYPES[case_path_str]:
                     return _CASE_FIELD_TYPES[case_path_str][filename]
+
+            # ⚡ Bolt Optimization: Only retrieve mtime if not found in fast case-wide cache
+            if isinstance(field_entry, os.DirEntry):
+                mtime = field_entry.stat().st_mtime
+            else:
+                mtime = os.stat(path_str).st_mtime
 
             # Fallback to path-specific cache (useful if logic changes or for non-standard structures)
             if path_str in _FIELD_TYPE_CACHE:
