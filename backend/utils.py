@@ -75,3 +75,23 @@ def is_safe_command(command: str) -> bool:
         return False
 
     return True
+
+def is_safe_color(color: str) -> bool:
+    """
+    Validate color string to prevent XSS.
+    Allows hex codes and alphanumeric color names.
+    Also allows colormaps with alphanumeric characters, spaces, hyphens, and colons.
+    """
+    if not color or not isinstance(color, str):
+        return False
+
+    # Check length
+    if len(color) > 50:
+        return False
+
+    # Allow alphanumeric, spaces, hyphens, underscores, dots, hashes, and colons.
+    # Strict enough to prevent XSS (no < > " ' ; ( )).
+    if re.match(r'^[a-zA-Z0-9\s#:_.-]+$', color):
+        return True
+
+    return False
