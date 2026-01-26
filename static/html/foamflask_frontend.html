@@ -1909,10 +1909,20 @@
             </div>
 
             <!-- Range Selection -->
-            <fieldset class="mt-2 w-full border-0 p-0 m-0 min-w-0">
+            <fieldset class="mt-2 w-full border-0 p-0 m-0 min-w-0 relative">
               <legend class="text-sm font-medium mb-2 block">
                 Scalar Range
               </legend>
+              <button type="button" id="resetRangeBtn" onclick="resetScalarRange()"
+                class="absolute top-0 right-0 text-xs text-cyan-600 hover:text-cyan-800 focus:outline-none focus:underline flex items-center gap-1"
+                title="Reset to data bounds" aria-label="Reset scalar range to data bounds">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
               <div class="grid grid-cols-2 gap-2 w-full">
                 <div class="w-full">
                   <input type="number" id="rangeMin" placeholder="Min"
