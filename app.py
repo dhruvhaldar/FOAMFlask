@@ -210,6 +210,12 @@ def is_safe_tutorial_path(path: str) -> bool:
         return False
     if '..' in path:
         return False
+    # Prevent argument injection (starting with -)
+    if path.startswith('-'):
+        return False
+    # Prevent absolute paths (starting with /)
+    if path.startswith('/') or path.startswith('\\'):
+        return False
     return True
 
 
