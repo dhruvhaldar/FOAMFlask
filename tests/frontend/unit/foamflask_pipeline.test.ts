@@ -77,9 +77,11 @@ describe('FoamFlask Frontend Pipeline', () => {
     // Should now have Root -> Contour
     // Check buttons in pipeline container
     const buttons = container.querySelectorAll('button');
-    expect(buttons.length).toBe(2);
-    expect(buttons[0].textContent).toContain('Mesh'); // Root
-    expect(buttons[1].textContent).toContain('Contour'); // New Node
+    // Root has 1 button (Select), Contour has 2 buttons (Select + Delete) = 3 total
+    expect(buttons.length).toBe(3);
+    expect(buttons[0].textContent).toContain('Mesh'); // Root Select
+    expect(buttons[1].textContent).toContain('Contour'); // Contour Select
+    // buttons[2] is Contour Delete
 
     // Contour view should be visible
     expect(document.getElementById('post-contour-view')?.classList.contains('hidden')).toBe(false);
@@ -98,12 +100,12 @@ describe('FoamFlask Frontend Pipeline', () => {
 
     // Should still have nodes (we just moved active pointer)
     const buttons = container.querySelectorAll('button');
-    expect(buttons.length).toBe(2);
+    expect(buttons.length).toBe(3);
 
     // Active styling check (Root should be active)
-    // Root is buttons[0]
-    expect(buttons[0].className).toContain('bg-cyan-600');
-    expect(buttons[1].className).not.toContain('bg-cyan-600');
+    // Root is buttons[0], background class is on the wrapper div (parentElement)
+    expect(buttons[0].parentElement?.className).toContain('bg-cyan-600');
+    expect(buttons[1].parentElement?.className).not.toContain('bg-cyan-600');
 
     // Landing view should be visible
     expect(document.getElementById('post-contour-view')?.classList.contains('hidden')).toBe(true);
