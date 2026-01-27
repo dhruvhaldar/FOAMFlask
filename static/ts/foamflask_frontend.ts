@@ -1475,7 +1475,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       const fieldData = (data as any)[field];
       if (fieldData && fieldData.length > 0) {
         traces.push({
-          x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+          x: data.time, // ⚡ Bolt Optimization: Use actual time/iteration array (supports decimation)
           y: fieldData,
           type: "scattergl",
           mode: "lines",
@@ -1492,7 +1492,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
           ...plotLayout,
           title: createBoldTitle("Residuals"),
           xaxis: {
-            title: { text: "Iteration" },
+            title: { text: "Time / Iteration" },
             showline: true,
             mirror: "all",
             showgrid: false,

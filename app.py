@@ -1763,6 +1763,25 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         parser = OpenFOAMFieldParser(str(case_dir))
         # ⚡ Bolt Optimization: Pass the stat result from check_cache to avoid re-stat call
         residuals = parser.get_residuals_from_log(known_stat=stat_result)
+
+        # ⚡ Bolt Optimization: Downsample residuals for large datasets
+        # Reduces JSON payload and frontend rendering load for long simulations.
+        # We target ~1000 points max.
+        MAX_POINTS = 1000
+        time_list = residuals.get("time", [])
+        n_points = len(time_list)
+
+        if n_points > MAX_POINTS:
+            stride = max(1, n_points // MAX_POINTS)
+            decimated = {}
+            for k, v in residuals.items():
+                if isinstance(v, list):
+                    # Slice creates a copy, safe for cache (which shouldn't be mutated)
+                    decimated[k] = v[::stride]
+                else:
+                    decimated[k] = v
+            residuals = decimated
+
         response = fast_jsonify(residuals)
         if last_modified:
              response.headers["Last-Modified"] = last_modified
