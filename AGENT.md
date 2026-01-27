@@ -18,6 +18,11 @@ This document consolidates key learnings from the Sentinel (Security), Bolt (Per
 
 ## 🛡️ Sentinel's Security Journal
 
+### 2026-03-01 - [Path Leakage in Docker Exceptions]
+**Vulnerability:** The `sanitize_error` function in `backend/utils.py` explicitly allowed `DockerException` messages to pass through raw for debugging purposes. However, these messages often contain absolute paths (e.g., "Bind mount failed: '/absolute/path/on/server' does not exist"), leaking internal server file structure to the user via API responses.
+**Learning:** Exception messages from third-party libraries (like `docker-py`) are not safe for public consumption. They prioritize developer context over security and often include environment-specific details. "Debuggability" should not compromise information security in production-like environments.
+**Prevention:** I modified `sanitize_error` to apply regex-based redaction on `DockerException` messages. It now detects and replaces quoted absolute paths (both Unix and Windows style) with `[REDACTED_PATH]`, preserving the error context while hiding sensitive filesystem details.
+
 ### 2026-01-24 - [Content Security Policy Header Conflicts]
 **Vulnerability:** Defining CSP headers in multiple places (e.g., separate `after_request` callbacks) caused the browser to enforce the "intersection" of policies, effectively defaulting to the most restrictive one. A legacy `add_security_headers` function was overwriting a newer, more permissive `set_security_headers`, blocking `frame-src` for the Trame visualizer.
 **Learning:** Security headers should be centralized. "Stacking" them does not merge permissions; it typically restricts them further.

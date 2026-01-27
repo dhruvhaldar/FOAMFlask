@@ -17,11 +17,14 @@ def sanitize_error(e: Exception) -> str:
     # Docker errors might be safe if they are connection errors, but API errors can leak paths.
     # We'll trust DockerException messages for now as they are often needed for debugging config.
     if isinstance(e, DockerException):
-        # Additional check: If it contains "Bind mount failed", it might leak paths.
-        # But we need to balance debuggability.
-        # For Sentinel purposes, we can try to mask paths if we detect them?
-        # For now, we follow the existing pattern in app.py which allowed DockerException.
-        return str(e)
+        msg = str(e)
+        # Redact potential absolute paths to prevent leakage
+        # Unix paths inside quotes (common in Docker errors)
+        # We match any character except quote to handle spaces in paths
+        msg = re.sub(r"'(/(?:[^'])+)'", "'[REDACTED_PATH]'", msg)
+        # Windows paths inside quotes
+        msg = re.sub(r"'([a-zA-Z]:\\[^']+)'", "'[REDACTED_PATH]'", msg)
+        return msg
 
     # Check for OSError/IOError which might contain paths (e.g. PermissionError, FileNotFoundError)
     if isinstance(e, OSError):
