@@ -698,7 +698,7 @@
                 Refresh
               </button>
             </div>
-            <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full" size="5">
+            <select id="geometrySelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" size="5">
               <!-- Populated by JS -->
             </select>
             <div class="flex gap-2">
@@ -1266,7 +1266,7 @@
                 </button>
               </div>
 
-              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full"
+              <select id="meshSelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 aria-label="Select Mesh File">
                 <option value="">-- Select a mesh file --</option>
               </select>
@@ -1285,7 +1285,7 @@
 
               <div class="flex items-center gap-2">
                 <label for="meshColor" class="text-sm">Color:</label>
-                <select id="meshColor" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1">
+                <select id="meshColor" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                   <option value="lightblue">Light Blue</option>
                   <option value="white">White</option>
                   <option value="gray">Gray</option>
@@ -1297,7 +1297,7 @@
 
               <div class="flex items-center gap-2">
                 <label for="cameraPosition" class="text-sm">View:</label>
-                <select id="cameraPosition" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1">
+                <select id="cameraPosition" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                   <option value="">Auto</option>
                   <option value="xy">XY Plane</option>
                   <option value="xz">XZ Plane</option>
@@ -1828,7 +1828,7 @@
                   Refresh
                 </button>
               </div>
-              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full">
+              <select id="vtkFileSelect" class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <option value="">-- Select a VTK file --</option>
               </select>
             </div>
@@ -1882,7 +1882,7 @@
             <div class="flex flex-col gap-2">
               <label for="scalarField" class="text-sm font-medium">Scalar Field</label>
               <select id="scalarField"
-                class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-cyan-500 [&_.cell-data-option]:text-green-500">
+                class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-cyan-500 [&_.cell-data-option]:text-green-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <style>
                   option.point-data-option {
                     color: #d946ef;
@@ -1902,7 +1902,7 @@
             <!-- Color Map Selection -->
             <div class="flex flex-col gap-2">
               <label for="colorMap" class="text-sm font-medium">Color Map</label>
-              <select id="colorMap" class="border border-gray-300 rounded px-3 py-2">
+              <select id="colorMap" class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <option value="viridis">Viridis</option>
                 <option value="plasma">Plasma</option>
                 <option value="inferno">Inferno</option>
@@ -1946,7 +1946,7 @@
               <label for="numIsosurfaces" class="text-sm font-medium">Number of Isosurfaces
                 <span class="text-gray-900">(Optional)</span></label>
               <input type="number" id="numIsosurfaces" placeholder="Leave empty for default (10)" min="1" max="40"
-                class="border border-gray-300 rounded px-3 py-2" />
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
             </div>
 
             <!-- Show Isovalue Widget Toggle -->
@@ -1962,7 +1962,7 @@
               <label for="isovalueSlider" class="block text-sm font-medium text-gray-700">Isovalue</label>
               <div class="flex items-center gap-2">
                 <input type="range" id="isovalueSlider"
-                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500">
                 <span id="isovalueDisplay" class="text-sm text-gray-600 w-16 text-right">0</span>
               </div>
             </div>
