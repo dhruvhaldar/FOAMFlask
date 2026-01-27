@@ -41,7 +41,7 @@ def test_is_safe_command():
     assert flask_app.is_safe_command(123) is False  # Not a string
 
     # Test dangerous characters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%']
+    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'", '%', '*', '?', '[', ']', '~', '!', '{', '}']
     for char in dangerous_chars:
         assert flask_app.is_safe_command(f"command{char}") is False, f"Failed for character: {char}"
 
@@ -63,7 +63,7 @@ def test_is_safe_command():
     assert flask_app.is_safe_command("command /etc/passwd") is True  # Allowed, handled by command validation
     assert flask_app.is_safe_command("command /etc/../etc/passwd") is False
     assert flask_app.is_safe_command("command ./../dangerous") is False
-    assert flask_app.is_safe_command("command ~/dangerous") is True  # Tilde expansion is allowed
+    assert flask_app.is_safe_command("command ~/dangerous") is False  # Tilde expansion is BLOCKED
 
     # Test file descriptor redirection
     assert flask_app.is_safe_command("command 2>error.log") is False

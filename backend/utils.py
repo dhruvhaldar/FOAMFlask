@@ -46,6 +46,10 @@ def is_safe_command(command: str) -> bool:
 
     # Check for dangerous shell metacharacters
     dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    # Add globbing characters to prevent wildcard expansion
+    dangerous_chars.extend(['*', '?', '[', ']'])
+    # Add other shell metacharacters
+    dangerous_chars.extend(['~', '!'])
     # Add newline characters to prevent command injection
     dangerous_chars.extend(['\n', '\r'])
     # Add brace expansion to prevent unexpected file creation
