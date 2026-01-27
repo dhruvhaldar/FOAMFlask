@@ -755,6 +755,9 @@ class IsosurfaceVisualizer:
             "base_mesh_opacity": base_mesh_opacity,
             "contour_opacity": contour_opacity,
             "colormap": colormap,
+            "custom_range": custom_range,
+            "num_isosurfaces": num_isosurfaces,
+            "isovalues": isovalues,
              # Trame specific params could go here
         }
         

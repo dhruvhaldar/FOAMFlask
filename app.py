@@ -2304,27 +2304,9 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         if isovalues:
             logger.info(f"[FOAMFlask] [create_contour] Using specific isovalues: {isovalues}")
 
-        # Generate isosurfaces
-        logger.info(
-            f"[FOAMFlask] [create_contour] Generating {num_isosurfaces} isosurfaces..."
-        )
-        isosurface_info = isosurface_visualizer.generate_isosurfaces(
-            scalar_field=scalar_field,
-            num_isosurfaces=num_isosurfaces,
-            custom_range=custom_range,
-            isovalues=isovalues,
-        )
-
-        if not isosurface_info.get("success"):
-            error_msg = (
-                f"Failed to generate isosurfaces: {isosurface_info.get('error')}"
-            )
-            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return fast_jsonify({"success": False, "error": error_msg}), 500
-
-        logger.info(
-            f"[FOAMFlask] [create_contour] Isosurfaces generated: {isosurface_info['n_points']} points"
-        )
+        # ⚡ Bolt Optimization: Skipped redundant generation of static isosurfaces in main thread.
+        # The Trame visualization process handles its own isosurface/threshold generation dynamically.
+        # This saves significant CPU/RAM and prevents double-processing of large meshes.
 
         # Get isovalue widget setting
         show_isovalue_widget = request_data.get("showIsovalueWidget", True)
@@ -2353,22 +2335,6 @@ def create_contour() -> Union[Response, Tuple[Response, int]]:
         
         # Return iframe configuration
         return fast_jsonify(viz_info)
-
-        if not html_content:
-            error_msg = "Empty HTML content generated"
-            logger.error(f"[FOAMFlask] [create_contour] {error_msg}")
-            return fast_jsonify({"success": False, "error": error_msg}), 500
-
-        logger.info(
-            f"[FOAMFlask] [create_contour] HTML generated: {len(html_content)} bytes"
-        )
-
-        # Return HTML
-        logger.info(f"[FOAMFlask] [create_contour] Returning HTML response")
-        response = Response(html_content, mimetype="text/html")
-        # Optimization: Exclude visual graphics from compression
-        response.headers["Content-Encoding"] = "identity"
-        return response
 
     except Exception as e:
         logger.error(f"[FOAMFlask] [create_contour] Exception: {str(e)}")
