@@ -68,3 +68,7 @@
 **Learning:** Simplifying the stack reduces the likelihood of security misconfigurations.
 **Prevention:** Enforced a strict Flask-only architecture (`python -m app`), removing the concurrent WebSocket server. This ensures a single point of entry for all traffic, allowing centralized enforcement of security headers, rate limiting, and authentication logic.
 
+## 2026-02-12 - Command Injection Risk via Globbing/Brace Expansion
+**Vulnerability:** The `is_safe_command` blacklist validation in `backend/utils.py` blocked many shell metacharacters but allowed globbing (`*`, `?`, `[`, `]`), brace expansion (`{`, `}`), and other special characters (`~`, `!`). While current usage patterns in `run_case` might mitigate this via other means, `is_safe_command` is a reusable security function and its permissive nature poses a risk if used in contexts where argument splitting allows these characters to be interpreted by the shell.
+**Learning:** Blacklisting is difficult to get right. Standard shell metacharacters go beyond just control operators (`;`, `&`, `|`). Globbing and expansion characters can lead to unintended file operations or information disclosure.
+**Prevention:** Updated `backend/utils.py` to include `*`, `?`, `[`, `]`, `~`, `!`, `{`, `}` in the `dangerous_chars` list, hardening the validation logic against these injection vectors.
