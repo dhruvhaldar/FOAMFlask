@@ -1002,6 +1002,24 @@ const appendOutput = (message: string, type: string): void => {
   }
 };
 
+const limitLogSize = (): void => {
+  const container = document.getElementById("output");
+  if (!container) return;
+
+  const MAX_NODES = 2500;
+  const PRUNE_TARGET = 2000;
+
+  if (container.childElementCount > MAX_NODES) {
+    const toRemove = container.childElementCount - PRUNE_TARGET;
+    // Remove oldest elements (from top)
+    for (let i = 0; i < toRemove; i++) {
+      if (container.firstElementChild) {
+        container.removeChild(container.firstElementChild);
+      }
+    }
+  }
+};
+
 const flushOutputBuffer = (): void => {
   if (outputBuffer.length === 0) {
     outputFlushTimer = null;
@@ -1043,6 +1061,9 @@ const flushOutputBuffer = (): void => {
   });
 
   container.insertAdjacentHTML("beforeend", newHtmlChunks);
+  // ⚡ Bolt Optimization: Limit DOM size
+  limitLogSize();
+
   cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
 
   // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
@@ -1348,6 +1369,8 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
       const output = document.getElementById("output");
       if (output) {
         output.insertAdjacentHTML("beforeend", text);
+        // ⚡ Bolt Optimization: Limit DOM size
+        limitLogSize();
         output.scrollTop = output.scrollHeight;
       }
     }
