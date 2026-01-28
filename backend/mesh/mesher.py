@@ -10,6 +10,7 @@ import base64
 import logging
 import tempfile
 import os
+import gzip
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
@@ -19,6 +20,8 @@ from collections import OrderedDict
 import pyvista as pv
 from pyvista import DataSet, Plotter
 import PIL.Image
+
+from backend.utils import safe_decompress
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
@@ -141,15 +144,33 @@ class MeshVisualizer:
             else:
                 # Read the mesh
                 logger.info(f"[FOAMFlask] [mesher] Loading mesh from {path_str}")
-                # ⚡ Bolt Optimization: Disable progress bar for speed
-                self.mesh = pv.read(path_str, progress_bar=False)
-                self.current_mesh_path = path_str
-                self.current_mesh_mtime = mtime
-                # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
-                self._decimated_cache.clear()
-                logger.info(
-                    f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
-                )
+
+                read_path = path_str
+                temp_read_path = None
+                try:
+                    if read_path.lower().endswith(".gz"):
+                        suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
+                        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                            temp_read_path = tmp.name
+                            with gzip.open(read_path, "rb") as f_in:
+                                safe_decompress(f_in, tmp)
+                            read_path = temp_read_path
+
+                    # ⚡ Bolt Optimization: Disable progress bar for speed
+                    self.mesh = pv.read(read_path, progress_bar=False)
+                    self.current_mesh_path = path_str
+                    self.current_mesh_mtime = mtime
+                    # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
+                    self._decimated_cache.clear()
+                    logger.info(
+                        f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
+                    )
+                finally:
+                    if temp_read_path and os.path.exists(temp_read_path):
+                        try:
+                            os.remove(temp_read_path)
+                        except OSError:
+                            pass
 
             # Get mesh information
             mesh_info = {

@@ -15,6 +15,7 @@ import shutil
 import stat
 import random
 import html
+import gzip
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 
@@ -22,6 +23,8 @@ from typing import Dict, List, Optional, Tuple, Union, Any
 import numpy as np
 import pyvista as pv
 from pyvista import DataSet, PolyData, Plotter
+
+from backend.utils import safe_decompress
 
 # Configure logger
 logger = logging.getLogger("FOAMFlask")
@@ -597,11 +600,30 @@ class IsosurfaceVisualizer:
                     f"[FOAMFlask] [IsosurfaceVisualizer] " f"Loading mesh from: {file_path}"
                 )
 
-                # Read the mesh with progress bar using PyVista
-                # ⚡ Bolt Optimization: Disable progress bar
-                self.mesh = pv.read(file_path, progress_bar=False)
-                self.current_mesh_path = file_path
-                self.current_mesh_mtime = mtime
+                read_path = file_path
+                temp_read_path = None
+
+                try:
+                    if read_path.lower().endswith(".gz"):
+                        suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
+                        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                            temp_read_path = tmp.name
+                            with gzip.open(read_path, "rb") as f_in:
+                                safe_decompress(f_in, tmp)
+                            read_path = temp_read_path
+
+                    # Read the mesh with progress bar using PyVista
+                    # ⚡ Bolt Optimization: Disable progress bar
+                    self.mesh = pv.read(read_path, progress_bar=False)
+                    self.current_mesh_path = file_path
+                    self.current_mesh_mtime = mtime
+
+                finally:
+                    if temp_read_path and os.path.exists(temp_read_path):
+                        try:
+                            os.remove(temp_read_path)
+                        except OSError:
+                            pass
 
                 logger.info(
                     f"[FOAMFlask] [IsosurfaceVisualizer] "
