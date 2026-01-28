@@ -77,9 +77,14 @@ describe('FoamFlask Frontend Pipeline', () => {
     // Should now have Root -> Contour
     // Check buttons in pipeline container
     const buttons = container.querySelectorAll('button');
-    expect(buttons.length).toBe(2);
-    expect(buttons[0].textContent).toContain('Mesh'); // Root
-    expect(buttons[1].textContent).toContain('Contour'); // New Node
+    // Expected buttons: Root(Select), Contour(Select), Contour(Delete), Add(+)
+    expect(buttons.length).toBe(4);
+
+    // Verify specific buttons exist with correct ARIA labels (Accessibility Check)
+    expect(container.querySelector('button[aria-label="Select Mesh"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Select Contour"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Delete Contour"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Add new step"]')).not.toBeNull();
 
     // Contour view should be visible
     expect(document.getElementById('post-contour-view')?.classList.contains('hidden')).toBe(false);
@@ -98,12 +103,16 @@ describe('FoamFlask Frontend Pipeline', () => {
 
     // Should still have nodes (we just moved active pointer)
     const buttons = container.querySelectorAll('button');
-    expect(buttons.length).toBe(2);
+    expect(buttons.length).toBe(4); // Root(Sel), Contour(Sel), Contour(Del), Add(+) (Root is active now)
 
     // Active styling check (Root should be active)
-    // Root is buttons[0]
-    expect(buttons[0].className).toContain('bg-cyan-600');
-    expect(buttons[1].className).not.toContain('bg-cyan-600');
+    // The styling is on the wrapper div, not the button itself in the new implementation.
+    // We need to find the wrapper.
+    const wrappers = container.querySelectorAll('.rounded-full.border.text-sm'); // Selector matching the wrapper class
+    expect(wrappers.length).toBe(2);
+
+    expect(wrappers[0].className).toContain('bg-cyan-600');
+    expect(wrappers[1].className).not.toContain('bg-cyan-600');
 
     // Landing view should be visible
     expect(document.getElementById('post-contour-view')?.classList.contains('hidden')).toBe(true);

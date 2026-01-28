@@ -1978,13 +1978,13 @@ const loadGeometryView = async (btnElement) => {
         btn.setAttribute("aria-busy", "true");
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading...`;
     }
-    // Check for slow hardware
-    let optimize = false;
-    if (detectSlowHardware()) {
-        optimize = await showConfirmModal("Optimize for Performance?", "Slow graphics hardware detected. Enable geometry optimization (decimation)? This reduces detail but improves frame rate.");
-    }
-    showNotification("Loading...", "info");
     try {
+        // Check for slow hardware
+        let optimize = false;
+        if (detectSlowHardware()) {
+            optimize = await showConfirmModal("Optimize for Performance?", "Slow graphics hardware detected. Enable geometry optimization (decimation)? This reduces detail but improves frame rate.");
+        }
+        showNotification("Loading...", "info");
         const res = await fetch("/api/geometry/view", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2612,8 +2612,8 @@ const renderPipeline = () => {
     container.innerHTML = "";
     // Render full pipeline (assuming linear for MVP)
     postPipeline.forEach((node, index) => {
-        // Node
-        const nodeEl = document.createElement("button");
+        // Node Wrapper
+        const nodeEl = document.createElement("div");
         nodeEl.className = `flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors whitespace-nowrap ${node.id === activePipelineId
             ? "bg-cyan-600 text-white border-cyan-600 shadow-md"
             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-cyan-400"}`;
@@ -2625,17 +2625,33 @@ const renderPipeline = () => {
             icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`;
         else
             icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"></circle></svg>`;
-        nodeEl.innerHTML = `${icon} <span>${node.name}</span>`;
-        nodeEl.onclick = () => selectPipelineStep(node.id);
+        // Select Button (Content)
+        const selectBtn = document.createElement("button");
+        selectBtn.type = "button";
+        selectBtn.className = "flex items-center gap-2 bg-transparent border-none p-0 text-inherit cursor-pointer focus:outline-none focus:underline";
+        selectBtn.innerHTML = `${icon} <span>${node.name}</span>`;
+        selectBtn.onclick = (e) => {
+            e.stopPropagation();
+            selectPipelineStep(node.id);
+        };
+        selectBtn.setAttribute("aria-label", `Select ${node.name}`);
+        nodeEl.appendChild(selectBtn);
         // Add Delete Button (if not root)
         if (node.type !== 'root') {
-            const delBtn = document.createElement("span");
-            delBtn.className = "ml-2 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white text-gray-400 transition-colors cursor-pointer text-xs leading-none";
-            delBtn.innerText = "-"; // Minus button as requested
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            let colorClasses = "text-gray-400 hover:text-white hover:bg-red-500";
+            if (node.id === activePipelineId) {
+                colorClasses = "text-cyan-200 hover:text-white hover:bg-red-500";
+            }
+            delBtn.className = `ml-1 w-4 h-4 flex items-center justify-center rounded-full transition-colors cursor-pointer text-xs leading-none focus:outline-none focus:ring-2 focus:ring-red-500 ${colorClasses}`;
+            delBtn.textContent = "-"; // Minus button as requested
             delBtn.title = "Delete this step and its children";
-            delBtn.onclick = (e) => {
+            delBtn.setAttribute("aria-label", `Delete ${node.name}`);
+            delBtn.onclick = async (e) => {
                 e.stopPropagation(); // Prevent selection
-                if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
+                const confirmed = await showConfirmModal("Delete Step", `Delete ${node.name}? This will remove all subsequent steps.`);
+                if (confirmed) {
                     deletePipelineStep(node.id);
                 }
             };
@@ -2653,10 +2669,12 @@ const renderPipeline = () => {
             const line = document.createElement("div");
             line.className = "w-8 h-0.5 bg-gray-300 mx-1 flex-shrink-0 border-t-2 border-dashed border-gray-300";
             container.appendChild(line);
-            const addBtn = document.createElement("div");
-            addBtn.className = "w-6 h-6 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-400 text-xs";
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.className = "w-6 h-6 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-400 text-xs hover:bg-gray-200 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500";
             addBtn.innerHTML = "+";
             addBtn.title = "Add function to this step";
+            addBtn.setAttribute("aria-label", "Add new step");
             container.appendChild(addBtn);
         }
     });
