@@ -906,7 +906,8 @@ def test_run_case_container_cleanup_with_errors(client, tmp_path):
         # Check for either the old or new error message format
         assert any(msg in response_text for msg in [
             "Failed to stream container logs",
-            "Error getting container logs"
+                "Error getting container logs",
+                "Log stream interrupted"
         ]), f"Expected error message not found in response: {response_text}"
 
 # Contour-related tests
@@ -1010,62 +1011,6 @@ def test_create_contour_scalar_field_not_found(client, tmp_path):
         assert not data["success"]
         assert "Scalar field" in data["error"]
 
-def test_create_contour_generate_isosurfaces_failure(client, tmp_path):
-    tutorial_dir = tmp_path / "test_tutorial"
-    tutorial_dir.mkdir(parents=True, exist_ok=True)
-    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
-
-    mesh_info = {
-        "success": True,
-        "n_points": 1000,
-        "point_arrays": ["U", "p", "U_Magnitude"]
-    }
-    isosurface_failure = {
-        "success": False,
-        "error": "Generation failed"
-    }
-    with patch('app.CASE_ROOT', str(tmp_path)), \
-        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
-        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_failure):
-
-        response = client.post('/api/contours/create', json={
-            "tutorial": "test_tutorial",
-            "caseDir": str(tutorial_dir),
-        })
-        assert response.status_code == 500
-        data = response.get_json()
-        assert not data["success"]
-        assert "Failed to generate isosurfaces" in data["error"]
-
-
-def test_create_contour_empty_html_content(client, tmp_path):
-    tutorial_dir = tmp_path / "test_tutorial"
-    tutorial_dir.mkdir(parents=True, exist_ok=True)
-    (vtk_file := tutorial_dir / "mesh.vtk").write_text("dummy VTK content")
-
-    mesh_info = {
-        "success": True,
-        "n_points": 1000,
-        "point_arrays": ["U", "p","U_Magnitude"]
-    }
-    isosurface_success = {
-        "success": True,
-        "n_points": 1000
-    }
-    with patch('app.CASE_ROOT', str(tmp_path)), \
-        patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
-        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_success), \
-        patch('backend.post.isosurface.isosurface_visualizer.get_interactive_html', return_value=""):  # empty HTML
-        response = client.post('/api/contours/create', json={
-            "tutorial": "test_tutorial",
-            "caseDir": str(tutorial_dir),
-        })
-        assert response.status_code == 500
-        data = response.get_json()
-        assert not data["success"]
-        assert "Empty HTML content generated" in data["error"]
-
-
 def test_create_contour_success(client, tmp_path):
     tutorial_dir = tmp_path / "test_tutorial"
     tutorial_dir.mkdir(parents=True, exist_ok=True)
@@ -1076,15 +1021,17 @@ def test_create_contour_success(client, tmp_path):
     "n_points": 1000,
     "point_arrays": ["U_Magnitude", "U", "p"]
     }
-    isosurface_success = {
-        "success": True,
-        "n_points": 1000
+
+    fake_viz_info = {
+        "mode": "iframe",
+        "src": "http://localhost:1234/index.html",
+        "port": 1234
     }
-    fake_html = "<html>Isosurface viewer</html>"
+
     with patch('app.CASE_ROOT', str(tmp_path)), \
         patch('backend.post.isosurface.isosurface_visualizer.load_mesh', return_value=mesh_info), \
-        patch('backend.post.isosurface.isosurface_visualizer.generate_isosurfaces', return_value=isosurface_success), \
-        patch('backend.post.isosurface.isosurface_visualizer.get_interactive_html', return_value=fake_html):
+        patch('backend.post.isosurface.isosurface_visualizer.start_trame_visualization', return_value=fake_viz_info):
+
         response = client.post('/api/contours/create', json={
             "tutorial": "test_tutorial",
             "caseDir": str(tutorial_dir),
@@ -1093,8 +1040,10 @@ def test_create_contour_success(client, tmp_path):
             "range": [0, 10]
         })
         assert response.status_code == 200
-        assert response.mimetype == "text/html"
-        assert fake_html in response.get_data(as_text=True)
+        assert response.mimetype == "application/json"
+        data = response.get_json()
+        assert data["mode"] == "iframe"
+        assert data["src"] == "http://localhost:1234/index.html"
 
 
 def test_main_startup(monkeypatch, tmp_path):
@@ -1110,4 +1059,4 @@ def test_main_startup(monkeypatch, tmp_path):
         flask_app.main()
 
         mkdir_mock.assert_called()
-        run_mock.assert_called_once_with(host="127.0.0.1", port=5000, debug=False)
+        run_mock.assert_called_once_with(host="127.0.0.1", port=5000, debug=False, threaded=True)
