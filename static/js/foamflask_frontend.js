@@ -804,6 +804,22 @@ const appendOutput = (message, type) => {
         outputFlushTimer = setTimeout(flushOutputBuffer, 32);
     }
 };
+const limitLogSize = () => {
+    const container = document.getElementById("output");
+    if (!container)
+        return;
+    const MAX_NODES = 2500;
+    const PRUNE_TARGET = 2000;
+    if (container.childElementCount > MAX_NODES) {
+        const toRemove = container.childElementCount - PRUNE_TARGET;
+        // Remove oldest elements (from top)
+        for (let i = 0; i < toRemove; i++) {
+            if (container.firstElementChild) {
+                container.removeChild(container.firstElementChild);
+            }
+        }
+    }
+};
 const flushOutputBuffer = () => {
     if (outputBuffer.length === 0) {
         outputFlushTimer = null;
@@ -842,6 +858,8 @@ const flushOutputBuffer = () => {
         newHtmlChunks += `<div class="${className}">${safeMessage}</div>`;
     });
     container.insertAdjacentHTML("beforeend", newHtmlChunks);
+    // ⚡ Bolt Optimization: Limit DOM size
+    limitLogSize();
     cachedLogHTML += newHtmlChunks; // ⚡ Bolt Optimization: Append to cache
     // ⚡ Bolt Optimization: Cap the size of cachedLogHTML to prevent memory issues and localStorage quota errors
     const MAX_LOG_LENGTH = MAX_LOG_SIZE; // 100KB
@@ -1148,6 +1166,8 @@ const runCommand = async (cmd, btnElement) => {
             const output = document.getElementById("output");
             if (output) {
                 output.insertAdjacentHTML("beforeend", text);
+                // ⚡ Bolt Optimization: Limit DOM size
+                limitLogSize();
                 output.scrollTop = output.scrollHeight;
             }
         }

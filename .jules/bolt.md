@@ -41,3 +41,7 @@
 ## 2026-06-22 - [Flask-Compress & Streaming Performance]
 **Learning:** `Flask-Compress` buffers responses with `text/html` mimetype, destroying the real-time nature of streaming endpoints (like log tailing). This results in the user seeing nothing until the buffer fills or the stream ends.
 **Action:** For streaming endpoints, use `stream_with_context`, set mimetype to `text/plain` (or another uncompressed type), and ensure the client handles raw text streams (newline-delimited) instead of expecting HTML chunks. This bypasses compression buffering and ensures immediate delivery of each chunk.
+
+## 2026-10-27 - [Frontend DOM Limits]
+**Learning:** Unbounded DOM growth from streaming logs causes severe browser lag. Limiting cached HTML string size is insufficient if the actual DOM nodes are not pruned.
+**Action:** Implement a hard limit on DOM nodes (e.g. 2500) for log containers. Use a hysteresis approach (prune to 2000 when hitting 2500) to avoid expensive DOM removal operations on every single update. Ensure this check runs in both buffered and direct streaming paths.
