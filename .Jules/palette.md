@@ -1,3 +1,3 @@
-## 2025-05-15 - [Error Feedback Pattern]
-**Learning:** Frontend functions using `fetch` or `fetchWithCache` were systematically swallowing specific error messages returned by the backend in the JSON body (e.g., `{"output": "Invalid path"}`), defaulting to generic "Failed" messages. This leaves users confused about validation errors.
-**Action:** When handling fetch errors (`!response.ok`), always attempt to parse the response body as JSON and extract `message`, `error`, or `output` fields to display in notifications, falling back to status text only if parsing fails.
+## 2025-05-24 - Accessible Button Icons
+**Learning:** Purely decorative SVG icons inside buttons that already have clear text labels should have `aria-hidden="true"` to prevent screen readers from announcing them as "group" or "image", which adds noise.
+**Action:** Always add `aria-hidden="true"` to decorative `<svg>` elements when the parent element has sufficient accessible text content.
