@@ -1,7 +1,7 @@
 import logging
 import pyvista as pv
 from pathlib import Path
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Dict, Any, BinaryIO
 import multiprocessing
 import tempfile
 import os
@@ -20,6 +20,32 @@ ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 # Stores (path, mtime) -> mesh_info_dict
 _MESH_INFO_CACHE = OrderedDict()
 _MESH_INFO_CACHE_SIZE = 100
+
+def _safe_decompress(source_stream: Any, dest_stream: Any, max_size: int = 1073741824) -> None:
+    """
+    Safely decompress data with a size limit to prevent zip bombs.
+
+    Args:
+        source_stream: Input stream (e.g. GzipFile).
+        dest_stream: Output stream (e.g. file object).
+        max_size: Maximum allowed decompressed size in bytes (default 1GB).
+
+    Raises:
+        ValueError: If decompressed size exceeds max_size.
+    """
+    chunk_size = 1024 * 1024  # 1MB
+    total_size = 0
+
+    while True:
+        chunk = source_stream.read(chunk_size)
+        if not chunk:
+            break
+
+        total_size += len(chunk)
+        if total_size > max_size:
+            raise ValueError(f"Security: Decompressed file size exceeds limit of {max_size} bytes")
+
+        dest_stream.write(chunk)
 
 def _get_cache_dir() -> Path:
     """Get the cache directory, creating it if it doesn't exist."""
@@ -133,7 +159,7 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
              suffix = ".obj" if ".obj" in file_path.lower() else ".stl" # Simple heuristic
              with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                  with gzip.open(file_path, "rb") as f_in:
-                     shutil.copyfileobj(f_in, tmp)
+                     _safe_decompress(f_in, tmp)
                  temp_read_path = tmp.name
                  read_path = temp_read_path
 
@@ -340,7 +366,7 @@ class GeometryVisualizer:
                     suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
                     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                         with gzip.open(read_path, "rb") as f_in:
-                            shutil.copyfileobj(f_in, tmp)
+                            _safe_decompress(f_in, tmp)
                         temp_read_path = tmp.name
                         read_path = temp_read_path
 
