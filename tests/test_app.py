@@ -1060,3 +1060,30 @@ def test_main_startup(monkeypatch, tmp_path):
 
         mkdir_mock.assert_called()
         run_mock.assert_called_once_with(host="127.0.0.1", port=5000, debug=False, threaded=True)
+
+def test_run_case_no_thread_started(client, tmp_path):
+    """Test that run_case does NOT start a background thread for log monitoring."""
+    tutorial = "test_tutorial"
+    case_dir = str(tmp_path / tutorial)
+    (tmp_path / tutorial).mkdir(exist_ok=True)
+
+    with patch('app.get_docker_client') as mock_docker, \
+         patch('app.threading.Thread') as mock_thread, \
+         patch('app.CASE_ROOT', str(tmp_path)):
+
+        mock_client = MagicMock()
+        mock_container = MagicMock()
+        mock_container.logs.return_value = [b"Output\n"]
+        mock_client.containers.run.return_value = mock_container
+        mock_docker.return_value = mock_client
+
+        response = client.post('/run', json={
+            "tutorial": tutorial,
+            "caseDir": case_dir,
+            "command": "blockMesh"
+        })
+
+        assert response.status_code == 200
+
+        # Verify that threading.Thread was NOT called
+        mock_thread.assert_not_called()
