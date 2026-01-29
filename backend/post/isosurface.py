@@ -15,11 +15,13 @@ import shutil
 import stat
 import random
 import html
+import gzip
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 
 # Third-party imports
 import numpy as np
+from backend.utils import safe_decompress
 import pyvista as pv
 from pyvista import DataSet, PolyData, Plotter
 
@@ -450,6 +452,7 @@ def _generate_isosurface_html_process(
         output_path: Path to write the HTML output.
         params: Dictionary containing visualization parameters.
     """
+    temp_read_path = None
     try:
         scalar_field = params.get("scalar_field", "U_Magnitude")
         show_base_mesh = params.get("show_base_mesh", True)
@@ -462,9 +465,18 @@ def _generate_isosurface_html_process(
 
         logger.debug(f"[isosurface.py] Generating isosurface for {file_path}, {params}")
 
+        read_path = file_path
+        if file_path.lower().endswith(".gz"):
+            suffix = Path(file_path).suffixes[0] if len(Path(file_path).suffixes) > 1 else ".vtk"
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                temp_read_path = tmp.name
+                with gzip.open(file_path, "rb") as f_in:
+                    safe_decompress(f_in, tmp)
+                read_path = temp_read_path
+
         # Load mesh
         # ⚡ Bolt Optimization: Disable progress bar
-        mesh = pv.read(file_path, progress_bar=False)
+        mesh = pv.read(read_path, progress_bar=False)
 
         # Compute scalar field if needed (e.g. U_Magnitude)
         if scalar_field == "U_Magnitude" and "U_Magnitude" not in mesh.point_data and "U" in mesh.point_data:
@@ -534,6 +546,12 @@ def _generate_isosurface_html_process(
             
         if os.path.exists(output_path):
             os.remove(output_path)
+    finally:
+        if temp_read_path and os.path.exists(temp_read_path):
+            try:
+                os.remove(temp_read_path)
+            except OSError:
+                pass
 
 
 class IsosurfaceVisualizer:
@@ -579,6 +597,7 @@ class IsosurfaceVisualizer:
         Returns:
             Dictionary containing mesh information.
         """
+        temp_read_path = None
         try:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"Mesh file not found: {file_path}")
@@ -597,9 +616,18 @@ class IsosurfaceVisualizer:
                     f"[FOAMFlask] [IsosurfaceVisualizer] " f"Loading mesh from: {file_path}"
                 )
 
+                read_path = file_path
+                if file_path.lower().endswith(".gz"):
+                    suffix = Path(file_path).suffixes[0] if len(Path(file_path).suffixes) > 1 else ".vtk"
+                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                        temp_read_path = tmp.name
+                        with gzip.open(file_path, "rb") as f_in:
+                            safe_decompress(f_in, tmp)
+                        read_path = temp_read_path
+
                 # Read the mesh with progress bar using PyVista
                 # ⚡ Bolt Optimization: Disable progress bar
-                self.mesh = pv.read(file_path, progress_bar=False)
+                self.mesh = pv.read(read_path, progress_bar=False)
                 self.current_mesh_path = file_path
                 self.current_mesh_mtime = mtime
 
@@ -653,6 +681,12 @@ class IsosurfaceVisualizer:
                 f"[FOAMFlask] [IsosurfaceVisualizer] " f"Error loading mesh: {e}"
             )
             return {"success": False, "error": str(e)}
+        finally:
+            if temp_read_path and os.path.exists(temp_read_path):
+                try:
+                    os.remove(temp_read_path)
+                except OSError:
+                    pass
 
     def generate_isosurfaces(
         self,
