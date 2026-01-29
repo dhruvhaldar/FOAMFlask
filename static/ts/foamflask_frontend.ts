@@ -58,6 +58,7 @@ declare global {
     copyRunOutput: () => void;
     confirmRunCommand: (cmd: string, btn?: HTMLElement) => void;
     switchPostView: (view: "landing" | "contour") => void;
+    toggleFullscreen: (containerId: string, btn: HTMLElement) => void;
   }
 }
 
@@ -3348,6 +3349,63 @@ window.onload = async () => {
 
 
 
+
+const toggleFullscreen = (containerId: string, btn: HTMLElement): void => {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const isFullscreen = container.classList.contains("fixed");
+
+  // Save/Restore original state
+  if (!container.dataset.originalClasses) {
+    container.dataset.originalClasses = container.className;
+    container.dataset.originalStyle = container.getAttribute("style") || "";
+  }
+
+  // Define handler for Escape key
+  const escapeHandler = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      toggleFullscreen(containerId, btn);
+    }
+  };
+
+  if (isFullscreen) {
+    // Exit Fullscreen
+    container.className = container.dataset.originalClasses || "";
+    container.setAttribute("style", container.dataset.originalStyle || "");
+
+    // Clean up
+    delete container.dataset.originalClasses;
+    delete container.dataset.originalStyle;
+
+    // Restore Icon (Expand)
+    btn.setAttribute("aria-label", "Enter Fullscreen");
+    btn.title = "Enter Fullscreen";
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4M4 20l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>`;
+
+    // Remove listener
+    const handler = (container as any)._fullscreenHandler;
+    if (handler) {
+      document.removeEventListener("keydown", handler);
+      delete (container as any)._fullscreenHandler;
+    }
+  } else {
+    // Enter Fullscreen
+    // Force fullscreen styles, overriding layout constraints
+    container.className = "fixed inset-0 z-[100] w-screen h-screen bg-gray-100 overflow-hidden flex flex-col";
+    container.style.minHeight = "0";
+
+    // Update Icon (Compress/Close)
+    btn.setAttribute("aria-label", "Exit Fullscreen");
+    btn.title = "Exit Fullscreen (Esc)";
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+
+    // Add listener
+    (container as any)._fullscreenHandler = escapeHandler;
+    document.addEventListener("keydown", escapeHandler);
+  }
+};
+(window as any).toggleFullscreen = toggleFullscreen;
 
 // Exports
 (window as any).switchPage = switchPage;
