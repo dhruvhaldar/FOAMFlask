@@ -249,7 +249,7 @@ class OpenFOAMFieldParser:
             logger.error(f"Error scanning time directory {time_path}: {e}")
             return [], False, []
 
-    def _resolve_variable(self, content: Union[str, bytes, mmap.mmap], var_name: Union[str, bytes]) -> Optional[str]:
+    def _resolve_variable(self, content: Union[str, bytes, mmap.mmap], var_name: Union[str, bytes], search_limit: Optional[int] = None) -> Optional[str]:
         """
         Attempt to resolve a variable definition within the file content.
         Looks for patterns like 'varName value;'
@@ -268,20 +268,26 @@ class OpenFOAMFieldParser:
             clean_var = var_name.lstrip('$')
             pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
 
-        match = pattern.search(content)
+        # ⚡ Bolt Optimization: Use search_limit if provided to limit scope
+        # This prevents scanning the entire file (e.g. 100MB+) if a variable is missing
+        # or defined early in the header.
+        if search_limit is not None:
+            match = pattern.search(content, 0, search_limit)
+        else:
+            match = pattern.search(content)
         
         if match:
             value = match.group(1).strip()
             
             if is_binary:
                 if value.startswith(b'$'):
-                    return self._resolve_variable(content, value)
+                    return self._resolve_variable(content, value, search_limit)
                 if b"#calc" in value:
                     return None
                 return value.decode('utf-8')
             else:
                 if value.startswith('$'):
-                    return self._resolve_variable(content, value)
+                    return self._resolve_variable(content, value, search_limit)
                 if "#calc" in value:
                     return None
                 return value
@@ -395,7 +401,8 @@ class OpenFOAMFieldParser:
                                         var_name = var_match.group(1) # bytes
                                         # ⚡ Bolt Optimization: Use mmap buffer directly for variable resolution
                                         # Avoids reading entire file into memory with read_bytes()
-                                        resolved_value = self._resolve_variable(mm, var_name)
+                                        # ⚡ Bolt Optimization: Limit search to header (up to internalField)
+                                        resolved_value = self._resolve_variable(mm, var_name, search_limit=idx)
                                         if resolved_value:
                                             val = float(resolved_value)
 
