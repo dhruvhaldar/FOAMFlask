@@ -617,68 +617,6 @@ def get_tutorials() -> List[str]:
     return []
 
 
-def monitor_foamrun_log(tutorial: str, case_dir: str) -> None:
-    """Watch for log.foamRun and write to a file safely.
-
-    SECURITY FIX: This function previously read the entire file into memory and
-    stored it in a global dictionary, causing a memory leak and potential DoS
-    on large files. It has been refactored to copy the file efficiently
-    without memory unbounded growth.
-
-    Args:
-        tutorial: The name of the tutorial.
-        case_dir: The path to the case directory.
-    """
-    host_log_path = Path(case_dir) / tutorial / "log.foamRun"
-    output_file = Path(case_dir) / tutorial / "foamrun_logs.txt"
-
-    # Configuration
-    timeout = 300  # seconds max wait
-    interval = 1  # check every 1 second
-    elapsed = 0
-
-    while elapsed < timeout:
-        # Security: Atomic check-and-open to prevent TOCTOU symlink attacks
-        try:
-            # O_NOFOLLOW ensures that if the last component is a symlink, open fails with ELOOP.
-            # This is safer than checking is_symlink() then opening.
-            import errno
-            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-            
-            fd = os.open(str(host_log_path), flags)
-
-            with os.fdopen(fd, "rb") as fsrc:
-                with open(output_file, "wb") as fdst:
-                    shutil.copyfileobj(fsrc, fdst)
-
-            logger.info(
-                "[FOAMFlask] Captured log.foamRun for tutorial '%s' "
-                "and wrote to %s",
-                tutorial,
-                output_file,
-            )
-            return
-
-        except OSError as e:
-            # Check specifically for symlink error (ELOOP)
-            if e.errno == errno.ELOOP:
-                logger.warning(
-                    "[FOAMFlask] Security: log.foamRun is a symlink. Ignoring to prevent file read vulnerability."
-                )
-                return
-            elif e.errno == errno.ENOENT:
-                # File not found yet, wait and retry
-                pass
-            else:
-                logger.error("[FOAMFlask] Could not process foamrun_logs: %s", str(e))
-                return
-
-        time.sleep(interval)
-        elapsed += interval
-
-    logger.warning("[FOAMFlask] Timeout: log.foamRun not found for '%s'", tutorial)
-
-
 # --- Routes ---
 @app.before_request
 def csrf_protect():
@@ -1442,12 +1380,6 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 "mode": "rw",
             }
         }
-
-        # Start the watcher thread before running container
-        watcher_thread = threading.Thread(
-            target=monitor_foamrun_log, args=(tutorial, case_dir), daemon=True
-        )
-        watcher_thread.start()
 
         # Validate and sanitize command input to prevent injection
         if not is_safe_command(command):

@@ -45,3 +45,7 @@
 ## 2026-10-27 - [Frontend DOM Limits]
 **Learning:** Unbounded DOM growth from streaming logs causes severe browser lag. Limiting cached HTML string size is insufficient if the actual DOM nodes are not pruned.
 **Action:** Implement a hard limit on DOM nodes (e.g. 2500) for log containers. Use a hysteresis approach (prune to 2000 when hitting 2500) to avoid expensive DOM removal operations on every single update. Ensure this check runs in both buffered and direct streaming paths.
+
+## 2026-10-27 - [Redundant Log Monitoring]
+**Learning:** A background thread was polling for the simulation log file (`log.foamRun`) to copy it to a secondary file (`foamrun_logs.txt`). This secondary file was never read by the frontend or backend, resulting in wasted I/O and unnecessary thread creation.
+**Action:** Removed the `monitor_foamrun_log` function and the thread creation logic. This eliminates unnecessary context switching and disk I/O without affecting functionality.
