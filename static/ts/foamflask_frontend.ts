@@ -3514,6 +3514,30 @@ const init = () => {
   initLogScrollObserver();
   setupQuickActions();
   setupCopyableValues();
+  setupLayersDependency();
+};
+
+// UX: Setup dependency between "Add Layers" checkbox and "Surface Layers" input
+const setupLayersDependency = () => {
+  const shmLayers = document.getElementById("shmLayers") as HTMLInputElement;
+  const shmObjLayers = document.getElementById("shmObjLayers") as HTMLInputElement;
+
+  if (!shmLayers || !shmObjLayers) return;
+
+  const updateState = () => {
+    const isEnabled = shmLayers.checked;
+    shmObjLayers.disabled = !isEnabled;
+    if (!isEnabled) {
+      shmObjLayers.classList.add("cursor-not-allowed", "opacity-50", "bg-gray-100");
+      shmObjLayers.setAttribute("aria-disabled", "true");
+    } else {
+      shmObjLayers.classList.remove("cursor-not-allowed", "opacity-50", "bg-gray-100");
+      shmObjLayers.removeAttribute("aria-disabled");
+    }
+  };
+
+  shmLayers.addEventListener("change", updateState);
+  updateState(); // Initialize state
 };
 
 const handleScroll = (): void => {
