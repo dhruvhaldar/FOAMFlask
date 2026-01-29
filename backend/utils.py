@@ -47,11 +47,23 @@ def sanitize_error(e: Exception) -> str:
     if isinstance(e, DockerException):
         msg = str(e)
         # Redact potential absolute paths to prevent leakage
-        # Unix paths inside quotes (common in Docker errors)
-        # We match any character except quote to handle spaces in paths
+
+        # 1. Quoted paths (Single & Double Quotes) - Can contain spaces
+        # Unix
         msg = re.sub(r"'(/(?:[^'])+)'", "'[REDACTED_PATH]'", msg)
-        # Windows paths inside quotes
+        msg = re.sub(r'"(/(?:[^"])+)"', '"[REDACTED_PATH]"', msg)
+
+        # Windows
         msg = re.sub(r"'([a-zA-Z]:\\[^']+)'", "'[REDACTED_PATH]'", msg)
+        msg = re.sub(r'"([a-zA-Z]:\\[^"]+)"', '"[REDACTED_PATH]"', msg)
+
+        # 2. Unquoted paths - Assume no spaces to avoid false positives
+        # Unix: Starts with / and contains at least one more /
+        msg = re.sub(r"(^|\s)(/[^\0\s\"']+(?:/[^\0\s\"']+)+)", r"\1[REDACTED_PATH]", msg)
+
+        # Windows: Drive letter + backslash
+        msg = re.sub(r"(^|\s)([a-zA-Z]:\\[^\0\s\"']+(?:\\[^\0\s\"']+)+)", r"\1[REDACTED_PATH]", msg)
+
         return msg
 
     # Check for OSError/IOError which might contain paths (e.g. PermissionError, FileNotFoundError)

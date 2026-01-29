@@ -53,3 +53,29 @@ def test_sanitize_docker_error_no_path():
     sanitized = sanitize_error(e)
 
     assert sanitized == error_msg
+
+def test_sanitize_docker_error_leakage_unquoted_unix():
+    """
+    Test that unquoted Unix paths are redacted.
+    """
+    sensitive_path = "/home/user/secret/case/data"
+    error_msg = f"bind source path does not exist: {sensitive_path}"
+    e = DockerException(error_msg)
+
+    sanitized = sanitize_error(e)
+
+    assert sensitive_path not in sanitized
+    assert "[REDACTED_PATH]" in sanitized
+
+def test_sanitize_docker_error_leakage_unquoted_windows():
+    """
+    Test that unquoted Windows paths are redacted.
+    """
+    sensitive_path = r"C:\Users\Admin\Secret\Case"
+    error_msg = f"bind source path does not exist: {sensitive_path}"
+    e = DockerException(error_msg)
+
+    sanitized = sanitize_error(e)
+
+    assert sensitive_path not in sanitized
+    assert "[REDACTED_PATH]" in sanitized
