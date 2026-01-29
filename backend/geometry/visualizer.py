@@ -11,6 +11,7 @@ import hashlib
 import stat
 import random
 from collections import OrderedDict
+from backend.utils import safe_decompress
 
 logger = logging.getLogger("FOAMFlask")
 
@@ -20,32 +21,6 @@ ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 # Stores (path, mtime) -> mesh_info_dict
 _MESH_INFO_CACHE = OrderedDict()
 _MESH_INFO_CACHE_SIZE = 100
-
-def _safe_decompress(source_stream: Any, dest_stream: Any, max_size: int = 1073741824) -> None:
-    """
-    Safely decompress data with a size limit to prevent zip bombs.
-
-    Args:
-        source_stream: Input stream (e.g. GzipFile).
-        dest_stream: Output stream (e.g. file object).
-        max_size: Maximum allowed decompressed size in bytes (default 1GB).
-
-    Raises:
-        ValueError: If decompressed size exceeds max_size.
-    """
-    chunk_size = 1024 * 1024  # 1MB
-    total_size = 0
-
-    while True:
-        chunk = source_stream.read(chunk_size)
-        if not chunk:
-            break
-
-        total_size += len(chunk)
-        if total_size > max_size:
-            raise ValueError(f"Security: Decompressed file size exceeds limit of {max_size} bytes")
-
-        dest_stream.write(chunk)
 
 def _get_cache_dir() -> Path:
     """Get the cache directory, creating it if it doesn't exist."""
@@ -155,13 +130,13 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
     try:
         read_path = file_path
         if file_path.lower().endswith(".gz"):
-             # Decompress to temporary file
-             suffix = ".obj" if ".obj" in file_path.lower() else ".stl" # Simple heuristic
-             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                 with gzip.open(file_path, "rb") as f_in:
-                     _safe_decompress(f_in, tmp)
-                 temp_read_path = tmp.name
-                 read_path = temp_read_path
+            # Decompress to temporary file
+            suffix = ".obj" if ".obj" in file_path.lower() else ".stl" # Simple heuristic
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                temp_read_path = tmp.name
+                with gzip.open(file_path, "rb") as f_in:
+                    safe_decompress(f_in, tmp)
+                read_path = temp_read_path
 
         # ⚡ Bolt Optimization: Disable progress bar
         mesh = pv.read(read_path, progress_bar=False)
@@ -365,9 +340,9 @@ class GeometryVisualizer:
                 if read_path.lower().endswith(".gz"):
                     suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
                     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                        with gzip.open(read_path, "rb") as f_in:
-                            _safe_decompress(f_in, tmp)
                         temp_read_path = tmp.name
+                        with gzip.open(read_path, "rb") as f_in:
+                            safe_decompress(f_in, tmp)
                         read_path = temp_read_path
 
                 # ⚡ Bolt Optimization: Disable progress bar

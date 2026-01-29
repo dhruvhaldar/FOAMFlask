@@ -1,8 +1,36 @@
 import logging
 import re
+from typing import Any
 from docker.errors import DockerException
 
 logger = logging.getLogger("FOAMFlask")
+
+def safe_decompress(source_stream: Any, dest_stream: Any, max_size: int = 1073741824) -> None:
+    """
+    Safely decompress data with a size limit to prevent zip bombs.
+
+    Args:
+        source_stream: Input stream (e.g. GzipFile).
+        dest_stream: Output stream (e.g. file object).
+        max_size: Maximum allowed decompressed size in bytes (default 1GB).
+
+    Raises:
+        ValueError: If decompressed size exceeds max_size.
+    """
+    chunk_size = 1024 * 1024  # 1MB
+    total_size = 0
+
+    while True:
+        chunk = source_stream.read(chunk_size)
+        if not chunk:
+            break
+
+        total_size += len(chunk)
+        if total_size > max_size:
+            raise ValueError(f"Security: Decompressed file size exceeds limit of {max_size} bytes")
+
+        dest_stream.write(chunk)
+
 
 def sanitize_error(e: Exception) -> str:
     """

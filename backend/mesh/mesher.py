@@ -9,6 +9,7 @@ mesh data for visualization purposes.
 import base64
 import logging
 import tempfile
+import gzip
 import os
 from io import BytesIO
 from pathlib import Path
@@ -17,6 +18,7 @@ from collections import OrderedDict
 
 # Third-party imports
 import pyvista as pv
+from backend.utils import safe_decompress
 from pyvista import DataSet, Plotter
 import PIL.Image
 
@@ -122,6 +124,7 @@ class MeshVisualizer:
                 - success: Boolean indicating operation success
                 - error: Error message if operation failed
         """
+        temp_read_path = None
         try:
             path = Path(file_path)
             if not path.exists():
@@ -141,12 +144,30 @@ class MeshVisualizer:
             else:
                 # Read the mesh
                 logger.info(f"[FOAMFlask] [mesher] Loading mesh from {path_str}")
+
+                read_path_str = path_str
+                if path_str.lower().endswith(".gz"):
+                    suffix = Path(path_str).suffixes[0] if len(Path(path_str).suffixes) > 1 else ".vtk"
+                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                        temp_read_path = tmp.name
+                        with gzip.open(path_str, "rb") as f_in:
+                            safe_decompress(f_in, tmp)
+                        read_path_str = temp_read_path
+
                 # ⚡ Bolt Optimization: Disable progress bar for speed
-                self.mesh = pv.read(path_str, progress_bar=False)
+                self.mesh = pv.read(read_path_str, progress_bar=False)
                 self.current_mesh_path = path_str
                 self.current_mesh_mtime = mtime
                 # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
                 self._decimated_cache.clear()
+
+                if temp_read_path and os.path.exists(temp_read_path):
+                    try:
+                        os.remove(temp_read_path)
+                        temp_read_path = None
+                    except OSError:
+                        pass
+
                 logger.info(
                     f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
                 )
@@ -170,6 +191,12 @@ class MeshVisualizer:
         except Exception as e:
             logger.error(f"Error loading mesh: {e}")
             return {"success": False, "error": str(e)}
+        finally:
+            if temp_read_path and os.path.exists(temp_read_path):
+                try:
+                    os.remove(temp_read_path)
+                except OSError:
+                    pass
 
     def get_mesh_screenshot(
         self,

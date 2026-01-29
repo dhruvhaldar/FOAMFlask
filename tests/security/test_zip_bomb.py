@@ -7,11 +7,11 @@ import os
 # Ensure backend is importable
 sys.path.append(os.getcwd())
 
-from backend.geometry.visualizer import _safe_decompress
+from backend.utils import safe_decompress
 
 class TestZipBomb(unittest.TestCase):
     def test_safe_decompress_limit(self):
-        """Test that _safe_decompress raises ValueError when limit is exceeded."""
+        """Test that safe_decompress raises ValueError when limit is exceeded."""
 
         # Create a compressed stream that expands to more than the limit
         # We'll use a small limit for testing (e.g. 1KB)
@@ -33,12 +33,12 @@ class TestZipBomb(unittest.TestCase):
 
         # Check if it raises ValueError
         with self.assertRaises(ValueError) as cm:
-            _safe_decompress(source_stream, dest_stream, max_size=limit)
+            safe_decompress(source_stream, dest_stream, max_size=limit)
 
         self.assertIn("Decompressed file size exceeds limit", str(cm.exception))
 
     def test_safe_decompress_within_limit(self):
-        """Test that _safe_decompress works for files within limit."""
+        """Test that safe_decompress works for files within limit."""
         limit = 1024
         data = b'\x00' * (limit - 100)
 
@@ -50,7 +50,7 @@ class TestZipBomb(unittest.TestCase):
         source_stream = gzip.GzipFile(fileobj=compressed_buffer, mode='rb')
         dest_stream = io.BytesIO()
 
-        _safe_decompress(source_stream, dest_stream, max_size=limit)
+        safe_decompress(source_stream, dest_stream, max_size=limit)
 
         self.assertEqual(dest_stream.getvalue(), data)
 
