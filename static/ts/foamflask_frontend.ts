@@ -3515,6 +3515,7 @@ const init = () => {
   setupQuickActions();
   setupCopyableValues();
   setupLayersDependency();
+  setupGeometryDragDrop();
 };
 
 // UX: Setup dependency between "Add Layers" checkbox and "Surface Layers" input
@@ -3893,6 +3894,52 @@ const setupQuickActions = () => {
       inputEl.addEventListener("dblclick", () => {
         btnEl.click();
       });
+    }
+  });
+};
+
+const setupGeometryDragDrop = () => {
+  const dropZone = document.getElementById('geo-drop-zone');
+  const input = document.getElementById('geometryUpload') as HTMLInputElement;
+  const nameDisplay = document.getElementById('geo-file-name');
+
+  if (!dropZone || !input) return;
+
+  const showFile = () => {
+    if (input.files && input.files[0]) {
+      if (nameDisplay) {
+        nameDisplay.textContent = `Selected: ${input.files[0].name}`;
+        nameDisplay.classList.remove('hidden');
+      }
+    }
+  };
+
+  input.addEventListener('change', showFile);
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.add('border-cyan-500', 'bg-cyan-50');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.remove('border-cyan-500', 'bg-cyan-50');
+    });
+  });
+
+  dropZone.addEventListener('drop', (e: DragEvent) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files) {
+      input.files = dt.files;
+      showFile();
     }
   });
 };
