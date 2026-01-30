@@ -5,7 +5,10 @@ from docker.errors import DockerException
 
 logger = logging.getLogger("FOAMFlask")
 
-def safe_decompress(source_stream: Any, dest_stream: Any, max_size: int = 1073741824) -> None:
+
+def safe_decompress(
+    source_stream: Any, dest_stream: Any, max_size: int = 1073741824
+) -> None:
     """
     Safely decompress data with a size limit to prevent zip bombs.
 
@@ -27,7 +30,9 @@ def safe_decompress(source_stream: Any, dest_stream: Any, max_size: int = 107374
 
         total_size += len(chunk)
         if total_size > max_size:
-            raise ValueError(f"Security: Decompressed file size exceeds limit of {max_size} bytes")
+            raise ValueError(
+                f"Security: Decompressed file size exceeds limit of {max_size} bytes"
+            )
 
         dest_stream.write(chunk)
 
@@ -46,12 +51,29 @@ def sanitize_error(e: Exception) -> str:
     # We'll trust DockerException messages for now as they are often needed for debugging config.
     if isinstance(e, DockerException):
         msg = str(e)
-        # Redact potential absolute paths to prevent leakage
-        # Unix paths inside quotes (common in Docker errors)
-        # We match any character except quote to handle spaces in paths
-        msg = re.sub(r"'(/(?:[^'])+)'", "'[REDACTED_PATH]'", msg)
-        # Windows paths inside quotes
-        msg = re.sub(r"'([a-zA-Z]:\\[^']+)'", "'[REDACTED_PATH]'", msg)
+
+        # 1. Redact quoted paths (single or double quotes)
+        # Unix paths: Match start with / inside quotes
+        # Matches: quote, /..., same quote
+        msg = re.sub(r"(['\"])(/(?:(?!\1).)+)\1", r"\1[REDACTED_PATH]\1", msg)
+
+        # Windows paths: Drive:\... or Drive:... inside quotes
+        # Matches: quote, C:\..., same quote
+        msg = re.sub(
+            r"(['\"])([a-zA-Z]:\\\\?(?:(?!\1).)+)\1", r"\1[REDACTED_PATH]\1", msg
+        )
+
+        # 2. Redact unquoted absolute paths (heuristic)
+        # Unix: /path/to/something
+        # Look for / followed by alphanumeric/dots/dashes/underscores segments
+        # Negative lookbehind ensures we don't break URLs (http://, https://)
+        unix_path_pattern = r"(?<!\w)(?<!://)(?<!:/)(/(?:[\w\.-]+/)+[\w\.-]+)"
+        msg = re.sub(unix_path_pattern, "[REDACTED_PATH]", msg)
+
+        # Windows: C:\path\to...
+        win_path_pattern = r"([a-zA-Z]:\\\\?(?:[\w\.-]+\\\\?)+[\w\.-]+)"
+        msg = re.sub(win_path_pattern, "[REDACTED_PATH]", msg)
+
         return msg
 
     # Check for OSError/IOError which might contain paths (e.g. PermissionError, FileNotFoundError)
@@ -61,6 +83,7 @@ def sanitize_error(e: Exception) -> str:
 
     # Generic fallback for other exceptions
     return "An internal server error occurred."
+
 
 def is_safe_command(command: str) -> bool:
     """
@@ -76,33 +99,33 @@ def is_safe_command(command: str) -> bool:
         return False
 
     # Check for dangerous shell metacharacters
-    dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+    dangerous_chars = [";", "&", "|", "`", "$", "(", ")", "<", ">", '"', "'"]
     # Add globbing characters to prevent wildcard expansion
-    dangerous_chars.extend(['*', '?', '[', ']'])
+    dangerous_chars.extend(["*", "?", "[", "]"])
     # Add other shell metacharacters
-    dangerous_chars.extend(['~', '!'])
+    dangerous_chars.extend(["~", "!"])
     # Add newline characters to prevent command injection
-    dangerous_chars.extend(['\n', '\r'])
+    dangerous_chars.extend(["\n", "\r"])
     # Add brace expansion to prevent unexpected file creation
-    dangerous_chars.extend(['{', '}'])
+    dangerous_chars.extend(["{", "}"])
 
     if any(char in command for char in dangerous_chars):
         return False
 
     # Check for path traversal attempts
-    if '..' in command:
+    if ".." in command:
         return False
 
     # Check for command substitution
-    if '$(' in command or '`' in command:
+    if "$(" in command or "`" in command:
         return False
 
     # Check for file descriptor redirection
-    if re.search(r'[0-9]+[<>]', command):
+    if re.search(r"[0-9]+[<>]", command):
         return False
 
     # Check for background/foreground operators
-    if '&' in command or '%' in command:
+    if "&" in command or "%" in command:
         return False
 
     # Length check to prevent extremely long commands
@@ -110,6 +133,7 @@ def is_safe_command(command: str) -> bool:
         return False
 
     return True
+
 
 def is_safe_color(color: str) -> bool:
     """
@@ -126,7 +150,7 @@ def is_safe_color(color: str) -> bool:
 
     # Allow alphanumeric, spaces, hyphens, underscores, dots, hashes, and colons.
     # Strict enough to prevent XSS (no < > " ' ; ( )).
-    if re.match(r'^[a-zA-Z0-9\s#:_.-]+$', color):
+    if re.match(r"^[a-zA-Z0-9\s#:_.-]+$", color):
         return True
 
     return False
