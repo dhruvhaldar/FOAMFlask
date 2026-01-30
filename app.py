@@ -259,6 +259,12 @@ def _resolve_path_cached(path_str: str) -> Path:
     """
     return Path(path_str).resolve()
 
+# ⚡ Bolt Optimization: Cache date formatting to avoid repeated string ops
+@lru_cache(maxsize=128)
+def format_mtime(mtime: float) -> str:
+    """Cached wrapper for email.utils.formatdate"""
+    return email.utils.formatdate(mtime, usegmt=True)
+
 
 def is_safe_case_root(path_str: str) -> bool:
     """
@@ -1531,7 +1537,8 @@ def check_cache(path_to_check: Path) -> Tuple[bool, Optional[str], Optional[os.s
         st = os.stat(str(path_to_check))
         mtime = st.st_mtime
 
-        last_modified_str = email.utils.formatdate(mtime, usegmt=True)
+        # ⚡ Bolt Optimization: Use cached date formatting
+        last_modified_str = format_mtime(mtime)
         if_modified_since = request.headers.get("If-Modified-Since")
 
         if if_modified_since and if_modified_since == last_modified_str:
@@ -1595,6 +1602,7 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         # Get time directories (cached if case mtime matches)
         time_dirs = parser.get_time_directories(known_mtime=case_mtime)
 
+        latest_dir_mtime = None
         etag = None
         if time_dirs and case_mtime is not None:
             latest_time = time_dirs[-1]
@@ -1617,7 +1625,11 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
             except OSError:
                 pass
 
-        data = parser.get_all_time_series_data(max_points=100, known_case_mtime=case_mtime)
+        data = parser.get_all_time_series_data(
+            max_points=100,
+            known_case_mtime=case_mtime,
+            known_latest_mtime=latest_dir_mtime
+        )
         response = fast_jsonify(data)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
