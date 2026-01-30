@@ -3446,8 +3446,29 @@ const setupGeometryDragDrop = () => {
     const showFile = () => {
         if (input.files && input.files[0]) {
             if (nameDisplay) {
-                nameDisplay.textContent = `Selected: ${input.files[0].name}`;
-                nameDisplay.classList.remove('hidden');
+                nameDisplay.innerHTML = "";
+                const wrapper = document.createElement("div");
+                wrapper.className = "flex items-center justify-between gap-2 w-full";
+                const textSpan = document.createElement("span");
+                textSpan.textContent = `Selected: ${input.files[0].name}`;
+                textSpan.className = "truncate";
+                const clearBtn = document.createElement("button");
+                clearBtn.type = "button";
+                clearBtn.className =
+                    "text-cyan-600 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 p-1 rounded hover:bg-cyan-100/50 transition-colors flex-shrink-0";
+                clearBtn.ariaLabel = "Remove selected file";
+                clearBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                clearBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    input.value = "";
+                    nameDisplay.classList.add("hidden");
+                    nameDisplay.innerHTML = "";
+                };
+                wrapper.appendChild(textSpan);
+                wrapper.appendChild(clearBtn);
+                nameDisplay.appendChild(wrapper);
+                nameDisplay.classList.remove("hidden");
             }
         }
     };
