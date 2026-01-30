@@ -77,3 +77,7 @@
 **Vulnerability:** The `sanitize_error` function in `backend/utils.py` explicitly allowed `DockerException` messages to pass through raw for debugging purposes. However, these messages often contain absolute paths (e.g., "Bind mount failed: '/absolute/path/on/server' does not exist"), leaking internal server file structure to the user via API responses.
 **Learning:** Exception messages from third-party libraries (like `docker-py`) are not safe for public consumption. They prioritize developer context over security and often include environment-specific details. "Debuggability" should not compromise information security in production-like environments.
 **Prevention:** I modified `sanitize_error` to apply regex-based redaction on `DockerException` messages. It now detects and replaces quoted absolute paths (both Unix and Windows style) with `[REDACTED_PATH]`, preserving the error context while hiding sensitive filesystem details.
+## 2025-02-18 - Docker Error Path Leakage
+**Vulnerability:** `sanitize_error` regex only handled single-quoted paths, leaking sensitive paths in double-quoted Docker errors (JSON) or unquoted messages (e.g. `bind: /host/path`).
+**Learning:** Regex-based sanitization must account for all variations of quoting and formatting produced by the underlying system (Docker API vs CLI).
+**Prevention:** Use comprehensive regexes that cover different quote styles and unquoted patterns, while carefully excluding false positives like URLs.
