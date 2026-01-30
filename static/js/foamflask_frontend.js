@@ -3097,6 +3097,29 @@ const init = () => {
     initLogScrollObserver();
     setupQuickActions();
     setupCopyableValues();
+    setupLayersDependency();
+    setupGeometryDragDrop();
+};
+// UX: Setup dependency between "Add Layers" checkbox and "Surface Layers" input
+const setupLayersDependency = () => {
+    const shmLayers = document.getElementById("shmLayers");
+    const shmObjLayers = document.getElementById("shmObjLayers");
+    if (!shmLayers || !shmObjLayers)
+        return;
+    const updateState = () => {
+        const isEnabled = shmLayers.checked;
+        shmObjLayers.disabled = !isEnabled;
+        if (!isEnabled) {
+            shmObjLayers.classList.add("cursor-not-allowed", "opacity-50", "bg-gray-100");
+            shmObjLayers.setAttribute("aria-disabled", "true");
+        }
+        else {
+            shmObjLayers.classList.remove("cursor-not-allowed", "opacity-50", "bg-gray-100");
+            shmObjLayers.removeAttribute("aria-disabled");
+        }
+    };
+    shmLayers.addEventListener("change", updateState);
+    updateState(); // Initialize state
 };
 const handleScroll = () => {
     const navbar = document.getElementById("navbar");
@@ -3411,6 +3434,45 @@ const setupQuickActions = () => {
             inputEl.addEventListener("dblclick", () => {
                 btnEl.click();
             });
+        }
+    });
+};
+const setupGeometryDragDrop = () => {
+    const dropZone = document.getElementById('geo-drop-zone');
+    const input = document.getElementById('geometryUpload');
+    const nameDisplay = document.getElementById('geo-file-name');
+    if (!dropZone || !input)
+        return;
+    const showFile = () => {
+        if (input.files && input.files[0]) {
+            if (nameDisplay) {
+                nameDisplay.textContent = `Selected: ${input.files[0].name}`;
+                nameDisplay.classList.remove('hidden');
+            }
+        }
+    };
+    input.addEventListener('change', showFile);
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.add('border-cyan-500', 'bg-cyan-50');
+        });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.remove('border-cyan-500', 'bg-cyan-50');
+        });
+    });
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files) {
+            input.files = dt.files;
+            showFile();
         }
     });
 };
