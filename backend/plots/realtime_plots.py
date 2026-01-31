@@ -10,6 +10,7 @@ import os
 import mmap
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
+from functools import lru_cache
 
 # ⚡ Bolt Optimization: Import Rust accelerator if available
 try:
@@ -85,6 +86,25 @@ _RE_VECTOR_COMPONENTS = re.compile(
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
 )
+
+@lru_cache(maxsize=128)
+def _get_variable_pattern(var_name: Union[str, bytes], is_binary: bool):
+    """
+    Get a compiled regex pattern for a variable definition.
+    Cached to avoid recompilation overhead.
+    """
+    if is_binary:
+        if isinstance(var_name, str):
+            var_name = var_name.encode('utf-8')
+        clean_var = var_name.lstrip(b'$')
+        pattern = re.compile(rb"(?:^|\s)" + re.escape(clean_var) + rb"\s+([^;]+);")
+    else:
+        if isinstance(var_name, bytes):
+            var_name = var_name.decode('utf-8')
+        clean_var = var_name.lstrip('$')
+        pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+    return pattern
+
 
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
@@ -264,16 +284,9 @@ class OpenFOAMFieldParser:
         # ⚡ Bolt Optimization: Handle mmap as binary
         is_binary = not isinstance(content, str)
         
-        if is_binary:
-            if isinstance(var_name, str):
-                var_name = var_name.encode('utf-8')
-            clean_var = var_name.lstrip(b'$')
-            pattern = re.compile(rb"(?:^|\s)" + re.escape(clean_var) + rb"\s+([^;]+);")
-        else:
-            if isinstance(var_name, bytes):
-                var_name = var_name.decode('utf-8')
-            clean_var = var_name.lstrip('$')
-            pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+        # ⚡ Bolt Optimization: Use cached regex pattern generation
+        # This avoids expensive re.escape, concat, and compile calls on every lookup
+        pattern = _get_variable_pattern(var_name, is_binary)
 
         # ⚡ Bolt Optimization: Use search_limit if provided to limit scope
         # This prevents scanning the entire file (e.g. 100MB+) if a variable is missing
