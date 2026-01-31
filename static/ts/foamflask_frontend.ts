@@ -3908,8 +3908,32 @@ const setupGeometryDragDrop = () => {
   const showFile = () => {
     if (input.files && input.files[0]) {
       if (nameDisplay) {
-        nameDisplay.textContent = `Selected: ${input.files[0].name}`;
+        // 🎨 Palette UX: Add remove button to allow clearing selection
+        nameDisplay.innerHTML = `
+          <div class="flex items-center justify-center gap-2">
+            <span>Selected: ${input.files[0].name}</span>
+            <button type="button" id="remove-file-btn" class="text-cyan-700 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-0.5 transition-colors" aria-label="Remove file" title="Remove file">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        `;
         nameDisplay.classList.remove('hidden');
+
+        // Add event listener to remove button
+        const removeBtn = document.getElementById("remove-file-btn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            input.value = ""; // Clear file input
+            nameDisplay.classList.add("hidden");
+            nameDisplay.innerHTML = "";
+            // Also notify user
+            showNotification("File selection cleared", "info", NOTIFY_SHORT);
+          });
+        }
       }
     }
   };
