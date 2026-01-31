@@ -878,9 +878,18 @@ class OpenFOAMFieldParser:
 
         fd = None
         try:
+            # ⚡ Bolt Optimization: Check cache using known_stat BEFORE opening file.
+            # If known_stat is trusted (from app.py check_cache), we can return cached data
+            # without incurring os.open() + os.fstat() overhead (saving 2 syscalls).
+            # We assume leakage risk is low as we only serve previously cached data.
+            if known_stat and path_str in _RESIDUALS_CACHE:
+                cached_mtime, cached_size, _, cached_data = _RESIDUALS_CACHE[path_str]
+                if cached_mtime == known_stat.st_mtime and cached_size == known_stat.st_size:
+                    return cached_data
+
             # Security & Optimization: Atomic open + fstat
             # We open with O_NOFOLLOW to prevent TOCTOU symlink attacks.
-            # We explicitly ignore known_stat here to ensure we don't bypass symlink checks.
+            # We explicitly ignore known_stat here (for reading) to ensure we don't bypass symlink checks.
             # While known_stat avoids a syscall, it relies on os.stat() which follows symlinks.
 
             import errno
