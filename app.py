@@ -2328,7 +2328,17 @@ def upload_vtk() -> Union[Response, Tuple[Response, int]]:
     if not file.filename:
         return fast_jsonify({"success": False, "error": "Invalid filename"}), 400
 
-    filepath = temp_dir / secure_filename(file.filename)
+    safe_filename = secure_filename(file.filename)
+    if not safe_filename:
+        return fast_jsonify({"success": False, "error": "Invalid filename"}), 400
+
+    # Security: Validate file extension
+    allowed_extensions = {".vtk", ".vtp", ".vtu", ".vtm", ".pvtu"}
+    ext = os.path.splitext(safe_filename)[1].lower()
+    if ext not in allowed_extensions:
+        return fast_jsonify({"success": False, "error": "Invalid file type. Allowed: .vtk, .vtp, .vtu, .vtm, .pvtu"}), 400
+
+    filepath = temp_dir / safe_filename
 
     try:
         # Save the file temporarily

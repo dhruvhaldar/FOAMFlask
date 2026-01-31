@@ -30,8 +30,14 @@ class GeometryManager:
             tri_surface_dir.mkdir(parents=True, exist_ok=True)
 
             safe_filename = secure_filename(filename)
-            allowed_extensions = (".stl", ".obj", ".gz")
-            if not any(safe_filename.lower().endswith(ext) for ext in allowed_extensions):
+            if not safe_filename:
+                return {"success": False, "message": "Invalid filename."}
+
+            # Security: Strict extension validation
+            allowed_extensions = {".stl", ".obj", ".gz"}
+            # Check the final extension
+            ext = os.path.splitext(safe_filename)[1].lower()
+            if ext not in allowed_extensions:
                  return {"success": False, "message": "Only .stl, .obj, and .gz files are allowed."}
 
             filepath = tri_surface_dir / safe_filename
