@@ -261,9 +261,18 @@ def _resolve_path_cached(path_str: str) -> Path:
 
 # ⚡ Bolt Optimization: Cache date formatting to avoid repeated string ops
 @lru_cache(maxsize=128)
-def format_mtime(mtime: float) -> str:
+def _format_mtime_cached(timestamp: int) -> str:
     """Cached wrapper for email.utils.formatdate"""
-    return email.utils.formatdate(mtime, usegmt=True)
+    return email.utils.formatdate(timestamp, usegmt=True)
+
+
+def format_mtime(mtime: float) -> str:
+    """
+    Format a timestamp into HTTP date string.
+    Optimized to cache based on integer timestamp (seconds) to prevent
+    cache thrashing from sub-second mtime variations during frequent updates.
+    """
+    return _format_mtime_cached(int(mtime))
 
 
 def is_safe_case_root(path_str: str) -> bool:
