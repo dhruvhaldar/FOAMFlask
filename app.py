@@ -678,6 +678,16 @@ def set_security_headers(response: Response) -> Response:
         # Since this is a local app, Lax is fine.
         response.set_cookie("csrf_token", secrets.token_hex(32), samesite="Lax", secure=False)
 
+    # Security: Strict Cache-Control for JSON API endpoints
+    # Prevent caching of sensitive data (paths, config) while allowing revalidation for data (ETag)
+    if response.mimetype == "application/json" and "Cache-Control" not in response.headers:
+        if "ETag" in response.headers or "Last-Modified" in response.headers:
+            # Data endpoints with validation support -> revalidate
+            response.headers["Cache-Control"] = "no-cache"
+        else:
+            # Sensitive config/state endpoints -> never cache or store
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+
     return response
 
 
