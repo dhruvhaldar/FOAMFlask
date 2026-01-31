@@ -57,3 +57,26 @@ class TestCaseRootSecurity:
             assert data['caseDir'] == safe_dir_str
 
             mock_save.assert_called_once()
+
+    def test_set_root_to_home_dir_rejected(self, client):
+        """Test that setting CASE_ROOT to user home directory is rejected."""
+        import os
+        home_dir = os.path.normpath(os.path.expanduser("~"))
+
+        with patch('app.save_config', return_value=True):
+            response = client.post('/set_case', json={'caseDir': home_dir})
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "Cannot set case root to system directory" in data['output']
+
+    def test_set_root_to_hidden_dir_rejected(self, client, tmp_path):
+        """Test that setting CASE_ROOT to a hidden directory is rejected."""
+
+        hidden_dir = tmp_path / ".secret"
+        hidden_dir.mkdir()
+
+        with patch('app.save_config', return_value=True):
+            response = client.post('/set_case', json={'caseDir': str(hidden_dir)})
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "Cannot set case root to system directory" in data['output']

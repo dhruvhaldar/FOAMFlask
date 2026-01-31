@@ -270,15 +270,36 @@ def is_safe_case_root(path_str: str) -> bool:
     """
     Check if the path is safe to use as a case root.
     Blocks system directories on Linux and Windows.
+    Also blocks user home directory and hidden directories.
 
     Args:
         path_str: The resolved absolute path string.
 
     Returns:
-        True if safe, False if system directory.
+        True if safe, False if system directory or unsafe.
     """
     # Normalize path separators
     normalized = os.path.normpath(path_str)
+
+    # Security: Block User Home Directory directly
+    # Users should work in a subdirectory (e.g. ~/OpenFOAM)
+    try:
+        user_home = os.path.normpath(os.path.expanduser("~"))
+        if normalized == user_home:
+            return False
+    except Exception:
+        pass
+
+    # Security: Block Hidden Directories
+    # Check if any component of the path starts with "." (excluding "." and "..")
+    # This prevents accessing configuration folders like ~/.ssh, ~/.config
+    try:
+        path_obj = Path(normalized)
+        for part in path_obj.parts:
+            if part.startswith(".") and part not in (".", ".."):
+                return False
+    except Exception:
+        pass
 
     system = platform.system()
 
