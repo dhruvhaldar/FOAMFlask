@@ -2208,6 +2208,24 @@ const uploadGeometry = async (btnElement?: HTMLElement) => {
     return;
   }
 
+  // Validation: Check file size (Max 500MB)
+  const MAX_SIZE = 500 * 1024 * 1024; // 500MB
+  if (file.size > MAX_SIZE) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    showNotification(`File too large (${sizeMB}MB). Max 500MB allowed.`, "error", NOTIFY_MEDIUM);
+    return;
+  }
+
+  // Validation: Check file extension
+  const allowedExtensions = [".stl", ".obj", ".gz"];
+  const fileName = file.name.toLowerCase();
+  const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+  if (!isValidExtension) {
+    showNotification("Invalid file type. Allowed: .stl, .obj, .gz", "error", NOTIFY_MEDIUM);
+    return;
+  }
+
   // UX: Loading state
   const originalText = btn ? btn.innerHTML : "Upload";
   if (btn) {
