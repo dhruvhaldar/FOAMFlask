@@ -5,3 +5,7 @@
 ## 2026-01-29 - [Form Dependency Visuals]
 **Learning:** Users can feel confused when an input field is visually available but logically dependent on a disabled/unchecked parent setting. Relying solely on helper text ("Requires X enabled") is insufficient.
 **Action:** Always programmatically toggle the `disabled` state and apply visual cues (e.g., `opacity-50`, `cursor-not-allowed`, `aria-disabled`) to dependent inputs when their parent controller is disabled/unchecked.
+
+## 2025-10-26 - Removable File Selection
+**Learning:** File inputs often lack a native way to clear selection. Implementing a custom "Selected: [Name] [X]" pattern provides necessary control.
+**Action:** When using custom file drop zones, always include a mechanism to clear the selection programmatically and visually.
