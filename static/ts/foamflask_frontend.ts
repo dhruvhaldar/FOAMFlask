@@ -386,7 +386,7 @@ let isFirstPlotLoad: boolean = true;
 
 // Request management
 let abortControllers = new Map<string, AbortController>();
-let requestCache = new Map<string, { data: any; timestamp: number }>();
+let requestCache = new Map<string, { data: any; timestamp: number; lastModified?: string; etag?: string }>();
 const CACHE_DURATION: number = 1000;
 
 const outputBuffer: { message: string; type: string }[] = [];
@@ -969,10 +969,24 @@ const fetchWithCache = async <T = any>(
   abortControllers.set(url, controller);
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    // ⚡ Bolt Optimization: Add conditional headers for 304 checks
+    // If the browser cache fails or is disabled, we manually handle 304s to save bandwidth
+    const fetchOptions = { ...options, signal: controller.signal };
+    if (cached) {
+      const headers = new Headers(fetchOptions.headers || {});
+      if (cached.lastModified) headers.append("If-Modified-Since", cached.lastModified);
+      if (cached.etag) headers.append("If-None-Match", cached.etag);
+      fetchOptions.headers = headers;
+    }
+
+    const response = await fetch(url, fetchOptions);
+
+    // Handle 304 Not Modified manually (if browser didn't do it transparently)
+    if (response.status === 304 && cached) {
+      cached.timestamp = Date.now(); // Refresh cache validity
+      return cached.data as T;
+    }
+
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
       try {
@@ -986,7 +1000,12 @@ const fetchWithCache = async <T = any>(
       throw new Error(errorMessage);
     }
     const data = await response.json();
-    requestCache.set(cacheKey, { data, timestamp: Date.now() });
+
+    // Store validation headers for next time
+    const lastModified = response.headers.get("Last-Modified") || undefined;
+    const etag = response.headers.get("ETag") || undefined;
+
+    requestCache.set(cacheKey, { data, timestamp: Date.now(), lastModified, etag });
     return data as T;
   } finally {
     abortControllers.delete(url);
@@ -3391,6 +3410,9 @@ window.onload = async () => {
 (window as any).copyMeshingOutput = copyMeshingOutput;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
+// ⚡ Bolt Optimization: Expose for testing
+(window as any)._fetchWithCache = fetchWithCache;
+(window as any)._requestCache = requestCache;
 
 
 const init = () => {

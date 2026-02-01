@@ -768,10 +768,23 @@ const fetchWithCache = async (url, options = {}) => {
     const controller = new AbortController();
     abortControllers.set(url, controller);
     try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal,
-        });
+        // ⚡ Bolt Optimization: Add conditional headers for 304 checks
+        // If the browser cache fails or is disabled, we manually handle 304s to save bandwidth
+        const fetchOptions = { ...options, signal: controller.signal };
+        if (cached) {
+            const headers = new Headers(fetchOptions.headers || {});
+            if (cached.lastModified)
+                headers.append("If-Modified-Since", cached.lastModified);
+            if (cached.etag)
+                headers.append("If-None-Match", cached.etag);
+            fetchOptions.headers = headers;
+        }
+        const response = await fetch(url, fetchOptions);
+        // Handle 304 Not Modified manually (if browser didn't do it transparently)
+        if (response.status === 304 && cached) {
+            cached.timestamp = Date.now(); // Refresh cache validity
+            return cached.data;
+        }
         if (!response.ok) {
             let errorMessage = `HTTP error! status: ${response.status}`;
             try {
@@ -789,7 +802,10 @@ const fetchWithCache = async (url, options = {}) => {
             throw new Error(errorMessage);
         }
         const data = await response.json();
-        requestCache.set(cacheKey, { data, timestamp: Date.now() });
+        // Store validation headers for next time
+        const lastModified = response.headers.get("Last-Modified") || undefined;
+        const etag = response.headers.get("ETag") || undefined;
+        requestCache.set(cacheKey, { data, timestamp: Date.now(), lastModified, etag });
         return data;
     }
     finally {
@@ -2986,6 +3002,9 @@ window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
+// ⚡ Bolt Optimization: Expose for testing
+window._fetchWithCache = fetchWithCache;
+window._requestCache = requestCache;
 const init = () => {
     // Palette UX: Optimistically restore active case
     const savedCase = localStorage.getItem("lastSelectedCase");

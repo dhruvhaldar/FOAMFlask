@@ -49,3 +49,7 @@
 ## 2026-10-27 - [Redundant Log Monitoring]
 **Learning:** A background thread was polling for the simulation log file (`log.foamRun`) to copy it to a secondary file (`foamrun_logs.txt`). This secondary file was never read by the frontend or backend, resulting in wasted I/O and unnecessary thread creation.
 **Action:** Removed the `monitor_foamrun_log` function and the thread creation logic. This eliminates unnecessary context switching and disk I/O without affecting functionality.
+
+## 2026-10-27 - [Manual Conditional GET for Polling]
+**Learning:** Browsers may not consistently send `If-Modified-Since` or `If-None-Match` for `fetch` requests in a polling loop, especially if server responses lack explicit `Cache-Control` directives. This causes full data re-transmission (200 OK) even when the server supports 304 Not Modified.
+**Action:** Update the custom `fetchWithCache` wrapper to explicitly store `ETag` / `Last-Modified` from responses and append them to subsequent request headers. Manually handle 304 status to return cached data, ensuring bandwidth efficiency for high-frequency polling.
