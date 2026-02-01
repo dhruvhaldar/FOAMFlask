@@ -81,3 +81,8 @@
 **Vulnerability:** `sanitize_error` regex only handled single-quoted paths, leaking sensitive paths in double-quoted Docker errors (JSON) or unquoted messages (e.g. `bind: /host/path`).
 **Learning:** Regex-based sanitization must account for all variations of quoting and formatting produced by the underlying system (Docker API vs CLI).
 **Prevention:** Use comprehensive regexes that cover different quote styles and unquoted patterns, while carefully excluding false positives like URLs.
+
+## 2025-02-19 - Insecure Case Root Configuration
+**Vulnerability:** `is_safe_case_root` allowed setting the application root to the user's home directory (`~`) or hidden directories (e.g., `~/.ssh`), potentially exposing sensitive files.
+**Learning:** Relying on a blocklist of system directories is insufficient; one must also explicitly block high-value targets like the home directory and hidden configuration folders.
+**Prevention:** Added checks to explicitly reject `Path.home()` and any path component starting with `.`.
