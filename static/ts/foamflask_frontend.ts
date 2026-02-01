@@ -214,6 +214,31 @@ const clearLog = async (): Promise<void> => {
   }
 };
 
+// Helper: Show temporary success state on a button
+const temporarilyShowSuccess = (btn: HTMLButtonElement, originalHTML: string, message: string = "Success!"): void => {
+  btn.disabled = false;
+  btn.removeAttribute("aria-busy");
+  btn.classList.remove("opacity-75", "cursor-wait");
+
+  // Visual feedback: Green Checkmark
+  // Note: Using !bg-green-600 to override any existing background colors
+  btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    </svg>
+    <span>${message}</span>
+  `;
+
+  // Apply success styles
+  const successClasses = ["!bg-green-600", "!border-green-600", "!text-white", "cursor-default"];
+  btn.classList.add(...successClasses);
+
+  setTimeout(() => {
+    btn.innerHTML = originalHTML;
+    btn.classList.remove(...successClasses);
+  }, 2000);
+};
+
 // Generic Copy to Clipboard Helper
 const copyTextFromElement = (elementId: string, successMessage: string, btnElement?: HTMLElement): void => {
   const el = document.getElementById(elementId);
@@ -1290,6 +1315,7 @@ const createNewCase = async () => {
 
   const btn = document.getElementById("createCaseBtn") as HTMLButtonElement | null;
   const originalText = btn ? btn.innerHTML : "Create Case";
+  let success = false;
 
   if (btn) {
     btn.disabled = true;
@@ -1308,13 +1334,18 @@ const createNewCase = async () => {
       selectCase(caseName);
       const select = document.getElementById("caseSelect") as HTMLSelectElement;
       if (select) select.value = caseName;
+      success = true;
     } else { showNotification(data.message || "Failed", "error"); }
   } catch (e) { showNotification("Error creating case", "error"); }
   finally {
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Created!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };
@@ -2210,6 +2241,7 @@ const uploadGeometry = async (btnElement?: HTMLElement) => {
 
   // UX: Loading state
   const originalText = btn ? btn.innerHTML : "Upload";
+  let success = false;
   if (btn) {
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
@@ -2226,14 +2258,19 @@ const uploadGeometry = async (btnElement?: HTMLElement) => {
     showNotification("Geometry uploaded successfully", "success");
     input.value = "";
     refreshGeometryList();
+    success = true;
   } catch (e) {
     showNotification("Failed to upload geometry", "error");
   } finally {
     // Restore button state
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Uploaded!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };
@@ -2247,6 +2284,7 @@ const deleteGeometry = async (btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -2259,13 +2297,18 @@ const deleteGeometry = async (btnElement?: HTMLElement) => {
     await fetch("/api/geometry/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
     await refreshGeometryList();
     showNotification("Geometry deleted", "success");
+    success = true;
   } catch (e) {
     showNotification("Failed", "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Deleted!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };
@@ -2361,6 +2404,7 @@ const fillBoundsFromGeometry = async (btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -2406,6 +2450,7 @@ const generateBlockMeshDict = async (btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -2445,6 +2490,7 @@ const generateSnappyHexMeshDict = async (btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -2506,6 +2552,7 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -2521,6 +2568,7 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
 
     if (data.success) {
       showNotification("Meshing completed successfully", "success");
+      success = true;
     } else {
       showNotification(data.message || "Meshing failed", "error");
     }
@@ -2537,9 +2585,13 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
     showNotification("Meshing failed to execute", "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Completed!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };

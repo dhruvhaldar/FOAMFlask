@@ -329,10 +329,11 @@ describe('FoamFlask Frontend', () => {
     // Wait for deleteGeometry to finish
     await deletePromise;
 
-    // Button should be restored
+    // Button should be restored (success state)
     expect(btn.disabled).toBe(false);
     expect(btn.getAttribute('aria-busy')).toBeNull();
-    expect(btn.innerHTML).toBe('Delete');
+    expect(btn.innerHTML).toContain('Deleted!');
+    expect(btn.classList.contains('!bg-green-600')).toBe(true);
   });
 
   it('toggleFontSettings should toggle visibility and close on Escape', async () => {
