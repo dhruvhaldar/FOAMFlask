@@ -658,6 +658,17 @@ def set_security_headers(response: Response) -> Response:
     # Disable sensitive features not used by the app
     response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=(), payment=(), usb=()"
 
+    # Cache-Control Policy
+    # Only apply to JSON API responses to avoid performance regression on static assets.
+    # Respect existing Cache-Control headers if set.
+    if "Cache-Control" not in response.headers and response.mimetype == "application/json":
+        if "ETag" in response.headers or "Last-Modified" in response.headers:
+            # Data with validation headers: allow caching but force revalidation
+            response.headers["Cache-Control"] = "no-cache"
+        else:
+            # Sensitive data without validation: do not cache at all
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+
     # Content Security Policy (CSP)
     # Allows external CDNs used by the frontend (Tailwind, Plotly, Google Fonts)
     # 'unsafe-inline' and 'unsafe-eval' are required for Plotly and inline scripts/styles
