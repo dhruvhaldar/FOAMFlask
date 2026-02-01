@@ -820,7 +820,14 @@
         </div>
 
         <!-- Right Column: Viewer -->
-        <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 500px">
+        <div id="geometryViewerContainer" class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 500px">
+          <button onclick="toggleFullscreen('geometryViewerContainer', this)"
+            class="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-gray-700 p-2 rounded-lg shadow-md backdrop-blur-sm transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            aria-label="Enter Fullscreen" title="Enter Fullscreen">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </button>
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
           <div id="geometryPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -1392,7 +1399,14 @@
           </div>
 
           <!-- Right Column: Interactive Geometry Viewer -->
-          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 400px">
+          <div id="meshViewerContainer" class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 400px">
+            <button onclick="toggleFullscreen('meshViewerContainer', this)"
+              class="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-gray-700 p-2 rounded-lg shadow-md backdrop-blur-sm transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              aria-label="Enter Fullscreen" title="Enter Fullscreen">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
             <!-- Camera Controls -->
             <div id="cameraControls"
               class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 pointer-events-auto">
@@ -1997,7 +2011,14 @@
           </div>
 
           <!-- Right Column: Contour Viewer -->
-          <div class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 600px">
+          <div id="contourViewerContainer" class="w-full lg:w-2/3 rounded-lg overflow-hidden relative" style="min-height: 600px">
+            <button onclick="toggleFullscreen('contourViewerContainer', this)"
+              class="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white text-gray-700 p-2 rounded-lg shadow-md backdrop-blur-sm transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              aria-label="Enter Fullscreen" title="Enter Fullscreen">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
             <!-- Camera Controls -->
             <div id="contourCameraControls"
               class="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 pointer-events-auto">
