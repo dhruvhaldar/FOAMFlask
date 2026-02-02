@@ -9,3 +9,7 @@
 ## 2025-10-26 - Removable File Selection
 **Learning:** File inputs often lack a native way to clear selection. Implementing a custom "Selected: [Name] [X]" pattern provides necessary control.
 **Action:** When using custom file drop zones, always include a mechanism to clear the selection programmatically and visually.
+
+## 2026-02-15 - [Non-Blocking Confirmations]
+**Learning:** Native `confirm()` dialogs block the main thread and lack styling consistency, disrupting the user experience.
+**Action:** Always use the asynchronous `showConfirmModal()` helper for destructive actions to ensure consistent styling and non-blocking interaction.

@@ -3066,9 +3066,10 @@ const renderPipeline = (): void => {
       delBtn.setAttribute("aria-label", `Delete ${node.name}`);
       delBtn.title = "Delete this step";
 
-      delBtn.onclick = (e) => {
+      delBtn.onclick = async (e) => {
         e.stopPropagation();
-        if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
+        const confirmed = await showConfirmModal("Delete Step", `Delete ${node.name}? This will remove all subsequent steps.`);
+        if (confirmed) {
           deletePipelineStep(node.id);
         }
       };

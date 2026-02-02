@@ -112,4 +112,50 @@ describe('FoamFlask Frontend Pipeline', () => {
     expect(document.getElementById('post-landing-view')?.classList.contains('hidden')).toBe(false);
   });
 
+  it('Deletion should use custom confirm modal', async () => {
+    const { switchPostView } = window as any;
+    const container = document.getElementById('post-pipeline-view') as HTMLElement;
+
+    // Add contour
+    switchPostView('contour');
+
+    const buttons = container.querySelectorAll('button');
+    const deleteBtn = buttons[2]; // Contour Delete
+
+    // Mock native confirm to ensure it's NOT called
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    // Click Delete
+    deleteBtn.click();
+
+    // Native confirm should NOT be called
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    // Custom modal should appear
+    // We need to wait for microtask because handler is async now
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    const modalTitle = document.getElementById('confirm-title');
+    expect(modalTitle).toBeTruthy();
+    expect(modalTitle?.textContent).toBe('Delete Step');
+
+    // Confirm deletion
+    const confirmOkBtn = document.getElementById('confirm-ok');
+    confirmOkBtn?.click();
+
+    // Wait for logic to execute
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Contour node should be gone (only Root remaining)
+    // Root has 1 button (Select) + Add button (div) which is not a button tag
+    // Wait, renderPipeline adds:
+    // 1. Root Group (1 button)
+    // 2. Connector (div)
+    // 3. Add Btn (div)
+    // So buttons querySelectorAll should be 1
+    const newButtons = container.querySelectorAll('button');
+    expect(newButtons.length).toBe(1);
+    expect(newButtons[0].textContent).toContain('Mesh');
+  });
+
 });
