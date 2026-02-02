@@ -9,3 +9,7 @@
 ## 2025-10-26 - Removable File Selection
 **Learning:** File inputs often lack a native way to clear selection. Implementing a custom "Selected: [Name] [X]" pattern provides necessary control.
 **Action:** When using custom file drop zones, always include a mechanism to clear the selection programmatically and visually.
+
+## 2026-02-13 - [Feedback for "Disabled" Actions]
+**Learning:** When buttons (like "View" or "Delete") depend on a selection, silently ignoring clicks when no selection is made (or when the selection is empty/invalid) is confusing. Disabling the buttons entirely can also be unclear without tooltips explaining *why*.
+**Action:** Keep the buttons enabled but provide immediate, specific feedback (e.g., warning notification, focusing the required input, adding `aria-invalid`) if the user clicks them without a valid selection. This guides the user to the missing step rather than leaving them guessing.

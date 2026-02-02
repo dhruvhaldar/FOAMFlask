@@ -1692,6 +1692,7 @@ const refreshGeometryList = async (btnElement) => {
                 if (data.files.length === 0) {
                     const opt = document.createElement("option");
                     opt.disabled = true;
+                    opt.value = "";
                     opt.textContent = "No geometry files found";
                     select.appendChild(opt);
                 }
@@ -1956,9 +1957,19 @@ const uploadGeometry = async (btnElement) => {
     }
 };
 const deleteGeometry = async (btnElement) => {
-    const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
+    const select = document.getElementById("geometrySelect");
+    const filename = select?.value;
+    if (!activeCase)
         return;
+    if (!filename) {
+        showNotification("Please select a geometry file to delete", "warning");
+        if (select) {
+            select.focus();
+            select.setAttribute("aria-invalid", "true");
+            select.addEventListener("change", () => select.removeAttribute("aria-invalid"), { once: true });
+        }
+        return;
+    }
     const confirmed = await showConfirmModal("Delete Geometry", `Are you sure you want to delete ${filename}?`);
     if (!confirmed)
         return;
@@ -1987,9 +1998,19 @@ const deleteGeometry = async (btnElement) => {
     }
 };
 const loadGeometryView = async (btnElement) => {
-    const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
+    const select = document.getElementById("geometrySelect");
+    const filename = select?.value;
+    if (!activeCase)
         return;
+    if (!filename) {
+        showNotification("Please select a geometry file to view", "warning");
+        if (select) {
+            select.focus();
+            select.setAttribute("aria-invalid", "true");
+            select.addEventListener("change", () => select.removeAttribute("aria-invalid"), { once: true });
+        }
+        return;
+    }
     const btn = (btnElement || document.getElementById("viewGeometryBtn"));
     let originalText = "";
     if (btn) {
