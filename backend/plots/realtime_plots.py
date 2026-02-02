@@ -9,7 +9,8 @@ import logging
 import os
 import mmap
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Union, Any
+from typing import List, Optional, Tuple, Dict, Union, Any, Pattern
+from functools import lru_cache
 
 # ⚡ Bolt Optimization: Import Rust accelerator if available
 try:
@@ -85,6 +86,15 @@ _RE_VECTOR_COMPONENTS = re.compile(
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
 )
+
+# ⚡ Bolt Optimization: Cache variable resolution patterns to avoid recompilation
+@lru_cache(maxsize=128)
+def _get_variable_pattern(clean_var: Union[str, bytes], is_binary: bool) -> Pattern:
+    """Get compiled regex pattern for variable resolution."""
+    if is_binary:
+        return re.compile(rb"(?:^|\s)" + re.escape(clean_var) + rb"\s+([^;]+);")
+    else:
+        return re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
 
 class OpenFOAMFieldParser:
     """Parse OpenFOAM field files and extract data."""
@@ -268,12 +278,13 @@ class OpenFOAMFieldParser:
             if isinstance(var_name, str):
                 var_name = var_name.encode('utf-8')
             clean_var = var_name.lstrip(b'$')
-            pattern = re.compile(rb"(?:^|\s)" + re.escape(clean_var) + rb"\s+([^;]+);")
         else:
             if isinstance(var_name, bytes):
                 var_name = var_name.decode('utf-8')
             clean_var = var_name.lstrip('$')
-            pattern = re.compile(rf"(?:^|\s){re.escape(clean_var)}\s+([^;]+);")
+
+        # ⚡ Bolt Optimization: Use cached pattern
+        pattern = _get_variable_pattern(clean_var, is_binary)
 
         # ⚡ Bolt Optimization: Use search_limit if provided to limit scope
         # This prevents scanning the entire file (e.g. 100MB+) if a variable is missing
