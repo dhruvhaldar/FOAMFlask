@@ -369,6 +369,15 @@ def validate_safe_path(base_dir: str, relative_path: str) -> Path:
         logger.warning(f"Security: Path traversal attempt blocked. Path: {target}, Base: {base}")
         raise ValueError("Access denied: Invalid path")
 
+    # Security: Prevent access to hidden files/directories (starting with .)
+    # We check relative parts to allow the base path itself to contain dots if configured by admin
+    # Note: target is already resolved and verified to be relative to base
+    rel_path = target.relative_to(base)
+    for part in rel_path.parts:
+        if part.startswith("."):
+            logger.warning(f"Security: Access to hidden path blocked. Path: {target}")
+            raise ValueError("Access denied: Hidden paths not allowed")
+
     return target
 
 
