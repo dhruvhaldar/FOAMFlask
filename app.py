@@ -289,6 +289,18 @@ def is_safe_case_root(path_str: str) -> bool:
     # Normalize path separators
     normalized = os.path.normpath(path_str)
 
+    # Security: Block hidden directories (starting with .)
+    # This prevents access to sensitive directories like ~/.ssh, ~/.aws, etc.
+    try:
+        path_parts = Path(normalized).parts
+        for part in path_parts:
+            # Check if part starts with . but is not . or ..
+            if part.startswith('.') and part not in ('.', '..'):
+                return False
+    except Exception:
+        # If path parsing fails, fail safe
+        return False
+
     system = platform.system()
 
     if system == "Windows":
