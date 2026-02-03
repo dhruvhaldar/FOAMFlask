@@ -1021,7 +1021,8 @@ const updateActiveCaseBadge = () => {
         if (activeCase) {
             badge.textContent = activeCase;
             badge.classList.remove("hidden");
-            badge.title = `Active Case: ${activeCase}`;
+            badge.title = `Active Case: ${activeCase} (Click to change)`;
+            badge.setAttribute("aria-label", `Current active case: ${activeCase}. Click to go to setup.`);
         }
         else {
             badge.classList.add("hidden");
