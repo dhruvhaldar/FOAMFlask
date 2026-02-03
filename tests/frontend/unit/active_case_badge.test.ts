@@ -32,7 +32,7 @@ describe('Active Case Badge', () => {
       <div id="page-run" class="page hidden"></div>
       <div id="nav-run" class="nav-btn"></div>
 
-      <div id="activeCaseBadge" class="hidden"></div>
+      <button id="activeCaseBadge" class="hidden" onclick="switchPage('setup')"></button>
       <select id="caseSelect"><option value="">-- Select --</option></select>
 
       <!-- Required for init -->
@@ -92,7 +92,7 @@ describe('Active Case Badge', () => {
     document.body.innerHTML = '';
   });
 
-  it('selectCase should update the badge text and visibility', () => {
+  it('selectCase should update the badge text, visibility, and accessibility attributes', () => {
     const { selectCase } = window as any;
     const badge = document.getElementById('activeCaseBadge');
 
@@ -102,7 +102,20 @@ describe('Active Case Badge', () => {
 
     expect(badge?.classList.contains('hidden')).toBe(false);
     expect(badge?.textContent).toBe('case1');
-    expect(badge?.title).toBe('Active Case: case1');
+    expect(badge?.title).toContain('Active Case: case1');
+    expect(badge?.title).toContain('(Click to change)');
+    expect(badge?.getAttribute('aria-label')).toContain('case1');
+  });
+
+  it('badge should have correct onclick attribute to trigger setup page', () => {
+    const { selectCase } = window as any;
+    const badge = document.getElementById('activeCaseBadge');
+
+    // Make it visible
+    selectCase('case1');
+
+    // Verify attribute
+    expect(badge?.getAttribute('onclick')).toBe("switchPage('setup')");
   });
 
   it('selectCase with empty string should hide the badge', () => {
