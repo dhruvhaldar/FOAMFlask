@@ -547,6 +547,42 @@ COMPILED_TEMPLATE = None
 _TUTORIALS_CACHE: Dict[str, Union[Tuple[Optional[str], Optional[str]], List[str]]] = {}
 
 
+def generate_grouped_tutorial_options(tutorials: List[str]) -> str:
+    """
+    Generate grouped HTML options for tutorials.
+
+    Args:
+        tutorials: List of tutorial paths (e.g. "basic/pitzDaily")
+
+    Returns:
+        HTML string with <optgroup> tags.
+    """
+    groups: Dict[str, List[Tuple[str, str]]] = {}
+    for t in tutorials:
+        parts = t.split('/')
+        if len(parts) > 1:
+            category = parts[0]
+            display_text = t[len(category) + 1:]  # Strip category + slash
+        else:
+            category = "Other"
+            display_text = t
+
+        if category not in groups:
+            groups[category] = []
+        groups[category].append((t, display_text))
+
+    html_parts = []
+    # Sort categories
+    for category in sorted(groups.keys()):
+        html_parts.append(f'<optgroup label="{escape(category)}">')
+        # Sort tutorials within category
+        for t, display in sorted(groups[category], key=lambda x: x[0]):
+            html_parts.append(f'<option value="{escape(t)}">{escape(display)}</option>')
+        html_parts.append('</optgroup>')
+
+    return "\n".join(html_parts)
+
+
 def get_tutorials() -> List[str]:
     """Get a list of available OpenFOAM tutorial cases.
 
@@ -702,8 +738,8 @@ def index() -> str:
         COMPILED_TEMPLATE = app.jinja_env.from_string(TEMPLATE)
 
     tutorials = get_tutorials()
-    # Use escape to prevent XSS in option values
-    options_html = "\n".join(f'<option value="{escape(t)}">{escape(t)}</option>' for t in tutorials)
+    # 🎨 Palette UX: Group tutorials by category
+    options_html = generate_grouped_tutorial_options(tutorials)
 
     # ⚡ Bolt Optimization: Use pre-compiled template rendering
     # We must manually update the context with Flask globals (url_for, request, etc.)
