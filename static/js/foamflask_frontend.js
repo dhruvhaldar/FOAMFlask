@@ -3499,6 +3499,44 @@ const setupGeometryDragDrop = () => {
         }
     });
 };
+// Fullscreen Toggle
+window.toggleFullscreen = (containerId, btn) => {
+    const container = document.getElementById(containerId);
+    if (!container)
+        return;
+    // Icons
+    const expandIcon = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>`;
+    const compressIcon = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6v6M10 14L4 20M20 14h-6v6M14 14l6 20M4 10h6V4M10 10L4 4M20 10h-6V4M14 10l6-4" /></svg>`;
+    const updateUI = () => {
+        // Check if this container is the one in fullscreen
+        if (document.fullscreenElement === container) {
+            btn.innerHTML = compressIcon;
+            btn.setAttribute("aria-label", "Exit Fullscreen");
+            btn.setAttribute("title", "Exit Fullscreen");
+            // Add background to ensure it's not transparent in fullscreen
+            container.classList.add("bg-white", "flex", "flex-col");
+        }
+        else {
+            btn.innerHTML = expandIcon;
+            btn.setAttribute("aria-label", "Enter Fullscreen");
+            btn.setAttribute("title", "Enter Fullscreen");
+            container.classList.remove("bg-white", "flex", "flex-col");
+        }
+    };
+    // Bind event listener if not already bound
+    if (!container._fsListenerAttached) {
+        document.addEventListener("fullscreenchange", updateUI);
+        container._fsListenerAttached = true;
+    }
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+    }
+    else {
+        document.exitFullscreen();
+    }
+};
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 }
