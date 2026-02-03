@@ -108,6 +108,8 @@ def is_safe_command(command: str) -> bool:
     dangerous_chars.extend(["\n", "\r"])
     # Add brace expansion to prevent unexpected file creation
     dangerous_chars.extend(["{", "}"])
+    # Add other potentially dangerous characters (comments, escaping)
+    dangerous_chars.extend(["\\", "#"])
 
     if any(char in command for char in dangerous_chars):
         return False
