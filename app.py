@@ -1663,18 +1663,12 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
         return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
-        # Optimization: Check if data has changed (proxy: postProcessing directory or log file)
-        # Checking postProcessing directory recursively is slow.
-        # Checking 'log.foamRun' is a good proxy because the solver writes to it step-by-step.
-        # If log hasn't changed, plots likely haven't either.
-        log_file = case_dir / "log.foamRun"
-        is_not_modified, last_modified, _ = check_cache(log_file)
-        if is_not_modified:
-             return Response(status=304)
-
-        # ⚡ Bolt Optimization: Secondary check using ETag based on directory mtimes.
-        # Even if log changed (simulation running), field data might not have been written yet.
-        # We check case_dir mtime (for new time dirs) and latest_time_dir mtime (for new fields).
+        # ⚡ Bolt Optimization: Removed 'log.foamRun' proxy check.
+        # Previously we checked if log file changed as a fast path. However, during active simulation,
+        # the log changes frequently while field data changes less often (writeInterval).
+        # This caused a "double stat" penalty (stat log -> changed -> stat case/latest).
+        # By relying solely on ETag (case_dir + latest_time_dir), we reduce syscalls in the hot path
+        # from 3 to 2, and maintain correctness.
 
         parser = OpenFOAMFieldParser(str(case_dir))
 
@@ -1691,6 +1685,8 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
 
         latest_dir_mtime = None
         etag = None
+        last_modified = None
+
         if time_dirs and case_mtime is not None:
             latest_time = time_dirs[-1]
             latest_time_path = case_dir / latest_time
@@ -1704,9 +1700,20 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
                 # Construct ETag
                 etag = f'"{case_mtime}-{latest_dir_mtime}"'
 
+                # Calculate Last-Modified from the max mtime
+                # This ensures we still send valid cache headers even without the log file check
+                max_mtime = max(case_mtime, latest_dir_mtime)
+                last_modified = format_mtime(max_mtime)
+
                 if request.headers.get("If-None-Match") == etag:
                      response = Response(status=304)
                      response.headers["ETag"] = etag
+                     return response
+
+                # ⚡ Bolt Optimization: Support If-Modified-Since for clients that don't use ETag
+                if request.headers.get("If-Modified-Since") == last_modified:
+                     response = Response(status=304)
+                     response.headers["Last-Modified"] = last_modified
                      return response
 
             except OSError:
