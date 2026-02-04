@@ -915,6 +915,7 @@ const flushOutputBuffer = () => {
 const setDockerConfig = async (image, version, btnElement) => {
     const btn = btnElement;
     let originalText = "";
+    let success = false;
     if (btn) {
         originalText = btn.innerHTML;
         btn.disabled = true;
@@ -935,21 +936,28 @@ const setDockerConfig = async (image, version, btnElement) => {
             openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
         }
         showNotification("Docker config updated", "success");
+        success = true;
     }
     catch (e) {
         showNotification(`Failed to set Docker config: ${getErrorMessage(e)}`, "error");
     }
     finally {
         if (btn) {
-            btn.disabled = false;
-            btn.removeAttribute("aria-busy");
-            btn.innerHTML = originalText;
+            if (success) {
+                temporarilyShowSuccess(btn, originalText, "Updated!");
+            }
+            else {
+                btn.disabled = false;
+                btn.removeAttribute("aria-busy");
+                btn.innerHTML = originalText;
+            }
         }
     }
 };
 const loadTutorial = async () => {
     const btn = document.getElementById("loadTutorialBtn");
     const originalText = btn ? btn.innerHTML : "Import Tutorial";
+    let success = false;
     try {
         if (btn) {
             btn.disabled = true;
@@ -986,15 +994,21 @@ const loadTutorial = async () => {
             void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
             void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
         }
+        success = true;
     }
     catch (e) {
         showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
     }
     finally {
         if (btn) {
-            btn.disabled = false;
-            btn.removeAttribute("aria-busy");
-            btn.innerHTML = originalText;
+            if (success) {
+                temporarilyShowSuccess(btn, originalText, "Imported!");
+            }
+            else {
+                btn.disabled = false;
+                btn.removeAttribute("aria-busy");
+                btn.innerHTML = originalText;
+            }
         }
     }
 };
@@ -1900,6 +1914,7 @@ const setCase = (btnElement) => {
     }
     const btn = btnElement;
     const originalText = btn ? btn.innerHTML : "Set Root";
+    let success = false;
     if (btn) {
         btn.disabled = true;
         btn.setAttribute("aria-busy", "true");
@@ -1916,6 +1931,7 @@ const setCase = (btnElement) => {
         if (data.caseDir) {
             showNotification(`Case root set to: ${data.caseDir}`, "success");
             refreshCaseList(); // Refresh the list of cases
+            success = true;
         }
         else if (data.output) {
             showNotification(data.output, "info"); // Likely an error message from backend
@@ -1926,9 +1942,14 @@ const setCase = (btnElement) => {
     })
         .finally(() => {
         if (btn) {
-            btn.disabled = false;
-            btn.removeAttribute("aria-busy");
-            btn.innerHTML = originalText;
+            if (success) {
+                temporarilyShowSuccess(btn, originalText, "Set!");
+            }
+            else {
+                btn.disabled = false;
+                btn.removeAttribute("aria-busy");
+                btn.innerHTML = originalText;
+            }
         }
     });
 };
