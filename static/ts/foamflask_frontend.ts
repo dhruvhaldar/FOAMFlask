@@ -1131,6 +1131,7 @@ const flushOutputBuffer = (): void => {
 const setDockerConfig = async (image: string, version: string, btnElement?: HTMLElement): Promise<void> => {
   const btn = btnElement as HTMLButtonElement | undefined;
   let originalText = "";
+  let success = false;
 
   if (btn) {
     originalText = btn.innerHTML;
@@ -1155,13 +1156,18 @@ const setDockerConfig = async (image: string, version: string, btnElement?: HTML
     }
 
     showNotification("Docker config updated", "success");
+    success = true;
   } catch (e) {
     showNotification(`Failed to set Docker config: ${getErrorMessage(e)}`, "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Updated!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };
@@ -1169,6 +1175,7 @@ const setDockerConfig = async (image: string, version: string, btnElement?: HTML
 const loadTutorial = async (): Promise<void> => {
   const btn = document.getElementById("loadTutorialBtn") as HTMLButtonElement | null;
   const originalText = btn ? btn.innerHTML : "Import Tutorial";
+  let success = false;
 
   try {
     if (btn) {
@@ -1206,13 +1213,18 @@ const loadTutorial = async (): Promise<void> => {
       void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
       void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
     }
+    success = true;
   } catch (e) {
     showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Imported!");
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        btn.innerHTML = originalText;
+      }
     }
   }
 };
@@ -2184,6 +2196,8 @@ const setCase = (btnElement?: HTMLElement) => {
 
   const btn = btnElement as HTMLButtonElement | undefined;
   const originalText = btn ? btn.innerHTML : "Set Root";
+  let success = false;
+
   if (btn) {
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
@@ -2201,6 +2215,7 @@ const setCase = (btnElement?: HTMLElement) => {
       if (data.caseDir) {
         showNotification(`Case root set to: ${data.caseDir}`, "success");
         refreshCaseList(); // Refresh the list of cases
+        success = true;
       } else if (data.output) {
         showNotification(data.output, "info"); // Likely an error message from backend
       }
@@ -2210,9 +2225,13 @@ const setCase = (btnElement?: HTMLElement) => {
     })
     .finally(() => {
       if (btn) {
-        btn.disabled = false;
-        btn.removeAttribute("aria-busy");
-        btn.innerHTML = originalText;
+        if (success) {
+          temporarilyShowSuccess(btn, originalText, "Set!");
+        } else {
+          btn.disabled = false;
+          btn.removeAttribute("aria-busy");
+          btn.innerHTML = originalText;
+        }
       }
     });
 };

@@ -453,4 +453,47 @@ describe('FoamFlask Frontend', () => {
     expect(btn.dataset.isCopying).toBe('true');
     expect(btn.innerHTML).toContain('<svg'); // Check for green checkmark icon
   });
+
+  it('setCase should show success feedback on button', async () => {
+    const { setCase } = window as any;
+    const input = document.getElementById('caseDir') as HTMLInputElement;
+    input.value = '/tmp/case';
+
+    const btn = document.createElement('button');
+    btn.innerHTML = 'Set Root';
+    document.body.appendChild(btn);
+
+    // Mock fetch
+    let resolveFetch: any;
+    const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
+    (global.fetch as any).mockImplementation((url: string) => {
+        if (url.includes('/set_case')) {
+            return fetchPromise.then(() => ({ ok: true, json: () => Promise.resolve({ caseDir: '/tmp/case' }) }));
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ files: [], cases: [] }) });
+    });
+
+    // Start setCase
+    const setCasePromise = setCase(btn);
+
+    // Wait for microtask (loading state)
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-busy')).toBe('true');
+    expect(btn.innerHTML).toContain('Setting...');
+
+    // Resolve fetch
+    resolveFetch();
+
+    // Wait for promise
+    await new Promise(resolve => setTimeout(resolve, 0)); // Wait for promise resolution
+    await new Promise(resolve => setTimeout(resolve, 0)); // Wait for finally block
+
+    // Success state
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute('aria-busy')).toBeNull();
+    expect(btn.innerHTML).toContain('Set!');
+    expect(btn.classList.contains('!bg-green-600')).toBe(true);
+  });
 });
