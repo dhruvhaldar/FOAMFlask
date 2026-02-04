@@ -41,6 +41,10 @@ _TIME_DIRS_CACHE: Dict[str, Tuple[float, List[str]]] = {}
 # ⚡ Bolt Optimization: Cache accumulated time series data to avoid rebuilding lists
 _TIME_SERIES_CACHE: Dict[str, Tuple[List[str], Dict[str, List[float]]]] = {}
 
+# ⚡ Bolt Optimization: Limit cache size to prevent unbounded memory growth
+# Configurable via environment variable, default to 5
+MAX_CACHE_CASES = int(os.environ.get("FOAMFLASK_MAX_CACHE_CASES", 5))
+
 # Structure: { "dir_path_str": (mtime, scalar_fields, has_U, all_files, file_mtimes) }
 # ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
 _DIR_SCAN_CACHE: Dict[str, Tuple[float, List[str], bool, List[str], Dict[str, float]]] = {}
@@ -656,8 +660,25 @@ class OpenFOAMFieldParser:
         # This avoids rebuilding lists and redundant lookups for thousands of past steps.
         case_path_str = str(self.case_dir)
 
-        # We must determine if we need to modify the cache (update path) or just read from it (steady state).
-        cache_entry = _TIME_SERIES_CACHE.get(case_path_str)
+        # ⚡ Bolt Optimization: Implement LRU eviction to prevent memory bloat
+        # If case is already in cache, move to end (mark as recently used)
+        if case_path_str in _TIME_SERIES_CACHE:
+            # Pop and re-insert to update position to end (MRU)
+            cache_entry = _TIME_SERIES_CACHE.pop(case_path_str)
+            _TIME_SERIES_CACHE[case_path_str] = cache_entry
+        else:
+            cache_entry = None
+            # If new case and limit reached, evict oldest
+            if len(_TIME_SERIES_CACHE) >= MAX_CACHE_CASES:
+                # First key is oldest (LRU)
+                try:
+                    oldest_case = next(iter(_TIME_SERIES_CACHE))
+                    # logger.debug(f"Evicting oldest case from cache: {oldest_case}")
+                    _TIME_SERIES_CACHE.pop(oldest_case)
+                    # Clear associated caches for this case to free memory
+                    clear_cache(oldest_case)
+                except StopIteration:
+                    pass
 
         # Use source directly for checking to avoid premature copy
         if cache_entry:
