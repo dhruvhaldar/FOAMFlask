@@ -81,3 +81,8 @@
 **Vulnerability:** `sanitize_error` regex only handled single-quoted paths, leaking sensitive paths in double-quoted Docker errors (JSON) or unquoted messages (e.g. `bind: /host/path`).
 **Learning:** Regex-based sanitization must account for all variations of quoting and formatting produced by the underlying system (Docker API vs CLI).
 **Prevention:** Use comprehensive regexes that cover different quote styles and unquoted patterns, while carefully excluding false positives like URLs.
+
+## 2026-05-25 - [Insecure CSRF Cookie Attribute]
+**Vulnerability:** The CSRF token cookie was explicitly set with `secure=False` in `app.py`. This exposed the sensitive CSRF token to interception over unencrypted HTTP connections, even if the user accessed the application via HTTPS (e.g. in mixed content scenarios or if the network traffic was monitored).
+**Learning:** Hardcoding security flags like `secure=False` to support local development creates a persistent vulnerability in production environments. Security settings should adapt to the deployment context.
+**Prevention:** Modified `app.py` to set the `secure` flag dynamically using `secure=request.is_secure`. This ensures the cookie is protected in HTTPS environments while maintaining compatibility with local HTTP development.
