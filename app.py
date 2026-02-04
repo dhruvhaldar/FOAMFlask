@@ -1421,14 +1421,14 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         """Stream container logs for OpenFOAM command execution.
         
         Yields:
-            Log lines as HTML-formatted strings.
+            Log lines as raw text strings (newline-delimited).
         """
         client = get_docker_client()
         if client is None:
-            # Return a short HTML stream explaining the issue
+            # Return a short message explaining the issue
             yield (
                 "[FOAMFlask] [Error] Docker daemon not available. "
-                "Please start Docker Desktop and re-run the case.<br>"
+                "Please start Docker Desktop and re-run the case.\n"
             )
             return
 
@@ -1468,8 +1468,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
 
         # Validate and sanitize command input to prevent injection
         if not is_safe_command(command):
-            yield f"[FOAMFlask] [Error] Unsafe command detected: {escape(command)}<br>"
-            yield "[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.<br>"
+            yield f"[FOAMFlask] [Error] Unsafe command detected: {command}\n"
+            yield "[FOAMFlask] [Error] Commands containing shell metacharacters are not allowed.\n"
             return
 
         # Determine if command is an OpenFOAM command or a script file
@@ -1480,8 +1480,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 # Script file - validate path and execute safely
                 script_name = command[2:]  # Remove "./" prefix
                 if not is_safe_script_name(script_name):
-                    yield f"[FOAMFlask] [Error] Unsafe script name: {escape(script_name)}<br>"
-                    yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.<br>"
+                    yield f"[FOAMFlask] [Error] Unsafe script name: {script_name}\n"
+                    yield "[FOAMFlask] [Error] Script names must be alphanumeric with underscores/hyphens only.\n"
                     return
                 
                 # Security: Use positional arguments for bash -c to prevent injection
@@ -1506,8 +1506,8 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         else:
             # Fallback - treat as script with validation
             if not is_safe_script_name(command):
-                yield f"[FOAMFlask] [Error] Unsafe command name: {escape(command)}<br>"
-                yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.<br>"
+                yield f"[FOAMFlask] [Error] Unsafe command name: {command}\n"
+                yield "[FOAMFlask] [Error] Command names must be alphanumeric with underscores/hyphens only.\n"
                 return
             
             # Security: Use positional arguments
@@ -1539,13 +1539,13 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             # User Preference: Do not tail internal log files, show only what the container prints.
             try:
                 for line in container.logs(stream=True):
-                    yield f"{escape(line.decode(errors='ignore'))}<br>"
+                    yield line.decode(errors='ignore')
             except Exception as e:
-                yield f"[FOAMFlask] [Error] Log stream interrupted: {escape(str(e))}<br>"
+                yield f"[FOAMFlask] [Error] Log stream interrupted: {str(e)}\n"
 
         except Exception as e:
             logger.error(f"Error running container: {e}", exc_info=True)
-            yield f"[FOAMFlask] [Error] Failed to start container: {escape(sanitize_error(e))}<br>"
+            yield f"[FOAMFlask] [Error] Failed to start container: {sanitize_error(e)}\n"
             return
 
         finally:

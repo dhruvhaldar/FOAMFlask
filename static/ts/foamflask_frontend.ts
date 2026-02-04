@@ -1036,11 +1036,22 @@ const limitLogSize = (): void => {
 
   if (container.childElementCount > MAX_NODES) {
     const toRemove = container.childElementCount - PRUNE_TARGET;
-    // Remove oldest elements (from top)
-    for (let i = 0; i < toRemove; i++) {
-      if (container.firstElementChild) {
-        container.removeChild(container.firstElementChild);
-      }
+    // ⚡ Bolt Optimization: Batch removal using Range to minimize layout thrashing
+    // Traversing to find the boundary is O(N) but avoids N layout invalidations (reflows) caused by repeated removeChild
+    const range = document.createRange();
+    range.setStart(container, 0);
+
+    let boundary = container.firstElementChild;
+    for (let i = 0; i < toRemove && boundary; i++) {
+      boundary = boundary.nextElementSibling;
+    }
+
+    if (boundary) {
+      range.setEndBefore(boundary);
+      range.deleteContents();
+    } else {
+      // If we traversed past the end, clear everything (fallback)
+      container.innerHTML = "";
     }
   }
 };
@@ -1389,22 +1400,29 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
     isSimulationRunning = true;
     startPlotUpdates();
 
+    let buffer = "";
     while (true) {
       const { done, value } = (await reader?.read()) || { done: true, value: undefined };
       if (done) {
+        if (buffer) appendOutput(buffer, "stdout"); // Flush remaining buffer
         showNotification("Simulation completed successfully", "success");
         flushOutputBuffer();
         break;
       }
-      const text = decoder.decode(value);
-      // Backend sends chunks of HTML (escaped text + <br>), so we can append directly
-      const output = document.getElementById("output");
-      if (output) {
-        output.insertAdjacentHTML("beforeend", text);
-        // ⚡ Bolt Optimization: Limit DOM size
-        limitLogSize();
-        output.scrollTop = output.scrollHeight;
-      }
+
+      // ⚡ Bolt Optimization: Stream decoding and buffering for split packets
+      const text = decoder.decode(value, { stream: true });
+      buffer += text;
+
+      const lines = buffer.split("\n");
+      // Keep the last part in buffer as it might be incomplete
+      buffer = lines.pop() || "";
+
+      lines.forEach(line => {
+        // Filter out backend HTML artifacts if any remain (transition period)
+        const cleanLine = line.replace(/<br>/g, "").trim();
+        if (cleanLine) appendOutput(cleanLine, "stdout");
+      });
     }
   } catch (err) {
     console.error(err); // Keep console error for debugging
