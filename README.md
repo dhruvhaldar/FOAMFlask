@@ -33,17 +33,7 @@
 
 You have two options: Download a pre-built binary (easiest) or build from source using the automated installer.
 
-### Option 1: Standalone Application (Recommended)
-
-1. Go to the [Releases](https://github.com/dhruvhaldar/FOAMFlask/releases) page.
-2. Download the executable for your OS:
-   - **Windows**: `FOAMFlask-Windows.exe`
-   - **Linux**: `FOAMFlask-Linux`
-   - **macOS**: `FOAMFlask-MacOS`
-3. **Prerequisite**: Ensure [Docker Desktop](https://www.docker.com/products/docker-desktop/) is installed and running.
-4. Run the executable. It will automatically launch the server.
-
-### Option 2: Build from Source (Automated)
+### Option 1: Build from Source (Automated)
 
 Clone the repository and run the installer script. This will automatically check for and attempt to install dependencies (Python, Node.js, pnpm), build the frontend, and start the app.
 
@@ -70,7 +60,7 @@ chmod +x install.sh
 
 </details>
 
-### Option 3: Manual Installation (Developers)
+### Option 2: Manual Installation (Developers)
 
 If you prefer to manage the environment yourself:
 
