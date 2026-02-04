@@ -746,7 +746,8 @@ def set_security_headers(response: Response) -> Response:
     if not request.cookies.get("csrf_token"):
         # Lax allows top-level navigation, Strict is better but might break if linked from elsewhere
         # Since this is a local app, Lax is fine.
-        response.set_cookie("csrf_token", secrets.token_hex(32), samesite="Lax", secure=False)
+        # Security: Use request.is_secure to dynamically set Secure flag (True if HTTPS, False if HTTP)
+        response.set_cookie("csrf_token", secrets.token_hex(32), samesite="Lax", secure=request.is_secure)
 
     return response
 
