@@ -243,6 +243,10 @@ def is_safe_script_name(script_name: str) -> bool:
     # Prevent hidden files starting with dot
     if script_name.startswith('.'):
         return False
+
+    # Prevent arguments being interpreted as flags (starting with -)
+    if script_name.startswith('-'):
+        return False
     
     # Length check
     if len(script_name) > 50:
@@ -915,6 +919,9 @@ def api_create_case() -> Union[Response, Tuple[Response, int]]:
 
     if not case_name:
         return fast_jsonify({"success": False, "message": "No case name provided"}), 400
+
+    if not isinstance(case_name, str):
+        return fast_jsonify({"success": False, "message": "Case name must be a string"}), 400
 
     try:
         # Use globally set CASE_ROOT
@@ -1851,6 +1858,9 @@ def api_load_mesh() -> Union[Response, Tuple[Response, int]]:
         "for_contour", False
     )  # Get the for_contour flag, default to False
 
+    if not isinstance(for_contour, bool):
+        return fast_jsonify({"error": "for_contour must be a boolean"}), 400
+
     if not file_path:
         return fast_jsonify({"error": "No file path provided"}), 400
 
@@ -1915,6 +1925,9 @@ def api_mesh_screenshot() -> Union[Response, Tuple[Response, int]]:
     color = data.get("color", "lightblue")
     camera_position = data.get("camera_position", None)
 
+    if not isinstance(show_edges, bool):
+        return fast_jsonify({"error": "show_edges must be a boolean"}), 400
+
     # Security: Validate color format
     if not is_safe_color(color):
         return fast_jsonify({"error": "Invalid color format"}), 400
@@ -1976,6 +1989,9 @@ def api_mesh_interactive() -> Union[Response, Tuple[Response, int]]:
     file_path = data.get("file_path")
     show_edges = data.get("show_edges", True)
     color = data.get("color", "lightblue")
+
+    if not isinstance(show_edges, bool):
+        return fast_jsonify({"error": "show_edges must be a boolean"}), 400
 
     # Security: Validate color format
     if not is_safe_color(color):
