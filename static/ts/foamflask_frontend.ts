@@ -411,7 +411,13 @@ let isFirstPlotLoad: boolean = true;
 
 // Request management
 let abortControllers = new Map<string, AbortController>();
-let requestCache = new Map<string, { data: any; timestamp: number }>();
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+  etag?: string | null;
+  lastModified?: string | null;
+}
+let requestCache = new Map<string, CacheEntry>();
 const CACHE_DURATION: number = 1000;
 
 const outputBuffer: { message: string; type: string }[] = [];
@@ -986,6 +992,7 @@ const fetchWithCache = async <T = any>(
 ): Promise<T> => {
   const cacheKey = `${url}${JSON.stringify(options)}`;
   const cached = requestCache.get(cacheKey);
+  // 1. Local Cache Check
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
     return cached.data as T;
 
@@ -994,10 +1001,33 @@ const fetchWithCache = async <T = any>(
   abortControllers.set(url, controller);
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    // 2. Prepare headers for Conditional GET
+    // ⚡ Bolt Optimization: Use manual Conditional GET to avoid JSON parsing for 304 responses
+    const fetchOptions = { ...options, signal: controller.signal };
+    if (cached) {
+      const headers = new Headers(fetchOptions.headers || {});
+      if (cached.etag) headers.set("If-None-Match", cached.etag);
+      if (cached.lastModified) headers.set("If-Modified-Since", cached.lastModified);
+      fetchOptions.headers = headers;
+    }
+
+    const response = await fetch(url, fetchOptions);
+
+    // 3. Handle 304 Not Modified
+    // Browser might handle 304 transparently (returning 200), but if we force headers or cache is disabled,
+    // we get 304. We handle it explicitly to save JSON parsing cost.
+    if (response.status === 304 && cached) {
+      cached.timestamp = Date.now();
+      // Update headers if provided
+      const newEtag = response.headers.get("ETag");
+      const newLastModified = response.headers.get("Last-Modified");
+      if (newEtag) cached.etag = newEtag;
+      if (newLastModified) cached.lastModified = newLastModified;
+
+      requestCache.set(cacheKey, cached);
+      return cached.data as T;
+    }
+
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
       try {
@@ -1011,7 +1041,12 @@ const fetchWithCache = async <T = any>(
       throw new Error(errorMessage);
     }
     const data = await response.json();
-    requestCache.set(cacheKey, { data, timestamp: Date.now() });
+    requestCache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+      etag: response.headers.get("ETag"),
+      lastModified: response.headers.get("Last-Modified")
+    });
     return data as T;
   } finally {
     abortControllers.delete(url);
@@ -4121,3 +4156,5 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+(window as any)._fetchWithCache = fetchWithCache;
+(window as any)._requestCache = requestCache;
