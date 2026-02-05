@@ -1,0 +1,26 @@
+INFO:FOAMFlask:[FOAMFlask] Performing first-time setup checks...
+FOAMFlask listening on: 127.0.0.1:5000
+ * Serving Flask app 'app'
+ * Debug mode: off
+DEBUG:docker.utils.config:Trying paths: ['/home/jules/.docker/config.json', '/home/jules/.dockercfg']
+DEBUG:docker.utils.config:No config file found
+DEBUG:docker.utils.config:Trying paths: ['/home/jules/.docker/config.json', '/home/jules/.dockercfg']
+DEBUG:docker.utils.config:No config file found
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 799
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/_ping HTTP/1.1" 200 2
+INFO:FOAMFlask:[FOAMFlask] Connected to Docker daemon
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/images/haldardhruv/ubuntu_noble_openfoam:v12/json HTTP/1.1" 404 67
+INFO:FOAMFlask:[FOAMFlask] Docker image 'haldardhruv/ubuntu_noble_openfoam:v12' not found. Pulling now... (Warning: Large download, check for metered connection)
+DEBUG:docker.auth:Looking for auth config
+DEBUG:docker.auth:No auth config in memory - loading from filesystem
+DEBUG:docker.utils.config:Trying paths: ['/home/jules/.docker/config.json', '/home/jules/.dockercfg']
+DEBUG:docker.utils.config:No config file found
+DEBUG:docker.auth:Looking for auth entry for 'docker.io'
+DEBUG:docker.auth:No entry found
+DEBUG:docker.auth:No auth config found
+DEBUG:urllib3.connectionpool:http://localhost:None "POST /v1.52/images/create?tag=v12&fromImage=haldardhruv%2Fubuntu_noble_openfoam HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.52/images/haldardhruv/ubuntu_noble_openfoam:v12/json HTTP/1.1" 404 67
+ERROR:FOAMFlask:[FOAMFlask] Failed to check/pull Docker image: 404 Client Error for http+docker://localhost/v1.52/images/haldardhruv/ubuntu_noble_openfoam:v12/json: Not Found ("No such image: haldardhruv/ubuntu_noble_openfoam:v12")

@@ -3353,23 +3353,51 @@ const scrollToLogBottom = () => {
     }
 };
 window.scrollToLogBottom = scrollToLogBottom;
+// Scroll to Top Logic
+const scrollToLogTop = () => {
+    const output = document.getElementById("output");
+    if (output) {
+        try {
+            output.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        catch (e) {
+            output.scrollTop = 0;
+        }
+    }
+};
+window.scrollToLogTop = scrollToLogTop;
 const initLogScrollObserver = () => {
     const output = document.getElementById("output");
-    const btn = document.getElementById("scrollToBottomBtn");
-    if (!output || !btn)
+    const bottomBtn = document.getElementById("scrollToBottomBtn");
+    const topBtn = document.getElementById("scrollToTopBtn");
+    if (!output)
         return;
     const handleLogScroll = () => {
-        // Show button if we are more than 100px from the bottom
-        const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight;
-        // Use a small tolerance for "at bottom" check, but larger for showing the button
-        const shouldShow = distanceToBottom > 150;
-        if (shouldShow) {
-            btn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
-            btn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+        // Scroll to Bottom Button Logic
+        if (bottomBtn) {
+            const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight;
+            // Use a small tolerance for "at bottom" check, but larger for showing the button
+            const shouldShowBottom = distanceToBottom > 150;
+            if (shouldShowBottom) {
+                bottomBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
+                bottomBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+            }
+            else {
+                bottomBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
+                bottomBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+            }
         }
-        else {
-            btn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
-            btn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+        // Scroll to Top Button Logic
+        if (topBtn) {
+            const shouldShowTop = output.scrollTop > 200;
+            if (shouldShowTop) {
+                topBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
+                topBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+            }
+            else {
+                topBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
+                topBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+            }
         }
     };
     let ticking = false;
