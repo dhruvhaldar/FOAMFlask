@@ -43,6 +43,10 @@ from backend.utils import sanitize_error, is_safe_command, is_safe_color
 # Initialize Flask application
 app = Flask(__name__)
 
+# Security: Set secret key for session signing
+# Prefer environment variable for persistence, fallback to random for local security
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
+
 # Configure Compression
 app.config["COMPRESS_MIMETYPES"] = [
     "text/html",
