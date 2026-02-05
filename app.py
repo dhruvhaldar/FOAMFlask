@@ -36,7 +36,7 @@ from backend.post.surface_projection import SurfaceProjectionVisualizer
 from backend.startup import run_initial_setup_checks, check_docker_permissions
 from backend.case.manager import CaseManager
 from backend.geometry.manager import GeometryManager
-from backend.geometry.visualizer import GeometryVisualizer
+from backend.geometry.visualizer import geometry_visualizer
 from backend.meshing.runner import MeshingRunner
 from backend.utils import sanitize_error, is_safe_command, is_safe_color
 
@@ -620,6 +620,10 @@ def get_tutorials() -> List[str]:
     Returns:
         Sorted list of available OpenFOAM tutorial paths (category/case).
     """
+    # ⚡ Bolt Optimization: Mock for testing/development if requested
+    if os.environ.get("FOAMFLASK_MOCK_DOCKER"):
+        return ["basic/pitzDaily", "incompressible/simpleFoam/pitzDaily"]
+
     global _TUTORIALS_CACHE
 
     # Check cache
@@ -1102,7 +1106,7 @@ def api_view_geometry() -> Union[Response, Tuple[Response, int]]:
     
     resolved_path = path_or_error
 
-    html_content = GeometryVisualizer.get_interactive_html(resolved_path, color, opacity, optimize)
+    html_content = geometry_visualizer.get_interactive_html(resolved_path, color, opacity, optimize)
 
     if html_content:
         response = Response(html_content, mimetype="text/html")
@@ -1125,7 +1129,7 @@ def api_info_geometry() -> Union[Response, Tuple[Response, int]]:
     
     resolved_path = path_or_error
 
-    info = GeometryVisualizer.get_mesh_info(resolved_path)
+    info = geometry_visualizer.get_mesh_info(resolved_path)
     return fast_jsonify(info)
 
 

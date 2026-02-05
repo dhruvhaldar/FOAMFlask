@@ -114,4 +114,38 @@ test.describe('Geometry Management', () => {
     // Verify list is empty
     await expect(page.locator('#geometrySelect')).toContainText('No geometry files found');
   });
+
+  test('should load interactive geometry view', async ({ page }) => {
+    // Initial state: select default file
+    await page.click('#refreshGeometryBtn');
+    await page.selectOption('#geometrySelect', 'default.stl');
+
+    // Mock view response
+    await page.route('**/api/geometry/view', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<html><body>Interactive Geometry</body></html>'
+      });
+    });
+
+    // Mock info response (called in parallel/sequence)
+    await page.route('**/api/geometry/info', async route => {
+      await route.fulfill({ json: { success: true, bounds: [0,1,0,1,0,1], center: [0.5,0.5,0.5], n_points: 100, n_cells: 100 } });
+    });
+
+    // Click View
+    await page.click('#viewGeometryBtn');
+
+    // Verify loading state (optional, might be too fast)
+    // Verify iframe visibility and content
+    const iframe = page.locator('#geometryInteractive');
+    await expect(iframe).toBeVisible();
+
+    // Verify placeholder is hidden
+    await expect(page.locator('#geometryPlaceholder')).toBeHidden();
+
+    // Verify info panel is shown
+    await expect(page.locator('#geometryInfo')).toBeVisible();
+  });
 });
