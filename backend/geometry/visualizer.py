@@ -347,8 +347,8 @@ class GeometryVisualizer:
 
                 # ⚡ Bolt Optimization: Disable progress bar
                 mesh = pv.read(read_path, progress_bar=False)
-                bounds = mesh.bounds
-                center = mesh.center
+                bounds = list(mesh.bounds)
+                center = list(mesh.center)
 
                 result = {
                     "success": True,
