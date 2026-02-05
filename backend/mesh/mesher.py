@@ -266,7 +266,7 @@ class MeshVisualizer(BaseVisualizer):
                                             "name": name,
                                             "path": entry_path,
                                             "relative_path": rel_path_str,
-                                            "size": entry.stat().st_size,
+                                            # "size": entry.stat().st_size,
                                         })
                                     except (ValueError, OSError):
                                         continue
