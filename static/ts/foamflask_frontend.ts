@@ -245,6 +245,15 @@ const getElement = <T extends HTMLElement>(id: string): T | null => {
   return document.getElementById(id) as T | null;
 };
 
+const formatBytes = (bytes: number, decimals = 1) => {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return typeof error === "string" ? error : "Unknown error";
@@ -2144,9 +2153,17 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
           opt.textContent = "No geometry files found";
           select.appendChild(opt);
         } else {
-          data.files.forEach((f: string) => {
+          // Handle both old format (string[]) and new format ({name, size}[])
+          data.files.forEach((f: any) => {
             const opt = document.createElement("option");
-            opt.value = f; opt.textContent = f; select.appendChild(opt);
+            if (typeof f === 'string') {
+              opt.value = f;
+              opt.textContent = f;
+            } else {
+              opt.value = f.name;
+              opt.textContent = `${f.name} (${formatBytes(f.size)})`;
+            }
+            select.appendChild(opt);
           });
         }
       }
@@ -2838,7 +2855,9 @@ const refreshMeshList = async (btnElement?: HTMLElement) => {
         select.innerHTML = '<option value="">-- Select a mesh file --</option>';
         data.meshes.forEach((m: MeshFile) => {
           const opt = document.createElement("option");
-          opt.value = m.path; opt.textContent = m.name; select.appendChild(opt);
+          opt.value = m.path;
+          opt.textContent = m.size ? `${m.name} (${formatBytes(m.size)})` : m.name;
+          select.appendChild(opt);
         });
       }
     }

@@ -51,7 +51,7 @@ class GeometryManager:
             return {"success": False, "message": sanitize_error(e)}
 
     @staticmethod
-    def list_stls(case_path: Union[str, Path]) -> Dict[str, Union[bool, List[str], str]]:
+    def list_stls(case_path: Union[str, Path]) -> Dict[str, Union[bool, List[Dict[str, Union[str, int]]], str]]:
         """
         List all geometry files in the constant/triSurface directory.
 
@@ -59,7 +59,7 @@ class GeometryManager:
             case_path: Path to the case directory.
 
         Returns:
-            Dictionary with success status and list of filenames.
+            Dictionary with success status and list of dicts with 'name' and 'size'.
         """
         try:
             path = Path(case_path).resolve()
@@ -82,11 +82,16 @@ class GeometryManager:
                             name = entry.name
                             ext = os.path.splitext(name)[1].lower()
                             if ext in allowed_extensions:
-                                files.append(name)
+                                files.append({
+                                    "name": name,
+                                    "size": entry.stat().st_size
+                                })
             except OSError:
                 pass # Directory might have been deleted concurrently
 
-            return {"success": True, "files": sorted(files)}
+            # Sort by name
+            files.sort(key=lambda x: x["name"])
+            return {"success": True, "files": files}
 
         except Exception as e:
             logger.error(f"Error listing STLs: {e}")

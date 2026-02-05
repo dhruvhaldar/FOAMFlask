@@ -94,6 +94,15 @@ const loadInteractiveViewerCommon = async (config) => {
 const getElement = (id) => {
     return document.getElementById(id);
 };
+const formatBytes = (bytes, decimals = 1) => {
+    if (!bytes)
+        return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
 const getErrorMessage = (error) => {
     if (error instanceof Error)
         return error.message;
@@ -1840,10 +1849,17 @@ const refreshGeometryList = async (btnElement) => {
                     select.appendChild(opt);
                 }
                 else {
+                    // Handle both old format (string[]) and new format ({name, size}[])
                     data.files.forEach((f) => {
                         const opt = document.createElement("option");
-                        opt.value = f;
-                        opt.textContent = f;
+                        if (typeof f === 'string') {
+                            opt.value = f;
+                            opt.textContent = f;
+                        }
+                        else {
+                            opt.value = f.name;
+                            opt.textContent = `${f.name} (${formatBytes(f.size)})`;
+                        }
                         select.appendChild(opt);
                     });
                 }
@@ -2501,7 +2517,7 @@ const refreshMeshList = async (btnElement) => {
                 data.meshes.forEach((m) => {
                     const opt = document.createElement("option");
                     opt.value = m.path;
-                    opt.textContent = m.name;
+                    opt.textContent = m.size ? `${m.name} (${formatBytes(m.size)})` : m.name;
                     select.appendChild(opt);
                 });
             }
