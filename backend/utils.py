@@ -67,11 +67,11 @@ def sanitize_error(e: Exception) -> str:
         # Unix: /path/to/something
         # Look for / followed by alphanumeric/dots/dashes/underscores segments
         # Negative lookbehind ensures we don't break URLs (http://, https://)
-        unix_path_pattern = r"(?<!\w)(?<!://)(?<!:/)(/(?:[\w\.\- ]+/)+[\w\.\- ]+)"
+        unix_path_pattern = r"(?<!\w)(?<!://)(?<!:/)(/(?:[\w\.\-][\w\.\- ]*/)*[\w\.\-][\w\.\- ]*)"
         msg = re.sub(unix_path_pattern, "[REDACTED_PATH]", msg)
 
         # Windows: C:\path\to...
-        win_path_pattern = r"([a-zA-Z]:\\\\?(?:[\w\.\- ]+\\\\?)+[\w\.\- ]+)"
+        win_path_pattern = r"([a-zA-Z]:\\\\?(?:[\w\.\-][\w\.\- ]*\\\\?)*[\w\.\-][\w\.\- ]*)"
         msg = re.sub(win_path_pattern, "[REDACTED_PATH]", msg)
 
         return msg
