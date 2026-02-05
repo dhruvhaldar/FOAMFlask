@@ -133,6 +133,14 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
          if scalar_field not in mesh.point_data:
              raise RuntimeError(f"Data array ({scalar_field}) not present in this dataset. Available: {mesh.point_data.keys()}")
 
+         # Get range for slider
+         rng = mesh.get_data_range(scalar_field)
+         
+         # Initial value (center of range or from params)
+         initial_isovalue = params.get("isovalues", [np.mean(rng)])[0]
+         # Clamp initial value to range
+         initial_isovalue = max(rng[0], min(rng[1], initial_isovalue))
+
          # Create Plotter
          plotter = pv.Plotter(off_screen=True) # Trame handles rendering
          
@@ -146,20 +154,25 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                 cmap=params.get("colormap", "viridis"),
             )
 
-         # Add Isosurface Widget (The Native One!)
-         # Note: add_mesh_isovalue adds a slider widget to the scene
-            plotter.add_mesh_isovalue(
-                mesh,
-                scalars=scalar_field,
-                opacity=params.get("contour_opacity", 0.8),
-                cmap=params.get("colormap", "viridis"),
-                show_scalar_bar=False
-                # widget_color="black"
-            )
-
-         # plotter.add_axes() # Removed to eliminate "blue square" artifact (orientation widget)
-            plotter.reset_camera()
+         # --- Manual Contour Implementation (to allow state binding) ---
          
+         # Create initial isosurface
+         try:
+             isosurface = mesh.contour(isosurfaces=[initial_isovalue], scalars=scalar_field)
+         except Exception as e:
+             logger.warning(f"Initial contour generation failed: {e}")
+             isosurface = pv.PolyData() # Empty fallback
+
+         # Add the isosurface actor
+         # Note: We keep a reference to 'iso_actor' if needed, but primarily we overwrite the mesh data
+         iso_actor = plotter.add_mesh(
+             isosurface,
+             opacity=params.get("contour_opacity", 0.8),
+             cmap=params.get("colormap", "viridis"),
+             show_scalar_bar=False,
+             clim=rng, # Fix color range to logical bounds
+         )
+
          # Start Trame Server logic
          from trame.app import get_server
          from trame.ui.vuetify import VAppLayout
@@ -167,18 +180,52 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
          from trame.widgets.vtk import VtkRemoteView
 
          # We utilize a workaround to let the system pick a port or verify one
-         # Trame usually picks a port if 0 is passed, or we can use socket to find one.
-         # For simplicity, let's bind to 0 and get the port.
-         
          server = get_server(name="foamflask_iso", client_type="vue2")
          state, ctrl = server.state, server.controller
          
+         # Initialize state
+         state.isovalue = initial_isovalue
+
          # Camera Callbacks
          def update_view():
              # Force a render so the VTK window updates its pixel/geometry state
              plotter.render()
              # Signal the frontend to sync with the new state
              ctrl.view_update()
+
+         # Add Text Actor for Isovalue
+         text_actor = plotter.add_text(
+             f"Isovalue: {initial_isovalue:.2f}",
+             position="upper_right",
+             color="black",
+             shadow=False,
+             font_size=10,
+         )
+
+         # State Change Handler (Trame -> VTK + Frontend)
+         @state.change("isovalue")
+         def on_isovalue_change(isovalue, **kwargs):
+             # 1. Update VTK Mesh
+             try:
+                new_iso = mesh.contour(isosurfaces=[isovalue], scalars=scalar_field)
+                isosurface.overwrite(new_iso)
+             except Exception as e:
+                 pass # Handle edge cases where contour fails
+            
+             # 2. Update Text Actor
+             try:
+                 text_actor.SetInput(f"Isovalue: {isovalue:.2f}")
+             except:
+                 pass
+
+             # 3. Update View
+             update_view()
+
+             # 4. Notify Parent Window (Frontend)
+             # We use JS execution to post message back to the iframe's parent
+             # This requires the iframe to be on the same origin or allow '*'
+             js_cmd = f"window.parent.postMessage({{type: 'iso_update', value: {isovalue}}}, '*')"
+             server.js_call(js_cmd)
 
          def view_iso():
              plotter.view_isometric()
@@ -228,6 +275,18 @@ def _run_trame_process(mesh_path: str, params: Dict, port_queue: multiprocessing
                      .v-progress-linear, .trame__loader { display: none !important; } 
                      .fill-height { overflow: hidden !important; }
                      ::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari/Edge */
+                 """)
+                 
+                 # Inject Script to Listen for Parent Messages (Frontend -> Trame)
+                 html.Script("""
+                    window.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'set_isovalue') {
+                            // Call Trame trigger
+                            if (window.trame && window.trame.state) {
+                                window.trame.state.set('isovalue', parseFloat(event.data.value));
+                            }
+                        }
+                    });
                  """)
                  
                  # Floating Toolbar (Top Center, Horizontal)

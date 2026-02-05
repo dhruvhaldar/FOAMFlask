@@ -798,22 +798,39 @@ function setupScalarFieldListeners(): void {
         };
     }
 
-    // Also update slider display on input
-    const slider = document.getElementById('isovalueSlider') as HTMLInputElement;
+    // Also update slider display on input and sync with backend
+    const slider = document.getElementById('isovalueSlider') as HTMLInputElement | null;
     const display = document.getElementById('isovalueDisplay');
+
     if (slider && display) {
         slider.oninput = () => {
-            display.textContent = parseFloat(slider.value).toFixed(2);
-        };
-        slider.onchange = () => {
-            display.textContent = parseFloat(slider.value).toFixed(2);
-            // Auto-update contour if widget enabled?
-            // The original code did this. Let's keep it consistent.
-            const checkbox = document.getElementById('showIsovalueWidget') as HTMLInputElement;
-            if (checkbox && checkbox.checked) {
-                generateContours();
+            const val = parseFloat(slider.value);
+            display.textContent = val.toFixed(2);
+
+            // Send update to Trame if active
+            const iframe = document.getElementById('contourVisualizationFrame') as HTMLIFrameElement | null;
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'set_isovalue', value: val }, '*');
             }
-        }
+        };
+
+        slider.onchange = () => {
+            const val = parseFloat(slider.value);
+            display.textContent = val.toFixed(2);
+
+            // Final update on release
+            const iframe = document.getElementById('contourVisualizationFrame') as HTMLIFrameElement | null;
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'set_isovalue', value: val }, '*');
+            } else {
+                // Fallback to full regeneration if not interactive or iframe missing
+                // (Only if widget is checked and we are not in a synced state)
+                const checkbox = document.getElementById('showIsovalueWidget') as HTMLInputElement | null;
+                if (checkbox && checkbox.checked) {
+                    generateContours();
+                }
+            }
+        };
     }
 }
 
