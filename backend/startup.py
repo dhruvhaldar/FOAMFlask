@@ -86,15 +86,41 @@ def run_initial_setup_checks(
             client.images.get(docker_image)
             logger.info(f"[FOAMFlask] Image {docker_image} found.")
         except docker.errors.ImageNotFound:
-            msg = f"Docker image '{docker_image}' not found. Pulling now... (Warning: Large download, check for metered connection)"
-            logger.info(f"[FOAMFlask] {msg}")
-            print(f"INFO::[FOAMFlask] {msg}") # Console output
+            # Check for Dockerfile in root
+            dockerfile_path = Path(__file__).resolve().parent.parent / "Dockerfile"
 
-            if status_callback:
-                status_callback(msg)
+            if dockerfile_path.exists():
+                msg = f"Docker image '{docker_image}' not found. Building from Dockerfile... (Warning: This may take a while)"
+                logger.info(f"[FOAMFlask] {msg}")
+                print(f"INFO::[FOAMFlask] {msg}")
 
-            client.images.pull(docker_image)
-            logger.info(f"[FOAMFlask] Image {docker_image} pulled successfully.")
+                if status_callback:
+                    status_callback(msg)
+
+                # Build from Dockerfile
+                # We use fileobj to avoid sending build context, as the Dockerfile only has a FROM instruction
+                try:
+                    with open(dockerfile_path, 'rb') as f:
+                        client.images.build(fileobj=f, tag=docker_image, rm=True)
+                    logger.info(f"[FOAMFlask] Image {docker_image} built successfully.")
+                except Exception as build_err:
+                    # Fallback to pull if build fails (e.g. base image not accessible and build fails?)
+                    # Actually, if build fails, we should report it. But maybe fallback to pull if the Dockerfile is bad?
+                    # User request was "Instead of docker pull... I want a dockerfile".
+                    # So we should probably fail if build fails, or just let the outer exception handler catch it.
+                    # Re-raising ensures it goes to the outer handler which logs "Failed to check/pull Docker image"
+                    raise build_err
+
+            else:
+                msg = f"Docker image '{docker_image}' not found. Pulling now... (Warning: Large download, check for metered connection)"
+                logger.info(f"[FOAMFlask] {msg}")
+                print(f"INFO::[FOAMFlask] {msg}") # Console output
+
+                if status_callback:
+                    status_callback(msg)
+
+                client.images.pull(docker_image)
+                logger.info(f"[FOAMFlask] Image {docker_image} pulled successfully.")
 
     except Exception as e:
          msg = f"Failed to check/pull Docker image: {e}"
