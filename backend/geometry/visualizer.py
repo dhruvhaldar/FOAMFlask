@@ -5,17 +5,14 @@ from typing import Optional, Union, Dict, Any, BinaryIO
 import multiprocessing
 import tempfile
 import os
-import gzip
 import shutil
 import hashlib
 import stat
 import random
 from collections import OrderedDict
-from backend.utils import safe_decompress
+from backend.visualization.base import BaseVisualizer
 
 logger = logging.getLogger("FOAMFlask")
-
-ALLOWED_EXTENSIONS = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g'}
 
 # ⚡ Bolt Optimization: Cache for mesh info
 # Stores (path, mtime) -> mesh_info_dict
@@ -81,8 +78,6 @@ def _cleanup_cache():
     """
     try:
         # ⚡ Bolt Optimization: Probabilistic cleanup
-        # Scanning the directory is expensive (O(N) syscalls).
-        # We only run cleanup 10% of the time to amortize the cost.
         if random.random() > 0.1:
             return
 
@@ -92,8 +87,6 @@ def _cleanup_cache():
         files = []
         total_size = 0
 
-        # ⚡ Bolt Optimization: Use os.scandir to avoid redundant stat calls
-        # Gather all file stats in a single pass instead of iterating twice (sum + sort)
         try:
             with os.scandir(str(cache_dir)) as entries:
                 for entry in entries:
@@ -102,18 +95,15 @@ def _cleanup_cache():
                         total_size += stat.st_size
                         files.append((entry.path, stat.st_mtime, stat.st_size))
         except OSError:
-            # Cache directory might have issues, skip cleanup
             return
 
         if total_size > limit_bytes:
-            # Sort by mtime (oldest first)
             files.sort(key=lambda x: x[1])
 
             for path, _, size in files:
                 try:
                     os.unlink(path)
                     total_size -= size
-                    logger.debug(f"Deleted cache file {path} to free space")
                     if total_size <= limit_bytes:
                         break
                 except OSError:
@@ -124,51 +114,23 @@ def _cleanup_cache():
 def _generate_html_process(file_path: str, output_path: str, color: str, opacity: float, optimize: bool):
     """
     Helper function to be run in a separate process to generate the HTML.
-    This avoids signal handling issues with trame/aiohttp in Flask threads.
+    Uses BaseVisualizer logic.
     """
-    temp_read_path = None
     try:
-        read_path = file_path
-        if file_path.lower().endswith(".gz"):
-            # Decompress to temporary file
-            suffix = ".obj" if ".obj" in file_path.lower() else ".stl" # Simple heuristic
-            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                temp_read_path = tmp.name
-                with gzip.open(file_path, "rb") as f_in:
-                    safe_decompress(f_in, tmp)
-                read_path = temp_read_path
+        # Use BaseVisualizer instance for logic re-use
+        # Since this is a separate process, we instantiate a lightweight version
+        viz = BaseVisualizer()
 
-        # ⚡ Bolt Optimization: Disable progress bar
-        mesh = pv.read(read_path, progress_bar=False)
+        mesh = viz.load_mesh_safe(file_path)
+        if mesh is None:
+            raise Exception("Failed to load mesh")
 
-        # ⚡ Bolt Optimization: Decimate mesh if needed
-        # Adaptive optimization based on client capabilities
+        # Decimate
         TARGET_FACES = 50000 if optimize else 100000
+        mesh = viz.decimate_mesh(mesh, target_faces=TARGET_FACES, optimize=optimize)
 
-        if mesh.n_cells > TARGET_FACES:
-            try:
-                # Assuming mesh is likely PolyData for STL/OBJ
-                if not isinstance(mesh, pv.PolyData):
-                    mesh = mesh.extract_surface()
-
-                reduction = 1.0 - (TARGET_FACES / mesh.n_cells)
-                reduction = max(0.0, min(0.95, reduction))
-                if reduction > 0.05: # Only decimate if reduction is significant
-                    print(f"Decimating geometry from {mesh.n_cells} to ~{TARGET_FACES} cells")
-
-                    # ⚡ Bolt Optimization: Use fast decimate_pro if available (topology preserving, faster)
-                    if hasattr(mesh, "decimate_pro"):
-                         try:
-                             mesh = mesh.decimate_pro(reduction, preserve_topology=True)
-                         except Exception as e:
-                             print(f"decimate_pro failed ({e}), falling back to standard decimate")
-                             mesh = mesh.decimate(reduction)
-                    else:
-                         mesh = mesh.decimate(reduction)
-
-            except Exception as e:
-                print(f"Decimation failed, using full mesh: {e}")
-
+        # Use PyVista directly here to write to specific output_path provided by parent
+        # BaseVisualizer.generate_html_content uses temp file, we want control here
         plotter = pv.Plotter(notebook=False, off_screen=True)
         plotter.add_mesh(mesh, color=color, opacity=opacity, show_edges=False)
         plotter.show_grid()
@@ -176,57 +138,29 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
         plotter.camera_position = 'iso'
         plotter.export_html(output_path)
         plotter.close()
+
     except Exception as e:
-        # We can't easily log to the main logger from here, but we can print or write to a file
         print(f"Error in subprocess: {e}")
-        # Ensure failure is detectable
         if os.path.exists(output_path):
             os.remove(output_path)
-    finally:
-        if temp_read_path and os.path.exists(temp_read_path):
-            try:
-                os.remove(temp_read_path)
-            except OSError:
-                pass
 
-class GeometryVisualizer:
-    """Visualizes geometry files (STL) using PyVista."""
+class GeometryVisualizer(BaseVisualizer):
+    """Visualizes geometry files (STL) using PyVista with caching and multiprocessing."""
 
-    @staticmethod
-    def get_interactive_html(file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0, optimize: bool = False) -> Optional[str]:
+    def __init__(self):
+        super().__init__() # Use default extensions
+
+    def get_interactive_html(self, file_path: Union[str, Path], color: str = "lightblue", opacity: float = 1.0, optimize: bool = False) -> Optional[str]:
         """
         Generates an interactive HTML representation of the STL file.
-
-        Args:
-            file_path: Path to the STL file.
-            color: Color of the mesh.
-            opacity: Opacity of the mesh.
-            optimize: Whether to optimize mesh for slower hardware.
-
-        Returns:
-            HTML string content or None on error.
+        Uses multiprocessing for robustness.
         """
         try:
-            path = Path(file_path).resolve()
-            
-            # Security check: Ensure file extension is allowed
-            suffixes = path.suffixes
-            # Handle .obj.gz case
-            if len(suffixes) >= 2 and suffixes[-2] + suffixes[-1] == '.obj.gz':
-                ext = '.obj.gz'
-            else:
-                ext = path.suffix.lower()
-
-            if ext not in ALLOWED_EXTENSIONS:
-                logger.error(f"Security: Invalid file extension for geometry visualizer: {ext}")
-                return None
-
-            if not path.exists():
-                logger.error(f"STL file not found: {path}")
+            path = self.validate_file(file_path)
+            if not path:
                 return None
 
             # ⚡ Bolt Optimization: Caching
-            # Check cache based on file path, mtime, and visualization parameters
             try:
                 mtime = path.stat().st_mtime
                 cache_key_str = f"{str(path)}_{mtime}_{color}_{opacity}_{optimize}"
@@ -237,8 +171,6 @@ class GeometryVisualizer:
 
                 if cache_path.exists():
                     logger.debug(f"Serving geometry from cache: {cache_path}")
-                    # Update access time? Not strictly necessary for tmp cache but good practice
-                    # cache_path.touch()
                     with open(cache_path, "r", encoding="utf-8") as f:
                         return f.read()
             except Exception as e:
@@ -254,7 +186,7 @@ class GeometryVisualizer:
                 args=(str(path), temp_output_path, color, opacity, optimize)
             )
             p.start()
-            p.join(timeout=120) # Increased timeout for large meshes/high res
+            p.join(timeout=120)
 
             if p.is_alive():
                 p.terminate()
@@ -281,15 +213,10 @@ class GeometryVisualizer:
 
             # ⚡ Bolt Optimization: Save to cache
             try:
-                # Perform cleanup if needed
                 _cleanup_cache()
-
-                # Move temp file to cache path (atomic on same filesystem)
-                # If cache dir is on different FS, shutil.move handles copy-delete
                 shutil.move(temp_output_path, cache_path)
             except Exception as e:
                 logger.warning(f"Failed to save to cache: {e}")
-                # If move failed, temp_output_path might still exist or be half-moved
                 if os.path.exists(temp_output_path):
                     os.remove(temp_output_path)
 
@@ -299,27 +226,12 @@ class GeometryVisualizer:
             logger.error(f"Error generating interactive geometry view: {e}")
             return None
 
-    @staticmethod
-    def get_mesh_info(file_path: Union[str, Path]) -> Dict[str, Any]:
-        """
-        Get basic information about the STL mesh (bounds, center, etc.)
-        """
+    def get_mesh_info(self, file_path: Union[str, Path]) -> Dict[str, Any]:
+        """Get basic information about the mesh (bounds, center, etc.)."""
         try:
-            path = Path(file_path).resolve()
-
-            # Security check: Ensure file extension is allowed
-            suffixes = path.suffixes
-            # Handle .obj.gz case
-            if len(suffixes) >= 2 and suffixes[-2] + suffixes[-1] == '.obj.gz':
-                ext = '.obj.gz'
-            else:
-                ext = path.suffix.lower()
-
-            if ext not in ALLOWED_EXTENSIONS:
-                 return {"success": False, "error": "Invalid file extension"}
-
-            if not path.exists():
-                return {"success": False, "error": "File not found"}
+            path = self.validate_file(file_path)
+            if not path:
+                return {"success": False, "error": "Invalid file"}
 
             # ⚡ Bolt Optimization: Check in-memory cache
             try:
@@ -327,54 +239,38 @@ class GeometryVisualizer:
                 cache_key = (str(path), mtime)
                 if cache_key in _MESH_INFO_CACHE:
                     _MESH_INFO_CACHE.move_to_end(cache_key)
-                    logger.debug(f"Serving mesh info from cache for {path}")
                     return _MESH_INFO_CACHE[cache_key]
             except OSError:
-                # File access error, proceed to standard loading which handles errors
                 pass
 
-            read_path = str(path)
-            temp_read_path = None
-            
+            mesh = self.load_mesh_safe(path)
+            if mesh is None:
+                return {"success": False, "error": "Failed to load mesh"}
+
+            result = {
+                "success": True,
+                "bounds": list(mesh.bounds),
+                "center": list(mesh.center),
+                "n_points": mesh.n_points,
+                "n_cells": mesh.n_cells
+            }
+
             try:
-                if read_path.lower().endswith(".gz"):
-                    suffix = ".obj" if ".obj" in read_path.lower() else ".stl"
-                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                        temp_read_path = tmp.name
-                        with gzip.open(read_path, "rb") as f_in:
-                            safe_decompress(f_in, tmp)
-                        read_path = temp_read_path
+                _MESH_INFO_CACHE[cache_key] = result
+                if len(_MESH_INFO_CACHE) > _MESH_INFO_CACHE_SIZE:
+                    _MESH_INFO_CACHE.popitem(last=False)
+            except Exception:
+                pass
 
-                # ⚡ Bolt Optimization: Disable progress bar
-                mesh = pv.read(read_path, progress_bar=False)
-                bounds = list(mesh.bounds)
-                center = list(mesh.center)
+            return result
 
-                result = {
-                    "success": True,
-                    "bounds": bounds,
-                    "center": center,
-                    "n_points": mesh.n_points,
-                    "n_cells": mesh.n_cells
-                }
-
-                # ⚡ Bolt Optimization: Update cache
-                # We do this after successful loading
-                try:
-                    _MESH_INFO_CACHE[cache_key] = result
-                    if len(_MESH_INFO_CACHE) > _MESH_INFO_CACHE_SIZE:
-                        _MESH_INFO_CACHE.popitem(last=False) # Remove oldest
-                except Exception:
-                    pass
-
-                return result
-
-            finally:
-                if temp_read_path and os.path.exists(temp_read_path):
-                    try:
-                        os.remove(temp_read_path)
-                    except OSError:
-                        pass
         except Exception as e:
             logger.error(f"Error getting mesh info: {e}")
             return {"success": False, "error": str(e)}
+
+# Global instance for use as a singleton
+# Note: In previous code it wasn't a singleton explicitly, but just a class with static methods
+# or an instance. Here we provide an instance to match expected usage if any.
+# However, the methods were static in original. I made them instance methods to use 'self' and inheritance.
+# So I should export an instance.
+geometry_visualizer = GeometryVisualizer()

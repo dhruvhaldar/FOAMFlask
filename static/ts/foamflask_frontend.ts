@@ -164,6 +164,82 @@ interface PlotTrace {
 // Types
 type CameraView = "front" | "back" | "left" | "right" | "top" | "bottom";
 
+// Shared Interface for Interactive Viewers
+interface ViewerConfig {
+  iframeId: string;
+  placeholderId: string;
+  loadingMessage: string;
+  apiUrl: string;
+  apiBody: any;
+  btnElement?: HTMLElement;
+  btnLoadingText?: string; // Optional custom text for button during load
+  imageId?: string; // Optional: ID of static image to hide (Mesh tab)
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
+
+// Common function to load interactive viewers
+const loadInteractiveViewerCommon = async (config: ViewerConfig): Promise<void> => {
+  const iframe = document.getElementById(config.iframeId) as HTMLIFrameElement;
+  const placeholder = document.getElementById(config.placeholderId);
+  const btn = config.btnElement as HTMLButtonElement | undefined;
+
+  if (!iframe || !placeholder) return;
+
+  let originalBtnText = "";
+  if (btn) {
+    originalBtnText = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    const loadingText = config.btnLoadingText || "Loading...";
+    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ${loadingText}`;
+  }
+
+  showNotification(config.loadingMessage, "info");
+
+  try {
+    const res = await fetch(config.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config.apiBody)
+    });
+
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const html = await res.text();
+    iframe.srcdoc = html;
+
+    // UI Updates
+    iframe.classList.remove("hidden");
+    placeholder.classList.add("hidden");
+
+    if (config.imageId) {
+      document.getElementById(config.imageId)?.classList.add("hidden");
+    }
+
+    if (config.onSuccess) config.onSuccess();
+
+  } catch (e) {
+    console.error("Viewer load failed:", e);
+
+    // Reset UI on failure
+    iframe.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+    if (config.imageId) {
+      document.getElementById(config.imageId)?.classList.remove("hidden");
+    }
+
+    if (config.onError) config.onError(e);
+    else showNotification("Failed to load viewer", "error"); // Default error if no handler
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.innerHTML = originalBtnText;
+    }
+  }
+};
+
 // Utility functions
 const getElement = <T extends HTMLElement>(id: string): T | null => {
   return document.getElementById(id) as T | null;
@@ -2410,41 +2486,22 @@ const loadGeometryView = async (btnElement?: HTMLElement) => {
   if (!filename || !activeCase) return;
 
   const btn = (btnElement || document.getElementById("viewGeometryBtn")) as HTMLButtonElement;
-  let originalText = "";
 
-  if (btn) {
-    originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading...`;
+  // Check for slow hardware
+  let optimize = false;
+  if (detectSlowHardware()) {
+    optimize = await showConfirmModal("Optimize for Performance?", "Slow graphics hardware detected. Enable geometry optimization (decimation)? This reduces detail but improves frame rate.");
   }
 
-  try {
-    // Check for slow hardware
-    let optimize = false;
-    if (detectSlowHardware()) {
-      optimize = await showConfirmModal("Optimize for Performance?", "Slow graphics hardware detected. Enable geometry optimization (decimation)? This reduces detail but improves frame rate.");
-    }
-
-    showNotification("Loading...", "info");
-    const res = await fetch("/api/geometry/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseName: activeCase, filename, optimize })
-    });
-    if (res.ok) {
-      const html = await res.text();
-      (document.getElementById("geometryInteractive") as HTMLIFrameElement).srcdoc = html;
-      document.getElementById("geometryPlaceholder")?.classList.add("hidden");
-    }
-  } catch (e) { showNotification("Failed", "error"); }
-  finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
-    }
-  }
+  await loadInteractiveViewerCommon({
+    iframeId: "geometryInteractive",
+    placeholderId: "geometryPlaceholder",
+    loadingMessage: "Loading...",
+    apiUrl: "/api/geometry/view",
+    apiBody: { caseName: activeCase, filename, optimize },
+    btnElement: btn,
+    btnLoadingText: "Loading..."
+  });
 
   // Info
   try {
@@ -2925,104 +2982,67 @@ function displayMeshInfo(meshInfo: {
 }
 
 async function refreshInteractiveViewer(successMessage: string = "Interactive mode enabled"): Promise<void> {
-  const meshInteractive = document.getElementById(
-    "meshInteractive"
-  ) as HTMLIFrameElement | null;
-  const meshImage = document.getElementById(
-    "meshImage"
-  ) as HTMLImageElement | null;
-  const meshPlaceholder = document.getElementById("meshPlaceholder");
   const toggleBtn = document.getElementById("toggleInteractiveBtn");
   const cameraControl = document.getElementById("cameraPosition");
   const updateBtn = document.getElementById("updateViewBtn");
 
-  if (!meshInteractive || !meshImage || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn) return;
+  if (!toggleBtn || !cameraControl || !updateBtn) return;
 
-  showNotification("Loading interactive viewer...", "info");
+  const showEdgesInput = document.getElementById("showEdges") as HTMLInputElement | null;
+  const colorInput = document.getElementById("meshColor") as HTMLInputElement | null;
 
-  try {
-    const showEdgesInput = document.getElementById(
-      "showEdges"
-    ) as HTMLInputElement | null;
-    const colorInput = document.getElementById(
-      "meshColor"
-    ) as HTMLInputElement | null;
-
-    if (!showEdgesInput || !colorInput) {
-      showNotification("Required mesh controls not found", "error");
-      return;
-    }
-
-    const showEdges = showEdgesInput.checked;
-    const color = colorInput.value;
-
-    // Fetch interactive viewer HTML
-    const response = await fetch("/api/mesh_interactive", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        file_path: currentMeshPath,
-        show_edges: showEdges,
-        color: color,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const html = await response.text();
-
-    // Hide static image, show iframe
-    meshImage.classList.add("hidden");
-    meshPlaceholder.classList.add("hidden");
-    meshInteractive.classList.remove("hidden");
-
-    // Load HTML into iframe using srcdoc
-    meshInteractive.srcdoc = html;
-
-    // Update button text
-    toggleBtn.textContent = "Static Mode";
-    toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
-    toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
-
-    // Hide camera position control (not needed in interactive mode)
-    cameraControl.parentElement?.classList.add("hidden");
-    updateBtn.classList.add("hidden");
-    document.getElementById("interactiveModeHint")?.classList.remove("hidden");
-
-    showNotification(
-      successMessage,
-      "success",
-      NOTIFY_LONG
-    );
-  } catch (error: unknown) {
-    console.error("[FOAMFlask] Error loading interactive viewer:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.name === "AbortError"
-          ? "Loading was cancelled or timed out"
-          : error.message
-        : "Failed to load interactive viewer";
-
-    showNotification(
-      `Failed to load interactive viewer: ${errorMessage}`,
-      "error"
-    );
-
-    // Reset to static mode
-    isInteractiveMode = false;
-
-    // Safely update UI elements if they exist
-    toggleBtn.textContent = "Interactive Mode";
-    toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
-    toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
-    cameraControl.parentElement?.classList.remove("hidden");
-    updateBtn.classList.remove("hidden");
-    document.getElementById("interactiveModeHint")?.classList.add("hidden");
-    meshInteractive.classList.add("hidden");
-    meshImage.classList.remove("hidden");
+  if (!showEdgesInput || !colorInput) {
+    showNotification("Required mesh controls not found", "error");
+    return;
   }
+
+  const showEdges = showEdgesInput.checked;
+  const color = colorInput.value;
+
+  // Use common loader
+  await loadInteractiveViewerCommon({
+    iframeId: "meshInteractive",
+    placeholderId: "meshPlaceholder",
+    imageId: "meshImage", // Special handling for mesh tab
+    loadingMessage: "Loading interactive viewer...",
+    apiUrl: "/api/mesh_interactive",
+    apiBody: {
+      file_path: currentMeshPath,
+      show_edges: showEdges,
+      color: color,
+    },
+    // We don't pass toggleBtn here because we handle its state manually below
+    // (it toggles between Static/Interactive, not just loading)
+
+    onSuccess: () => {
+      // Update button text
+      toggleBtn.textContent = "Static Mode";
+      toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
+      toggleBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
+
+      // Hide camera position control (not needed in interactive mode)
+      cameraControl.parentElement?.classList.add("hidden");
+      updateBtn.classList.add("hidden");
+      document.getElementById("interactiveModeHint")?.classList.remove("hidden");
+
+      showNotification(successMessage, "success", NOTIFY_LONG);
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      showNotification(`Failed to load interactive viewer: ${errorMessage}`, "error");
+
+      // Reset to static mode
+      isInteractiveMode = false;
+
+      // Safely update UI elements
+      toggleBtn.textContent = "Interactive Mode";
+      toggleBtn.classList.remove("bg-orange-500", "hover:bg-orange-600");
+      toggleBtn.classList.add("bg-purple-500", "hover:bg-purple-600");
+      cameraControl.parentElement?.classList.remove("hidden");
+      updateBtn.classList.remove("hidden");
+      document.getElementById("interactiveModeHint")?.classList.add("hidden");
+    }
+  });
 }
 
 async function onMeshParamChange(): Promise<void> {
