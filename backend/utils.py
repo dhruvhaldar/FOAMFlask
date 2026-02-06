@@ -65,13 +65,15 @@ def sanitize_error(e: Exception) -> str:
 
         # 2. Redact unquoted absolute paths (heuristic)
         # Unix: /path/to/something
-        # Look for / followed by alphanumeric/dots/dashes/underscores segments
+        # Look for / followed by allowed path characters.
         # Negative lookbehind ensures we don't break URLs (http://, https://)
-        unix_path_pattern = r"(?<!\w)(?<!://)(?<!:/)(/(?:[\w\.\-][\w\.\- ]*/)*[\w\.\-][\w\.\- ]*)"
+        # Expanded allowed characters to include @, +, =, %, ~, # to prevent partial leakage
+        chars = r"\w\.\-@+=%~#"
+        unix_path_pattern = rf"(?<!\w)(?<!://)(?<!:/)(/(?:[{chars}][{chars} ]*/)*[{chars}][{chars} ]*)"
         msg = re.sub(unix_path_pattern, "[REDACTED_PATH]", msg)
 
         # Windows: C:\path\to...
-        win_path_pattern = r"([a-zA-Z]:\\\\?(?:[\w\.\-][\w\.\- ]*\\\\?)*[\w\.\-][\w\.\- ]*)"
+        win_path_pattern = rf"([a-zA-Z]:\\\\?(?:[{chars}][{chars} ]*\\\\?)*[{chars}][{chars} ]*)"
         msg = re.sub(win_path_pattern, "[REDACTED_PATH]", msg)
 
         return msg
