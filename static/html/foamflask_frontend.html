@@ -458,7 +458,7 @@
                       <input type="text" id="newCaseName" placeholder="e.g. my_case" required pattern="^[a-zA-Z0-9_-]+$"
                         title="Alphanumeric characters, underscores, and dashes only (no spaces)"
                         aria-describedby="caseNameHelp"
-                        class="border border-gray-300 rounded-lg px-4 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:valid:ring-green-500 focus:valid:border-green-500 focus:invalid:ring-red-500 focus:invalid:border-red-500 invalid:border-red-500 invalid:text-red-600 transition-all" />
+                        class="border border-gray-300 rounded-lg px-4 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:valid:ring-green-500 focus:valid:border-green-500 focus:[&:not(:placeholder-shown):invalid]:ring-red-500 focus:[&:not(:placeholder-shown):invalid]:border-red-500 [&:not(:placeholder-shown):invalid]:border-red-500 [&:not(:placeholder-shown):invalid]:text-red-600 transition-all" />
                       <button type="submit" id="createCaseBtn"
                         class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-500/30 text-white px-6 py-2 rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
