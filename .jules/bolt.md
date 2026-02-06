@@ -53,3 +53,7 @@
 ## 2027-04-12 - [Regex Compilation Overhead]
 **Learning:** Compiling regex patterns (`re.compile`) inside high-frequency loops (like variable resolution in large data files) adds significant CPU overhead, even with Python's internal cache, due to string construction and hashing.
 **Action:** Extract dynamic regex generation to a helper function decorated with `functools.lru_cache`. This caches the compiled `re.Pattern` object based on the variable name, avoiding repeated compilation and string manipulation. Benchmarks showed an 8x speedup for pattern generation.
+
+## 2027-04-14 - [Regex Anchoring and Manual Parsing]
+**Learning:** Searching for a prefix (e.g. `Time =`) using an unanchored regex (`re.search(r"Time =")`) is inefficient because the regex engine scans the entire string (or line) for a match. For high-throughput log parsing where most lines do NOT match the prefix, this O(N) scan per line is costly.
+**Action:** Replace unanchored regex search with `startswith()` checks or anchored regex (`^Time`). Furthermore, for simple formats, manual parsing (e.g., `split('=')`) can be faster than regex extraction. This yielded a ~30% speedup in parsing log lines.
