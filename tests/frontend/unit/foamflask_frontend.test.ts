@@ -14,6 +14,20 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({
   generateContours: vi.fn(),
 }));
 
+// Helper to wait for assertions
+const waitFor = async (assertion: () => void, timeout = 1000) => {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      assertion();
+      return;
+    } catch (e) {
+      await new Promise(r => setTimeout(r, 10));
+    }
+  }
+  assertion(); // Run one last time to throw if still failing
+};
+
 // We need to setup the DOM before importing the main file because it might access the DOM at top level or on window.onload
 // However, the functions are exported to window.
 
@@ -21,7 +35,6 @@ describe('FoamFlask Frontend', () => {
   let frontend: any;
 
   beforeEach(async () => {
-    vi.resetModules();
     // Reset DOM
     document.body.innerHTML = `
       <div id="page-setup" class="page"></div>
@@ -99,17 +112,23 @@ describe('FoamFlask Frontend', () => {
     })();
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-    // We import the file here to ensure it runs in the configured environment
-    // Since it executes side effects, we might want to reset modules between tests if possible,
-    // but for now let's just import it.
-    // Note: In a real scenario, we might need to use `vi.resetModules()` and dynamic import.
-    await import('../../../static/ts/foamflask_frontend.ts');
+    // We import the file here to ensure it runs in the configured environment.
+    // Since we removed vi.resetModules(), this ensures the module is loaded at least once.
+    const module = await import('../../../static/ts/foamflask_frontend.ts');
 
-    // Mock fetch AFTER import to override the monkey-patch
-    global.fetch = vi.fn().mockResolvedValue({
+    // Mock fetch
+    // We overwrite window.fetch directly to bypass the monkey-patch and ensure our mock is called.
+    const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ files: [], cases: [] })
     });
+    window.fetch = mockFetch;
+    global.fetch = mockFetch;
+
+    // Manually trigger initialization for new DOM elements
+    if (module.init) {
+        module.init();
+    }
   });
 
   afterEach(() => {
@@ -486,14 +505,13 @@ describe('FoamFlask Frontend', () => {
     // Resolve fetch
     resolveFetch();
 
-    // Wait for promise
-    await new Promise(resolve => setTimeout(resolve, 0)); // Wait for promise resolution
-    await new Promise(resolve => setTimeout(resolve, 0)); // Wait for finally block
-
-    // Success state
-    expect(btn.disabled).toBe(false);
-    expect(btn.getAttribute('aria-busy')).toBeNull();
-    expect(btn.innerHTML).toContain('Set!');
-    expect(btn.classList.contains('!bg-green-600')).toBe(true);
+    // Wait for DOM update
+    await waitFor(() => {
+        // Success state
+        expect(btn.disabled).toBe(false);
+        expect(btn.getAttribute('aria-busy')).toBeNull();
+        expect(btn.innerHTML).toContain('Set!');
+        expect(btn.classList.contains('!bg-green-600')).toBe(true);
+    }, 2000);
   });
 });

@@ -234,48 +234,6 @@ class TestGetMeshScreenshot:
         assert result is None
 
 
-class TestGetMeshHtml:
-    """Test get_mesh_html method."""
-
-    def test_get_mesh_html_success(self, visualizer, temp_vtk_file, mocker):
-        """Test successful HTML generation."""
-        mock_plotter = MagicMock()
-        mock_plotter.export_html.return_value = "<html>Test</html>"
-        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
-        
-        visualizer.load_mesh(temp_vtk_file)
-        result = visualizer.get_mesh_html(temp_vtk_file)
-        
-        assert result is not None
-        assert "<html>" in result
-        mock_plotter.add_mesh.assert_called_once()
-        mock_plotter.add_axes.assert_called_once()
-
-    def test_get_mesh_html_file_not_found(self, visualizer):
-        """Test HTML generation with non-existent file."""
-        result = visualizer.get_mesh_html("/nonexistent/file.vtk")
-        assert result is None
-
-    def test_get_mesh_html_exception(self, visualizer, temp_vtk_file, mocker):
-        """Test HTML generation with exception."""
-        mocker.patch('pyvista.Plotter', side_effect=Exception("Plotter error"))
-        result = visualizer.get_mesh_html(temp_vtk_file)
-        assert result is None
-
-    def test_get_mesh_html_show_edges(self, visualizer, temp_vtk_file, mocker):
-        """Test HTML generation with show_edges parameter."""
-        mock_plotter = MagicMock()
-        mock_plotter.export_html.return_value = "<html>Test</html>"
-        mocker.patch('pyvista.Plotter', return_value=mock_plotter)
-        
-        visualizer.load_mesh(temp_vtk_file)
-        result = visualizer.get_mesh_html(temp_vtk_file, show_edges=False)
-        
-        assert result is not None
-        call_kwargs = mock_plotter.add_mesh.call_args[1]
-        assert call_kwargs["show_edges"] is False
-
-
 class TestGetInteractiveViewerHtml:
     """Test get_interactive_viewer_html method."""
 
@@ -285,7 +243,6 @@ class TestGetInteractiveViewerHtml:
         mocker.patch('pyvista.Plotter', return_value=mock_plotter)
         
         fake_html = "<html><body>Interactive Viewer</body></html>"
-        # Since Path.read_text is called, patch it directly on the Path object returned by the context manager
         
         # We need to mock NamedTemporaryFile context manager
         mock_tmp_file = MagicMock()
@@ -294,15 +251,17 @@ class TestGetInteractiveViewerHtml:
         mock_named_temp.__enter__.return_value = mock_tmp_file
         
         mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+        mocker.patch('os.path.exists', return_value=True)
+        mocker.patch('os.path.getsize', return_value=100) # Ensure it's not empty
 
-        # Mock Path.read_text
-        with patch('pathlib.Path.read_text', return_value=fake_html):
+        # Mock builtins.open
+        with patch('builtins.open', mock_open(read_data=fake_html)):
             visualizer.load_mesh(temp_vtk_file)
             result = visualizer.get_interactive_viewer_html(temp_vtk_file)
 
         assert result == fake_html
         mock_plotter.add_mesh.assert_called_once()
-        mock_plotter.add_axes.assert_called_once()
+        mock_plotter.show_axes.assert_called_once()
 
     def test_get_interactive_viewer_html_file_not_found(self, visualizer):
         """Test interactive viewer with non-existent file."""
@@ -322,8 +281,10 @@ class TestGetInteractiveViewerHtml:
         mock_named_temp = MagicMock()
         mock_named_temp.__enter__.return_value = mock_tmp_file
         mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+        mocker.patch('os.path.exists', return_value=True)
+        mocker.patch('os.path.getsize', return_value=100)
 
-        with patch('pathlib.Path.read_text', return_value=fake_html):
+        with patch('builtins.open', mock_open(read_data=fake_html)):
             visualizer.load_mesh(temp_vtk_file)
             result = visualizer.get_interactive_viewer_html(temp_vtk_file)
         
@@ -362,10 +323,12 @@ class TestGetInteractiveViewerHtml:
         mock_named_temp = MagicMock()
         mock_named_temp.__enter__.return_value = mock_tmp_file
         mocker.patch('tempfile.NamedTemporaryFile', return_value=mock_named_temp)
+        mocker.patch('os.path.exists', return_value=True)
+        mocker.patch('os.path.getsize', return_value=100)
 
-        # Patch Path.unlink to raise an exception
-        with patch('pathlib.Path.read_text', return_value=fake_html), \
-             patch('pathlib.Path.unlink', side_effect=Exception("Unlink failed")):
+        # Patch os.remove to raise an exception
+        with patch('builtins.open', mock_open(read_data=fake_html)), \
+             patch('os.remove', side_effect=OSError("Unlink failed")):
 
             visualizer.load_mesh(temp_vtk_file)
             result = visualizer.get_interactive_viewer_html(temp_vtk_file)

@@ -14,7 +14,6 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({
 
 describe('Active Case Badge', () => {
   beforeEach(async () => {
-    vi.resetModules();
     // Setup DOM with the badge
     document.body.innerHTML = `
       <div id="page-setup" class="page"></div>
@@ -69,10 +68,17 @@ describe('Active Case Badge', () => {
     })();
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-    await import('../../../static/ts/foamflask_frontend.ts');
+    // Ensure the module is loaded (only once if cached, but we need its side effects on window)
+    // Since we removed vi.resetModules(), this import might return the same module.
+    // However, the module attaches functions to window.
+    // We need to ensure window.fetch is not messed up by multiple patches if we reload.
+    // Ideally we import once at top, but we need window to be ready.
+
+    const module = await import('../../../static/ts/foamflask_frontend.ts');
 
     // Mock fetch
-    global.fetch = vi.fn().mockImplementation((url) => {
+    // We overwrite window.fetch directly to bypass the monkey-patch and ensure our mock is called.
+    const mockFetch = vi.fn().mockImplementation((url) => {
         if (url && typeof url === 'string' && url.includes('/api/cases/list')) {
             return Promise.resolve({
                 ok: true,
@@ -85,6 +91,14 @@ describe('Active Case Badge', () => {
 
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     });
+
+    window.fetch = mockFetch;
+    global.fetch = mockFetch;
+
+    // Manually trigger initialization for new DOM elements
+    if (module.init) {
+        module.init();
+    }
   });
 
   afterEach(() => {

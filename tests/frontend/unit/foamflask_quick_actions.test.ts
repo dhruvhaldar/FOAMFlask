@@ -7,7 +7,6 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({}));
 
 describe('FoamFlask Quick Actions', () => {
   beforeEach(async () => {
-    vi.resetModules();
     document.body.innerHTML = `
       <select id="tutorialSelect"><option value="tut1">Tut 1</option></select>
       <button id="loadTutorialBtn">Load Tutorial</button>
@@ -29,11 +28,11 @@ describe('FoamFlask Quick Actions', () => {
     `;
 
     // Import the main script to trigger init() and setupQuickActions()
-    await import('../../../static/ts/foamflask_frontend.ts');
+    const module = await import('../../../static/ts/foamflask_frontend.ts');
 
-    // Manually trigger DOMContentLoaded to run init() if it hasn't run
-    const event = new Event('DOMContentLoaded');
-    document.dispatchEvent(event);
+    if (module.init) {
+        module.init();
+    }
   });
 
   afterEach(() => {

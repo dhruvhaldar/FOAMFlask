@@ -15,7 +15,21 @@ mock_docker_errors = MagicMock()
 class MockDockerException(Exception):
     pass
 
+class MockContainerError(MockDockerException):
+    def __init__(self, container, exit_status, command, image, stderr=None):
+        super().__init__(stderr)
+        self.container = container
+        self.exit_status = exit_status
+        self.command = command
+        self.image = image
+        self.stderr = stderr
+
+class MockImageNotFound(MockDockerException):
+    pass
+
 mock_docker_errors.DockerException = MockDockerException
+mock_docker_errors.ContainerError = MockContainerError
+mock_docker_errors.ImageNotFound = MockImageNotFound
 mock_docker.errors = mock_docker_errors
 
 sys.modules['docker'] = mock_docker

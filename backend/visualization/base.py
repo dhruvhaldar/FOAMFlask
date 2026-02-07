@@ -178,6 +178,7 @@ class BaseVisualizer:
         Returns:
             HTML string or None on error.
         """
+        plotter = None
         try:
             # Create a temporary file for the output
             with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
@@ -191,7 +192,6 @@ class BaseVisualizer:
 
             # Export
             plotter.export_html(temp_output_path)
-            plotter.close()
 
             if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) == 0:
                  logger.error("HTML output file is empty or missing")
@@ -206,6 +206,8 @@ class BaseVisualizer:
             logger.error(f"Error generating HTML content: {e}")
             return None
         finally:
+            if plotter is not None:
+                plotter.close()
             if 'temp_output_path' in locals() and os.path.exists(temp_output_path):
                 try:
                     os.remove(temp_output_path)

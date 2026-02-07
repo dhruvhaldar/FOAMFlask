@@ -15,7 +15,6 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({
 
 describe('Error Swallowing Reproduction', () => {
   beforeEach(async () => {
-    vi.resetModules();
     // Reset DOM
     document.body.innerHTML = `
       <div id="notificationContainer"></div>
