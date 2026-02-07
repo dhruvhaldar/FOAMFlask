@@ -1,15 +1,10 @@
-
+from unittest.mock import patch, MagicMock
 import pytest
-from unittest.mock import MagicMock, patch
-import sys
 import os
-
-# Add the project root to sys.path
-sys.path.append(os.getcwd())
 
 from app import get_tutorials
 
-def test_get_tutorials_is_cached():
+def test_get_tutorials_is_cached(mocker):
     """
     Verify that get_tutorials caches results and does not call docker on subsequent calls
     with same configuration.
@@ -17,6 +12,11 @@ def test_get_tutorials_is_cached():
     # We need to clear the cache before running the test, as it is global
     import app
     app._TUTORIALS_CACHE = {}
+
+    # Unset FOAMFLASK_MOCK_DOCKER to ensure logic runs
+    mocker.patch.dict(os.environ, {}, clear=True)
+    if "FOAMFLASK_MOCK_DOCKER" in os.environ:
+            mocker.patch.dict(os.environ, {"FOAMFLASK_MOCK_DOCKER": ""})
 
     with patch('app.get_docker_client') as mock_get_client:
         # Setup mock client

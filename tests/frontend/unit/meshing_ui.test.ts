@@ -15,7 +15,6 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({
 
 describe('Meshing UI UX', () => {
   beforeEach(async () => {
-    vi.resetModules();
     document.body.innerHTML = `
       <input type="checkbox" id="shmLayers" />
       <input id="shmObjLayers" />
@@ -43,13 +42,19 @@ describe('Meshing UI UX', () => {
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
     // Mock fetch
-    global.fetch = vi.fn().mockResolvedValue({
+    const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ files: [], cases: [] })
     });
+    global.fetch = mockFetch;
+    window.fetch = mockFetch;
 
     // Import the frontend script to run initialization
-    await import('../../../static/ts/foamflask_frontend.ts');
+    const module = await import('../../../static/ts/foamflask_frontend.ts');
+
+    if (module.init) {
+        module.init();
+    }
   });
 
   afterEach(() => {

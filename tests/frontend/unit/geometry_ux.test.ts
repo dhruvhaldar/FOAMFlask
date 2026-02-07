@@ -8,7 +8,6 @@ vi.mock('plotly.js', () => ({
 
 describe('Geometry UX', () => {
   beforeEach(async () => {
-    vi.resetModules();
     // Reset DOM
     document.body.innerHTML = `
       <div id="page-geometry" class="page">
@@ -21,17 +20,11 @@ describe('Geometry UX', () => {
     `;
 
     // Import the frontend code to trigger initialization/setup functions
-    // Note: setupGeometryDragDrop is called in init() which runs on DOMContentLoaded or immediately if ready.
-    // We need to force it to run or wait for it.
-    // Since we are loading the module, and it checks document.readyState, it should attach.
-    await import('../../../static/ts/foamflask_frontend.ts');
+    const module = await import('../../../static/ts/foamflask_frontend.ts');
 
-    // Manually trigger the init or wait for it if necessary.
-    // The module adds event listener for DOMContentLoaded. In jsdom, if we are already loaded, we might miss it
-    // unless we manually trigger it or if the code handles "complete" state.
-    // The code does:
-    // if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
-    // JSDOM usually starts as 'loading' but depending on how vitest runs it might be 'complete'.
+    if (module.init) {
+        module.init();
+    }
   });
 
   afterEach(() => {

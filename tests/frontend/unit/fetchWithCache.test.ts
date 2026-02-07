@@ -6,12 +6,12 @@ describe('fetchWithCache', () => {
   let fetchMock: any;
 
   beforeEach(async () => {
-    vi.resetModules();
     document.body.innerHTML = '';
 
     // Mock global fetch
     fetchMock = vi.fn();
     global.fetch = fetchMock;
+    window.fetch = fetchMock;
 
     // Import module
     await import('../../../static/ts/foamflask_frontend.ts');

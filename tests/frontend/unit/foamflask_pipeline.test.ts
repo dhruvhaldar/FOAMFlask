@@ -16,7 +16,6 @@ vi.mock('../../static/ts/frontend/isosurface.js', () => ({
 describe('FoamFlask Frontend Pipeline', () => {
 
   beforeEach(async () => {
-    vi.resetModules();
     // Reset DOM
     document.body.innerHTML = `
       <div id="page-post" class="page"></div>
@@ -46,7 +45,13 @@ describe('FoamFlask Frontend Pipeline', () => {
 
     // Load module
     await import('../../../static/ts/foamflask_frontend.ts');
-    global.fetch = vi.fn();
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+    window.fetch = mockFetch;
+
+    if ((window as any)._resetState) {
+        (window as any)._resetState();
+    }
   });
 
   afterEach(() => {

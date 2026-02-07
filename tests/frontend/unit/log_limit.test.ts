@@ -5,7 +5,6 @@ vi.mock('plotly.js', () => ({}));
 
 describe('Log Limiting', () => {
     beforeEach(async () => {
-        vi.resetModules();
         // Reset DOM
         document.body.innerHTML = `
             <div id="output"></div>
@@ -47,7 +46,7 @@ describe('Log Limiting', () => {
         const output = document.getElementById('output') as HTMLElement;
 
         // Mock fetch to return stream for /run and empty json for others
-        global.fetch = vi.fn().mockImplementation((url) => {
+        const mockFetch = vi.fn().mockImplementation((url) => {
             if (url === '/run') {
                 const stream = new ReadableStream({
                     start(controller) {
@@ -70,6 +69,8 @@ describe('Log Limiting', () => {
                 json: () => Promise.resolve({})
             });
         });
+        global.fetch = mockFetch;
+        window.fetch = mockFetch;
 
         // Mock tutorial select value
         const select = document.getElementById('tutorialSelect') as HTMLSelectElement;

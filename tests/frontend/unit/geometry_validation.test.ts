@@ -8,7 +8,6 @@ vi.mock('plotly.js', () => ({
 
 describe('Palette Geometry Upload Validation', () => {
   beforeEach(async () => {
-    vi.resetModules();
     document.body.innerHTML = `
       <div id="page-geometry">
          <input type="file" id="geometryUpload" />
@@ -30,6 +29,14 @@ describe('Palette Geometry Upload Validation', () => {
 
     // Mock active case
     (window as any).selectCase('test_case');
+
+    // Mock fetch for successful upload
+    const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+    });
+    global.fetch = mockFetch;
+    window.fetch = mockFetch;
   });
 
   afterEach(() => {
@@ -88,12 +95,6 @@ describe('Palette Geometry Upload Validation', () => {
   it('should allow valid files', async () => {
     const input = document.getElementById('geometryUpload') as HTMLInputElement;
     const { uploadGeometry } = window as any;
-
-    // Mock fetch for successful upload
-    global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true })
-    });
 
     const validFile = {
       name: 'valid.stl',
