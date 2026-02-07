@@ -41,6 +41,9 @@ class MeshVisualizer(BaseVisualizer):
         # ⚡ Bolt Optimization: Cache screenshots (LRU)
         self._screenshot_cache: OrderedDict = OrderedDict()
         self._screenshot_cache_max_size = 32
+        # ⚡ Bolt Optimization: Cache interactive HTML (LRU)
+        self._html_cache: OrderedDict = OrderedDict()
+        self._html_cache_max_size = 16
 
     def __del__(self) -> None:
         """Clean up resources by closing the plotter if it exists."""
@@ -87,6 +90,7 @@ class MeshVisualizer(BaseVisualizer):
                 self.current_mesh_mtime = mtime
                 # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
                 self._decimated_cache.clear()
+                self._html_cache.clear()
 
                 logger.info(
                     f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
@@ -193,20 +197,44 @@ class MeshVisualizer(BaseVisualizer):
             if not mesh_info.get("success"):
                 return None
 
+            # Check cache (using string path, mtime and params)
+            path_str = str(file_path)
+            mtime = self.current_mesh_mtime
+            cache_key = (path_str, mtime, show_edges, color)
+
+            if cache_key in self._html_cache:
+                logger.debug(f"[FOAMFlask] Serving cached HTML for {path_str}")
+                self._html_cache.move_to_end(cache_key)
+                return self._html_cache[cache_key]
+
             # ⚡ Bolt Optimization: Decimate mesh for web performance
             # Use shared decimation logic
-            # Target 200k faces for interactive viewer
-            display_mesh = self.decimate_mesh(self.mesh, target_faces=200000)
+            target_faces = 200000
+
+            # Check decimated cache
+            if target_faces in self._decimated_cache:
+                display_mesh = self._decimated_cache[target_faces]
+            else:
+                display_mesh = self.decimate_mesh(self.mesh, target_faces=target_faces)
+                self._decimated_cache[target_faces] = display_mesh
 
             # Use base class to generate HTML
             # Note: Base class generates HTML file then reads it.
-            return self.generate_html_content(
+            html_content = self.generate_html_content(
                 mesh=display_mesh,
                 color=color,
                 opacity=1.0,
                 show_edges=show_edges,
                 window_size=[1200, 800]
             )
+
+            # Store in cache
+            if html_content:
+                if len(self._html_cache) >= self._html_cache_max_size:
+                    self._html_cache.popitem(last=False)
+                self._html_cache[cache_key] = html_content
+
+            return html_content
 
         except Exception as e:
             logger.error(f"Error generating interactive viewer: {e}")
