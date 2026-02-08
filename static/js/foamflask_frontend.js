@@ -845,8 +845,21 @@ const showConfirmModal = (title, message) => {
 };
 // Network
 const fetchWithCache = async (url, options = {}) => {
+    // Robust access to cache
+    let cacheMap = requestCache;
+    if (!cacheMap) {
+        // Fallback to window global if local is lost (module reload issue)
+        if (window._requestCache)
+            cacheMap = window._requestCache;
+        else {
+            cacheMap = new Map();
+            if (typeof window !== 'undefined')
+                window._requestCache = cacheMap;
+        }
+        requestCache = cacheMap;
+    }
     const cacheKey = `${url}${JSON.stringify(options)}`;
-    const cached = requestCache.get(cacheKey);
+    const cached = cacheMap.get(cacheKey);
     // 1. Local Cache Check
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
         return cached.data;
@@ -879,7 +892,7 @@ const fetchWithCache = async (url, options = {}) => {
                 cached.etag = newEtag;
             if (newLastModified)
                 cached.lastModified = newLastModified;
-            requestCache.set(cacheKey, cached);
+            cacheMap.set(cacheKey, cached);
             return cached.data;
         }
         if (!response.ok) {
@@ -899,7 +912,10 @@ const fetchWithCache = async (url, options = {}) => {
             throw new Error(errorMessage);
         }
         const data = await response.json();
-        requestCache.set(cacheKey, {
+        // Check cacheMap again in case it was lost during await (unlikely with local var but safe)
+        if (!cacheMap)
+            cacheMap = requestCache || window._requestCache || new Map();
+        cacheMap.set(cacheKey, {
             data,
             timestamp: Date.now(),
             etag: response.headers.get("ETag"),
@@ -3742,4 +3758,21 @@ else {
 }
 window._fetchWithCache = fetchWithCache;
 window._requestCache = requestCache;
+const resetState = () => {
+    requestCache = new Map();
+    activeCase = "";
+    caseDir = "";
+    dockerImage = "";
+    openfoamVersion = "";
+    currentMeshPath = null;
+    availableMeshes = [];
+    isInteractiveMode = false;
+    selectedGeometry = null;
+    postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
+    activePipelineId = "root";
+    outputBuffer.length = 0;
+    cachedLogHTML = "";
+};
+window._resetState = resetState;
+export { init, fetchWithCache, requestCache, setCase, refreshCaseList, uploadGeometry, deleteGeometry, resetState };
 //# sourceMappingURL=foamflask_frontend.js.map
