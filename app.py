@@ -646,12 +646,14 @@ def get_tutorials() -> List[str]:
 
         # ⚡ Bolt Optimization: Combine fetching FOAM_TUTORIALS and running find into a single container execution.
         # This saves ~500ms-1s of overhead by avoiding a second container startup/shutdown cycle.
+        # ⚡ Bolt Optimization: Use pipeline with sed/sort/uniq instead of -exec test to avoid O(N) process forks.
+        # This reduces tutorial listing time from O(seconds) to O(ms) for large directories.
         # We output the root path first, then the list of cases.
         cmd = (
             f"source {bashrc} && "
             "echo $FOAM_TUTORIALS && "
-            "find $FOAM_TUTORIALS -mindepth 2 -maxdepth 2 -type d "
-            "-exec test -d {}/system -a -d {}/constant \\; -print"
+            "find $FOAM_TUTORIALS -mindepth 3 -maxdepth 3 \\( -type d -o -type l \\) \\( -name system -o -name constant \\) "
+            "| sed 's|/[^/]*$||' | sort | uniq -d"
         )
 
         result = client.containers.run(
