@@ -844,7 +844,7 @@
             </svg>
           </button>
           <iframe id="geometryInteractive" class="w-full h-full border-0" title="Interactive Geometry Viewer"></iframe>
-          <div id="geometryPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div id="geometryPlaceholder" class="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
             <div class="flex flex-col items-center justify-center h-full p-8 text-center">
               <div class="text-gray-600 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24"
@@ -856,9 +856,13 @@
               <h3 class="text-lg font-medium text-black mb-2">
                 No Geometry Loaded
               </h3>
-              <p class="text-gray-900">
+              <p class="text-gray-900 mb-4">
                 Select a geometry file and click "View" to visualize
               </p>
+              <button onclick="document.getElementById('geometrySelect').focus()"
+                class="px-4 py-2 bg-cyan-600 text-white rounded-md shadow hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 text-sm font-medium">
+                Select File
+              </button>
             </div>
           </div>
         </div>
@@ -1493,9 +1497,13 @@
               <h3 class="text-lg font-medium text-black mb-2">
                 No Mesh Loaded
               </h3>
-              <p class="text-gray-900">
+              <p class="text-gray-900 mb-4">
                 Select a mesh file and click "Load Mesh" to visualize
               </p>
+              <button onclick="document.getElementById('meshSelect').focus()"
+                class="px-4 py-2 bg-cyan-600 text-white rounded-md shadow hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 text-sm font-medium">
+                Select Mesh File
+              </button>
             </div>
             <img id="meshImage" class="hidden w-full h-auto" alt="Mesh Visualization" />
             <iframe id="meshInteractive" class="hidden w-full border-0" style="height: 800px"
@@ -2102,9 +2110,13 @@
               <h3 class="text-lg font-medium text-black mb-2">
                 No Contour Loaded
               </h3>
-              <p class="text-gray-900">
+              <p class="text-gray-900 mb-4">
                 Click "Generate Contours" to visualize the data
               </p>
+              <button onclick="document.getElementById('vtkFileSelect').focus()"
+                class="px-4 py-2 bg-cyan-600 text-white rounded-md shadow hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 text-sm font-medium">
+                Select VTK File
+              </button>
             </div>
             <div id="contourViewer" class="hidden w-full h-full"></div>
           </div>
