@@ -59,6 +59,7 @@ declare global {
     confirmRunCommand: (cmd: string, btn?: HTMLElement) => void;
     switchPostView: (view: "landing" | "contour") => void;
     scrollToLogTop: () => void;
+    downloadLog: () => void;
   }
 }
 
@@ -396,6 +397,51 @@ const fallbackCopyText = (text: string, successMessage: string, onSuccess?: () =
 // Copy Console Log
 const copyLogToClipboard = (btnElement?: HTMLElement): void => {
   copyTextFromElement("output", "Log copied to clipboard", btnElement);
+};
+
+// Download Console Log
+const downloadLog = (): void => {
+  const outputDiv = document.getElementById("output");
+  if (!outputDiv) {
+    showNotification("Console output not found", "error");
+    return;
+  }
+
+  // Use innerText to preserve line breaks from divs
+  const text = outputDiv.innerText || outputDiv.textContent || "";
+
+  if (!text.trim()) {
+    showNotification("Log is empty", "warning", NOTIFY_SHORT);
+    return;
+  }
+
+  try {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    // Create timestamped filename
+    const now = new Date();
+    // Format: YYYY-MM-DDTHH-mm-ss
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `foamflask_log_${timestamp}.txt`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+
+    showNotification("Log download started", "success", NOTIFY_SHORT);
+  } catch (e) {
+    console.error(e);
+    showNotification("Failed to download log", "error");
+  }
 };
 
 // Copy Input to Clipboard
@@ -3585,6 +3631,7 @@ window.onload = async () => {
 (window as any).runPostOperation = runPostOperation;
 (window as any).clearLog = clearLog;
 (window as any).copyLogToClipboard = copyLogToClipboard;
+(window as any).downloadLog = downloadLog;
 (window as any).copyInputToClipboard = copyInputToClipboard;
 (window as any).clearMeshingOutput = clearMeshingOutput;
 (window as any).copyMeshingOutput = copyMeshingOutput;

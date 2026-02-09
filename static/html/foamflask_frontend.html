@@ -1247,6 +1247,16 @@
               </svg>
               Copy Log
             </button>
+            <button onclick="downloadLog()"
+              class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              aria-label="Download console log to file" title="Download Log">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
           </div>
         </div>
         <div id="output" class="glass-plot rounded p-4 h-64 sm:h-80 overflow-auto text-sm font-mono" tabindex="0"
