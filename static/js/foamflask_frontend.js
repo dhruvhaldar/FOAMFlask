@@ -241,6 +241,44 @@ const fallbackCopyText = (text, successMessage, onSuccess) => {
 const copyLogToClipboard = (btnElement) => {
     copyTextFromElement("output", "Log copied to clipboard", btnElement);
 };
+// Download Console Log
+const downloadLog = () => {
+    const outputDiv = document.getElementById("output");
+    if (!outputDiv) {
+        showNotification("Console output not found", "error");
+        return;
+    }
+    // Use innerText to preserve line breaks from divs
+    const text = outputDiv.innerText || outputDiv.textContent || "";
+    if (!text.trim()) {
+        showNotification("Log is empty", "warning", NOTIFY_SHORT);
+        return;
+    }
+    try {
+        const blob = new Blob([text], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        // Create timestamped filename
+        const now = new Date();
+        // Format: YYYY-MM-DDTHH-mm-ss
+        const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `foamflask_log_${timestamp}.txt`;
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+        showNotification("Log download started", "success", NOTIFY_SHORT);
+    }
+    catch (e) {
+        console.error(e);
+        showNotification("Failed to download log", "error");
+    }
+};
 // Copy Input to Clipboard
 const copyInputToClipboard = (elementId, btnElement) => {
     const el = document.getElementById(elementId);
@@ -3166,6 +3204,7 @@ window.showNotification = showNotification;
 window.runPostOperation = runPostOperation;
 window.clearLog = clearLog;
 window.copyLogToClipboard = copyLogToClipboard;
+window.downloadLog = downloadLog;
 window.copyInputToClipboard = copyInputToClipboard;
 window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
