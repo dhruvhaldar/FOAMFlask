@@ -109,10 +109,11 @@ class OpenFOAMFieldParser:
 
     def __init__(self, case_dir: Union[str, Path]) -> None:
         self.case_dir = Path(case_dir)
+        self.case_dir_str = str(self.case_dir)
 
     def get_time_directories(self, known_mtime: Optional[float] = None) -> List[str]:
         """Get all time directories sorted numerically."""
-        path_str = str(self.case_dir)
+        path_str = self.case_dir_str
         try:
             # ⚡ Bolt Optimization: Use known mtime if provided to save syscall
             if known_mtime is not None:
@@ -225,7 +226,7 @@ class OpenFOAMFieldParser:
             # print(f"DEBUG: _get_field_type failed for {field_entry}: {e}")
             return None
 
-    def _scan_time_dir(self, time_path: Path, known_mtime: Optional[float] = None) -> Tuple[List[str], bool, List[str], Dict[str, float]]:
+    def _scan_time_dir(self, time_path: Union[str, Path], known_mtime: Optional[float] = None) -> Tuple[List[str], bool, List[str], Dict[str, float]]:
         """
         Scan a time directory and categorize fields.
         Returns: (scalar_fields, has_U, all_files, file_mtimes)
@@ -620,7 +621,8 @@ class OpenFOAMFieldParser:
             return None
 
         latest_time = time_dirs[-1]
-        time_path = self.case_dir / latest_time
+        # ⚡ Bolt Optimization: Use os.path.join + str instead of Path / to avoid overhead
+        time_path_str = os.path.join(self.case_dir_str, latest_time)
 
         data: Dict[str, Any] = {"time": float(latest_time)}
         
@@ -628,7 +630,7 @@ class OpenFOAMFieldParser:
             # ⚡ Bolt Optimization: Use os.scandir to avoid creating Path objects and redundant stat()
             # Note: We do NOT use _scan_time_dir here because we need the DirEntry objects
             # to pass mtime to parse_* methods efficiently.
-            with os.scandir(str(time_path)) as entries:
+            with os.scandir(time_path_str) as entries:
                 for entry in entries:
                     if entry.is_file() and not entry.name.startswith("."):
                         field_type = self._get_field_type(entry)
@@ -662,7 +664,7 @@ class OpenFOAMFieldParser:
         # ⚡ Bolt Optimization: Use append-only cache for stable history
         # We cache the full accumulated history (excluding the latest unstable step)
         # This avoids rebuilding lists and redundant lookups for thousands of past steps.
-        case_path_str = str(self.case_dir)
+        case_path_str = self.case_dir_str
 
         # ⚡ Bolt Optimization: Implement LRU eviction to prevent memory bloat
         # If case is already in cache, move to end (mark as recently used)
@@ -715,10 +717,12 @@ class OpenFOAMFieldParser:
         latest_time = all_time_dirs[-1]
         stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
         
-        latest_time_path = self.case_dir / latest_time
+        # ⚡ Bolt Optimization: Use os.path.join for latest step path to avoid Path creation overhead
+        latest_time_path_str = os.path.join(self.case_dir_str, latest_time)
+
         # ⚡ Bolt Optimization: Use cached scanning for field discovery
         # ⚡ Bolt Optimization: Pass known_latest_mtime and capture file_mtimes
-        scalar_fields, has_U, _, file_mtimes = self._scan_time_dir(latest_time_path, known_mtime=known_latest_mtime)
+        scalar_fields, has_U, _, file_mtimes = self._scan_time_dir(latest_time_path_str, known_mtime=known_latest_mtime)
 
         # Decision: Do we need to modify the cache?
         needs_update = (valid_cache_len < len(src_dirs)) or (len(stable_dirs_to_process) > 0)
@@ -848,7 +852,8 @@ class OpenFOAMFieldParser:
             result_data[k] = v[cache_slice_start:]
 
         # 2. Process and append the latest (unstable) step
-        time_path = self.case_dir / latest_time
+        # time_path = self.case_dir / latest_time # REMOVED: Use string path
+        time_path_str = os.path.join(self.case_dir_str, latest_time)
         time_val = float(latest_time)
 
         # Ensure latest step keys exist
@@ -860,27 +865,28 @@ class OpenFOAMFieldParser:
         for field in scalar_fields:
             if field not in result_data: result_data[field] = []
 
-            field_path = time_path / field
+            # field_path = time_path / field # REMOVED: Use string path
+            field_path_str = os.path.join(time_path_str, field)
             known_mtime = file_mtimes.get(field)
 
             # Pass known_mtime. If missing (file deleted?), parse_scalar_field handles it by stat-ing again (if None)
             if known_mtime is not None:
-                # Pass string (actually field_path is Path here, we could optimize this loop too but it's small)
-                # For consistency with other opts, let's keep it as is, or use os.path.join
-                val = self.parse_scalar_field(field_path, check_mtime=False, known_mtime=known_mtime)
+                # ⚡ Bolt Optimization: Pass string path directly
+                val = self.parse_scalar_field(field_path_str, check_mtime=False, known_mtime=known_mtime)
             else:
-                 val = self.parse_scalar_field(field_path, check_mtime=True)
+                 val = self.parse_scalar_field(field_path_str, check_mtime=True)
 
             result_data[field].append(val if val is not None else 0.0)
 
         if has_U:
-            u_path = time_path / "U"
+            # u_path = time_path / "U" # REMOVED: Use string path
+            u_path_str = os.path.join(time_path_str, "U")
             known_mtime = file_mtimes.get("U")
 
             if known_mtime is not None:
-                ux, uy, uz = self.parse_vector_field(u_path, check_mtime=False, known_mtime=known_mtime)
+                ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False, known_mtime=known_mtime)
             else:
-                ux, uy, uz = self.parse_vector_field(u_path, check_mtime=True)
+                ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=True)
 
             for k, v in [('Ux', ux), ('Uy', uy), ('Uz', uz), ('U_mag', float(np.sqrt(ux**2 + uy**2 + uz**2)))]:
                 if k not in result_data: result_data[k] = []
@@ -905,8 +911,8 @@ class OpenFOAMFieldParser:
             log_file: Name of the log file.
             known_stat: Optional os.stat_result if already available (avoids redundant syscall).
         """
-        log_path = self.case_dir / log_file
-        path_str = str(log_path)
+        # ⚡ Bolt Optimization: Use os.path.join instead of Path object
+        path_str = os.path.join(self.case_dir_str, log_file)
 
         # ⚡ Bolt Optimization: Remove redundant exists() check.
         # stat() raises FileNotFoundError if file is missing, which we can catch.
