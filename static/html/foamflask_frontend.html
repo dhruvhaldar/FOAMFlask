@@ -1158,7 +1158,9 @@
         </h3>
         <div class="flex flex-col sm:flex-row gap-2">
           <button id="runAllrunBtn" onclick="runCommand('./Allrun', this)"
-            class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2"
+            title="Execute full simulation sequence (Allrun script)"
+            aria-label="Run Allrun script to execute the full simulation sequence">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
               aria-hidden="true">
               <path fill-rule="evenodd"
@@ -1168,7 +1170,9 @@
             Allrun
           </button>
           <button id="runAllcleanBtn" onclick="confirmRunCommand('./Allclean', this)"
-            class="bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2"
+            title="Reset case: Delete mesh, results, and logs (Warning: Destructive)"
+            aria-label="Run Allclean script to reset the case">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
               aria-hidden="true">
               <path fill-rule="evenodd"
@@ -1178,7 +1182,9 @@
             Allclean
           </button>
           <button id="runBlockMeshBtnRun" onclick="runCommand('blockMesh', this)"
-            class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2"
+            title="Generate the background mesh"
+            aria-label="Run blockMesh to generate the background mesh">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
               aria-hidden="true">
               <path
@@ -1187,7 +1193,9 @@
             blockMesh
           </button>
           <button id="runSimpleFoamBtn" onclick="runCommand('simpleFoam', this)"
-            class="bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2"
+            title="Run steady-state solver (simpleFoam)"
+            aria-label="Run simpleFoam steady-state solver">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
               aria-hidden="true">
               <path fill-rule="evenodd"
@@ -1197,7 +1205,9 @@
             simpleFoam
           </button>
           <button id="runPimpleFoamBtn" onclick="runCommand('pimpleFoam', this)"
-            class="bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2">
+            class="bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 text-white px-4 py-2 rounded w-full sm:flex-1 flex items-center justify-center gap-2"
+            title="Run transient solver (pimpleFoam)"
+            aria-label="Run pimpleFoam transient solver">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
               aria-hidden="true">
               <path fill-rule="evenodd"
@@ -1239,6 +1249,7 @@
             </button>
             <button onclick="copyLogToClipboard(this)"
               class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              title="Copy console output to clipboard"
               aria-label="Copy console log to clipboard">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
