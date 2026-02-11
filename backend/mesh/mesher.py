@@ -88,9 +88,10 @@ class MeshVisualizer(BaseVisualizer):
 
                 self.current_mesh_path = path_str
                 self.current_mesh_mtime = mtime
-                # ⚡ Bolt Optimization: Clear decimated cache on new mesh load
+                # ⚡ Bolt Optimization: Clear decimated cache on new mesh load (tied to self.mesh)
                 self._decimated_cache.clear()
-                self._html_cache.clear()
+                # ⚡ Bolt Optimization: Do NOT clear HTML cache (persists across meshes)
+                # self._html_cache.clear()
 
                 logger.info(
                     f"[FOAMFlask] [mesher] Loaded mesh: {self.mesh.n_points} points, {self.mesh.n_cells} cells"
@@ -193,19 +194,29 @@ class MeshVisualizer(BaseVisualizer):
     ) -> Optional[str]:
         """Generate a fully interactive HTML viewer with enhanced controls."""
         try:
-            mesh_info = self.load_mesh(file_path)
-            if not mesh_info.get("success"):
+            # ⚡ Bolt Optimization: Check cache first to avoid expensive load_mesh (disk I/O + parsing)
+            # Validate path and get mtime without loading the full mesh
+            path = self.validate_file(file_path)
+            if not path:
                 return None
 
-            # Check cache (using string path, mtime and params)
-            path_str = str(file_path)
-            mtime = self.current_mesh_mtime
+            path_str = str(path)
+            try:
+                mtime = path.stat().st_mtime
+            except OSError:
+                return None
+
             cache_key = (path_str, mtime, show_edges, color)
 
             if cache_key in self._html_cache:
                 logger.debug(f"[FOAMFlask] Serving cached HTML for {path_str}")
                 self._html_cache.move_to_end(cache_key)
                 return self._html_cache[cache_key]
+
+            # Cache miss: Load mesh and generate
+            mesh_info = self.load_mesh(path)
+            if not mesh_info.get("success"):
+                return None
 
             # ⚡ Bolt Optimization: Decimate mesh for web performance
             # Use shared decimation logic
