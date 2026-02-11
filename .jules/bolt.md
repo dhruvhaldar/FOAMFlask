@@ -57,3 +57,7 @@
 ## 2027-04-14 - [Regex Anchoring and Manual Parsing]
 **Learning:** Searching for a prefix (e.g. `Time =`) using an unanchored regex (`re.search(r"Time =")`) is inefficient because the regex engine scans the entire string (or line) for a match. For high-throughput log parsing where most lines do NOT match the prefix, this O(N) scan per line is costly.
 **Action:** Replace unanchored regex search with `startswith()` checks or anchored regex (`^Time`). Furthermore, for simple formats, manual parsing (e.g., `split('=')`) can be faster than regex extraction. This yielded a ~30% speedup in parsing log lines.
+
+## 2027-05-20 - [Persistent Mesh Visualization Caching]
+**Learning:** `MeshVisualizer` was clearing its entire LRU cache (`_html_cache`) every time a new mesh was loaded. This meant switching between two meshes (A -> B -> A) triggered a full reload and re-processing (disk I/O + decimation + HTML export) for A, destroying the benefits of caching for multi-file workflows.
+**Action:** Removed the `_html_cache.clear()` call in `load_mesh`. Updated `get_interactive_viewer_html` to check the cache (using path and mtime) *before* invoking the expensive `load_mesh` method. This enables instant switching between previously viewed meshes without re-processing.
