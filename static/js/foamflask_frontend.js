@@ -896,6 +896,10 @@ const fetchWithCache = async (url, options = {}) => {
         }
         requestCache = cacheMap;
     }
+    if (!cacheMap) {
+        cacheMap = new Map();
+        requestCache = cacheMap;
+    }
     const cacheKey = `${url}${JSON.stringify(options)}`;
     const cached = cacheMap.get(cacheKey);
     // 1. Local Cache Check

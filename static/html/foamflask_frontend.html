@@ -504,7 +504,7 @@
                           </svg>
                         </div>
                       </div>
-                      <button id="loadTutorialBtn"
+                      <button id="loadTutorialBtn" title="Import Selected Tutorial (Enter)"
                         class="bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-4 focus:ring-cyan-500/30 text-white px-6 py-2 rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd"
@@ -540,7 +540,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="caseDir" class="w-32 font-medium text-gray-900">Case Root:</label>
             <div class="relative flex-1">
-              <input type="text" id="caseDir" name="caseDir"
+              <input type="text" id="caseDir" name="caseDir" placeholder="e.g. /home/user/openfoam/run/my_case"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8 text-gray-900" />
               <button onclick="copyInputToClipboard('caseDir', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
@@ -553,7 +553,8 @@
               </button>
             </div>
             <button id="setRootBtn" type="button" onclick="setCase(this)"
-              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[100px]">
+              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center justify-center min-w-[100px]"
+              title="Set Case Root Directory (Enter)">
               Set Root
             </button>
             <button id="openRootBtn" type="button" onclick="openCaseRoot(this)"
@@ -573,7 +574,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="dockerImage" class="w-32 font-medium text-gray-900">Docker Image:</label>
             <div class="relative flex-1">
-              <input type="text" id="dockerImage" name="dockerImage"
+              <input type="text" id="dockerImage" name="dockerImage" placeholder="e.g. opencfd/openfoam-default"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8" />
               <button onclick="copyInputToClipboard('dockerImage', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
@@ -689,7 +690,7 @@
                     class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md bg-white bg-opacity-80">
                     <option value="" disabled selected>Loading...</option>
                   </select>
-                  <button id="fetchResourceGeometryBtn" onclick="fetchResourceGeometry(this)"
+                  <button id="fetchResourceGeometryBtn" onclick="fetchResourceGeometry(this)" title="Fetch & Import (Enter)"
                     class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
                     Fetch & Import
                   </button>
@@ -719,7 +720,7 @@
             <div class="flex gap-2">
               <button id="viewGeometryBtn" onclick="loadGeometryView(this)"
                 class="bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-white px-4 py-2 rounded flex-1 text-sm flex items-center justify-center gap-2"
-                aria-label="View selected geometry" title="View selected geometry">
+                aria-label="View selected geometry" title="View selected geometry (Enter or Double-click)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1342,7 +1343,7 @@
                 aria-label="Select Mesh File">
                 <option value="">-- Select a mesh file --</option>
               </select>
-              <button id="loadMeshBtn" onclick="loadMeshVisualization()"
+              <button id="loadMeshBtn" onclick="loadMeshVisualization()" title="Load Mesh (Enter)"
                 class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2">
                 Load Mesh
               </button>
@@ -1945,7 +1946,7 @@
             </details>
 
             <!-- Load Selected VTK Button -->
-            <button id="loadContourVTKBtn" onclick="loadContourVTK()"
+            <button id="loadContourVTKBtn" onclick="loadContourVTK()" title="Load for Contour (Enter)"
               class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full font-medium">
               Load for Contour
             </button>
