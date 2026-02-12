@@ -330,7 +330,7 @@ const CONSOLE_LOG_KEY = "foamflask_console_log";
 let caseDir = "";
 let dockerImage = "";
 let openfoamVersion = "";
-let activeCase = "";
+let activeCase = null;
 // Page management
 let currentPage = "setup";
 // Mesh visualization state
@@ -1251,6 +1251,13 @@ const refreshCaseList = async (btnElement) => {
                     select.value = current;
                 else if (activeCase && data.cases.includes(activeCase))
                     select.value = activeCase;
+            }
+            // 🎨 Sync Active Case: If current activeCase is missing, clear it
+            if (activeCase && !data.cases.includes(activeCase)) {
+                console.log(`Sync: Active case ${activeCase} no longer found. Clearing.`);
+                activeCase = null;
+                localStorage.removeItem("lastSelectedCase");
+                updateActiveCaseBadge();
             }
         }
         // Only show success notification if invoked manually (via button)
@@ -3825,7 +3832,7 @@ window._fetchWithCache = fetchWithCache;
 window._requestCache = requestCache;
 const resetState = () => {
     requestCache = new Map();
-    activeCase = "";
+    activeCase = null;
     caseDir = "";
     dockerImage = "";
     openfoamVersion = "";

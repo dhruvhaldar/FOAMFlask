@@ -501,7 +501,7 @@ const CONSOLE_LOG_KEY = "foamflask_console_log";
 let caseDir: string = "";
 let dockerImage: string = "";
 let openfoamVersion: string = "";
-let activeCase: string = "";
+let activeCase: string | null = null;
 
 // Page management
 let currentPage: string = "setup";
@@ -1501,6 +1501,14 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
         });
         if (current && data.cases.includes(current)) select.value = current;
         else if (activeCase && data.cases.includes(activeCase)) select.value = activeCase;
+      }
+
+      // 🎨 Sync Active Case: If current activeCase is missing, clear it
+      if (activeCase && !data.cases.includes(activeCase)) {
+        console.log(`Sync: Active case ${activeCase} no longer found. Clearing.`);
+        activeCase = null;
+        localStorage.removeItem("lastSelectedCase");
+        updateActiveCaseBadge();
       }
     }
     // Only show success notification if invoked manually (via button)
@@ -4322,7 +4330,7 @@ if (document.readyState === 'loading') {
 
 const resetState = () => {
   requestCache = new Map<string, CacheEntry>();
-  activeCase = "";
+  activeCase = null;
   caseDir = "";
   dockerImage = "";
   openfoamVersion = "";
