@@ -147,6 +147,10 @@ interface ResidualsResponse extends ApiResponse {
   Uy?: number[];
   Uz?: number[];
   p?: number[];
+  h?: number[];
+  T?: number[];
+  rho?: number[];
+  p_rgh?: number[];
   k?: number[];
   epsilon?: number[];
   omega?: number[];
@@ -1746,7 +1750,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       return;
     }
     const traces: any[] = [];
-    const fields = ["Ux", "Uy", "Uz", "p"] as const;
+    const fields = ["Ux", "Uy", "Uz", "p", "h", "T", "rho", "p_rgh", "k", "epsilon", "omega"] as const;
     const colors = [
       plotlyColors.blue,
       plotlyColors.red,
@@ -1754,6 +1758,11 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       plotlyColors.magenta,
       plotlyColors.cyan,
       plotlyColors.orange,
+      plotlyColors.purple,
+      plotlyColors.brown,
+      plotlyColors.pink,
+      plotlyColors.gray,
+      plotlyColors.yellow,
     ];
     fields.forEach((field, idx) => {
       const fieldData = (data as any)[field];

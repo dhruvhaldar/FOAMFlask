@@ -86,3 +86,7 @@
 **Vulnerability:** The CSRF token cookie was explicitly set with `secure=False` in `app.py`. This exposed the sensitive CSRF token to interception over unencrypted HTTP connections, even if the user accessed the application via HTTPS (e.g. in mixed content scenarios or if the network traffic was monitored).
 **Learning:** Hardcoding security flags like `secure=False` to support local development creates a persistent vulnerability in production environments. Security settings should adapt to the deployment context.
 **Prevention:** Modified `app.py` to set the `secure` flag dynamically using `secure=request.is_secure`. This ensures the cookie is protected in HTTPS environments while maintaining compatibility with local HTTP development.
+## 2026-02-12 - [Defensive Parsing of External Logs]
+**Vulnerability:** Log parsing logic can be a vector for minor DoS if it improperly handles malformed or extremely large lines, or if it trusts the format enough to skip security checks.
+**Learning:** Robustness and security go hand-in-hand. When adding new parsing features (like handling the `s` suffix in `Time` lines), it is critical to maintain the established security boundaries, such as the atomic `os.open(O_NOFOLLOW)` check, to ensure that convenience does not re-introduce symlink vulnerabilities.
+**Prevention:** Verified that the improved parsing in `get_residuals_from_log` continues to utilize the atomic `O_NOFOLLOW` pattern, ensuring that the fix for "empty plots" remains secure against symlink attacks.

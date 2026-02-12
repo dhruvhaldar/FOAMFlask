@@ -67,7 +67,7 @@ TIME_PREFIX = b"Time"
 # Captures group 1: field name, group 2: value
 # ⚡ Bolt Optimization: Bytes regex to avoid decoding log lines
 # ⚡ Bolt Optimization: Anchored to "Solving for" to fail fast (~30% faster)
-RESIDUAL_REGEX_BYTES = re.compile(rb"Solving for\s+(Ux|Uy|Uz|p|k|epsilon|omega).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+RESIDUAL_REGEX_BYTES = re.compile(rb"Solving for\s+(Ux|Uy|Uz|p|h|T|rho|p_rgh|k|epsilon|omega).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
 
 # ⚡ Bolt Optimization: Pre-compute translation table for vector parsing
 # Replaces parenthesis with spaces to flatten vector lists efficiently.
@@ -957,6 +957,10 @@ class OpenFOAMFieldParser:
                     "Uy": [],
                     "Uz": [],
                     "p": [],
+                    "h": [],
+                    "T": [],
+                    "rho": [],
+                    "p_rgh": [],
                     "k": [],
                     "epsilon": [],
                     "omega": [],
@@ -1005,16 +1009,19 @@ class OpenFOAMFieldParser:
                             # ⚡ Bolt Optimization: Use startswith + manual parse (~30% faster than regex)
                             # Most lines are not Time lines, so startswith fails fast.
                             if line.startswith(TIME_PREFIX):
-                                try:
-                                    parts = line.split(b'=', 1)
-                                    if len(parts) == 2 and parts[0].strip() == TIME_PREFIX:
-                                        current_time = float(parts[1])
+                                # ⚡ Bolt Optimization: Use pre-compiled regex for robust parsing (handles '24s' units)
+                                # While manual split is faster, it fails on units. 
+                                # Regex with specific capture group handles this fallback correctly.
+                                time_match = TIME_REGEX_BYTES.search(line)
+                                if time_match:
+                                    try:
+                                        current_time = float(time_match.group(1))
                                         residuals["time"].append(current_time)
                                         # Optimization: Time line never contains residuals, skip regex
                                         new_offset += line_len
                                         continue
-                                except ValueError:
-                                    pass
+                                    except ValueError:
+                                        pass
 
                             # Optimized residual matching (on bytes)
                             # Optimization: Check if we have any time steps first

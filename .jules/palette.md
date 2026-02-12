@@ -39,3 +39,11 @@
 ## 2026-02-13 - [Empty States for Dependent Pages]
 **Learning:** In multi-page apps where subsequent pages depend on a selection made in the first page (e.g., "Select Case"), navigating ahead without a selection leads to confusing empty lists and error notifications. Users need explicit guidance.
 **Action:** Implement a persistent "No Selection" empty state that overlays or replaces the dependent page content, clearly explaining why the view is unavailable and providing a direct action button to fix it.
+## 2026-02-12 - [Residual Regex Coverage for Diverse Solvers]
+**Learning:** A "standard" residuals plot that only captures `U`, `p`, and `k-epsilon` variables will appear empty and "broken" for simulations that solve for enthalpy (`h`), temperature (`T`), or other model-specific fields. UX is improved when the system proactively captures a wide range of common solver outputs.
+**Action:** Regularly audit simulation logs and expand the residuals regex to cover emerging fields (e.g., `rho`, `p_rgh`, `h`, `T`). Ensure the backend dictionary supports these fields to avoid "Missing Data" states on legitimate runs.
+
+## 2026-02-12 - [Frontend Field Mapping Sync]
+**Learning:** Backend expansion of parsed data (e.g., adding more residual fields) is ineffective if the frontend visualization logic uses a hardcoded whitelist of fields. This creates a "silent data loss" scenario where the API returns data that the UI simply ignores.
+**Action:** When expanding backend data structures, always audit the corresponding frontend interfaces and rendering loops. Use dynamic keys where possible, or ensure whitelists are synchronized across the stack.
+

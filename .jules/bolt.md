@@ -65,3 +65,7 @@
 ## 2026-06-25 - [Compressed Geometry File Handling]
 **Learning:** The `BaseVisualizer` class strictly validated file extensions against a hardcoded set (e.g., `.stl`, `.obj`), causing unnecessary "Invalid file extension" errors for valid compressed geometry files like `.stl.gz` and `.obj.gz`, even though the underlying loading logic supported gzip decompression.
 **Action:** Updated `BaseVisualizer` to explicitly allow `.obj.gz` and `.stl.gz` extensions and modified the validation logic to correctly handle multi-part extensions. This enables seamless visualization of compressed geometry files without user intervention.
+## 2026-02-12 - [Robust Value Extraction with Suffixes]
+**Learning:** Manual string splitting and `float()` conversion (e.g., `line.split('=')[1]`) are fragile when dealing with external log outputs that may include units or suffixes (e.g., `Time = 24s`). This causes silent or loud failures in parsing loops.
+**Action:** Prefer using pre-compiled regex with specific capture groups for numeric extraction. This approach robustly handles extra characters like 's' or 'ms' and trailing whitespace, while remaining high-performance.
+
