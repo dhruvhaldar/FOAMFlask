@@ -509,7 +509,7 @@ let currentPage: string = "setup";
 // Mesh visualization state
 let currentMeshPath: string | null = null;
 let availableMeshes: MeshFile[] = [];
-let isInteractiveMode: boolean = false;
+let isInteractiveMode: boolean = true; // Default to interactive mode
 
 // Geometry State
 let selectedGeometry: string | null = null;
@@ -2970,7 +2970,12 @@ const loadMeshVisualization = async () => {
 
   currentMeshPath = path;
   try {
-    await updateMeshView();
+    if (isInteractiveMode) {
+      // Default to interactive viewer
+      await refreshInteractiveViewer();
+    } else {
+      await updateMeshView();
+    }
   } finally {
     // Restore button state
     if (btn) {
@@ -3156,6 +3161,12 @@ async function toggleInteractiveMode(): Promise<void> {
   const toggleBtn = document.getElementById("toggleInteractiveBtn");
   const cameraControl = document.getElementById("cameraPosition");
   const updateBtn = document.getElementById("updateViewBtn");
+
+  if (!toggleBtn || !cameraControl || !updateBtn) return; // Guard clause for safety
+
+  // Initialize button state if needed (e.g. on first load)
+  // But since we default to true, the HTML should probably match or we update it here.
+  // actually refreshInteractiveViewer updates the button state on success.
 
   if (
     !meshImage ||
@@ -4317,7 +4328,7 @@ const resetState = () => {
   openfoamVersion = "";
   currentMeshPath = null;
   availableMeshes = [];
-  isInteractiveMode = false;
+  isInteractiveMode = true;
   selectedGeometry = null;
   postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
   activePipelineId = "root";
