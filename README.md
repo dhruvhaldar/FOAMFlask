@@ -72,28 +72,27 @@ If you prefer to manage the environment yourself:
    ```
 3. **Install Backend**:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # or .\venv\Scripts\activate on Windows
-   pip install -r requirements.txt
+   uv venv
+   uv pip install -r requirements.txt
    ```
 
 ### Run FOAMFlask (Frontend and Backend)
 
 ```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
+uv run app.py 2>&1 | Tee-Object -FilePath app.log
 ```
 
 ```bash
-./environments/my-python313-venv-linux/bin/python -m app 2>&1 | tee app.log
+uv run app.py 2>&1 | tee app.log
 ```
 ```bash
-pkill -f "python -m app"; sleep 1; ./environments/my-python313-venv-linux/bin/python -m app > app_output.log 2>&1 &
+pkill -f "uv run app.py"; sleep 1; uv run app.py > app_output.log 2>&1 &
 ```
 ## Usage
 
 1. **Start the Application**:
    - If using the binary, just double-click it.
-   - If using source, run `python app.py`.
+   - If using source, run `uv run app.py`.
 
 2. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.
@@ -208,7 +207,7 @@ FOAMFlask/
 This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
 - **Backend**:
-  - **Python 3.13+**: Core logic.
+  - **Python 3.13+**: Core logic managed by **uv**.
   - **Flask**: Lightweight WSGI web application framework.
   - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
   - **PyVista / VTK**: For mesh processing and isosurface generation.
@@ -335,29 +334,29 @@ FOAMFlask includes a comprehensive test suite using pytest. The test suite inclu
 1. **Install test dependencies** (if not already installed):
 
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 
 2. **Run all tests** with coverage:
 
    ```bash
    # Run all tests with coverage
-   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
+   uv run pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
    ```
 
 3. **Run specific test files** or individual tests:
 
    ```bash
    # Run a specific test file
-   pytest test/test_app.py -v
+   uv run pytest test/test_app.py -v
 
    # Run a specific test function
-   pytest test/test_app.py::test_index_route -v
+   uv run pytest test/test_app.py::test_index_route -v
    ```
 
 4. **Run tests in parallel** (faster execution):
    ```bash
-   pytest -n auto --cov=app --cov=backend
+   uv run pytest -n auto --cov=app --cov=backend
    ```
 
 ### Test Coverage
@@ -366,13 +365,13 @@ To check test coverage and generate reports:
 
 ```bash
 # Generate HTML coverage report (recommended)
-pytest --cov=app --cov=backend --cov-report=html
+uv run pytest --cov=app --cov=backend --cov-report=html
 
 # View coverage in terminal
-pytest --cov=app --cov=backend --cov-report=term-missing
+uv run pytest --cov=app --cov=backend --cov-report=term-missing
 
 # Generate XML report (for CI/CD integration)
-pytest --cov=app --cov=backend --cov-report=xml
+uv run pytest --cov=app --cov=backend --cov-report=xml
 ```
 
 **Coverage Reports**:
@@ -401,22 +400,22 @@ test/
 
 ```bash
 # Run all tests with coverage
-pytest --cov=app --cov=backend
+uv run pytest --cov=app --cov=backend
 
 # Run tests without coverage
-pytest
+uv run pytest
 
 # Run tests with detailed output
-pytest -v
+uv run pytest -v
 
 # Run tests and stop after first failure
-pytest -x
+uv run pytest -x
 
 # Run tests and show output from print statements
-pytest -s
+uv run pytest -s
 
 # Run tests matching a specific pattern
-pytest -k "test_name_pattern"
+uv run pytest -k "test_name_pattern"
 ```
 
 ---

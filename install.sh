@@ -80,6 +80,16 @@ else
     exit 1
 fi
 
+# --- uv ---
+if check_cmd uv; then
+    echo -e "${GREEN}✓ uv found${NC}"
+else
+    echo -e "${YELLOW}uv not found. Installing...${NC}"
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Update Path for current session
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # 3. Check & Install pnpm
 echo -e "${BLUE}Checking pnpm...${NC}"
 if check_cmd pnpm; then
@@ -97,25 +107,18 @@ else
 fi
 
 # 4. Setup Python Environment
-echo -e "${BLUE}Setting up Python environment...${NC}"
-VENV_DIR="venv"
-if [ ! -d "$VENV_DIR" ]; then
-    python3 -m venv "$VENV_DIR"
-    echo -e "${GREEN}Created virtual environment in $VENV_DIR${NC}"
-fi
+echo -e "${BLUE}Setting up Python environment with uv...${NC}"
+uv venv
+echo -e "${GREEN}Created virtual environment with uv${NC}"
 
-# Activate venv
-source "$VENV_DIR/bin/activate"
-
-echo "Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
+echo "Installing Python dependencies with uv..."
+uv pip install -r requirements.txt
 
 # Install Rust Accelerator
 if [ -d "backend/accelerator" ]; then
     echo -e "${BLUE}Building Rust Accelerator...${NC}"
     if check_cmd cargo; then
-        pip install ./backend/accelerator
+        uv pip install ./backend/accelerator
         echo -e "${GREEN}✓ Rust Accelerator installed${NC}"
     else
         echo -e "${YELLOW}Warning: Cargo not found. Rust accelerator will be skipped (slower performance).${NC}"
@@ -132,5 +135,5 @@ echo -e "${BLUE}=== Installation Complete! ===${NC}"
 echo -e "${GREEN}Starting FOAMFlask...${NC}"
 echo -e "Access the app at: http://localhost:5000"
 
-# Use python main.py for FastAPI + Flask
-python main.py
+# Use uv run for modern dependency management
+uv run app.py
