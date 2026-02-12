@@ -31,7 +31,7 @@ class BaseVisualizer:
                 Defaults to common mesh formats if None.
         """
         if allowed_extensions is None:
-            self.allowed_extensions = {'.stl', '.obj', '.obj.gz', '.ply', '.vtp', '.vtu', '.g', '.vtk'}
+            self.allowed_extensions = {'.stl', '.obj', '.obj.gz', '.stl.gz', '.ply', '.vtp', '.vtu', '.g', '.vtk'}
         else:
             self.allowed_extensions = allowed_extensions
 
@@ -49,9 +49,13 @@ class BaseVisualizer:
 
             # Security check: Ensure file extension is allowed
             suffixes = path.suffixes
-            # Handle .obj.gz case
-            if len(suffixes) >= 2 and suffixes[-2] + suffixes[-1] == '.obj.gz':
-                ext = '.obj.gz'
+            # Handle multi-part extensions like .obj.gz and .stl.gz
+            if len(suffixes) >= 2:
+                combined_ext = suffixes[-2] + suffixes[-1]
+                if combined_ext in {'.obj.gz', '.stl.gz'}:
+                    ext = combined_ext
+                else:
+                    ext = path.suffix.lower()
             else:
                 ext = path.suffix.lower()
 

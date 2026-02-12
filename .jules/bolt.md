@@ -61,3 +61,7 @@
 ## 2027-05-20 - [Persistent Mesh Visualization Caching]
 **Learning:** `MeshVisualizer` was clearing its entire LRU cache (`_html_cache`) every time a new mesh was loaded. This meant switching between two meshes (A -> B -> A) triggered a full reload and re-processing (disk I/O + decimation + HTML export) for A, destroying the benefits of caching for multi-file workflows.
 **Action:** Removed the `_html_cache.clear()` call in `load_mesh`. Updated `get_interactive_viewer_html` to check the cache (using path and mtime) *before* invoking the expensive `load_mesh` method. This enables instant switching between previously viewed meshes without re-processing.
+
+## 2026-06-25 - [Compressed Geometry File Handling]
+**Learning:** The `BaseVisualizer` class strictly validated file extensions against a hardcoded set (e.g., `.stl`, `.obj`), causing unnecessary "Invalid file extension" errors for valid compressed geometry files like `.stl.gz` and `.obj.gz`, even though the underlying loading logic supported gzip decompression.
+**Action:** Updated `BaseVisualizer` to explicitly allow `.obj.gz` and `.stl.gz` extensions and modified the validation logic to correctly handle multi-part extensions. This enables seamless visualization of compressed geometry files without user intervention.
