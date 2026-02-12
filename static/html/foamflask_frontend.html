@@ -243,6 +243,11 @@
   <div id="notificationContainer"
     class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
+  <!-- Startup Error (Hidden) -->
+  {% if startup_error %}
+  <div id="startup-error" data-message="{{ startup_error }}" class="hidden"></div>
+  {% endif %}
+
   <template id="notification-template">
     <div class="notification pointer-events-auto px-4 py-3 rounded-lg shadow-lg max-w-sm overflow-hidden relative">
       <div class="relative z-10">

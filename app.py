@@ -614,15 +614,17 @@ def generate_grouped_tutorial_options(tutorials: List[str]) -> str:
     return "\n".join(html_parts)
 
 
-def get_tutorials() -> List[str]:
+def get_tutorials() -> Tuple[List[str], Optional[str]]:
     """Get a list of available OpenFOAM tutorial cases.
 
     Returns:
-        Sorted list of available OpenFOAM tutorial paths (category/case).
+        Tuple containing:
+        - Sorted list of available OpenFOAM tutorial paths (category/case).
+        - Error message if fetching failed, None otherwise.
     """
     # ⚡ Bolt Optimization: Mock for testing/development if requested
     if os.environ.get("FOAMFLASK_MOCK_DOCKER"):
-        return ["basic/pitzDaily", "incompressible/simpleFoam/pitzDaily"]
+        return ["basic/pitzDaily", "incompressible/simpleFoam/pitzDaily"], None
 
     global _TUTORIALS_CACHE
 
@@ -633,13 +635,13 @@ def get_tutorials() -> List[str]:
         # Type check to satisfy mypy, though we know it's a list if key matches
         data = _TUTORIALS_CACHE.get("data", [])
         if isinstance(data, list):
-            return data
+            return data, None
 
     try:
         client = get_docker_client()
         if client is None:
             logger.warning("[FOAMFlask] Docker not available, cannot fetch tutorials")
-            return []
+            return [], "Docker not available. Please start Docker Desktop."
 
         # Get the tutorials directory from OpenFOAM
         bashrc = f"/opt/openfoam{OPENFOAM_VERSION}/etc/bashrc"
@@ -651,14 +653,15 @@ def get_tutorials() -> List[str]:
         # We output the root path first, then the list of cases.
         cmd = (
             f"source {bashrc} && "
-            "echo $FOAM_TUTORIALS && "
-            "find $FOAM_TUTORIALS -mindepth 3 -maxdepth 3 \\( -type d -o -type l \\) \\( -name system -o -name constant \\) "
+            "tutorials_dir=${FOAM_TUTORIALS:-/opt/openfoam12/tutorials} && "
+            "echo $tutorials_dir && "
+            "find $tutorials_dir -mindepth 3 -maxdepth 3 \\( -type d -o -type l \\) \\( -name system -o -name constant \\) "
             "| sed 's|/[^/]*$||' | sort | uniq -d"
         )
 
         result = client.containers.run(
             DOCKER_IMAGE,
-            f"bash -c '{cmd}'",
+            ["bash", "-c", cmd],
             remove=True,
             stdout=True,
             stderr=True,
@@ -668,7 +671,7 @@ def get_tutorials() -> List[str]:
         output = result.decode().strip()
         if not output:
             logger.warning("[FOAMFlask] No tutorial root found in OpenFOAM")
-            return []
+            return [], "No tutorials found in OpenFOAM container."
 
         lines = output.splitlines()
         tutorial_root = lines[0].strip()
@@ -689,20 +692,18 @@ def get_tutorials() -> List[str]:
             "data": sorted_tutorials
         }
 
-        return sorted_tutorials
+        return sorted_tutorials, None
 
     except docker.errors.APIError as e:
-        logger.error(
-            "[FOAMFlask] Docker API error while fetching tutorials: %s", str(e)
-        )
+        msg = f"Docker API error: {str(e)}"
+        logger.error(f"[FOAMFlask] {msg}")
+        return [], msg
     except Exception as e:
-        logger.error(
-            "[FOAMFlask] Unexpected error while fetching tutorials: %s",
-            str(e),
-            exc_info=True,
-        )
+        msg = f"Error fetching tutorials: {str(e)}"
+        logger.error(f"[FOAMFlask] {msg}", exc_info=True)
+        return [], msg
 
-    return []
+    return [], "Unknown error occurred while fetching tutorials."
 
 
 # --- Routes ---
@@ -786,13 +787,17 @@ def index() -> str:
     if COMPILED_TEMPLATE is None:
         COMPILED_TEMPLATE = app.jinja_env.from_string(TEMPLATE)
 
-    tutorials = get_tutorials()
+    tutorials, error = get_tutorials()
     # 🎨 Palette UX: Group tutorials by category
     options_html = generate_grouped_tutorial_options(tutorials)
 
     # ⚡ Bolt Optimization: Use pre-compiled template rendering
     # We must manually update the context with Flask globals (url_for, request, etc.)
-    context = {"options": options_html, "CASE_ROOT": CASE_ROOT}
+    context = {
+        "options": options_html,
+        "CASE_ROOT": CASE_ROOT,
+        "startup_error": error
+    }
     app.update_template_context(context)
     return COMPILED_TEMPLATE.render(context)
 

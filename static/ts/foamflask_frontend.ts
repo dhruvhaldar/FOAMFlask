@@ -1125,13 +1125,13 @@ const fetchWithCache = async <T = any>(
   // Robust access to cache
   let cacheMap = requestCache;
   if (!cacheMap) {
-      // Fallback to window global if local is lost (module reload issue)
-      if ((window as any)._requestCache) cacheMap = (window as any)._requestCache;
-      else {
-          cacheMap = new Map<string, CacheEntry>();
-          if (typeof window !== 'undefined') (window as any)._requestCache = cacheMap;
-      }
-      requestCache = cacheMap;
+    // Fallback to window global if local is lost (module reload issue)
+    if ((window as any)._requestCache) cacheMap = (window as any)._requestCache;
+    else {
+      cacheMap = new Map<string, CacheEntry>();
+      if (typeof window !== 'undefined') (window as any)._requestCache = cacheMap;
+    }
+    requestCache = cacheMap;
   }
 
   if (!cacheMap) {
@@ -3734,6 +3734,15 @@ const init = () => {
   const loadTutorialBtn = document.getElementById('loadTutorialBtn');
   if (loadTutorialBtn) loadTutorialBtn.addEventListener('click', loadTutorial);
 
+  // Check for startup errors
+  const startupError = document.getElementById("startup-error");
+  if (startupError) {
+    const msg = startupError.getAttribute("data-message");
+    if (msg) {
+      showNotification(msg, "error", NOTIFY_LONG);
+    }
+  }
+
   // ⚡ Bolt Optimization: Resume updates immediately when tab becomes visible
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && plotsVisible && plotsInViewport) {
@@ -4298,19 +4307,19 @@ if (document.readyState === 'loading') {
 (window as any)._requestCache = requestCache;
 
 const resetState = () => {
-    requestCache = new Map<string, CacheEntry>();
-    activeCase = "";
-    caseDir = "";
-    dockerImage = "";
-    openfoamVersion = "";
-    currentMeshPath = null;
-    availableMeshes = [];
-    isInteractiveMode = false;
-    selectedGeometry = null;
-    postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
-    activePipelineId = "root";
-    outputBuffer.length = 0;
-    cachedLogHTML = "";
+  requestCache = new Map<string, CacheEntry>();
+  activeCase = "";
+  caseDir = "";
+  dockerImage = "";
+  openfoamVersion = "";
+  currentMeshPath = null;
+  availableMeshes = [];
+  isInteractiveMode = false;
+  selectedGeometry = null;
+  postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
+  activePipelineId = "root";
+  outputBuffer.length = 0;
+  cachedLogHTML = "";
 };
 (window as any)._resetState = resetState;
 

@@ -3298,6 +3298,14 @@ const init = () => {
     const loadTutorialBtn = document.getElementById('loadTutorialBtn');
     if (loadTutorialBtn)
         loadTutorialBtn.addEventListener('click', loadTutorial);
+    // Check for startup errors
+    const startupError = document.getElementById("startup-error");
+    if (startupError) {
+        const msg = startupError.getAttribute("data-message");
+        if (msg) {
+            showNotification(msg, "error", NOTIFY_LONG);
+        }
+    }
     // ⚡ Bolt Optimization: Resume updates immediately when tab becomes visible
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && plotsVisible && plotsInViewport) {
