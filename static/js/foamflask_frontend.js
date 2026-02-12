@@ -1201,7 +1201,10 @@ const updateActiveCaseBadge = () => {
             badge.setAttribute("aria-label", `Current active case: ${activeCase}. Click to go to setup.`);
         }
         else {
-            badge.classList.add("hidden");
+            badge.textContent = "No Case";
+            badge.classList.remove("hidden");
+            badge.title = "No Active Case (Click to Select)";
+            badge.setAttribute("aria-label", "No active case selected. Click to go to setup.");
         }
     }
 };
@@ -3219,8 +3222,8 @@ const init = () => {
     const savedCase = localStorage.getItem("lastSelectedCase");
     if (savedCase) {
         activeCase = savedCase;
-        updateActiveCaseBadge();
     }
+    updateActiveCaseBadge();
     // Persist Tutorial Selection - Restore FIRST before any page logic runs
     const tutorialSelect = document.getElementById('tutorialSelect');
     if (tutorialSelect) {
