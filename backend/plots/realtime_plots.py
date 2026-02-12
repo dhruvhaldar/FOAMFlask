@@ -986,6 +986,13 @@ class OpenFOAMFieldParser:
 
                 new_offset = start_offset
 
+                # Initialize working buffer for this chunk
+                # We use a separate buffer to avoid modifying the cached residuals in-place
+                # until we have successfully parsed the chunk. This improves robustness against
+                # partial reads and cleaner error recovery.
+                # It also reduces the window for race conditions in threaded environments.
+                chunk_residuals: Dict[str, List[float]] = {k: [] for k in residuals}
+
                 # ⚡ Bolt Optimization: Stream file line-by-line to avoid loading massive files into RAM.
                 # This reduces memory usage from O(N) to O(1) for log parsing.
 
@@ -1016,7 +1023,7 @@ class OpenFOAMFieldParser:
                                 if time_match:
                                     try:
                                         current_time = float(time_match.group(1))
-                                        residuals["time"].append(current_time)
+                                        chunk_residuals["time"].append(current_time)
                                         # Optimization: Time line never contains residuals, skip regex
                                         new_offset += line_len
                                         continue
@@ -1024,15 +1031,15 @@ class OpenFOAMFieldParser:
                                         pass
 
                             # Optimized residual matching (on bytes)
-                            # Optimization: Check if we have any time steps first
-                            if residuals["time"]:
+                            # Optimization: Check if we have any time steps first (in global or local cache)
+                            if residuals["time"] or chunk_residuals["time"]:
                                 residual_match = RESIDUAL_REGEX_BYTES.search(line)
                                 if residual_match:
                                     # Decode only the field name which is short
                                     field = residual_match.group(1).decode("utf-8")
                                     value = float(residual_match.group(2))
-                                    if field in residuals:
-                                        residuals[field].append(value)
+                                    if field in chunk_residuals:
+                                        chunk_residuals[field].append(value)
 
                             # Only advance offset after successful processing attempt
                             new_offset += line_len
@@ -1041,6 +1048,12 @@ class OpenFOAMFieldParser:
                             logger.error(f"Error processing log line: {decode_error}")
                             # Advance offset to avoid getting stuck on bad lines
                             new_offset += line_len
+
+                # Merge chunk data into main residuals (atomic-ish update)
+                # This is safer than appending in the loop
+                for key, val_list in chunk_residuals.items():
+                    if val_list and key in residuals:
+                        residuals[key].extend(val_list)
 
             finally:
                 if fd is not None:
