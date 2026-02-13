@@ -13,7 +13,7 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
     Write-Host "✓ Python found" -ForegroundColor Green
 } else {
     Write-Host "Python not found. Installing..." -ForegroundColor Yellow
-    winget install Python.Python.3.12 -e --source winget
+    winget install Python.Python.3.13 -e --source winget
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to install Python. Please install manually." -ForegroundColor Red
         exit 1

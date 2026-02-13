@@ -9,7 +9,9 @@
 [![uv](https://img.shields.io/badge/uv-0.11.6-green.svg)](https://pdoc3.readthedocs.io/)
 [![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
 
-# FOAMFlask
+<p align="center">
+  <img style="vertical-align: middle;" src="static/icons/logo.svg" alt="FOAMFlask Logo" width="50"> <span style="font-family: 'Inter', sans-serif;"><b>FOAMFlask</b></span>
+</p>
 
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
 
