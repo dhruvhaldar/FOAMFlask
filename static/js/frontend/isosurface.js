@@ -613,10 +613,19 @@ function updateRangeInputs(fieldName) {
     if (min !== undefined && max !== undefined) {
         const minInput = document.getElementById('rangeMin');
         const maxInput = document.getElementById('rangeMax');
+        const displayMin = document.getElementById('displayMin');
+        const displayMax = document.getElementById('displayMax');
+        const scalarRangeCard = document.getElementById('scalarRangeCard');
         if (minInput)
-            minInput.value = parseFloat(min).toFixed(4);
+            minInput.value = min.toString();
         if (maxInput)
-            maxInput.value = parseFloat(max).toFixed(4);
+            maxInput.value = max.toString();
+        if (displayMin)
+            displayMin.textContent = parseFloat(min).toFixed(4);
+        if (displayMax)
+            displayMax.textContent = parseFloat(max).toFixed(4);
+        if (scalarRangeCard)
+            scalarRangeCard.classList.remove('hidden');
         // Update slider as well
         const slider = document.getElementById('isovalueSlider');
         const display = document.getElementById('isovalueDisplay');

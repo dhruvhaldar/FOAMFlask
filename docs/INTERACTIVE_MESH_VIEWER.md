@@ -93,12 +93,12 @@ Before using the Interactive Mesh Viewer, ensure you have:
 
 3. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
    Additional dependencies for interactive mode:
    ```bash
-   pip install pythreejs==2.4.2 panel==1.5.4
+   uv add pythreejs==2.4.2 panel==1.5.4
    ```
 
 ## User Guide

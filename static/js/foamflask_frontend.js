@@ -1502,7 +1502,7 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
             return;
         }
         const traces = [];
-        const fields = ["Ux", "Uy", "Uz", "p"];
+        const fields = ["Ux", "Uy", "Uz", "p", "h", "T", "rho", "p_rgh", "k", "epsilon", "omega"];
         const colors = [
             plotlyColors.blue,
             plotlyColors.red,
@@ -1510,6 +1510,11 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
             plotlyColors.magenta,
             plotlyColors.cyan,
             plotlyColors.orange,
+            plotlyColors.purple,
+            plotlyColors.brown,
+            plotlyColors.pink,
+            plotlyColors.gray,
+            plotlyColors.yellow,
         ];
         fields.forEach((field, idx) => {
             const fieldData = data[field];

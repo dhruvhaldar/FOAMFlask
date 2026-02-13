@@ -60,7 +60,7 @@ The PyVista integration consists of several key components:
 
 ### Dependencies
 
-Core dependencies (automatically installed with requirements.txt):
+Core dependencies (automatically installed with `pyproject.toml`):
 
 ```bash
 # Core
@@ -89,7 +89,7 @@ panel>=1.5.4       # Interactive widgets
 
 3. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 ## API Reference
@@ -406,13 +406,13 @@ Added JavaScript functions for mesh visualization:
 - `availableMeshes`: Stores list of available meshes
 
 ### 5. **requirements.txt** (MODIFIED)
-Added `pyvista==0.44.1` dependency
+Added `pyvista==0.46.4` dependency to `pyproject.toml`
 
 ## Usage Instructions
 
 ### 1. Install Dependencies
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 2. Start the Flask Application

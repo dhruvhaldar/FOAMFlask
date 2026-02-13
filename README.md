@@ -1,10 +1,13 @@
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-f5d7e3)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-GPLv3-red.svg)](https://opensource.org/licenses/GPL-3.0)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-f5d7e3)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-black)](https://www.typescriptlang.org/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
-[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-blue.svg)](https://pdoc3.readthedocs.io/)
+[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v12-yellow)](https://openfoam.org/)
+[![Docker](https://img.shields.io/badge/Docker-27.1.1-blue)](https://www.docker.com/)
+[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-magenta.svg)](https://pdoc3.readthedocs.io/)
+[![uv](https://img.shields.io/badge/uv-0.11.6-green.svg)](https://pdoc3.readthedocs.io/)
+[![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
 
 # FOAMFlask
 
@@ -60,6 +63,11 @@ chmod +x install.sh
 
 </details>
 
+> [!TIP]
+> After running the automated installer, if the `uv` command is not recognized, you may need to **restart your terminal** or add the local bin directory to your PATH:
+> - **Windows**: `$env:USERPROFILE\.local\bin`
+> - **Linux/macOS**: `~/.local/bin`
+
 ### Option 2: Manual Installation (Developers)
 
 If you prefer to manage the environment yourself:
@@ -72,28 +80,26 @@ If you prefer to manage the environment yourself:
    ```
 3. **Install Backend**:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # or .\venv\Scripts\activate on Windows
-   pip install -r requirements.txt
+   uv sync
    ```
 
 ### Run FOAMFlask (Frontend and Backend)
 
 ```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
+uv run app.py 2>&1 | Tee-Object -FilePath app.log
 ```
 
 ```bash
-./environments/my-python313-venv-linux/bin/python -m app 2>&1 | tee app.log
+uv run app.py 2>&1 | tee app.log
 ```
 ```bash
-pkill -f "python -m app"; sleep 1; ./environments/my-python313-venv-linux/bin/python -m app > app_output.log 2>&1 &
+pkill -f "uv run app.py"; sleep 1; uv run app.py > app_output.log 2>&1 &
 ```
 ## Usage
 
 1. **Start the Application**:
    - If using the binary, just double-click it.
-   - If using source, run `python app.py`.
+   - If using source, run `uv run app.py`.
 
 2. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.
@@ -137,9 +143,7 @@ FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
 ├── package.json # Node.js dependencies and build scripts
-├── tsconfig.json # TypeScript configuration
 ├── copy-built-js.mjs # Custom build script
-├── requirements.txt # Python dependencies
 ├── static/
 │ ├── html/
 │ │ └── foamflask_frontend.html # HTML template
@@ -186,8 +190,8 @@ FOAMFlask/
 2. **Compile to JavaScript**:
    You must compile the TypeScript to JavaScript for the browser to run it.
    ```bash
-   npm run build        # One-time build
-   npm run build:watch  # Wrapper to watch for changes
+   pnpm run build        # One-time build (uses SWC for speed)
+   pnpm run build:watch  # Watch for changes (uses SWC)
    ```
 3. **Run the backend** (see Usage section) and refresh your browser.
 
@@ -208,14 +212,14 @@ FOAMFlask/
 This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
 - **Backend**:
-  - **Python 3.13+**: Core logic.
+  - **Python 3.13+**: Core logic managed by **uv**.
   - **Flask**: Lightweight WSGI web application framework.
   - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
   - **PyVista / VTK**: For mesh processing and isosurface generation.
   - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
 - **Frontend**:
-  - **TypeScript**: For type-safe, maintainable client-side code.
+  - **TypeScript / SWC**: For type-safe code and ultra-fast compilation (using SWC).
   - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
   - **TailwindCSS**: Utility-first CSS framework for styling.
   - **Plotly.js**: For responsive, interactive charts (using data served by Flask endpoints).
@@ -334,30 +338,28 @@ FOAMFlask includes a comprehensive test suite using pytest. The test suite inclu
 
 1. **Install test dependencies** (if not already installed):
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+   uv sync
 
 2. **Run all tests** with coverage:
 
    ```bash
    # Run all tests with coverage
-   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
+   uv run pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
    ```
 
 3. **Run specific test files** or individual tests:
 
    ```bash
    # Run a specific test file
-   pytest test/test_app.py -v
+   uv run pytest test/test_app.py -v
 
    # Run a specific test function
-   pytest test/test_app.py::test_index_route -v
+   uv run pytest test/test_app.py::test_index_route -v
    ```
 
 4. **Run tests in parallel** (faster execution):
    ```bash
-   pytest -n auto --cov=app --cov=backend
+   uv run pytest -n auto --cov=app --cov=backend
    ```
 
 ### Test Coverage
@@ -366,13 +368,13 @@ To check test coverage and generate reports:
 
 ```bash
 # Generate HTML coverage report (recommended)
-pytest --cov=app --cov=backend --cov-report=html
+uv run pytest --cov=app --cov=backend --cov-report=html
 
 # View coverage in terminal
-pytest --cov=app --cov=backend --cov-report=term-missing
+uv run pytest --cov=app --cov=backend --cov-report=term-missing
 
 # Generate XML report (for CI/CD integration)
-pytest --cov=app --cov=backend --cov-report=xml
+uv run pytest --cov=app --cov=backend --cov-report=xml
 ```
 
 **Coverage Reports**:
@@ -401,22 +403,22 @@ test/
 
 ```bash
 # Run all tests with coverage
-pytest --cov=app --cov=backend
+uv run pytest --cov=app --cov=backend
 
 # Run tests without coverage
-pytest
+uv run pytest
 
 # Run tests with detailed output
-pytest -v
+uv run pytest -v
 
 # Run tests and stop after first failure
-pytest -x
+uv run pytest -x
 
 # Run tests and show output from print statements
-pytest -s
+uv run pytest -s
 
 # Run tests matching a specific pattern
-pytest -k "test_name_pattern"
+uv run pytest -k "test_name_pattern"
 ```
 
 ---

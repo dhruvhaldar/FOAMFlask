@@ -64,35 +64,33 @@ if (Get-Command pnpm -ErrorAction SilentlyContinue) {
     }
 }
 
+# --- uv ---
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    Write-Host "✓ uv found" -ForegroundColor Green
+} else {
+    Write-Host "uv not found. Installing..." -ForegroundColor Yellow
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to install uv. Please install manually." -ForegroundColor Red
+        exit 1
+    }
+    # Update Path for current session
+    $env:Path = "$env:USERPROFILE\.local\bin;" + $env:Path
+}
+
 # 3. Setup Python Environment
-Write-Host "Setting up Python environment..." -ForegroundColor Cyan
-$VenvDir = "venv"
-if (-not (Test-Path $VenvDir)) {
-    python -m venv $VenvDir
-    Write-Host "Created virtual environment in $VenvDir" -ForegroundColor Green
-}
+Write-Host "Setting up Python environment with uv..." -ForegroundColor Cyan
+uv venv
+Write-Host "Created virtual environment with uv" -ForegroundColor Green
 
-# Activate venv
-# PowerShell activation script path
-$ActivateScript = "$VenvDir\Scripts\Activate.ps1"
-if (Test-Path $ActivateScript) {
-    # We invoke the rest of the commands inside a block that uses the venv python
-    # Because 'calling' the activate script in a script doesn't always persist to the parent scope easily
-    # A robust way is to use the venv python executable directly
-}
-
-$VenvPython = "$VenvDir\Scripts\python.exe"
-$VenvPip = "$VenvDir\Scripts\pip.exe"
-
-Write-Host "Installing Python dependencies..."
-& $VenvPip install --upgrade pip
-& $VenvPip install -r requirements.txt
+Write-Host "Installing Python dependencies with uv..."
+uv sync
 
 # Install Rust Accelerator
 if (Test-Path "backend/accelerator") {
     Write-Host "Building Rust Accelerator..." -ForegroundColor Cyan
     if (Get-Command cargo -ErrorAction SilentlyContinue) {
-        & $VenvPip install ./backend/accelerator
+        uv add ./backend/accelerator
         Write-Host "✓ Rust Accelerator installed" -ForegroundColor Green
     } else {
         Write-Host "Warning: Cargo not found. Rust accelerator will be skipped." -ForegroundColor Yellow
@@ -109,4 +107,4 @@ Write-Host "=== Installation Complete! ===" -ForegroundColor Cyan
 Write-Host "Starting FOAMFlask..." -ForegroundColor Green
 Write-Host "Access the app at: http://localhost:5000"
 
-& $VenvPython main.py
+uv run app.py
