@@ -76,3 +76,18 @@ def test_partial_line_handling(tmp_path):
     residuals = parser.get_residuals_from_log()
     assert residuals["p"] == [0.2]
     assert residuals["time"] == [1.0, 2.0]
+
+def test_dynamic_field_discovery(tmp_path):
+    log_file = tmp_path / "log.foamRun"
+    content = (
+        b"Time = 1\n"
+        b"Solving for CustomField, Initial residual = 0.5, Final residual = 0.05, No Iterations 1\n"
+    )
+    log_file.write_bytes(content)
+
+    parser = OpenFOAMFieldParser(tmp_path)
+    residuals = parser.get_residuals_from_log()
+
+    assert "CustomField" in residuals
+    assert residuals["CustomField"] == [0.5]
+    assert residuals["time"] == [1.0]
