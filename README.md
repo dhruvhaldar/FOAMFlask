@@ -9,9 +9,10 @@
 [![uv](https://img.shields.io/badge/uv-0.10.2-d7ff64.svg)](https://docs.astral.sh/uv/)
 [![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
 [![trame](https://img.shields.io/badge/trame-3.1.2-8bc392)](https://github.com/Kitware/trame)
+[![pyvista](https://img.shields.io/badge/pyvista-0.46.4-5d3f3f)](https://docs.pyvista.org/)
 
 <p align="center">
-  <img style="vertical-align: middle;" src="static/icons/logo.svg" alt="FOAMFlask Logo" width="50"> <span style="font-family: 'Inter', sans-serif;"><b>FOAMFlask</b></span>
+  <img style="vertical-align: middle;" src="static/icons/logo.svg" alt="FOAMFlask Logo" width="50" height="50"> <span style="font-family: 'Inter', sans-serif; font-size: 50px; line-height: 50px; vertical-align: middle;"><b>FOAMFlask</b></span>
 </p>
 
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
