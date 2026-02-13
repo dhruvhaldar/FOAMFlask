@@ -1,9 +1,10 @@
 /**
  * Contour Visualization Module
- * Handles isosurface generation and 3D visualization using PyVista
+ * Handles isosurface generation using PyVista, and 3D visualization using Trame
+ * 
+ * When making changes to the frontend, always edit isosurface.ts and build isosurface.js using `npm run build`
  */
 
-// Type definitions
 // Type definitions
 interface ContourOptions {
     tutorial?: string | null;
