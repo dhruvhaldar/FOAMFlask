@@ -12,7 +12,7 @@
 [![pyvista](https://img.shields.io/badge/pyvista-0.46.4-5d3f3f)](https://docs.pyvista.org/)
 
 <p align="center">
-  <img style="vertical-align: middle;" src="static/icons/logo.svg" alt="FOAMFlask Logo" width="50" height="50"> <span style="font-family: 'Inter', sans-serif; font-size: 50px; line-height: 50px; vertical-align: middle;"><b>FOAMFlask</b></span>
+  <img src="static/icons/banner.svg" alt="FOAMFlask Banner" height="50" width="400">
 </p>
 
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
