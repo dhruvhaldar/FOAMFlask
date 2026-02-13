@@ -739,7 +739,12 @@ export function resetContourViewer() {
 }
 
 /**
- * Update range inputs based on selected scalar field
+ * Update UI range controls and the isovalue slider using stored statistics for the given scalar field.
+ *
+ * Updates the numeric min/max inputs, the formatted displayMin/displayMax text, reveals the scalar range card,
+ * and sets the isovalue slider's min, max, step, value, and display text when statistics for `fieldName` exist.
+ *
+ * @param fieldName - The scalar field key to read statistics from `currentFieldStats`; no action is taken if stats are missing
  */
 function updateRangeInputs(fieldName: string): void {
     if (!currentFieldStats || !currentFieldStats[fieldName]) return;

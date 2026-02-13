@@ -11,7 +11,14 @@ from pathlib import Path
 
 
 def run_coverage_analysis():
-    """Run coverage analysis on the project."""
+    """
+    Perform an end-to-end code coverage workflow: ensure coverage.py is installed, discover or create test files, run coverage for each test, and generate textual and HTML reports.
+    
+    This function may create a minimal test file named `test_basic_coverage.py` if no tests are found and may prompt to open the generated HTML report in a browser.
+    
+    Returns:
+        bool: `True` if the coverage workflow completed without a subprocess.CalledProcessError, `False` if a CalledProcessError occurred.
+    """
     
     print("=" * 60)
     print("CODE COVERAGE ANALYSIS")
@@ -160,7 +167,11 @@ def show_coverage_commands():
 
 
 def main():
-    """Main function."""
+    """
+    Run the FOAMFlask coverage analysis workflow as the script's entry point.
+    
+    Verifies the current working directory appears to be the FOAMFlask project root (by checking for app.py), executes the end-to-end coverage analysis, shows useful coverage commands if the analysis succeeds, and prints start/completion banners for user feedback.
+    """
     
     print("🎯 FOAMFlask Code Coverage Checker")
     
