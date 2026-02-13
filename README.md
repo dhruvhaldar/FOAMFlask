@@ -36,6 +36,9 @@
 
 ---
 
+## Screenshot (more Screenshots below)
+![FOAMFlask Geometry](Screenshots/geometry.png)
+
 ## <span style="color:blue">Stage 1 : Installation</span>
 
 You have two options: Download a pre-built binary (easiest) or build from source using the automated installer.
@@ -429,9 +432,15 @@ uv run pytest -k "test_name_pattern"
 
 ---
 
-## Screenshots
+## More Screenshots
 
-![FOAMFlask Geometry](docs/images/foamflask_geometry.png)
+![FOAMFlask Main](Screenshots/main.png)
+![FOAMFlask Geometry](Screenshots/geometry.png)
+![FOAMFlask Meshing](Screenshots/meshing.png)
+![FOAMFlask Mesh Visualizer](Screenshots/visualizer.png)
+![FOAMFlask Plots](Screenshots/plots.png)
+![FOAMFlask Solver](Screenshots/solver.png)
+![FOAMFlask Post-Processing](Screenshots/post-processing.png)
 
 ---
 
