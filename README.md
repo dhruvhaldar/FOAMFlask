@@ -32,7 +32,7 @@
 
 ---
 
-## Installation
+## <span style="color:blue">Stage 1 : Installation</span>
 
 You have two options: Download a pre-built binary (easiest) or build from source using the automated installer.
 
@@ -83,19 +83,21 @@ If you prefer to manage the environment yourself:
    uv sync
    ```
 
-### Run FOAMFlask (Frontend and Backend)
+## <span style="color:blue">Stage 2 : Run FOAMFlask (Frontend and Backend)</span>
 
+Windows
 ```powershell
 uv run app.py 2>&1 | Tee-Object -FilePath app.log
 ```
 
+Linux / macOS
 ```bash
 uv run app.py 2>&1 | tee app.log
 ```
 ```bash
 pkill -f "uv run app.py"; sleep 1; uv run app.py > app_output.log 2>&1 &
 ```
-## Usage
+## <span style="color:blue">Stage 3 : Usage</span>
 
 1. **Start the Application**:
    - If using the binary, just double-click it.
@@ -131,7 +133,7 @@ pkill -f "uv run app.py"; sleep 1; uv run app.py > app_output.log 2>&1 &
 
 ---
 
-## Development
+## <span style="color:blue">Stage 4 : Development</span>
 
 > [!NOTE]
 > This section is intended for developers who wish to contribute to or modify FOAMFlask.
@@ -305,7 +307,7 @@ On the first run, FOAMFlask performs several checks to ensure your environment i
 
 ---
 
-## IMPORTANT: Docker Configuration
+## <span style="color:red">IMPORTANT: Docker Configuration</span>
 
 The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux).
 
@@ -330,7 +332,7 @@ On startup, the application logs the listening address: `FOAMFlask listening on:
 
 ---
 
-## Testing
+## <span style="color:blue">Stage 5 : Testing</span>
 
 FOAMFlask includes a comprehensive test suite using pytest. The test suite includes unit tests, integration tests, and end-to-end tests for the application's core functionality.
 
