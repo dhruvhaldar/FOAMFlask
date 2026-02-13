@@ -43,4 +43,4 @@ if __name__ == "__main__":
     # Run tests
     test_simple_function()
     test_another_function()
-    print("✅ All tests passed!")
+    print("[v] All tests passed!")

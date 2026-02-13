@@ -22,14 +22,18 @@ def run_coverage_analysis():
         subprocess.run([sys.executable, "-m", "coverage", "--version"], 
                       capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("❌ coverage.py not found. Installing...")
+        print("[!] coverage.py not found. Installing...")
         subprocess.run(["uv", "add", "coverage"], check=True)
-        print("✅ coverage.py installed successfully!")
+        print("[v] coverage.py installed successfully!")
     
-    # Check if we have test files
-    test_files = list(Path(".").glob("**/test_*.py"))
+    # Check if we have test files in specific directories
+    test_dirs = ["tests", "misc_code"]
+    test_files = []
+    for d in test_dirs:
+        if os.path.exists(d):
+            test_files.extend([f for f in Path(d).glob("**/test_*.py") if ".venv" not in str(f)])
     if not test_files:
-        print("⚠️  No test files found (test_*.py)")
+        print("[!] No test files found (test_*.py)")
         print("Creating a basic test file...")
         
         # Create a basic test file
@@ -47,37 +51,43 @@ def test_imports():
 
 if __name__ == "__main__":
     test_imports()
-    print("✅ Basic test passed!")
+    print("[v] Basic test passed!")
 '''
         
         with open("test_basic_coverage.py", "w") as f:
             f.write(basic_test)
         
         test_files = ["test_basic_coverage.py"]
-        print("✅ Created test_basic_coverage.py")
+        print("[v] Created test_basic_coverage.py")
     
-    print(f"\n📊 Found {len(test_files)} test file(s):")
+    print(f"\n[i] Found {len(test_files)} test file(s):")
     for test_file in test_files:
         print(f"   - {test_file}")
     
     # Run coverage
-    print(f"\n🔄 Running coverage analysis...")
+    print(f"\n[i] Running coverage analysis...")
     
     try:
         # Run coverage on all test files
         for test_file in test_files:
             print(f"   Running: {test_file}")
+            # Use universal_newlines=True and capture_output=True
+            # We avoid text=True to handle encoding more manually if needed, 
+            # but we can also use errors='replace'
+            test_env = os.environ.copy()
+            test_env["PYTHONPATH"] = str(Path(".").resolve())
+            
             result = subprocess.run([
                 sys.executable, "-m", "coverage", "run", "-a", str(test_file)
-            ], capture_output=True, text=True)
+            ], capture_output=True, text=True, errors='replace', env=test_env)
             
             if result.returncode != 0:
-                print(f"   ❌ Error running {test_file}: {result.stderr}")
+                print(f"   [!] Error running {test_file}: {result.stderr}")
             else:
-                print(f"   ✅ {test_file} completed")
+                print(f"   [v] {test_file} completed")
         
         # Generate coverage report
-        print(f"\n📈 Generating coverage report...")
+        print(f"\n[i] Generating coverage report...")
         result = subprocess.run([
             sys.executable, "-m", "coverage", "report"
         ], capture_output=True, text=True)
@@ -87,7 +97,7 @@ if __name__ == "__main__":
             print("Warnings:", result.stderr)
         
         # Generate HTML report
-        print(f"\n🌐 Generating HTML coverage report...")
+        print(f"\n[i] Generating HTML coverage report...")
         result = subprocess.run([
             sys.executable, "-m", "coverage", "html"
         ], capture_output=True, text=True)
@@ -96,7 +106,7 @@ if __name__ == "__main__":
             html_dir = "htmlcov"
             html_index = os.path.join(html_dir, "index.html")
             
-            print(f"✅ HTML report generated: {html_index}")
+            print(f"[v] HTML report generated: {html_index}")
             
             # Ask if user wants to open the report
             try:
@@ -139,7 +149,7 @@ if __name__ == "__main__":
 
 def show_coverage_commands():
     """Show useful coverage commands."""
-    print(f"\n🛠️  Useful Coverage Commands:")
+    print(f"\n[i] Useful Coverage Commands:")
     print(f"   Run coverage:          python -m coverage run test_file.py")
     print(f"   Show report:           python -m coverage report")
     print(f"   HTML report:           python -m coverage html")
@@ -156,7 +166,7 @@ def main():
     
     # Check if we're in the right directory
     if not Path("app.py").exists():
-        print("❌ app.py not found. Please run from the FOAMFlask root directory.")
+        print("[!] app.py not found. Please run from the FOAMFlask root directory.")
         return
     
     # Run coverage analysis

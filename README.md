@@ -1,10 +1,13 @@
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-f5d7e3)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-GPLv3-red.svg)](https://opensource.org/licenses/GPL-3.0)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-f5d7e3)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-black)](https://www.typescriptlang.org/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
-[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-blue.svg)](https://pdoc3.readthedocs.io/)
+[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v12-yellow)](https://openfoam.org/)
+[![Docker](https://img.shields.io/badge/Docker-27.1.1-blue)](https://www.docker.com/)
+[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-magenta.svg)](https://pdoc3.readthedocs.io/)
+[![uv](https://img.shields.io/badge/uv-0.11.6-green.svg)](https://pdoc3.readthedocs.io/)
+[![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
 
 # FOAMFlask
 
