@@ -1,8 +1,8 @@
 import os
 
 # Configuration
-COLOR_START = "#b6f0ff"
-COLOR_END = "#ffb1b9"
+COLOR_START = "#06b6d4"
+COLOR_END = "#0e7490"
 OVERLAY_OPACITY = 0.1  # Bit darker overlay
 SHADOW_OPACITY = 0.3
 SHADOW_BLUR = 2

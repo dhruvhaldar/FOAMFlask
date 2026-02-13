@@ -6,9 +6,9 @@ width, height = 32, 32
 img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 d = ImageDraw.Draw(img)
 
-# Colors from CSS
-color_start = (182, 240, 255) # #b6f0ff
-color_end = (255, 177, 185)   # #ffb1b9
+# Colors from original design
+color_start = (30, 136, 229) # #1E88E5
+color_end = (13, 71, 161)    # #0D47A1 (Subtle dark blue gradient)
 
 # Draw vertical gradient
 for y in range(height):
