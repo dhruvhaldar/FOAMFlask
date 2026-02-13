@@ -1,13 +1,14 @@
 [![License](https://img.shields.io/badge/License-GPLv3-red.svg)](https://opensource.org/licenses/GPL-3.0)
 [![Python](https://img.shields.io/badge/Python-3.13%2B-f5d7e3)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-black)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6)](https://www.typescriptlang.org/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
 [![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v12-yellow)](https://openfoam.org/)
-[![Docker](https://img.shields.io/badge/Docker-27.1.1-blue)](https://www.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-27.1.1-1d63ed)](https://www.docker.com/)
 [![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-magenta.svg)](https://pdoc3.readthedocs.io/)
-[![uv](https://img.shields.io/badge/uv-0.11.6-green.svg)](https://pdoc3.readthedocs.io/)
+[![uv](https://img.shields.io/badge/uv-0.10.2-d7ff64.svg)](https://docs.astral.sh/uv/)
 [![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
+[![trame](https://img.shields.io/badge/trame-3.1.2-8bc392)](https://github.com/Kitware/trame)
 
 <p align="center">
   <img style="vertical-align: middle;" src="static/icons/logo.svg" alt="FOAMFlask Logo" width="50"> <span style="font-family: 'Inter', sans-serif;"><b>FOAMFlask</b></span>
