@@ -5,16 +5,20 @@ __pycache__/
 # Node
 node_modules/
 npm.log
+package-lock.json
 
 # Build artifacts
 static/js-build/
+*.html
 
 # Local configuration
 case_config.json
 /run_folder
 /tutorial_cases
-app.log
+*.log
 environments/
 .coverage
+htmlcov/
 playwright-report/
 test-results/
+misc_code/test_basic_coverage.py
