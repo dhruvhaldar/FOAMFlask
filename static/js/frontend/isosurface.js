@@ -1,7 +1,8 @@
 /**
  * Contour Visualization Module
  * Handles isosurface generation and 3D visualization using PyVista
- */
+ */ // Type definitions
+// Type definitions
 // Global state
 let currentContourData = null;
 let currentFieldStats = null;
@@ -9,8 +10,7 @@ let currentFieldStats = null;
  * Generate isosurface contours for the loaded mesh
  * @param options - Configuration options
  * @returns Promise that resolves when contours are generated
- */
-export async function generateContours(options = {}) {
+ */ export async function generateContours(options = {}) {
     const contourPlaceholder = document.getElementById('contourPlaceholder');
     const contourViewer = document.getElementById('contourViewer');
     // Default options
@@ -55,8 +55,7 @@ export async function generateContours(options = {}) {
         let selectedCaseDir = '';
         if (caseDir && typeof caseDir === 'object' && 'value' in caseDir) {
             selectedCaseDir = caseDir.value || '';
-        }
-        else if (typeof caseDir === 'string') {
+        } else if (typeof caseDir === 'string') {
             selectedCaseDir = caseDir;
         }
         // Try to get from the input field if still not available
@@ -77,8 +76,8 @@ export async function generateContours(options = {}) {
             // Check custom input if select is empty or "custom"
             const vtkFileBrowser = document.getElementById('vtkFileBrowser');
             if (vtkFileBrowser && vtkFileBrowser.files && vtkFileBrowser.files.length > 0) {
-                // For browser upload, we might handle it differently, but for now lets assume local path logic isn't used here 
-                // actually standard vtkFileSelect is what we use for server-side files
+            // For browser upload, we might handle it differently, but for now lets assume local path logic isn't used here 
+            // actually standard vtkFileSelect is what we use for server-side files
             }
             if (vtkFileSelect && vtkFileSelect.value) {
                 selectedVtkFilePath = vtkFileSelect.value;
@@ -96,12 +95,11 @@ export async function generateContours(options = {}) {
             const rangeMaxInput = document.getElementById('rangeMax');
             const rangeMin = rangeMinInput?.value ? parseFloat(rangeMinInput.value) : null;
             const rangeMax = rangeMaxInput?.value ? parseFloat(rangeMaxInput.value) : null;
-            if (rangeMin !== null &&
-                rangeMax !== null &&
-                !isNaN(rangeMin) &&
-                !isNaN(rangeMax) &&
-                rangeMin < rangeMax) {
-                range = [rangeMin, rangeMax];
+            if (rangeMin !== null && rangeMax !== null && !isNaN(rangeMin) && !isNaN(rangeMax) && rangeMin < rangeMax) {
+                range = [
+                    rangeMin,
+                    rangeMax
+                ];
                 console.log('[FOAMFlask] [generateContours] Using range from input fields:', range);
             }
         }
@@ -122,8 +120,7 @@ export async function generateContours(options = {}) {
         if (sliderContainer) {
             if (showIsovalueWidget) {
                 sliderContainer.classList.remove('hidden');
-            }
-            else {
+            } else {
                 sliderContainer.classList.add('hidden');
             }
         }
@@ -132,7 +129,9 @@ export async function generateContours(options = {}) {
         if (showIsovalueWidget) {
             const slider = document.getElementById('isovalueSlider');
             if (slider) {
-                isovalues = [parseFloat(slider.value)];
+                isovalues = [
+                    parseFloat(slider.value)
+                ];
             }
         }
         // Prepare request data
@@ -174,12 +173,10 @@ export async function generateContours(options = {}) {
         if (typeof showNotification === 'function') {
             showNotification('Contours generated successfully!', 'success');
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error('[FOAMFlask] [generateContours] Error:', error);
         handleContourError(contourPlaceholder, contourViewer, error);
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -190,8 +187,7 @@ export async function generateContours(options = {}) {
 /**
  * Load mesh metadata for contour configuration
  * @param vtkFilePath - Path to the VTK file
- */
-export async function loadContourMesh(vtkFilePath) {
+ */ export async function loadContourMesh(vtkFilePath) {
     if (!vtkFilePath) {
         if (typeof showNotification === 'function') {
             showNotification("Please select a VTK file first.", "warning");
@@ -232,7 +228,7 @@ export async function loadContourMesh(vtkFilePath) {
         if (scalarFieldSelect && meshInfo.point_arrays) {
             scalarFieldSelect.innerHTML = ''; // Clear existing
             // Add options
-            meshInfo.point_arrays.forEach((field) => {
+            meshInfo.point_arrays.forEach((field)=>{
                 const option = document.createElement('option');
                 option.value = field;
                 option.textContent = field;
@@ -242,8 +238,7 @@ export async function loadContourMesh(vtkFilePath) {
             // If U_Magnitude exists, select it by default, otherwise select first
             if (meshInfo.point_arrays.includes('U_Magnitude')) {
                 scalarFieldSelect.value = 'U_Magnitude';
-            }
-            else if (meshInfo.point_arrays.length > 0) {
+            } else if (meshInfo.point_arrays.length > 0) {
                 scalarFieldSelect.value = meshInfo.point_arrays[0];
             }
             // Setup listeners and update ranges for the initial selection
@@ -264,10 +259,9 @@ export async function loadContourMesh(vtkFilePath) {
         if (typeof showNotification === 'function') {
             showNotification("Mesh loaded for contour configuration!", "success");
         }
-        // Optionally clear ranges to suggest "Auto" or just leave them
-        // For now, let's not aggressively clear them unless requested
-    }
-    catch (error) {
+    // Optionally clear ranges to suggest "Auto" or just leave them
+    // For now, let's not aggressively clear them unless requested
+    } catch (error) {
         console.error('[FOAMFlask] [loadContourMesh] Error:', error);
         if (typeof showNotification === 'function') {
             const message = error instanceof Error ? error.message : String(error);
@@ -277,10 +271,8 @@ export async function loadContourMesh(vtkFilePath) {
 }
 /**
  * Show loading state in the viewer
- */
-function showLoadingState(container, message = 'Loading...') {
-    if (!container)
-        return;
+ */ function showLoadingState(container, message = 'Loading...') {
+    if (!container) return;
     container.innerHTML = `
         <div class="flex items-center justify-center h-full">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-600"></div>
@@ -295,16 +287,14 @@ function showLoadingState(container, message = 'Loading...') {
 }
 /**
  * Get selected tutorial from dropdown
- */
-function getTutorialFromSelect() {
+ */ function getTutorialFromSelect() {
     const tutorialSelect = document.getElementById('tutorialSelect');
     return tutorialSelect ? tutorialSelect.value : null;
 }
 /**
  * Fetch contours from the server
  * Send all data in the request body to avoid URL encoding issues with Windows paths
- */
-async function fetchContours(requestData) {
+ */ async function fetchContours(requestData) {
     const url = new URL('/api/contours/create', window.location.origin);
     console.log('[FOAMFlask] [fetchContours] URL:', url.toString());
     console.log('[FOAMFlask] [fetchContours] Origin:', window.location.origin);
@@ -347,8 +337,7 @@ async function fetchContours(requestData) {
             throw new Error(`Server returned ${response.status}: ${errorText}`);
         }
         return response;
-    }
-    catch (error) {
+    } catch (error) {
         console.error('[FOAMFlask] [fetchContours] Fetch failed:', error);
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
             console.error('[FOAMFlask] [fetchContours] Network error details:');
@@ -361,8 +350,7 @@ async function fetchContours(requestData) {
 }
 /**
  * Display the contour visualization in the viewer
- */
-function displayContourVisualization(container, content) {
+ */ function displayContourVisualization(container, content) {
     if (!container) {
         console.error('[FOAMFlask] [displayContourVisualization] Container not found');
         return;
@@ -391,8 +379,7 @@ function displayContourVisualization(container, content) {
             const finalUrl = url.toString();
             console.log('[FOAMFlask] [displayContourVisualization] Embedding Trame URL:', finalUrl);
             iframe.src = finalUrl;
-        }
-        else {
+        } else {
             console.warn('[FOAMFlask] [displayContourVisualization] Unexpected content format', content);
             container.innerHTML = `
                 <div class="p-4 text-red-600 bg-red-50 rounded-lg">
@@ -403,11 +390,10 @@ function displayContourVisualization(container, content) {
             return;
         }
         container.appendChild(iframe);
-        setTimeout(() => {
+        setTimeout(()=>{
             window.dispatchEvent(new Event('resize'));
         }, 500);
-    }
-    catch (error) {
+    } catch (error) {
         console.error('[FOAMFlask] [displayContourVisualization] Error:', error);
         if (container) {
             const message = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -422,12 +408,9 @@ function displayContourVisualization(container, content) {
 }
 /**
  * Handle errors during contour generation
- */
-function handleContourError(placeholder, viewer, error) {
-    if (placeholder)
-        placeholder.classList.remove('hidden');
-    if (viewer)
-        viewer.classList.add('hidden');
+ */ function handleContourError(placeholder, viewer, error) {
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (viewer) viewer.classList.add('hidden');
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     if (typeof showNotification === 'function') {
         // Sanitize message to avoid selector errors if it contains quotes
@@ -467,8 +450,7 @@ function handleContourError(placeholder, viewer, error) {
 }
 /**
  * Generate contours with custom parameters from UI controls
- */
-export async function generateContoursWithParams() {
+ */ export async function generateContoursWithParams() {
     try {
         const scalarFieldSelect = document.getElementById('scalarField');
         const numIsosurfacesInput = document.getElementById('numIsosurfaces');
@@ -505,8 +487,7 @@ export async function generateContoursWithParams() {
             numIsosurfaces,
             colorMap: document.getElementById('colorMap')?.value
         });
-    }
-    catch (error) {
+    } catch (error) {
         if (typeof showNotification === 'function') {
             const message = error instanceof Error ? error.message : String(error);
             showNotification(`Error: ${message}`, 'error');
@@ -515,8 +496,7 @@ export async function generateContoursWithParams() {
 }
 /**
  * Download contour visualization as image
- */
-export function downloadContourImage() {
+ */ export function downloadContourImage() {
     if (!currentContourData) {
         if (typeof showNotification === 'function') {
             showNotification('No contour visualization available to download', 'warning');
@@ -525,8 +505,7 @@ export function downloadContourImage() {
     }
     const contourViewer = document.getElementById('contourViewer');
     const iframe = document.getElementById('contourVisualizationFrame');
-    if (!contourViewer || !iframe || !iframe.contentDocument)
-        return;
+    if (!contourViewer || !iframe || !iframe.contentDocument) return;
     const canvas = iframe.contentDocument.querySelector('canvas');
     if (!canvas) {
         if (typeof showNotification === 'function') {
@@ -535,7 +514,7 @@ export function downloadContourImage() {
         return;
     }
     try {
-        canvas.toBlob((blob) => {
+        canvas.toBlob((blob)=>{
             if (!blob) {
                 if (typeof showNotification === 'function') {
                     showNotification('Failed to create image blob', 'error');
@@ -555,8 +534,7 @@ export function downloadContourImage() {
                 showNotification('Contour image downloaded successfully', 'success');
             }
         });
-    }
-    catch (error) {
+    } catch (error) {
         if (typeof showNotification === 'function') {
             showNotification('Failed to download contour image', 'error');
         }
@@ -564,8 +542,7 @@ export function downloadContourImage() {
 }
 /**
  * Export contour data as JSON
- */
-export function exportContourData() {
+ */ export function exportContourData() {
     if (!currentContourData) {
         if (typeof showNotification === 'function') {
             showNotification('No contour data available to export', 'warning');
@@ -573,7 +550,11 @@ export function exportContourData() {
         return;
     }
     const dataStr = JSON.stringify(currentContourData, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
+    const blob = new Blob([
+        dataStr
+    ], {
+        type: 'application/json'
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -588,12 +569,10 @@ export function exportContourData() {
 }
 /**
  * Reset contour viewer to initial state
- */
-export function resetContourViewer() {
+ */ export function resetContourViewer() {
     const contourPlaceholder = document.getElementById('contourPlaceholder');
     const contourViewer = document.getElementById('contourViewer');
-    if (contourPlaceholder)
-        contourPlaceholder.classList.remove('hidden');
+    if (contourPlaceholder) contourPlaceholder.classList.remove('hidden');
     if (contourViewer) {
         contourViewer.classList.add('hidden');
         contourViewer.innerHTML = '';
@@ -601,11 +580,12 @@ export function resetContourViewer() {
     currentContourData = null;
 }
 /**
- * Update range inputs based on selected scalar field
- */
-function updateRangeInputs(fieldName) {
-    if (!currentFieldStats || !currentFieldStats[fieldName])
-        return;
+ * Update UI range controls and the isovalue slider using stored statistics for the given scalar field.
+ * Updates the numeric min/max inputs, the formatted displayMin/displayMax text, reveals the scalar range card,
+ * and sets the isovalue slider's min, max, step, value, and display text when statistics for `fieldName` exist.
+ * @param fieldName - The scalar field key to read statistics from `currentFieldStats`; no action is taken if stats are missing
+ */ function updateRangeInputs(fieldName) {
+    if (!currentFieldStats || !currentFieldStats[fieldName]) return;
     const stats = currentFieldStats[fieldName];
     // Handle both vector (magnitude_stats) and scalar (direct stats)
     const min = stats.type === 'vector' ? stats.magnitude_stats?.min : stats.min;
@@ -616,16 +596,11 @@ function updateRangeInputs(fieldName) {
         const displayMin = document.getElementById('displayMin');
         const displayMax = document.getElementById('displayMax');
         const scalarRangeCard = document.getElementById('scalarRangeCard');
-        if (minInput)
-            minInput.value = min.toString();
-        if (maxInput)
-            maxInput.value = max.toString();
-        if (displayMin)
-            displayMin.textContent = parseFloat(min).toFixed(4);
-        if (displayMax)
-            displayMax.textContent = parseFloat(max).toFixed(4);
-        if (scalarRangeCard)
-            scalarRangeCard.classList.remove('hidden');
+        if (minInput) minInput.value = min.toString();
+        if (maxInput) maxInput.value = max.toString();
+        if (displayMin) displayMin.textContent = parseFloat(min).toFixed(4);
+        if (displayMax) displayMax.textContent = parseFloat(max).toFixed(4);
+        if (scalarRangeCard) scalarRangeCard.classList.remove('hidden');
         // Update slider as well
         const slider = document.getElementById('isovalueSlider');
         const display = document.getElementById('isovalueDisplay');
@@ -635,15 +610,13 @@ function updateRangeInputs(fieldName) {
             slider.step = ((max - min) / 100).toString();
             // Keep relative position or reset to center? Reset to center for now.
             slider.value = ((max + min) / 2).toString();
-            if (display)
-                display.textContent = parseFloat(slider.value).toFixed(2);
+            if (display) display.textContent = parseFloat(slider.value).toFixed(2);
         }
     }
 }
 /**
  * Reset range inputs to global min/max for current field
- */
-window.resetScalarRange = () => {
+ */ window.resetScalarRange = ()=>{
     const scalarFieldSelect = document.getElementById('scalarField');
     if (scalarFieldSelect && scalarFieldSelect.value) {
         updateRangeInputs(scalarFieldSelect.value);
@@ -654,14 +627,13 @@ window.resetScalarRange = () => {
 };
 /**
  * Setup listeners for scalar field changes
- */
-function setupScalarFieldListeners() {
+ */ function setupScalarFieldListeners() {
     const scalarFieldSelect = document.getElementById('scalarField');
     if (scalarFieldSelect) {
         // Remove old listener to avoid duplicates if called multiple times?
         // Ideally we should use a named function or check if attached.
         // For simplicity, we'll just set onchange (replacing old one)
-        scalarFieldSelect.onchange = () => {
+        scalarFieldSelect.onchange = ()=>{
             updateRangeInputs(scalarFieldSelect.value);
         };
     }
@@ -669,24 +641,29 @@ function setupScalarFieldListeners() {
     const slider = document.getElementById('isovalueSlider');
     const display = document.getElementById('isovalueDisplay');
     if (slider && display) {
-        slider.oninput = () => {
+        slider.oninput = ()=>{
             const val = parseFloat(slider.value);
             display.textContent = val.toFixed(2);
             // Send update to Trame if active
             const iframe = document.getElementById('contourVisualizationFrame');
             if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: 'set_isovalue', value: val }, '*');
+                iframe.contentWindow.postMessage({
+                    type: 'set_isovalue',
+                    value: val
+                }, '*');
             }
         };
-        slider.onchange = () => {
+        slider.onchange = ()=>{
             const val = parseFloat(slider.value);
             display.textContent = val.toFixed(2);
             // Final update on release
             const iframe = document.getElementById('contourVisualizationFrame');
             if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: 'set_isovalue', value: val }, '*');
-            }
-            else {
+                iframe.contentWindow.postMessage({
+                    type: 'set_isovalue',
+                    value: val
+                }, '*');
+            } else {
                 // Fallback to full regeneration if not interactive or iframe missing
                 // (Only if widget is checked and we are not in a synced state)
                 const checkbox = document.getElementById('showIsovalueWidget');
@@ -699,24 +676,21 @@ function setupScalarFieldListeners() {
 }
 /**
  * Initialize the isovalue widget logic (event listeners)
- */
-export function initIsovalueWidget() {
+ */ export function initIsovalueWidget() {
     const showIsovalueWidgetCheckbox = document.getElementById('showIsovalueWidget');
     const sliderContainer = document.getElementById('isovalueSliderContainer');
     if (showIsovalueWidgetCheckbox && sliderContainer) {
         // Initial state
         if (showIsovalueWidgetCheckbox.checked) {
             sliderContainer.classList.remove('hidden');
-        }
-        else {
+        } else {
             sliderContainer.classList.add('hidden');
         }
         // Event listener
-        showIsovalueWidgetCheckbox.addEventListener('change', () => {
+        showIsovalueWidgetCheckbox.addEventListener('change', ()=>{
             if (showIsovalueWidgetCheckbox.checked) {
                 sliderContainer.classList.remove('hidden');
-            }
-            else {
+            } else {
                 sliderContainer.classList.add('hidden');
             }
         });
@@ -727,9 +701,9 @@ export function initIsovalueWidget() {
 if (typeof window !== 'undefined') {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initIsovalueWidget);
-    }
-    else {
+    } else {
         initIsovalueWidget();
     }
 }
+
 //# sourceMappingURL=isosurface.js.map

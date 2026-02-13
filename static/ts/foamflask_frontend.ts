@@ -1,5 +1,9 @@
 /**
- * FOAMFlask Frontend JavaScript
+ * FOAMFlask Frontend * 
+
+ * Background Color Palette: https://coolors.co/gradient-maker/b6f0ff-ffb1b9?position=0,100&opacity=100,100&type=linear&rotation=180
+
+ * When making changes to the frontend, always edit foamflask_frontend.ts and build foamflask_frontend.js using `npm run build`
  */
 
 import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";

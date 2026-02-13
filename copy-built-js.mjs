@@ -28,15 +28,15 @@ function removePlotlyImport(filePath) {
 }
 
 try {
-  const foamflaskSrc = `${__dirname}/static/js-build/foamflask_frontend.js`;
+  const foamflaskSrc = `${__dirname}/static/js-build/static/ts/foamflask_frontend.js`;
   const foamflaskDest = `${__dirname}/static/js/foamflask_frontend.js`;
 
-  const isoSrc = `${__dirname}/static/js-build/frontend/isosurface.js`;
+  const isoSrc = `${__dirname}/static/js-build/static/ts/frontend/isosurface.js`;
   const isoDest = `${__dirname}/static/js/frontend/isosurface.js`;
 
   copy(foamflaskSrc, foamflaskDest);
   copy(isoSrc, isoDest);
-  
+
   // Remove Plotly import from the main frontend file
   removePlotlyImport(foamflaskDest);
 } catch (err) {
