@@ -60,6 +60,11 @@ chmod +x install.sh
 
 </details>
 
+> [!TIP]
+> After running the automated installer, if the `uv` command is not recognized, you may need to **restart your terminal** or add the local bin directory to your PATH:
+> - **Windows**: `$env:USERPROFILE\.local\bin`
+> - **Linux/macOS**: `~/.local/bin`
+
 ### Option 2: Manual Installation (Developers)
 
 If you prefer to manage the environment yourself:
@@ -72,8 +77,7 @@ If you prefer to manage the environment yourself:
    ```
 3. **Install Backend**:
    ```bash
-   uv venv
-   uv pip install -r requirements.txt
+   uv sync
    ```
 
 ### Run FOAMFlask (Frontend and Backend)
@@ -136,9 +140,7 @@ FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
 ├── package.json # Node.js dependencies and build scripts
-├── tsconfig.json # TypeScript configuration
 ├── copy-built-js.mjs # Custom build script
-├── requirements.txt # Python dependencies
 ├── static/
 │ ├── html/
 │ │ └── foamflask_frontend.html # HTML template
@@ -185,8 +187,8 @@ FOAMFlask/
 2. **Compile to JavaScript**:
    You must compile the TypeScript to JavaScript for the browser to run it.
    ```bash
-   npm run build        # One-time build
-   npm run build:watch  # Wrapper to watch for changes
+   pnpm run build        # One-time build (uses SWC for speed)
+   pnpm run build:watch  # Watch for changes (uses SWC)
    ```
 3. **Run the backend** (see Usage section) and refresh your browser.
 
@@ -214,7 +216,7 @@ This project is built with robustness and simplicity in mind, avoiding heavy fro
   - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
 - **Frontend**:
-  - **TypeScript**: For type-safe, maintainable client-side code.
+  - **TypeScript / SWC**: For type-safe code and ultra-fast compilation (using SWC).
   - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
   - **TailwindCSS**: Utility-first CSS framework for styling.
   - **Plotly.js**: For responsive, interactive charts (using data served by Flask endpoints).
@@ -333,9 +335,7 @@ FOAMFlask includes a comprehensive test suite using pytest. The test suite inclu
 
 1. **Install test dependencies** (if not already installed):
 
-   ```bash
-   uv pip install -r requirements.txt
-   ```
+   uv sync
 
 2. **Run all tests** with coverage:
 

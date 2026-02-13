@@ -23,7 +23,7 @@ def run_coverage_analysis():
                       capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("❌ coverage.py not found. Installing...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "coverage"], check=True)
+        subprocess.run(["uv", "add", "coverage"], check=True)
         print("✅ coverage.py installed successfully!")
     
     # Check if we have test files

@@ -35,9 +35,9 @@ else
     echo -e "${YELLOW}Python 3 not found. Attempting install...${NC}"
     if [ "$MACHINE" == "Linux" ]; then
         if check_cmd apt-get; then
-            sudo apt-get update && sudo apt-get install -y python3 python3-venv python3-pip
+            sudo apt-get update && sudo apt-get install -y python3 python3-venv
         elif check_cmd dnf; then
-            sudo dnf install -y python3 python3-pip
+            sudo dnf install -y python3
         else
             echo -e "${RED}Could not install Python 3. Please install manually.${NC}"
             exit 1
@@ -112,13 +112,13 @@ uv venv
 echo -e "${GREEN}Created virtual environment with uv${NC}"
 
 echo "Installing Python dependencies with uv..."
-uv pip install -r requirements.txt
+uv sync
 
 # Install Rust Accelerator
 if [ -d "backend/accelerator" ]; then
     echo -e "${BLUE}Building Rust Accelerator...${NC}"
     if check_cmd cargo; then
-        uv pip install ./backend/accelerator
+        uv add ./backend/accelerator
         echo -e "${GREEN}✓ Rust Accelerator installed${NC}"
     else
         echo -e "${YELLOW}Warning: Cargo not found. Rust accelerator will be skipped (slower performance).${NC}"

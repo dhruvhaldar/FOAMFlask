@@ -84,13 +84,13 @@ uv venv
 Write-Host "Created virtual environment with uv" -ForegroundColor Green
 
 Write-Host "Installing Python dependencies with uv..."
-uv pip install -r requirements.txt
+uv sync
 
 # Install Rust Accelerator
 if (Test-Path "backend/accelerator") {
     Write-Host "Building Rust Accelerator..." -ForegroundColor Cyan
     if (Get-Command cargo -ErrorAction SilentlyContinue) {
-        uv pip install ./backend/accelerator
+        uv add ./backend/accelerator
         Write-Host "✓ Rust Accelerator installed" -ForegroundColor Green
     } else {
         Write-Host "Warning: Cargo not found. Rust accelerator will be skipped." -ForegroundColor Yellow
