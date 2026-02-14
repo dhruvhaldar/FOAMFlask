@@ -10,6 +10,12 @@ def client():
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["ENABLE_CSRF"] = False
+    app.config["ENABLE_RATE_LIMIT"] = False
+
+    with app.app_context():
+        # Dispose of old engine to ensure new config takes effect
+        db.engine.dispose()
+        db.create_all()
 
     with app.test_client() as client:
         with app.app_context():
@@ -97,6 +103,23 @@ def test_simulation_run_failure(mock_get_docker_client, client):
                 run = db.session.execute(db.select(SimulationRun)).scalar_one()
                 assert run.status == "Failed"
                 assert run.end_time is not None
+
+def test_long_case_name(client):
+    """Test that long case names are supported."""
+    long_path = "/" + "a" * 250 + "/case"
+
+    with app.app_context():
+        run = SimulationRun(
+            case_name=long_path,
+            tutorial="tut",
+            command="cmd",
+            status="Pending"
+        )
+        db.session.add(run)
+        db.session.commit()
+
+        saved_run = db.session.execute(db.select(SimulationRun)).scalar_one()
+        assert saved_run.case_name == long_path
 
 def test_api_list_runs(client):
     """Test the API endpoint for listing runs."""

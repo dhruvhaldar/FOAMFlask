@@ -15,7 +15,7 @@ from functools import wraps, lru_cache
 import email.utils
 from queue import Queue, Empty
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Third-party imports
 import docker
@@ -68,11 +68,11 @@ db = SQLAlchemy(app)
 
 class SimulationRun(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    case_name = db.Column(db.String(100), nullable=False)
+    case_name = db.Column(db.Text, nullable=False)
     tutorial = db.Column(db.String(200), nullable=False)
     command = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="Pending")
-    start_time = db.Column(db.DateTime, default=datetime.utcnow)
+    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     end_time = db.Column(db.DateTime, nullable=True)
     execution_duration = db.Column(db.Float, nullable=True) # in seconds
     log_file_path = db.Column(db.String(255), nullable=True)
@@ -1494,7 +1494,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             tutorial=tutorial,
             command=command,
             status="Running",
-            start_time=datetime.utcnow()
+            start_time=datetime.now(timezone.utc)
         )
         db.session.add(new_run)
         db.session.commit()
@@ -1657,7 +1657,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                         run = db.session.get(SimulationRun, run_id)
                         if run:
                             run.status = status
-                            run.end_time = datetime.utcnow()
+                            run.end_time = datetime.now(timezone.utc)
                             run.execution_duration = duration
                             if error_msg:
                                 # Append error to log path for now, or just leave it.
