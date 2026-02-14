@@ -91,3 +91,19 @@ def test_dynamic_field_discovery(tmp_path):
     assert "CustomField" in residuals
     assert residuals["CustomField"] == [0.5]
     assert residuals["time"] == [1.0]
+
+def test_tab_separated_residuals(tmp_path):
+    log_file = tmp_path / "log.foamRun"
+    # Note the tab after "Solving for"
+    content = (
+        b"Time = 1\n"
+        b"Solving for\tUx, Initial residual = 0.5, Final residual = 0.05, No Iterations 1\n"
+    )
+    log_file.write_bytes(content)
+
+    parser = OpenFOAMFieldParser(tmp_path)
+    residuals = parser.get_residuals_from_log()
+
+    assert "Ux" in residuals
+    assert residuals["Ux"] == [0.5]
+    assert residuals["time"] == [1.0]
