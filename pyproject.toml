@@ -132,3 +132,8 @@ dependencies = [
     "xyzservices==2025.10.0",
     "yarl==1.22.0",
 ]
+
+[dependency-groups]
+dev = [
+    "playwright>=1.58.0",
+]
