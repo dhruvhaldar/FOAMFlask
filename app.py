@@ -15,7 +15,7 @@ from functools import wraps, lru_cache
 import email.utils
 from queue import Queue, Empty
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Third-party imports
 import docker
@@ -68,11 +68,11 @@ db = SQLAlchemy(app)
 
 class SimulationRun(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    case_name = db.Column(db.String(100), nullable=False)
+    case_name = db.Column(db.Text, nullable=False)
     tutorial = db.Column(db.String(200), nullable=False)
     command = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="Pending")
-    start_time = db.Column(db.DateTime, default=datetime.utcnow)
+    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     end_time = db.Column(db.DateTime, nullable=True)
     execution_duration = db.Column(db.Float, nullable=True) # in seconds
     log_file_path = db.Column(db.String(255), nullable=True)
@@ -1424,6 +1424,32 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
                 logger.debug(f"[FOAMFlask] Error removing container: {e}")
 
 
+@app.route("/api/runs", methods=["GET"])
+def api_list_runs() -> Response:
+    """Get list of simulation runs."""
+    try:
+        # Use simple select query compatible with SQLAlchemy 2.0
+        stmt = db.select(SimulationRun).order_by(SimulationRun.start_time.desc())
+        runs = db.session.execute(stmt).scalars().all()
+
+        runs_data = []
+        for run in runs:
+            runs_data.append({
+                "id": run.id,
+                "case_name": run.case_name,
+                "tutorial": run.tutorial,
+                "command": run.command,
+                "status": run.status,
+                "start_time": run.start_time.isoformat() if run.start_time else None,
+                "end_time": run.end_time.isoformat() if run.end_time else None,
+                "execution_duration": run.execution_duration
+            })
+
+        return fast_jsonify({"runs": runs_data})
+    except Exception as e:
+        logger.error(f"Error fetching runs: {e}")
+        return fast_jsonify({"error": str(e)}), 500
+
 @app.route("/run", methods=["POST"])
 @rate_limit(limit=5, window=60)
 def run_case() -> Union[Response, Tuple[Dict, int]]:
@@ -1468,7 +1494,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
             tutorial=tutorial,
             command=command,
             status="Running",
-            start_time=datetime.utcnow()
+            start_time=datetime.now(timezone.utc)
         )
         db.session.add(new_run)
         db.session.commit()
@@ -1631,7 +1657,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                         run = db.session.get(SimulationRun, run_id)
                         if run:
                             run.status = status
-                            run.end_time = datetime.utcnow()
+                            run.end_time = datetime.now(timezone.utc)
                             run.execution_duration = duration
                             if error_msg:
                                 # Append error to log path for now, or just leave it.

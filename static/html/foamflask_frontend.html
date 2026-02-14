@@ -1250,6 +1250,35 @@
         </div>
       </div>
 
+      <!-- Run History -->
+      <div class="glass-panel rounded-lg overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+          <h3 class="text-sm font-semibold text-gray-900">Run History</h3>
+          <button onclick="fetchRunHistory()" class="text-cyan-600 hover:text-cyan-800 text-xs font-medium focus:outline-none">
+            Refresh
+          </button>
+        </div>
+        <div class="overflow-x-auto max-h-48">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Command</th>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+              </tr>
+            </thead>
+            <tbody id="runHistoryList" class="bg-white divide-y divide-gray-200">
+              <!-- Populated by JS -->
+              <tr>
+                <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">Loading history...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Console Log -->
       <div class="flex flex-col relative group">
         <div class="flex justify-between items-center mb-2">
