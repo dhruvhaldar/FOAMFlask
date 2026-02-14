@@ -47,3 +47,7 @@
 **Learning:** Backend expansion of parsed data (e.g., adding more residual fields) is ineffective if the frontend visualization logic uses a hardcoded whitelist of fields. This creates a "silent data loss" scenario where the API returns data that the UI simply ignores.
 **Action:** When expanding backend data structures, always audit the corresponding frontend interfaces and rendering loops. Use dynamic keys where possible, or ensure whitelists are synchronized across the stack.
 
+
+## 2026-05-24 - [Keyboard Navigation Shortcuts]
+**Learning:** `accesskey` attribute provides native keyboard shortcuts without custom JS listeners, but discoverability relies on tooltips or visual hints. Using standard modifier keys (Alt+Shift+Key) is browser-dependent, so "AccessKey" in tooltip is a neutral hint.
+**Action:** Use `accesskey` for primary navigation elements to empower power users and improve accessibility.
