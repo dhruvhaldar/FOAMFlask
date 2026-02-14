@@ -318,11 +318,13 @@ On the first run, FOAMFlask performs several checks to ensure your environment i
 
 The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux).
 
-> [!CAUTION] > **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
+> [!CAUTION]
+> **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
 > The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
 > Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
-> [!NOTE] > **Security Suppression**: You may see `# nosec B108` comments in the code near these paths. This is required to suppress Bandit security warnings because `/tmp` is a hardcoded path, which is flagged by default but is safe and intentional in this Docker container context.
+> [!NOTE]
+>  **Security Suppression**: You may see `# nosec B108` comments in the code near these paths. This is required to suppress Bandit security warnings because `/tmp` is a hardcoded path, which is flagged by default but is safe and intentional in this Docker container context.
 
 ### Network Binding
 
@@ -335,7 +337,8 @@ To change this behavior (e.g., for local development security), you can set the 
 
 On startup, the application logs the listening address: `FOAMFlask listening on: {host}:{port}`
 
-> [!NOTE] > **Security Suppression**: You may see `# nosec B104` in `app.py`. This suppresses the Bandit warning for binding to all interfaces, which is intentional for the containerized deployment strategy.
+> [!NOTE]
+> **Security Suppression**: You may see `# nosec B104` in `app.py`. This suppresses the Bandit warning for binding to all interfaces, which is intentional for the containerized deployment strategy.
 
 ---
 
