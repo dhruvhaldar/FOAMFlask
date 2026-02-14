@@ -72,6 +72,8 @@ RESIDUAL_REGEX_BYTES = re.compile(rb"Solving for\s+([\w_]+).*Initial residual\s*
 
 # ⚡ Bolt Optimization: Tokens for manual parsing (~40% faster than regex)
 SOLVING_FOR_TOKEN = b"Solving for "
+# ⚡ Bolt Optimization: Shorter token for fast pre-filtering
+SOLVING_FOR_PREFIX = b"Solving for"
 INITIAL_RESIDUAL_TOKEN = b"Initial residual ="
 
 # ⚡ Bolt Optimization: Pre-compute translation table for vector parsing
@@ -1037,14 +1039,24 @@ class OpenFOAMFieldParser:
                             # Optimized residual matching (on bytes)
                             # Optimization: Check if we have any time steps first (in global or local cache)
                             if residuals["time"] or chunk_residuals["time"]:
+                                # ⚡ Bolt Optimization: Fast pre-check
+                                # "Solving for" is mandatory. Filter out non-matching lines (90%+).
+                                idx = line.find(SOLVING_FOR_PREFIX)
+                                if idx == -1:
+                                    new_offset += line_len
+                                    continue
+
                                 # ⚡ Bolt Optimization: Manual parsing (~40% faster than regex)
-                                # Try fast manual path first for standard OpenFOAM logs
-                                idx = line.find(SOLVING_FOR_TOKEN)
+                                # Try fast manual path first for standard OpenFOAM logs (space separated)
                                 found = False
-                                if idx != -1:
+
+                                # Check if followed by space (ASCII 32)
+                                # Ensure we don't go out of bounds
+                                if len(line) > idx + 11 and line[idx+11] == 32:
                                     try:
                                         # Parse field name
-                                        field_start = idx + len(SOLVING_FOR_TOKEN)
+                                        # field starts after "Solving for " (idx + 12)
+                                        field_start = idx + 12
                                         res_idx = line.find(INITIAL_RESIDUAL_TOKEN, field_start)
                                         if res_idx != -1:
                                             # Field is between field_start and res_idx, likely followed by comma
