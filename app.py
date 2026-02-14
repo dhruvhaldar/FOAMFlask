@@ -1424,6 +1424,32 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
                 logger.debug(f"[FOAMFlask] Error removing container: {e}")
 
 
+@app.route("/api/runs", methods=["GET"])
+def api_list_runs() -> Response:
+    """Get list of simulation runs."""
+    try:
+        # Use simple select query compatible with SQLAlchemy 2.0
+        stmt = db.select(SimulationRun).order_by(SimulationRun.start_time.desc())
+        runs = db.session.execute(stmt).scalars().all()
+
+        runs_data = []
+        for run in runs:
+            runs_data.append({
+                "id": run.id,
+                "case_name": run.case_name,
+                "tutorial": run.tutorial,
+                "command": run.command,
+                "status": run.status,
+                "start_time": run.start_time.isoformat() if run.start_time else None,
+                "end_time": run.end_time.isoformat() if run.end_time else None,
+                "execution_duration": run.execution_duration
+            })
+
+        return fast_jsonify({"runs": runs_data})
+    except Exception as e:
+        logger.error(f"Error fetching runs: {e}")
+        return fast_jsonify({"error": str(e)}), 500
+
 @app.route("/run", methods=["POST"])
 @rate_limit(limit=5, window=60)
 def run_case() -> Union[Response, Tuple[Dict, int]]:

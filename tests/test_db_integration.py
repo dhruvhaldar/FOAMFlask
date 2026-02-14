@@ -97,3 +97,47 @@ def test_simulation_run_failure(mock_get_docker_client, client):
                 run = db.session.execute(db.select(SimulationRun)).scalar_one()
                 assert run.status == "Failed"
                 assert run.end_time is not None
+
+def test_api_list_runs(client):
+    """Test the API endpoint for listing runs."""
+
+    # Create some dummy runs
+    with app.app_context():
+        run1 = SimulationRun(
+            case_name="case1",
+            tutorial="tut1",
+            command="cmd1",
+            status="Completed",
+            start_time=datetime.utcnow() - timedelta(minutes=10),
+            end_time=datetime.utcnow() - timedelta(minutes=5),
+            execution_duration=300.0
+        )
+        run2 = SimulationRun(
+            case_name="case2",
+            tutorial="tut2",
+            command="cmd2",
+            status="Running",
+            start_time=datetime.utcnow()
+        )
+        db.session.add(run1)
+        db.session.add(run2)
+        db.session.commit()
+
+    # Fetch from API
+    response = client.get("/api/runs")
+    assert response.status_code == 200
+    data = response.json
+
+    assert "runs" in data
+    assert len(data["runs"]) == 2
+
+    # Check ordering (descending start_time)
+    assert data["runs"][0]["case_name"] == "case2"
+    assert data["runs"][1]["case_name"] == "case1"
+
+    # Check fields
+    r1 = data["runs"][1]
+    assert r1["status"] == "Completed"
+    assert r1["execution_duration"] == 300.0
+    assert r1["start_time"] is not None
+    assert r1["end_time"] is not None
