@@ -1,3 +1,10 @@
+/**
+ * @file copy-built-js.mjs
+ * @description Post-build script to copy compiled JavaScript files from the temporary build directory (js-build) 
+ * to their final locations in the static directory. It also performs post-processing such as removing 
+ * Plotly imports to prevent bundle size issues in the browser.
+ */
+
 import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -5,16 +12,31 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * Ensures a directory exists by creating it recursively if necessary.
+ * @param {string} dir - The directory path to check/create.
+ */
 function ensureDir(dir) {
   mkdirSync(dir, { recursive: true });
 }
 
+/**
+ * Copies a file from source to destination, ensuring the destination directory exists.
+ * @param {string} src - The source file path.
+ * @param {string} dest - The destination file path.
+ */
 function copy(src, dest) {
   ensureDir(dirname(dest));
   copyFileSync(src, dest);
   console.log(`Copied ${src} -> ${dest}`);
 }
 
+/**
+ * Strips 'plotly.js' imports from a JavaScript file.
+ * This is used because Plotly is typically loaded via CDN or handled differently in the frontend 
+ * to avoid large bundle sizes and compilation complexities.
+ * @param {string} filePath - The path to the JavaScript file to process.
+ */
 function removePlotlyImport(filePath) {
   try {
     let content = readFileSync(filePath, 'utf8');
@@ -28,15 +50,15 @@ function removePlotlyImport(filePath) {
 }
 
 try {
-  const foamflaskSrc = `${__dirname}/static/js-build/foamflask_frontend.js`;
+  const foamflaskSrc = `${__dirname}/static/js-build/static/ts/foamflask_frontend.js`;
   const foamflaskDest = `${__dirname}/static/js/foamflask_frontend.js`;
 
-  const isoSrc = `${__dirname}/static/js-build/frontend/isosurface.js`;
+  const isoSrc = `${__dirname}/static/js-build/static/ts/frontend/isosurface.js`;
   const isoDest = `${__dirname}/static/js/frontend/isosurface.js`;
 
   copy(foamflaskSrc, foamflaskDest);
   copy(isoSrc, isoDest);
-  
+
   // Remove Plotly import from the main frontend file
   removePlotlyImport(foamflaskDest);
 } catch (err) {

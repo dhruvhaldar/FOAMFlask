@@ -1,12 +1,19 @@
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-f5d7e3)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-GPLv3-red.svg)](https://opensource.org/licenses/GPL-3.0)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-f5d7e3)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.2-cyan)](https://flask.palletsprojects.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6)](https://www.typescriptlang.org/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-3.1.6-white)](https://tailwindcss.com/)
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-2506-green)](https://openfoam.org/)
-[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-blue.svg)](https://pdoc3.readthedocs.io/)
+[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-v12-yellow)](https://openfoam.org/)
+[![Docker](https://img.shields.io/badge/Docker-27.1.1-1d63ed)](https://www.docker.com/)
+[![pydoc3](https://img.shields.io/badge/pydoc3-0.11.6-magenta.svg)](https://pdoc3.readthedocs.io/)
+[![uv](https://img.shields.io/badge/uv-0.10.2-d7ff64.svg)](https://docs.astral.sh/uv/)
+[![swc](https://img.shields.io/badge/swc-1.5.11-orange)](https://swc.rs/)
+[![trame](https://img.shields.io/badge/trame-3.1.2-8bc392)](https://github.com/Kitware/trame)
+[![pyvista](https://img.shields.io/badge/pyvista-0.46.4-5d3f3f)](https://docs.pyvista.org/)
 
-# FOAMFlask
+<p align="center">
+  <img src="static/icons/banner.svg" alt="FOAMFlask Banner" height="50" width="500">
+</p>
 
 **FOAMFlask** is an attempt to make a yet another lightweight web-based GUI for managing and running **OpenFOAM** tutorials and simulations. It allows users to easily select a tutorial, set a case directory, and execute OpenFOAM commands directly from a browser. Since this is targeted for beginners, the documentation has been kept as extensive as possible.
 
@@ -29,7 +36,10 @@
 
 ---
 
-## Installation
+## Screenshot (more Screenshots below)
+![FOAMFlask Geometry](Screenshots/geometry.png)
+
+## <span style="color:blue">Stage 1 : Installation</span>
 
 You have two options: Download a pre-built binary (easiest) or build from source using the automated installer.
 
@@ -60,6 +70,11 @@ chmod +x install.sh
 
 </details>
 
+> [!TIP]
+> After running the automated installer, if the `uv` command is not recognized, you may need to **restart your terminal** or add the local bin directory to your PATH:
+> - **Windows**: `$env:USERPROFILE\.local\bin`
+> - **Linux/macOS**: `~/.local/bin`
+
 ### Option 2: Manual Installation (Developers)
 
 If you prefer to manage the environment yourself:
@@ -72,28 +87,28 @@ If you prefer to manage the environment yourself:
    ```
 3. **Install Backend**:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # or .\venv\Scripts\activate on Windows
-   pip install -r requirements.txt
+   uv sync
    ```
 
-### Run FOAMFlask (Frontend and Backend)
+## <span style="color:blue">Stage 2 : Run FOAMFlask (Frontend and Backend)</span>
 
+Windows
 ```powershell
-.\environments\my-python313-venv-win\Scripts\python.exe -m app 2>&1 | Tee-Object -FilePath app.log
+uv run app.py 2>&1 | Tee-Object -FilePath app.log
 ```
 
+Linux / macOS
 ```bash
-./environments/my-python313-venv-linux/bin/python -m app 2>&1 | tee app.log
+uv run app.py 2>&1 | tee app.log
 ```
 ```bash
-pkill -f "python -m app"; sleep 1; ./environments/my-python313-venv-linux/bin/python -m app > app_output.log 2>&1 &
+pkill -f "uv run app.py"; sleep 1; uv run app.py > app_output.log 2>&1 &
 ```
-## Usage
+## <span style="color:blue">Stage 3 : Usage</span>
 
 1. **Start the Application**:
    - If using the binary, just double-click it.
-   - If using source, run `python app.py`.
+   - If using source, run `uv run app.py`.
 
 2. **Access the web interface**:
    Open your browser and navigate to `http://localhost:5000`.
@@ -125,7 +140,7 @@ pkill -f "python -m app"; sleep 1; ./environments/my-python313-venv-linux/bin/py
 
 ---
 
-## Development
+## <span style="color:blue">Stage 4 : Development</span>
 
 > [!NOTE]
 > This section is intended for developers who wish to contribute to or modify FOAMFlask.
@@ -137,9 +152,7 @@ FOAMFlask/
 ├── app.py # Main Flask application
 ├── case_config.json # Stores the last used CASE_ROOT
 ├── package.json # Node.js dependencies and build scripts
-├── tsconfig.json # TypeScript configuration
 ├── copy-built-js.mjs # Custom build script
-├── requirements.txt # Python dependencies
 ├── static/
 │ ├── html/
 │ │ └── foamflask_frontend.html # HTML template
@@ -186,8 +199,8 @@ FOAMFlask/
 2. **Compile to JavaScript**:
    You must compile the TypeScript to JavaScript for the browser to run it.
    ```bash
-   npm run build        # One-time build
-   npm run build:watch  # Wrapper to watch for changes
+   pnpm run build        # One-time build (uses SWC for speed)
+   pnpm run build:watch  # Watch for changes (uses SWC)
    ```
 3. **Run the backend** (see Usage section) and refresh your browser.
 
@@ -208,14 +221,14 @@ FOAMFlask/
 This project is built with robustness and simplicity in mind, avoiding heavy frontend frameworks in favor of a clean, performant architecture.
 
 - **Backend**:
-  - **Python 3.13+**: Core logic.
+  - **Python 3.13+**: Core logic managed by **uv**.
   - **Flask**: Lightweight WSGI web application framework.
   - **Docker SDK (`docker-py`)**: For programmatic control of Docker containers.
   - **PyVista / VTK**: For mesh processing and isosurface generation.
   - **Custom Parsers**: Dedicated Python parsers (`realtime_plots.py`) for reading both uniform and nonuniform OpenFOAM fields.
 
 - **Frontend**:
-  - **TypeScript**: For type-safe, maintainable client-side code.
+  - **TypeScript / SWC**: For type-safe code and ultra-fast compilation (using SWC).
   - **Vanilla DOM API**: No React/Vue/Angular. Direct DOM manipulation for maximum performance.
   - **TailwindCSS**: Utility-first CSS framework for styling.
   - **Plotly.js**: For responsive, interactive charts (using data served by Flask endpoints).
@@ -301,15 +314,17 @@ On the first run, FOAMFlask performs several checks to ensure your environment i
 
 ---
 
-## IMPORTANT: Docker Configuration
+## <span style="color:red">IMPORTANT: Docker Configuration</span>
 
 The application uses specific bind mount paths to ensure compatibility with different user permissions (especially on Linux).
 
-> [!CAUTION] > **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
+> [!CAUTION]
+> **Do NOT modify the internal container mount paths** in `app.py` or `backend/startup.py`.
 > The application is configured to mount cases to `/tmp/FOAM_Run` inside the container. This `/tmp` path is critical because it ensures the directory is writable by ANY user (including your non-root host user).
 > Changing this back to `/home/foam` or other strict directories will cause "Permission Denied" errors on Linux systems.
 
-> [!NOTE] > **Security Suppression**: You may see `# nosec B108` comments in the code near these paths. This is required to suppress Bandit security warnings because `/tmp` is a hardcoded path, which is flagged by default but is safe and intentional in this Docker container context.
+> [!NOTE]
+>  **Security Suppression**: You may see `# nosec B108` comments in the code near these paths. This is required to suppress Bandit security warnings because `/tmp` is a hardcoded path, which is flagged by default but is safe and intentional in this Docker container context.
 
 ### Network Binding
 
@@ -322,11 +337,12 @@ To change this behavior (e.g., for local development security), you can set the 
 
 On startup, the application logs the listening address: `FOAMFlask listening on: {host}:{port}`
 
-> [!NOTE] > **Security Suppression**: You may see `# nosec B104` in `app.py`. This suppresses the Bandit warning for binding to all interfaces, which is intentional for the containerized deployment strategy.
+> [!NOTE]
+> **Security Suppression**: You may see `# nosec B104` in `app.py`. This suppresses the Bandit warning for binding to all interfaces, which is intentional for the containerized deployment strategy.
 
 ---
 
-## Testing
+## <span style="color:blue">Stage 5 : Testing</span>
 
 FOAMFlask includes a comprehensive test suite using pytest. The test suite includes unit tests, integration tests, and end-to-end tests for the application's core functionality.
 
@@ -334,30 +350,28 @@ FOAMFlask includes a comprehensive test suite using pytest. The test suite inclu
 
 1. **Install test dependencies** (if not already installed):
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+   uv sync
 
 2. **Run all tests** with coverage:
 
    ```bash
    # Run all tests with coverage
-   pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
+   uv run pytest --cov=app --cov=backend --cov-report=term-missing --cov-report=html
    ```
 
 3. **Run specific test files** or individual tests:
 
    ```bash
    # Run a specific test file
-   pytest test/test_app.py -v
+   uv run pytest test/test_app.py -v
 
    # Run a specific test function
-   pytest test/test_app.py::test_index_route -v
+   uv run pytest test/test_app.py::test_index_route -v
    ```
 
 4. **Run tests in parallel** (faster execution):
    ```bash
-   pytest -n auto --cov=app --cov=backend
+   uv run pytest -n auto --cov=app --cov=backend
    ```
 
 ### Test Coverage
@@ -366,13 +380,13 @@ To check test coverage and generate reports:
 
 ```bash
 # Generate HTML coverage report (recommended)
-pytest --cov=app --cov=backend --cov-report=html
+uv run pytest --cov=app --cov=backend --cov-report=html
 
 # View coverage in terminal
-pytest --cov=app --cov=backend --cov-report=term-missing
+uv run pytest --cov=app --cov=backend --cov-report=term-missing
 
 # Generate XML report (for CI/CD integration)
-pytest --cov=app --cov=backend --cov-report=xml
+uv run pytest --cov=app --cov=backend --cov-report=xml
 ```
 
 **Coverage Reports**:
@@ -401,29 +415,35 @@ test/
 
 ```bash
 # Run all tests with coverage
-pytest --cov=app --cov=backend
+uv run pytest --cov=app --cov=backend
 
 # Run tests without coverage
-pytest
+uv run pytest
 
 # Run tests with detailed output
-pytest -v
+uv run pytest -v
 
 # Run tests and stop after first failure
-pytest -x
+uv run pytest -x
 
 # Run tests and show output from print statements
-pytest -s
+uv run pytest -s
 
 # Run tests matching a specific pattern
-pytest -k "test_name_pattern"
+uv run pytest -k "test_name_pattern"
 ```
 
 ---
 
-## Screenshots
+## More Screenshots
 
-![FOAMFlask Geometry](docs/images/foamflask_geometry.png)
+![FOAMFlask Main](Screenshots/main.png)
+![FOAMFlask Geometry](Screenshots/geometry.png)
+![FOAMFlask Meshing](Screenshots/meshing.png)
+![FOAMFlask Mesh Visualizer](Screenshots/visualizer.png)
+![FOAMFlask Plots](Screenshots/plots.png)
+![FOAMFlask Solver](Screenshots/solver.png)
+![FOAMFlask Post-Processing](Screenshots/post-processing.png)
 
 ---
 

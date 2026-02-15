@@ -1,17 +1,20 @@
 /**
- * FOAMFlask Frontend JavaScript
- */
-import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
+ * FOAMFlask Frontend * 
+
+ * Background Color Palette: https://coolors.co/gradient-maker/b6f0ff-ffb1b9?position=0,100&opacity=100,100&type=linear&rotation=180
+
+ * When making changes to the frontend, always edit foamflask_frontend.ts and build foamflask_frontend.js using `npm run build`
+ */ import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
 // CSRF Protection Helpers
-const getCookie = (name) => {
+const getCookie = (name)=>{
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : null;
 };
 // Monkey patch fetch to include CSRF token
 const originalFetch = window.fetch;
-window.fetch = async (input, init) => {
+window.fetch = async (input, init)=>{
     // Only inject for same-origin requests or relative URLs to prevent leaking token
-    const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input instanceof Request ? input.url : '';
     const isRelative = url.startsWith('/');
     const isSameOrigin = url.startsWith(window.location.origin);
     if (isRelative || isSameOrigin) {
@@ -22,12 +25,16 @@ window.fetch = async (input, init) => {
                 init = init || {};
                 if (init.headers instanceof Headers) {
                     init.headers.append("X-CSRFToken", token);
-                }
-                else if (Array.isArray(init.headers)) {
-                    init.headers.push(["X-CSRFToken", token]);
-                }
-                else {
-                    init.headers = { ...init.headers, "X-CSRFToken": token };
+                } else if (Array.isArray(init.headers)) {
+                    init.headers.push([
+                        "X-CSRFToken",
+                        token
+                    ]);
+                } else {
+                    init.headers = {
+                        ...init.headers,
+                        "X-CSRFToken": token
+                    };
                 }
             }
         }
@@ -35,12 +42,11 @@ window.fetch = async (input, init) => {
     return originalFetch(input, init);
 };
 // Common function to load interactive viewers
-const loadInteractiveViewerCommon = async (config) => {
+const loadInteractiveViewerCommon = async (config)=>{
     const iframe = document.getElementById(config.iframeId);
     const placeholder = document.getElementById(config.placeholderId);
     const btn = config.btnElement;
-    if (!iframe || !placeholder)
-        return;
+    if (!iframe || !placeholder) return;
     let originalBtnText = "";
     if (btn) {
         originalBtnText = btn.innerHTML;
@@ -53,11 +59,12 @@ const loadInteractiveViewerCommon = async (config) => {
     try {
         const res = await fetch(config.apiUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify(config.apiBody)
         });
-        if (!res.ok)
-            throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const html = await res.text();
         iframe.srcdoc = html;
         // UI Updates
@@ -66,10 +73,8 @@ const loadInteractiveViewerCommon = async (config) => {
         if (config.imageId) {
             document.getElementById(config.imageId)?.classList.add("hidden");
         }
-        if (config.onSuccess)
-            config.onSuccess();
-    }
-    catch (e) {
+        if (config.onSuccess) config.onSuccess();
+    } catch (e) {
         console.error("Viewer load failed:", e);
         // Reset UI on failure
         iframe.classList.add("hidden");
@@ -77,12 +82,9 @@ const loadInteractiveViewerCommon = async (config) => {
         if (config.imageId) {
             document.getElementById(config.imageId)?.classList.remove("hidden");
         }
-        if (config.onError)
-            config.onError(e);
-        else
-            showNotification("Failed to load viewer", "error"); // Default error if no handler
-    }
-    finally {
+        if (config.onError) config.onError(e);
+        else showNotification("Failed to load viewer", "error"); // Default error if no handler
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -91,66 +93,70 @@ const loadInteractiveViewerCommon = async (config) => {
     }
 };
 // Utility functions
-const getElement = (id) => {
+const getElement = (id)=>{
     return document.getElementById(id);
 };
-const formatBytes = (bytes, decimals = 1) => {
-    if (!bytes)
-        return '0 B';
+const formatBytes = (bytes, decimals = 1)=>{
+    if (!bytes) return '0 B';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = [
+        'B',
+        'KB',
+        'MB',
+        'GB',
+        'TB'
+    ];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 };
-const getErrorMessage = (error) => {
-    if (error instanceof Error)
-        return error.message;
+const getErrorMessage = (error)=>{
+    if (error instanceof Error) return error.message;
     return typeof error === "string" ? error : "Unknown error";
 };
 // Detect slow hardware (e.g. integrated graphics)
-const detectSlowHardware = () => {
+const detectSlowHardware = ()=>{
     try {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl)
-            return true; // Assume slow if no WebGL
+        if (!gl) return true; // Assume slow if no WebGL
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (!debugInfo)
-            return false;
+        if (!debugInfo) return false;
         const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-        if (!renderer)
-            return false;
+        if (!renderer) return false;
         // Check for common integrated/software renderers
-        const slowRenderers = ['intel', 'swiftshader', 'llvmpipe', 'mesa', 'software'];
-        return slowRenderers.some(r => renderer.toLowerCase().includes(r));
-    }
-    catch (e) {
+        const slowRenderers = [
+            'intel',
+            'swiftshader',
+            'llvmpipe',
+            'mesa',
+            'software'
+        ];
+        return slowRenderers.some((r)=>renderer.toLowerCase().includes(r));
+    } catch (e) {
         return false; // Fail safe
     }
 };
 // Clear Console Log
-const clearLog = async () => {
+const clearLog = async ()=>{
     const outputDiv = document.getElementById("output");
     if (outputDiv) {
         // 🎨 Palette UX Improvement: Prevent accidental data loss
         const confirmed = await showConfirmModal("Clear Console Log", "Are you sure you want to clear the console log? This cannot be undone.");
-        if (!confirmed)
-            return;
+        if (!confirmed) return;
         outputDiv.innerHTML = "";
         cachedLogHTML = ""; // ⚡ Bolt Optimization: clear cache
         try {
             localStorage.removeItem(CONSOLE_LOG_KEY);
-        }
-        catch (e) {
-            // Ignore local storage errors
+        } catch (e) {
+        // Ignore local storage errors
         }
         outputBuffer.length = 0; // Clear buffer
         showNotification("Console log cleared", "info", NOTIFY_MEDIUM);
     }
 };
 // Helper: Show temporary success state on a button
-const temporarilyShowSuccess = (btn, originalHTML, message = "Success!") => {
+const temporarilyShowSuccess = (btn, originalHTML, message = "Success!")=>{
     btn.disabled = false;
     btn.removeAttribute("aria-busy");
     btn.classList.remove("opacity-75", "cursor-wait");
@@ -163,25 +169,29 @@ const temporarilyShowSuccess = (btn, originalHTML, message = "Success!") => {
     <span>${message}</span>
   `;
     // Apply success styles
-    const successClasses = ["!bg-green-600", "!border-green-600", "!text-white", "cursor-default"];
+    const successClasses = [
+        "!bg-green-600",
+        "!border-green-600",
+        "!text-white",
+        "cursor-default"
+    ];
     btn.classList.add(...successClasses);
-    setTimeout(() => {
+    setTimeout(()=>{
         btn.innerHTML = originalHTML;
         btn.classList.remove(...successClasses);
     }, 2000);
 };
 // Generic Copy to Clipboard Helper
-const copyTextFromElement = (elementId, successMessage, btnElement) => {
+const copyTextFromElement = (elementId, successMessage, btnElement)=>{
     const el = document.getElementById(elementId);
-    if (!el)
-        return;
+    if (!el) return;
     // innerText preserves newlines better than textContent
     const text = el.innerText;
     if (!text.trim()) {
         showNotification("Content is empty", "info", NOTIFY_MEDIUM);
         return;
     }
-    const onSuccess = () => {
+    const onSuccess = ()=>{
         showNotification(successMessage, "success", NOTIFY_MEDIUM);
         if (btnElement) {
             const originalHTML = btnElement.innerHTML;
@@ -195,23 +205,20 @@ const copyTextFromElement = (elementId, successMessage, btnElement) => {
       `;
             btnElement.setAttribute('title', 'Copied to clipboard');
             // Revert after 2 seconds
-            setTimeout(() => {
+            setTimeout(()=>{
                 btnElement.innerHTML = originalHTML;
-                if (originalTitle)
-                    btnElement.setAttribute('title', originalTitle);
-                else
-                    btnElement.removeAttribute('title');
+                if (originalTitle) btnElement.setAttribute('title', originalTitle);
+                else btnElement.removeAttribute('title');
             }, 2000);
         }
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyText(text, successMessage, onSuccess));
-    }
-    else {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(()=>fallbackCopyText(text, successMessage, onSuccess));
+    } else {
         fallbackCopyText(text, successMessage, onSuccess);
     }
 };
-const fallbackCopyText = (text, successMessage, onSuccess) => {
+const fallbackCopyText = (text, successMessage, onSuccess)=>{
     try {
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -224,25 +231,21 @@ const fallbackCopyText = (text, successMessage, onSuccess) => {
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
         if (successful) {
-            if (onSuccess)
-                onSuccess();
-            else
-                showNotification(successMessage, "success", NOTIFY_MEDIUM);
-        }
-        else {
+            if (onSuccess) onSuccess();
+            else showNotification(successMessage, "success", NOTIFY_MEDIUM);
+        } else {
             showNotification("Failed to copy", "error");
         }
-    }
-    catch (err) {
+    } catch (err) {
         showNotification("Failed to copy", "error");
     }
 };
 // Copy Console Log
-const copyLogToClipboard = (btnElement) => {
+const copyLogToClipboard = (btnElement)=>{
     copyTextFromElement("output", "Log copied to clipboard", btnElement);
 };
 // Download Console Log
-const downloadLog = () => {
+const downloadLog = ()=>{
     const outputDiv = document.getElementById("output");
     if (!outputDiv) {
         showNotification("Console output not found", "error");
@@ -255,7 +258,11 @@ const downloadLog = () => {
         return;
     }
     try {
-        const blob = new Blob([text], { type: "text/plain" });
+        const blob = new Blob([
+            text
+        ], {
+            type: "text/plain"
+        });
         const url = URL.createObjectURL(blob);
         // Create timestamped filename
         const now = new Date();
@@ -268,60 +275,55 @@ const downloadLog = () => {
         document.body.appendChild(link);
         link.click();
         // Cleanup
-        setTimeout(() => {
+        setTimeout(()=>{
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         }, 100);
         showNotification("Log download started", "success", NOTIFY_SHORT);
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
         showNotification("Failed to download log", "error");
     }
 };
 // Copy Input to Clipboard
-const copyInputToClipboard = (elementId, btnElement) => {
+const copyInputToClipboard = (elementId, btnElement)=>{
     const el = document.getElementById(elementId);
-    if (!el || !el.value)
-        return;
+    if (!el || !el.value) return;
     const text = el.value;
-    const onSuccess = () => {
+    const onSuccess = ()=>{
         showNotification("Copied to clipboard", "success", NOTIFY_SHORT);
         if (btnElement) {
-            if (btnElement.dataset.isCopying)
-                return;
+            if (btnElement.dataset.isCopying) return;
             btnElement.dataset.isCopying = "true";
             const originalHTML = btnElement.innerHTML;
             // Visual feedback: Green Checkmark
             btnElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
-            setTimeout(() => {
+            setTimeout(()=>{
                 btnElement.innerHTML = originalHTML;
                 delete btnElement.dataset.isCopying;
             }, 2000);
         }
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyText(text, "Copied", onSuccess));
-    }
-    else {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(()=>fallbackCopyText(text, "Copied", onSuccess));
+    } else {
         fallbackCopyText(text, "Copied", onSuccess);
     }
 };
 // Clear Meshing Output
-const clearMeshingOutput = async () => {
+const clearMeshingOutput = async ()=>{
     const div = document.getElementById("meshingOutput");
     if (div) {
         // 🎨 Palette UX Improvement: Prevent accidental data loss
         const confirmed = await showConfirmModal("Clear Meshing Output", "Are you sure you want to clear the meshing output?");
-        if (!confirmed)
-            return;
+        if (!confirmed) return;
         div.innerText = "Ready...";
         div.scrollTop = 0; // Reset scroll position
         showNotification("Meshing output cleared", "info", NOTIFY_MEDIUM);
     }
 };
 // Copy Meshing Output
-const copyMeshingOutput = (btnElement) => {
+const copyMeshingOutput = (btnElement)=>{
     copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
 };
 // Storage for Console Log
@@ -372,18 +374,16 @@ let saveLogTimer = null;
 // ⚡ Bolt Optimization: maintain off-DOM cache to avoid expensive innerHTML access
 let cachedLogHTML = "";
 // Save log to local storage (Debounced)
-const saveLogToStorage = () => {
+const saveLogToStorage = ()=>{
     try {
         // ⚡ Bolt Optimization: Write from string variable instead of reading DOM
         localStorage.setItem(CONSOLE_LOG_KEY, cachedLogHTML);
-    }
-    catch (e) {
+    } catch (e) {
         console.warn("Failed to save console log to local storage (likely quota exceeded).");
     }
 };
-const saveLogDebounced = () => {
-    if (saveLogTimer)
-        clearTimeout(saveLogTimer);
+const saveLogDebounced = ()=>{
+    if (saveLogTimer) clearTimeout(saveLogTimer);
     saveLogTimer = setTimeout(saveLogToStorage, DEBOUNCE_DELAY);
 };
 // Colors
@@ -399,13 +399,22 @@ const plotlyColors = {
     yellow: "#bcbd22",
     teal: "#17becf",
     cyan: "#17becf",
-    magenta: "#e377c2",
+    magenta: "#e377c2"
 };
 const plotLayout = {
-    font: { family: "Inter, sans-serif", size: 12 },
+    font: {
+        family: "Inter, sans-serif",
+        size: 12
+    },
     plot_bgcolor: "rgba(255, 255, 255, 0)",
     paper_bgcolor: "rgba(255, 255, 255, 0)",
-    margin: { l: 50, r: 20, t: 60, b: 80, pad: 5 },
+    margin: {
+        l: 50,
+        r: 20,
+        t: 60,
+        b: 80,
+        pad: 5
+    },
     height: 400,
     autosize: true,
     showlegend: true,
@@ -416,10 +425,16 @@ const plotLayout = {
         xanchor: "center",
         yanchor: "top",
         // bgcolor: "rgba(255, 0, 0, 0)",
-        borderwidth: 0,
+        borderwidth: 0
     },
-    xaxis: { showgrid: false, linewidth: 1 },
-    yaxis: { showgrid: false, linewidth: 1 },
+    xaxis: {
+        showgrid: false,
+        linewidth: 1
+    },
+    yaxis: {
+        showgrid: false,
+        linewidth: 1
+    }
 };
 const plotConfig = {
     responsive: true,
@@ -429,24 +444,48 @@ const plotConfig = {
     doubleClick: "reset+autosize",
     showTips: false,
     modeBarButtonsToRemove: [
-        "zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
-        "hoverClosestCartesian", "hoverCompareCartesian", "zoom3d", "pan3d", "orbitRotation", "tableRotation",
-        "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d", "hoverClosest3d",
-        "sendDataToCloud", "toggleSpikelines", "setBackground", "toggleHover", "resetViews", "toImage"
+        "zoom2d",
+        "pan2d",
+        "select2d",
+        "lasso2d",
+        "zoomIn2d",
+        "zoomOut2d",
+        "autoScale2d",
+        "resetScale2d",
+        "hoverClosestCartesian",
+        "hoverCompareCartesian",
+        "zoom3d",
+        "pan3d",
+        "orbitRotation",
+        "tableRotation",
+        "handleDrag3d",
+        "resetCameraDefault3d",
+        "resetCameraLastSave3d",
+        "hoverClosest3d",
+        "sendDataToCloud",
+        "toggleSpikelines",
+        "setBackground",
+        "toggleHover",
+        "resetViews",
+        "toImage"
     ],
-    displaylogo: false,
+    displaylogo: false
 };
-const lineStyle = { width: 2, opacity: 0.9 };
-const createBoldTitle = (text) => ({
-    text: `<b>${text}</b>`,
-    font: { ...plotLayout.font, size: 22 },
-});
+const lineStyle = {
+    width: 2,
+    opacity: 0.9
+};
+const createBoldTitle = (text)=>({
+        text: `<b>${text}</b>`,
+        font: {
+            ...plotLayout.font,
+            size: 22
+        }
+    });
 // Helper: Download plot as PNG
-const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png") => {
+const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png")=>{
     // Handle both string ID (from HTML) or direct element
-    const plotDiv = typeof plotIdOrDiv === "string"
-        ? document.getElementById(plotIdOrDiv)
-        : plotIdOrDiv;
+    const plotDiv = typeof plotIdOrDiv === "string" ? document.getElementById(plotIdOrDiv) : plotIdOrDiv;
     if (!plotDiv) {
         console.error(`Plot element not found: ${plotIdOrDiv}`);
         return;
@@ -456,27 +495,27 @@ const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png") => {
         format: "png",
         width: plotDiv.offsetWidth,
         height: plotDiv.offsetHeight,
-        scale: 2, // Higher resolution
-    }).then((dataUrl) => {
+        scale: 2
+    }).then((dataUrl)=>{
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }).catch((err) => {
+    }).catch((err)=>{
         console.error("Error downloading plot:", err);
     });
 };
 // Helper: Save current legend visibility
-const getLegendVisibility = (plotDiv) => {
+const getLegendVisibility = (plotDiv)=>{
     try {
         const plotData = plotDiv.data;
         if (!Array.isArray(plotData)) {
             return {};
         }
         const visibility = {};
-        for (const trace of plotData) {
+        for (const trace of plotData){
             const name = trace.name ?? "";
             if (!name) {
                 continue;
@@ -484,48 +523,45 @@ const getLegendVisibility = (plotDiv) => {
             // trace.visible may be boolean | "legendonly" | undefined
             const vis = trace.visible;
             // Preserve "legendonly" state instead of converting it to false
-            visibility[name] = vis === "legendonly" ? "legendonly" : (vis ?? true);
+            visibility[name] = vis === "legendonly" ? "legendonly" : vis ?? true;
         }
         return visibility;
-    }
-    catch (error) {
+    } catch (error) {
         console.warn("Error getting legend visibility:", error);
         return {};
     }
 };
 // Helper: Attach white-bg download button to a plot
-const attachWhiteBGDownloadButton = (plotDiv) => {
-    if (!plotDiv || plotDiv.dataset.whiteButtonAdded)
-        return;
+const attachWhiteBGDownloadButton = (plotDiv)=>{
+    if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
     // plotDiv.layout.paper_bgcolor = "white"; // Disable white BG enforcement
     // plotDiv.layout.plot_bgcolor = "white";
     plotDiv.dataset.whiteButtonAdded = "true";
-    const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
+    const configWithWhiteBG = {
+        ...plotDiv.fullLayout?.config,
+        ...plotConfig
+    };
     configWithWhiteBG.toImageButtonOptions = {
         format: "png",
         filename: `${plotDiv.id}whitebg`,
         height: plotDiv.clientHeight,
         width: plotDiv.clientWidth,
-        scale: 2,
+        scale: 2
     };
-    void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
-        .then(() => {
+    void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(()=>{
         plotDiv.dataset.whiteButtonAdded = "true";
-    })
-        .catch((err) => {
+    }).catch((err)=>{
         console.error("Plotly update failed:", err);
     });
 };
-const downloadPlotData = (plotId, filename) => {
+const downloadPlotData = (plotId, filename)=>{
     const plotDiv = document.getElementById(plotId);
-    if (!plotDiv || !plotDiv.data)
-        return;
+    if (!plotDiv || !plotDiv.data) return;
     const traces = plotDiv.data;
-    traces.forEach((trace, index) => {
-        if (!trace.x || !trace.y)
-            return;
+    traces.forEach((trace, index)=>{
+        if (!trace.x || !trace.y) return;
         let csvContent = "x,y\n";
-        for (let i = 0; i < trace.x.length; i++) {
+        for(let i = 0; i < trace.x.length; i++){
             const x = trace.x[i] ?? "";
             const y = trace.y[i] ?? "";
             csvContent += `${x},${y}\n`;
@@ -533,39 +569,51 @@ const downloadPlotData = (plotId, filename) => {
         const traceName = trace.name?.replace(/\s+/g, "").toLowerCase() || `trace${index + 1}`;
         const traceFilename = filename.replace(".csv", `${traceName}.csv`);
         try {
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+            const blob = new Blob([
+                csvContent
+            ], {
+                type: "text/csv;charset=utf-8"
+            });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
             link.download = traceFilename;
             document.body.appendChild(link);
             link.click();
-            setTimeout(() => {
+            setTimeout(()=>{
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(url);
             }, 100);
-        }
-        catch (error) {
+        } catch (error) {
             console.error(`FOAMFlask Error downloading ${traceName} data`, error);
         }
     });
 };
 // Page Switching
-const switchPage = (pageName, updateUrl = true) => {
+const switchPage = (pageName, updateUrl = true)=>{
     console.log(`switchPage called with: ${pageName}`);
     // Update URL
     if (updateUrl) {
         const url = new URL(window.location.href);
         url.pathname = pageName === "setup" ? "/" : `/${pageName}`;
-        window.history.pushState({ page: pageName }, "", url);
+        window.history.pushState({
+            page: pageName
+        }, "", url);
     }
-    const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
-    pages.forEach((page) => {
+    const pages = [
+        "setup",
+        "geometry",
+        "meshing",
+        "visualizer",
+        "run",
+        "plots",
+        "post"
+    ];
+    pages.forEach((page)=>{
         const pageElement = document.getElementById(`page-${page}`);
         const navButton = document.getElementById(`nav-${page}`);
         const mobileNavButton = document.getElementById(`mobile-nav-${page}`);
-        if (pageElement)
-            pageElement.classList.add("hidden");
+        if (pageElement) pageElement.classList.add("hidden");
         // Desktop Reset
         if (navButton) {
             // navButton.classList.remove("bg-cyan-700", "text-white"); // BG handled by pill
@@ -590,16 +638,12 @@ const switchPage = (pageName, updateUrl = true) => {
     const hasActiveCase = !!activeCase;
     if (isProtectedPage && !hasActiveCase) {
         // Show empty state
-        if (noCaseState)
-            noCaseState.classList.remove("hidden");
-        // Keep page hidden (it was hidden by loop above)
-    }
-    else {
+        if (noCaseState) noCaseState.classList.remove("hidden");
+    // Keep page hidden (it was hidden by loop above)
+    } else {
         // Show page content
-        if (noCaseState)
-            noCaseState.classList.add("hidden");
-        if (selectedPage)
-            selectedPage.classList.remove("hidden");
+        if (noCaseState) noCaseState.classList.add("hidden");
+        if (selectedPage) selectedPage.classList.remove("hidden");
     }
     if (selectedNav) {
         // Update Text Color
@@ -621,15 +665,14 @@ const switchPage = (pageName, updateUrl = true) => {
         selectedMobileNav.setAttribute("aria-current", "page");
     }
     // Skip data refresh if we are showing the empty state (no active case)
-    if (isProtectedPage && !hasActiveCase)
-        return;
+    if (isProtectedPage && !hasActiveCase) return;
     // Auto-refresh lists based on page
-    switch (pageName) {
+    switch(pageName){
         case "geometry":
             refreshGeometryList();
             break;
         case "meshing":
-            refreshGeometryList().then(() => {
+            refreshGeometryList().then(()=>{
                 const shmSelect = document.getElementById("shmObjectList");
                 const geoSelect = document.getElementById("geometrySelect");
                 if (shmSelect && geoSelect) {
@@ -650,18 +693,15 @@ const switchPage = (pageName, updateUrl = true) => {
                 plotsContainer.classList.remove("hidden");
                 if (isFirstPlotLoad) {
                     const loader = document.getElementById("plotsLoading");
-                    if (loader)
-                        loader.classList.remove("hidden");
+                    if (loader) loader.classList.remove("hidden");
                 }
                 if (!plotsContainer.hasAttribute("data-initialized")) {
                     plotsContainer.setAttribute("data-initialized", "true");
-                    if (!plotUpdateInterval)
-                        startPlotUpdates();
+                    if (!plotUpdateInterval) startPlotUpdates();
                 }
             }
             const aeroBtn = document.getElementById("toggleAeroBtn");
-            if (aeroBtn)
-                aeroBtn.classList.remove("hidden");
+            if (aeroBtn) aeroBtn.classList.remove("hidden");
             break;
         case "post":
             const postContainer = document.getElementById("page-post");
@@ -672,7 +712,7 @@ const switchPage = (pageName, updateUrl = true) => {
             break;
     }
 };
-const setMobileMenuState = (isOpen) => {
+const setMobileMenuState = (isOpen)=>{
     const menu = document.getElementById("mobile-menu");
     const btn = document.getElementById("mobile-menu-btn");
     const icon = document.getElementById("mobile-menu-icon");
@@ -682,8 +722,7 @@ const setMobileMenuState = (isOpen) => {
             btn?.setAttribute("aria-expanded", "true");
             // Switch to X icon
             icon?.setAttribute("d", "M6 18L18 6M6 6l12 12");
-        }
-        else {
+        } else {
             menu.classList.add("hidden");
             btn?.setAttribute("aria-expanded", "false");
             // Switch to Hamburger icon
@@ -691,7 +730,7 @@ const setMobileMenuState = (isOpen) => {
         }
     }
 };
-const toggleMobileMenu = () => {
+const toggleMobileMenu = ()=>{
     const menu = document.getElementById("mobile-menu");
     if (menu) {
         const isHidden = menu.classList.contains("hidden");
@@ -700,7 +739,7 @@ const toggleMobileMenu = () => {
 };
 window.toggleMobileMenu = toggleMobileMenu;
 // Show notification
-const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
+const showNotification = (message, type, duration = NOTIFY_DEFAULT)=>{
     // If a notification with the same message already exists, do not show another one
     // This prevents spamming the user with the same message
     if (document.querySelector(`.notification .message-slot[data-message="${message}"]`)) {
@@ -708,19 +747,16 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
     }
     const container = document.getElementById("notificationContainer");
     const template = document.getElementById("notification-template");
-    if (!container || !template)
-        return null;
+    if (!container || !template) return null;
     const id = ++notificationId;
     const clone = template.content.cloneNode(true);
     const notification = clone.querySelector(".notification");
-    if (!notification)
-        return null;
+    if (!notification) return null;
     notification.id = `notification-${id}`;
     // Set ARIA role for accessibility
     if (type === "error" || type === "warning") {
         notification.setAttribute("role", "alert");
-    }
-    else {
+    } else {
         notification.setAttribute("role", "status");
     }
     // Set colors
@@ -728,15 +764,19 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
         success: "bg-green-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
         error: "bg-red-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
         warning: "bg-yellow-500/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
-        info: "bg-cyan-600/80 text-white backdrop-blur-md border border-white/20 shadow-xl",
+        info: "bg-cyan-600/80 text-white backdrop-blur-md border border-white/20 shadow-xl"
     };
     notification.className += ` ${colors[type]}`;
     // Set icon and message safely
-    const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
+    const icons = {
+        success: "✓",
+        error: "✗",
+        warning: "⚠",
+        info: "ℹ"
+    };
     const iconSlot = notification.querySelector(".icon-slot");
     const messageSlot = notification.querySelector(".message-slot");
-    if (iconSlot)
-        iconSlot.textContent = icons[type];
+    if (iconSlot) iconSlot.textContent = icons[type];
     if (messageSlot) {
         messageSlot.textContent = message;
         // Add data attribute to help with duplicate detection
@@ -750,7 +790,7 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
             progressBar.style.width = "100%";
             progressBar.style.transition = `width ${duration}ms linear`;
             // Trigger reflow to ensure transition works
-            requestAnimationFrame(() => {
+            requestAnimationFrame(()=>{
                 progressBar.style.width = "0%";
             });
         }
@@ -758,11 +798,11 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
         // Add fade-out class 300ms before removal
         const fadeTime = Math.max(0, duration - 300);
         // Timer for fade out animation
-        const fadeTimer = setTimeout(() => {
+        const fadeTimer = setTimeout(()=>{
             notification.classList.add("fade-out");
         }, fadeTime);
         // Timer for actual removal
-        const countdownInterval = setTimeout(() => {
+        const countdownInterval = setTimeout(()=>{
             removeNotification(id);
         }, duration);
         notification.dataset.timerId = countdownInterval.toString();
@@ -771,7 +811,7 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
     // Setup close button for all notifications
     const closeBtn = notification.querySelector(".close-btn");
     if (closeBtn) {
-        closeBtn.onclick = (e) => {
+        closeBtn.onclick = (e)=>{
             e.stopPropagation();
             removeNotification(id);
         };
@@ -779,22 +819,20 @@ const showNotification = (message, type, duration = NOTIFY_DEFAULT) => {
     container.appendChild(notification);
     return id;
 };
-const removeNotification = (id) => {
+const removeNotification = (id)=>{
     const notification = document.getElementById(`notification-${id}`);
     if (notification) {
-        if (notification.dataset.timerId)
-            clearTimeout(parseInt(notification.dataset.timerId, 10));
-        if (notification.dataset.fadeTimerId)
-            clearTimeout(parseInt(notification.dataset.fadeTimerId, 10));
+        if (notification.dataset.timerId) clearTimeout(parseInt(notification.dataset.timerId, 10));
+        if (notification.dataset.fadeTimerId) clearTimeout(parseInt(notification.dataset.fadeTimerId, 10));
         // Ensure fade-out class is present for manual dismissals
         notification.classList.add("fade-out");
         // Wait for animation then remove
-        setTimeout(() => notification.remove(), 300);
+        setTimeout(()=>notification.remove(), 300);
     }
 };
 // Confirmation Modal
-const showConfirmModal = (title, message) => {
-    return new Promise((resolve) => {
+const showConfirmModal = (title, message)=>{
+    return new Promise((resolve)=>{
         // Capture previous focus to restore later
         const previousActiveElement = document.activeElement;
         const modal = document.createElement("div");
@@ -817,14 +855,14 @@ const showConfirmModal = (title, message) => {
     `;
         document.body.appendChild(modal);
         // Animation
-        requestAnimationFrame(() => {
+        requestAnimationFrame(()=>{
             modal.classList.remove("opacity-0");
             modal.querySelector("div")?.classList.remove("scale-95");
             modal.querySelector("div")?.classList.add("scale-100");
         });
-        const close = (result) => {
+        const close = (result)=>{
             modal.classList.add("opacity-0");
-            setTimeout(() => modal.remove(), 200);
+            setTimeout(()=>modal.remove(), 200);
             resolve(result);
             document.removeEventListener("keydown", handleKey);
             // Restore focus
@@ -834,65 +872,57 @@ const showConfirmModal = (title, message) => {
         };
         const cancelBtn = modal.querySelector("#confirm-cancel");
         const okBtn = modal.querySelector("#confirm-ok");
-        const handleKey = (e) => {
-            if (e.key === "Escape")
-                close(false);
+        const handleKey = (e)=>{
+            if (e.key === "Escape") close(false);
             // Only trigger confirm on Enter if we are not on the Cancel button
-            if (e.key === "Enter" && document.activeElement !== cancelBtn)
-                close(true);
+            if (e.key === "Enter" && document.activeElement !== cancelBtn) close(true);
             // Focus Trap
             if (e.key === "Tab") {
                 e.preventDefault();
-                const focusableElements = [cancelBtn, okBtn];
+                const focusableElements = [
+                    cancelBtn,
+                    okBtn
+                ];
                 const firstElement = focusableElements[0];
                 const lastElement = focusableElements[focusableElements.length - 1];
                 if (e.shiftKey) {
                     if (document.activeElement === firstElement) {
                         lastElement.focus();
-                    }
-                    else {
+                    } else {
                         // Find previous element or default to last
                         const idx = focusableElements.indexOf(document.activeElement);
-                        if (idx > 0)
-                            focusableElements[idx - 1].focus();
-                        else
-                            lastElement.focus();
+                        if (idx > 0) focusableElements[idx - 1].focus();
+                        else lastElement.focus();
                     }
-                }
-                else {
+                } else {
                     if (document.activeElement === lastElement) {
                         firstElement.focus();
-                    }
-                    else {
+                    } else {
                         // Find next element or default to first
                         const idx = focusableElements.indexOf(document.activeElement);
-                        if (idx >= 0 && idx < focusableElements.length - 1)
-                            focusableElements[idx + 1].focus();
-                        else
-                            firstElement.focus();
+                        if (idx >= 0 && idx < focusableElements.length - 1) focusableElements[idx + 1].focus();
+                        else firstElement.focus();
                     }
                 }
             }
         };
         document.addEventListener("keydown", handleKey);
-        cancelBtn.onclick = () => close(false);
-        okBtn.onclick = () => close(true);
+        cancelBtn.onclick = ()=>close(false);
+        okBtn.onclick = ()=>close(true);
         // Focus management
-        setTimeout(() => cancelBtn.focus(), 50);
+        setTimeout(()=>cancelBtn.focus(), 50);
     });
 };
 // Network
-const fetchWithCache = async (url, options = {}) => {
+const fetchWithCache = async (url, options = {})=>{
     // Robust access to cache
     let cacheMap = requestCache;
     if (!cacheMap) {
         // Fallback to window global if local is lost (module reload issue)
-        if (window._requestCache)
-            cacheMap = window._requestCache;
+        if (window._requestCache) cacheMap = window._requestCache;
         else {
             cacheMap = new Map();
-            if (typeof window !== 'undefined')
-                window._requestCache = cacheMap;
+            if (typeof window !== 'undefined') window._requestCache = cacheMap;
         }
         requestCache = cacheMap;
     }
@@ -903,22 +933,21 @@ const fetchWithCache = async (url, options = {}) => {
     const cacheKey = `${url}${JSON.stringify(options)}`;
     const cached = cacheMap.get(cacheKey);
     // 1. Local Cache Check
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
-        return cached.data;
-    if (abortControllers.has(url))
-        abortControllers.get(url)?.abort();
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) return cached.data;
+    if (abortControllers.has(url)) abortControllers.get(url)?.abort();
     const controller = new AbortController();
     abortControllers.set(url, controller);
     try {
         // 2. Prepare headers for Conditional GET
         // ⚡ Bolt Optimization: Use manual Conditional GET to avoid JSON parsing for 304 responses
-        const fetchOptions = { ...options, signal: controller.signal };
+        const fetchOptions = {
+            ...options,
+            signal: controller.signal
+        };
         if (cached) {
             const headers = new Headers(fetchOptions.headers || {});
-            if (cached.etag)
-                headers.set("If-None-Match", cached.etag);
-            if (cached.lastModified)
-                headers.set("If-Modified-Since", cached.lastModified);
+            if (cached.etag) headers.set("If-None-Match", cached.etag);
+            if (cached.lastModified) headers.set("If-Modified-Since", cached.lastModified);
             fetchOptions.headers = headers;
         }
         const response = await fetch(url, fetchOptions);
@@ -930,10 +959,8 @@ const fetchWithCache = async (url, options = {}) => {
             // Update headers if provided
             const newEtag = response.headers.get("ETag");
             const newLastModified = response.headers.get("Last-Modified");
-            if (newEtag)
-                cached.etag = newEtag;
-            if (newLastModified)
-                cached.lastModified = newLastModified;
+            if (newEtag) cached.etag = newEtag;
+            if (newLastModified) cached.lastModified = newLastModified;
             cacheMap.set(cacheKey, cached);
             return cached.data;
         }
@@ -941,22 +968,17 @@ const fetchWithCache = async (url, options = {}) => {
             let errorMessage = `HTTP error! status: ${response.status}`;
             try {
                 const errorData = await response.json();
-                if (errorData.message)
-                    errorMessage = errorData.message;
-                else if (errorData.error)
-                    errorMessage = errorData.error;
-                else if (errorData.output)
-                    errorMessage = errorData.output;
-            }
-            catch (e) {
-                // Ignore json parse error
+                if (errorData.message) errorMessage = errorData.message;
+                else if (errorData.error) errorMessage = errorData.error;
+                else if (errorData.output) errorMessage = errorData.output;
+            } catch (e) {
+            // Ignore json parse error
             }
             throw new Error(errorMessage);
         }
         const data = await response.json();
         // Check cacheMap again in case it was lost during await (unlikely with local var but safe)
-        if (!cacheMap)
-            cacheMap = requestCache || window._requestCache || new Map();
+        if (!cacheMap) cacheMap = requestCache || window._requestCache || new Map();
         cacheMap.set(cacheKey, {
             data,
             timestamp: Date.now(),
@@ -964,23 +986,24 @@ const fetchWithCache = async (url, options = {}) => {
             lastModified: response.headers.get("Last-Modified")
         });
         return data;
-    }
-    finally {
+    } finally{
         abortControllers.delete(url);
     }
 };
 // Logging
-const appendOutput = (message, type) => {
-    outputBuffer.push({ message, type });
+const appendOutput = (message, type)=>{
+    outputBuffer.push({
+        message,
+        type
+    });
     // ⚡ Bolt Optimization: Throttle updates to ~30fps (32ms) instead of debouncing
     if (!outputFlushTimer) {
         outputFlushTimer = setTimeout(flushOutputBuffer, 32);
     }
 };
-const limitLogSize = () => {
+const limitLogSize = ()=>{
     const container = document.getElementById("output");
-    if (!container)
-        return;
+    if (!container) return;
     const MAX_NODES = 2500;
     const PRUNE_TARGET = 2000;
     if (container.childElementCount > MAX_NODES) {
@@ -990,20 +1013,19 @@ const limitLogSize = () => {
         const range = document.createRange();
         range.setStart(container, 0);
         let boundary = container.firstElementChild;
-        for (let i = 0; i < toRemove && boundary; i++) {
+        for(let i = 0; i < toRemove && boundary; i++){
             boundary = boundary.nextElementSibling;
         }
         if (boundary) {
             range.setEndBefore(boundary);
             range.deleteContents();
-        }
-        else {
+        } else {
             // If we traversed past the end, clear everything (fallback)
             container.innerHTML = "";
         }
     }
 };
-const flushOutputBuffer = () => {
+const flushOutputBuffer = ()=>{
     if (outputBuffer.length === 0) {
         outputFlushTimer = null;
         return;
@@ -1018,23 +1040,15 @@ const flushOutputBuffer = () => {
     const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 50;
     let newHtmlChunks = ""; // ⚡ Bolt Optimization: Accumulate HTML for cache
     // Helper for manual HTML escaping (significantly faster than browser serialization)
-    const escapeHtml = (str) => {
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+    const escapeHtml = (str)=>{
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     };
-    outputBuffer.forEach(({ message, type }) => {
+    outputBuffer.forEach(({ message, type })=>{
         // Determine class name
         let className = "text-green-700";
-        if (type === "stderr")
-            className = "text-red-600";
-        else if (type === "tutorial")
-            className = "text-cyan-600 font-semibold";
-        else if (type === "info")
-            className = "text-yellow-600 italic";
+        if (type === "stderr") className = "text-red-600";
+        else if (type === "tutorial") className = "text-cyan-600 font-semibold";
+        else if (type === "info") className = "text-yellow-600 italic";
         // ⚡ Bolt Optimization: Direct string construction + insertAdjacentHTML
         // Removes overhead of document.createElement() and .textContent assignments (O(N) -> O(1) DOM touches)
         const safeMessage = escapeHtml(message);
@@ -1064,7 +1078,7 @@ const flushOutputBuffer = () => {
     saveLogDebounced();
 };
 // Setup Functions
-const setDockerConfig = async (image, version, btnElement) => {
+const setDockerConfig = async (image, version, btnElement)=>{
     const btn = btnElement;
     let originalText = "";
     let success = false;
@@ -1077,10 +1091,18 @@ const setDockerConfig = async (image, version, btnElement) => {
     try {
         dockerImage = image;
         openfoamVersion = version;
-        const response = await fetch("/set_docker_config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dockerImage, openfoamVersion }) });
+        const response = await fetch("/set_docker_config", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                dockerImage,
+                openfoamVersion
+            })
+        });
         const data = await response.json();
-        if (!response.ok)
-            throw new Error(data.output || data.message || "Unknown error");
+        if (!response.ok) throw new Error(data.output || data.message || "Unknown error");
         dockerImage = data.dockerImage;
         openfoamVersion = data.openfoamVersion;
         const openfoamRootInput = document.getElementById("openfoamRoot");
@@ -1089,16 +1111,13 @@ const setDockerConfig = async (image, version, btnElement) => {
         }
         showNotification("Docker config updated", "success");
         success = true;
-    }
-    catch (e) {
+    } catch (e) {
         showNotification(`Failed to set Docker config: ${getErrorMessage(e)}`, "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Updated!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -1106,7 +1125,7 @@ const setDockerConfig = async (image, version, btnElement) => {
         }
     }
 };
-const loadTutorial = async () => {
+const loadTutorial = async ()=>{
     const btn = document.getElementById("loadTutorialBtn");
     const originalText = btn ? btn.innerHTML : "Import Tutorial";
     let success = false;
@@ -1118,17 +1137,22 @@ const loadTutorial = async () => {
         }
         const tutorialSelect = document.getElementById("tutorialSelect");
         const selected = tutorialSelect.value;
-        if (selected)
-            localStorage.setItem("lastSelectedTutorial", selected);
+        if (selected) localStorage.setItem("lastSelectedTutorial", selected);
         showNotification("Importing tutorial...", "info");
-        const response = await fetch("/load_tutorial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tutorial: selected }) });
+        const response = await fetch("/load_tutorial", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tutorial: selected
+            })
+        });
         const data = await response.json();
-        if (!response.ok)
-            throw new Error(data.output || data.message || "Unknown error");
+        if (!response.ok) throw new Error(data.output || data.message || "Unknown error");
         if (data.output) {
-            data.output.split("\n").forEach((line) => {
-                if (line.trim())
-                    appendOutput(line.trim(), "info");
+            data.output.split("\n").forEach((line)=>{
+                if (line.trim()) appendOutput(line.trim(), "info");
             });
         }
         showNotification("Tutorial imported", "success");
@@ -1137,26 +1161,22 @@ const loadTutorial = async () => {
         if (importedName) {
             selectCase(importedName);
             const select = document.getElementById("caseSelect");
-            if (select)
-                select.value = importedName;
+            if (select) select.value = importedName;
             // UX: Default to "From Resources" tab for imported tutorials
             switchGeometryTab("resources");
             // Background fetch of plot data and residuals to warm up cache
             // We don't await these to avoid blocking the UI
-            void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
-            void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(() => { });
+            void fetch(`/api/plot_data?tutorial=${encodeURIComponent(importedName)}`).catch(()=>{});
+            void fetch(`/api/residuals?tutorial=${encodeURIComponent(importedName)}`).catch(()=>{});
         }
         success = true;
-    }
-    catch (e) {
+    } catch (e) {
         showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Imported!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -1165,11 +1185,10 @@ const loadTutorial = async () => {
     }
 };
 // Toggle Section Visibility
-const toggleSection = (id) => {
+const toggleSection = (id)=>{
     const section = document.getElementById(id);
     const toggleIcon = document.getElementById(`${id}Toggle`);
-    if (!section || !toggleIcon)
-        return;
+    if (!section || !toggleIcon) return;
     const isHidden = section.classList.contains("hidden");
     if (isHidden) {
         section.classList.remove("hidden");
@@ -1177,21 +1196,18 @@ const toggleSection = (id) => {
         toggleIcon.classList.remove("-rotate-90");
         // If it's a button (accessible version), update aria-expanded
         const toggleBtn = toggleIcon.parentElement?.tagName === "BUTTON" ? toggleIcon.parentElement : null;
-        if (toggleBtn)
-            toggleBtn.setAttribute("aria-expanded", "true");
-    }
-    else {
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+    } else {
         section.classList.add("hidden");
         toggleIcon.textContent = "▶";
         toggleIcon.classList.add("-rotate-90");
         // If it's a button (accessible version), update aria-expanded
         const toggleBtn = toggleIcon.parentElement?.tagName === "BUTTON" ? toggleIcon.parentElement : null;
-        if (toggleBtn)
-            toggleBtn.setAttribute("aria-expanded", "false");
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
     }
 };
 // Case Management
-const updateActiveCaseBadge = () => {
+const updateActiveCaseBadge = ()=>{
     const badge = document.getElementById("activeCaseBadge");
     if (badge) {
         if (activeCase) {
@@ -1199,8 +1215,7 @@ const updateActiveCaseBadge = () => {
             badge.classList.remove("hidden");
             badge.title = `Active Case: ${activeCase} (Click to change)`;
             badge.setAttribute("aria-label", `Current active case: ${activeCase}. Click to go to setup.`);
-        }
-        else {
+        } else {
             badge.textContent = "No Case";
             badge.classList.remove("hidden");
             badge.title = "No Active Case (Click to Select)";
@@ -1208,7 +1223,7 @@ const updateActiveCaseBadge = () => {
         }
     }
 };
-const refreshCaseList = async (btnElement) => {
+const refreshCaseList = async (btnElement)=>{
     const btn = btnElement;
     let originalText = "";
     if (btn) {
@@ -1222,35 +1237,30 @@ const refreshCaseList = async (btnElement) => {
             // or toggle a class. But let's follow the pattern used elsewhere.
             // However, the Refresh button has text "↻ Refresh".
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...`;
-        }
-        else {
+        } else {
             // Fallback or just standard spinner
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Refreshing...`;
         }
     }
     try {
         const response = await fetch("/api/cases/list");
-        if (!response.ok)
-            throw new Error("Failed to fetch cases");
+        if (!response.ok) throw new Error("Failed to fetch cases");
         const data = await response.json();
         const select = document.getElementById("caseSelect");
         if (select && data.cases) {
             const current = select.value;
             if (data.cases.length === 0) {
                 select.innerHTML = '<option value="" disabled selected>No cases found</option>';
-            }
-            else {
+            } else {
                 select.innerHTML = '<option value="">-- Select a Case --</option>';
-                data.cases.forEach(c => {
+                data.cases.forEach((c)=>{
                     const opt = document.createElement("option");
                     opt.value = c;
                     opt.textContent = c;
                     select.appendChild(opt);
                 });
-                if (current && data.cases.includes(current))
-                    select.value = current;
-                else if (activeCase && data.cases.includes(activeCase))
-                    select.value = activeCase;
+                if (current && data.cases.includes(current)) select.value = current;
+                else if (activeCase && data.cases.includes(activeCase)) select.value = activeCase;
             }
             // 🎨 Sync Active Case: If current activeCase is missing, clear it
             if (activeCase && !data.cases.includes(activeCase)) {
@@ -1261,15 +1271,11 @@ const refreshCaseList = async (btnElement) => {
             }
         }
         // Only show success notification if invoked manually (via button)
-        if (btn)
-            showNotification("Case list refreshed", "success", NOTIFY_MEDIUM);
-    }
-    catch (e) {
+        if (btn) showNotification("Case list refreshed", "success", NOTIFY_MEDIUM);
+    } catch (e) {
         console.error(e);
-        if (btn)
-            showNotification("Failed to refresh case list", "error");
-    }
-    finally {
+        if (btn) showNotification("Failed to refresh case list", "error");
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -1278,12 +1284,12 @@ const refreshCaseList = async (btnElement) => {
         }
     }
 };
-const selectCase = (val) => {
+const selectCase = (val)=>{
     activeCase = val;
     localStorage.setItem("lastSelectedCase", val);
     updateActiveCaseBadge();
 };
-const createNewCase = async () => {
+const createNewCase = async ()=>{
     const caseName = document.getElementById("newCaseName").value;
     if (!caseName) {
         showNotification("Enter case name", "warning");
@@ -1299,7 +1305,15 @@ const createNewCase = async () => {
     }
     showNotification(`Creating case ${caseName}...`, "info");
     try {
-        const response = await fetch("/api/case/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName }) });
+        const response = await fetch("/api/case/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName
+            })
+        });
         const data = await response.json();
         if (data.success) {
             showNotification("Case created", "success");
@@ -1307,23 +1321,18 @@ const createNewCase = async () => {
             await refreshCaseList();
             selectCase(caseName);
             const select = document.getElementById("caseSelect");
-            if (select)
-                select.value = caseName;
+            if (select) select.value = caseName;
             success = true;
-        }
-        else {
+        } else {
             showNotification(data.message || "Failed", "error");
         }
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Error creating case", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Created!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -1331,16 +1340,15 @@ const createNewCase = async () => {
         }
     }
 };
-const confirmRunCommand = async (cmd, btnElement) => {
+const confirmRunCommand = async (cmd, btnElement)=>{
     // Check for destructive commands
     if (cmd.includes("Allclean") || cmd.includes("clean")) {
         const confirmed = await showConfirmModal("Run Command", `Are you sure you want to run '${cmd}'? This may delete generated files.`);
-        if (!confirmed)
-            return;
+        if (!confirmed) return;
     }
     runCommand(cmd, btnElement);
 };
-const runCommand = async (cmd, btnElement) => {
+const runCommand = async (cmd, btnElement)=>{
     if (!cmd) {
         showNotification("No command specified", "error");
         return;
@@ -1361,43 +1369,53 @@ const runCommand = async (cmd, btnElement) => {
     }
     try {
         showNotification(`Running ${cmd}...`, "info");
-        const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir, tutorial: selectedTutorial, command: cmd }) });
-        if (!response.ok)
-            throw new Error();
+        const response = await fetch("/run", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseDir,
+                tutorial: selectedTutorial,
+                command: cmd
+            })
+        });
+        if (!response.ok) throw new Error();
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
         // Start polling immediately when command starts
         isSimulationRunning = true;
         startPlotUpdates();
         let buffer = "";
-        while (true) {
-            const { done, value } = (await reader?.read()) || { done: true, value: undefined };
+        while(true){
+            const { done, value } = await reader?.read() || {
+                done: true,
+                value: undefined
+            };
             if (done) {
-                if (buffer)
-                    appendOutput(buffer, "stdout"); // Flush remaining buffer
+                if (buffer) appendOutput(buffer, "stdout"); // Flush remaining buffer
                 showNotification("Simulation completed successfully", "success");
                 flushOutputBuffer();
                 break;
             }
             // ⚡ Bolt Optimization: Stream decoding and buffering for split packets
-            const text = decoder.decode(value, { stream: true });
+            const text = decoder.decode(value, {
+                stream: true
+            });
             buffer += text;
             const lines = buffer.split("\n");
             // Keep the last part in buffer as it might be incomplete
             buffer = lines.pop() || "";
-            lines.forEach(line => {
+            lines.forEach((line)=>{
                 // Filter out backend HTML artifacts if any remain (transition period)
                 const cleanLine = line.replace(/<br>/g, "").trim();
-                if (cleanLine)
-                    appendOutput(cleanLine, "stdout");
+                if (cleanLine) appendOutput(cleanLine, "stdout");
             });
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err); // Keep console error for debugging
         showNotification(`Error: ${err}`, "error");
-    }
-    finally {
+    } finally{
         const btn = btnElement;
         if (btn) {
             btn.disabled = false;
@@ -1409,90 +1427,80 @@ const runCommand = async (cmd, btnElement) => {
     }
 };
 // Realtime Plotting Functions
-const togglePlots = () => {
+const togglePlots = ()=>{
     plotsVisible = !plotsVisible;
     const container = document.getElementById("plotsContainer");
     const btn = document.getElementById("togglePlotsBtn");
     const aeroBtn = document.getElementById("toggleAeroBtn");
     if (plotsVisible) {
         container?.classList.remove("hidden");
-        if (btn)
-            btn.textContent = "Hide Plots";
+        if (btn) btn.textContent = "Hide Plots";
         aeroBtn?.classList.remove("hidden");
         startPlotUpdates();
         setupIntersectionObserver();
-    }
-    else {
+    } else {
         container?.classList.add("hidden");
-        if (btn)
-            btn.textContent = "Show Plots";
+        if (btn) btn.textContent = "Show Plots";
         aeroBtn?.classList.add("hidden");
         stopPlotUpdates();
     }
 };
-const setupIntersectionObserver = () => {
+const setupIntersectionObserver = ()=>{
     const plotsContainer = document.getElementById("plotsContainer");
-    if (!plotsContainer || plotsContainer.dataset.observerSetup)
-        return;
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
+    if (!plotsContainer || plotsContainer.dataset.observerSetup) return;
+    const observer = new IntersectionObserver((entries)=>{
+        entries.forEach((entry)=>{
             plotsInViewport = entry.isIntersecting;
         });
-    }, { threshold: 0.1, rootMargin: "50px" });
+    }, {
+        threshold: 0.1,
+        rootMargin: "50px"
+    });
     observer.observe(plotsContainer);
     plotsContainer.dataset.observerSetup = "true";
 };
-const toggleAeroPlots = () => {
+const toggleAeroPlots = ()=>{
     aeroVisible = !aeroVisible;
     const container = document.getElementById("aeroContainer");
     const btn = document.getElementById("toggleAeroBtn");
     if (aeroVisible) {
         container?.classList.remove("hidden");
-        if (btn)
-            btn.textContent = "Hide Aero Plots";
+        if (btn) btn.textContent = "Hide Aero Plots";
         updateAeroPlots();
-    }
-    else {
+    } else {
         container?.classList.add("hidden");
-        if (btn)
-            btn.textContent = "Show Aero Plots";
+        if (btn) btn.textContent = "Show Aero Plots";
     }
 };
-const startPlotUpdates = () => {
+const startPlotUpdates = ()=>{
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
-    if (!selectedTutorial)
-        return;
+    if (!selectedTutorial) return;
     // Flask-Only: Use polling directly
     updatePlots();
     startPolling();
 };
-const startPolling = () => {
-    if (plotUpdateInterval)
-        return;
-    plotUpdateInterval = setInterval(() => {
+const startPolling = ()=>{
+    if (plotUpdateInterval) return;
+    plotUpdateInterval = setInterval(()=>{
         // ⚡ Bolt Optimization: Pause polling when tab is hidden
-        if (document.hidden)
-            return;
+        if (document.hidden) return;
         // Stop if simulation not running
         if (!isSimulationRunning) {
             stopPlotUpdates();
             return;
         }
-        if (!plotsInViewport)
-            return;
-        if (!isUpdatingPlots)
-            updatePlots();
-        else
-            pendingPlotUpdate = true;
+        if (!plotsInViewport) return;
+        if (!isUpdatingPlots) updatePlots();
+        else pendingPlotUpdate = true;
     }, POLL_INTERVAL);
 };
-const stopPlotUpdates = () => {
+const stopPlotUpdates = ()=>{
     if (plotUpdateInterval) {
         clearInterval(plotUpdateInterval);
         plotUpdateInterval = null;
     }
 };
-const updateResidualsPlot = async (tutorial, injectedData) => {
+const updateResidualsPlot = async (tutorial, injectedData)=>{
     try {
         let data = injectedData;
         if (!data) {
@@ -1502,7 +1510,19 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
             return;
         }
         const traces = [];
-        const fields = ["Ux", "Uy", "Uz", "p"];
+        const fields = [
+            "Ux",
+            "Uy",
+            "Uz",
+            "p",
+            "h",
+            "T",
+            "rho",
+            "p_rgh",
+            "k",
+            "epsilon",
+            "omega"
+        ];
         const colors = [
             plotlyColors.blue,
             plotlyColors.red,
@@ -1510,17 +1530,28 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
             plotlyColors.magenta,
             plotlyColors.cyan,
             plotlyColors.orange,
+            plotlyColors.purple,
+            plotlyColors.brown,
+            plotlyColors.pink,
+            plotlyColors.gray,
+            plotlyColors.yellow
         ];
-        fields.forEach((field, idx) => {
+        fields.forEach((field, idx)=>{
             const fieldData = data[field];
             if (fieldData && fieldData.length > 0) {
                 traces.push({
-                    x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+                    x: Array.from({
+                        length: fieldData.length
+                    }, (_, i)=>i + 1),
                     y: fieldData,
                     type: "scattergl",
                     mode: "lines",
                     name: field,
-                    line: { color: colors[idx], width: 2.5, shape: "linear" },
+                    line: {
+                        color: colors[idx],
+                        width: 2.5,
+                        shape: "linear"
+                    }
                 });
             }
         });
@@ -1531,37 +1562,39 @@ const updateResidualsPlot = async (tutorial, injectedData) => {
                     ...plotLayout,
                     title: createBoldTitle("Residuals"),
                     xaxis: {
-                        title: { text: "Iteration" },
+                        title: {
+                            text: "Iteration"
+                        },
                         showline: true,
                         mirror: "all",
-                        showgrid: false,
+                        showgrid: false
                     },
                     yaxis: {
-                        title: { text: "Residual" },
+                        title: {
+                            text: "Residual"
+                        },
                         type: "log",
                         showline: true,
                         mirror: "all",
                         showgrid: true,
                         gridwidth: 1,
-                        gridcolor: "rgba(0,0,0,0.1)",
-                    },
+                        gridcolor: "rgba(0,0,0,0.1)"
+                    }
                 };
                 void Plotly.react(residualsPlotDiv, traces, layout, {
                     ...plotConfig,
                     displayModeBar: true,
-                    scrollZoom: false,
-                }).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
+                    scrollZoom: false
+                }).then(()=>attachWhiteBGDownloadButton(residualsPlotDiv));
             }
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error("FOAMFlask Error updating residuals", error);
     }
 };
-const updateAeroPlots = async (preFetchedData) => {
+const updateAeroPlots = async (preFetchedData)=>{
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
-    if (!selectedTutorial)
-        return;
+    if (!selectedTutorial) return;
     try {
         let data = preFetchedData;
         // ⚡ Bolt Optimization: Use pre-fetched data if available to save a network request
@@ -1569,18 +1602,14 @@ const updateAeroPlots = async (preFetchedData) => {
             const response = await fetch(`/api/plot_data?tutorial=${encodeURIComponent(selectedTutorial)}`);
             data = await response.json();
         }
-        if (data.error)
-            return;
+        if (data.error) return;
         // Cp plot
-        if (Array.isArray(data.p) &&
-            Array.isArray(data.time) &&
-            data.p.length === data.time.length &&
-            data.p.length > 0) {
+        if (Array.isArray(data.p) && Array.isArray(data.time) && data.p.length === data.time.length && data.p.length > 0) {
             const pinf = 101325;
             const rho = 1.225;
             const uinf = Array.isArray(data.U_mag) && data.U_mag.length ? data.U_mag[0] : 1.0;
             const qinf = 0.5 * rho * uinf * uinf;
-            const cp = data.p.map((pval) => (pval - pinf) / qinf);
+            const cp = data.p.map((pval)=>(pval - pinf) / qinf);
             const cpDiv = document.getElementById("cp-plot");
             if (cpDiv) {
                 const cpTrace = {
@@ -1589,32 +1618,37 @@ const updateAeroPlots = async (preFetchedData) => {
                     type: "scattergl",
                     mode: "lines+markers",
                     name: "Cp",
-                    line: { color: plotlyColors.red, width: 2.5 },
+                    line: {
+                        color: plotlyColors.red,
+                        width: 2.5
+                    }
                 };
-                void Plotly.react(cpDiv, [cpTrace], {
+                void Plotly.react(cpDiv, [
+                    cpTrace
+                ], {
                     ...plotLayout,
                     title: createBoldTitle("Pressure Coefficient"),
                     xaxis: {
                         ...plotLayout.xaxis,
-                        title: { text: "Time (s)" },
+                        title: {
+                            text: "Time (s)"
+                        }
                     },
                     yaxis: {
                         ...plotLayout.yaxis,
-                        title: { text: "Cp" },
-                    },
-                }, plotConfig)
-                    .then(() => {
+                        title: {
+                            text: "Cp"
+                        }
+                    }
+                }, plotConfig).then(()=>{
                     attachWhiteBGDownloadButton(cpDiv);
-                })
-                    .catch((err) => {
+                }).catch((err)=>{
                     console.error("Plotly update failed:", err);
                 });
             }
         }
         // Velocity profile 3D plot
-        if (Array.isArray(data.Ux) &&
-            Array.isArray(data.Uy) &&
-            Array.isArray(data.Uz)) {
+        if (Array.isArray(data.Ux) && Array.isArray(data.Uy) && Array.isArray(data.Uz)) {
             const velocityDiv = document.getElementById("velocity-profile-plot");
             if (velocityDiv) {
                 const velocityTrace = {
@@ -1624,36 +1658,49 @@ const updateAeroPlots = async (preFetchedData) => {
                     type: "scatter3d",
                     mode: "markers",
                     name: "Velocity",
-                    marker: { color: plotlyColors.blue, size: 5 },
+                    marker: {
+                        color: plotlyColors.blue,
+                        size: 5
+                    }
                 };
-                void Plotly.react(velocityDiv, [velocityTrace], {
+                void Plotly.react(velocityDiv, [
+                    velocityTrace
+                ], {
                     ...plotLayout,
                     title: createBoldTitle("Velocity Profile"),
                     scene: {
-                        xaxis: { title: { text: "Ux" } },
-                        yaxis: { title: { text: "Uy" } },
-                        zaxis: { title: { text: "Uz" } },
-                    },
-                }, plotConfig)
-                    .then(() => {
+                        xaxis: {
+                            title: {
+                                text: "Ux"
+                            }
+                        },
+                        yaxis: {
+                            title: {
+                                text: "Uy"
+                            }
+                        },
+                        zaxis: {
+                            title: {
+                                text: "Uz"
+                            }
+                        }
+                    }
+                }, plotConfig).then(()=>{
                     attachWhiteBGDownloadButton(velocityDiv);
-                })
-                    .catch((err) => {
+                }).catch((err)=>{
                     console.error("Plotly update failed:", err);
                 });
             }
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error("FOAMFlask Error updating aero plots", error);
     }
 };
-const updatePlots = async (injectedData) => {
+const updatePlots = async (injectedData)=>{
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     console.log("DEBUG: updatePlots polling for tutorial:", selectedTutorial); // Debug log
     if (!selectedTutorial || isUpdatingPlots) {
-        if (!selectedTutorial)
-            console.warn("DEBUG: No tutorial selected, skipping update.");
+        if (!selectedTutorial) console.warn("DEBUG: No tutorial selected, skipping update.");
         return;
     }
     isUpdatingPlots = true;
@@ -1666,8 +1713,7 @@ const updatePlots = async (injectedData) => {
         if (data.error) {
             console.error("FOAMFlask Error fetching plot data", data.error);
             // Only show notification if explicit fetch failed, to avoid WS spam
-            if (!injectedData)
-                showNotification("Error fetching plot data", "error");
+            if (!injectedData) showNotification("Error fetching plot data", "error");
             return;
         }
         // Pressure plot
@@ -1684,27 +1730,35 @@ const updatePlots = async (injectedData) => {
                 type: "scattergl",
                 mode: "lines",
                 name: "Pressure",
-                line: { color: plotlyColors.blue, ...lineStyle, width: 2.5 },
+                line: {
+                    color: plotlyColors.blue,
+                    ...lineStyle,
+                    width: 2.5
+                }
             };
             if (pressureTrace.name && legendVisibility.hasOwnProperty(pressureTrace.name)) {
                 pressureTrace.visible = legendVisibility[pressureTrace.name];
             }
-            void Plotly.react(pressureDiv, [pressureTrace], {
+            void Plotly.react(pressureDiv, [
+                pressureTrace
+            ], {
                 ...plotLayout,
                 title: createBoldTitle("Pressure vs Time"),
                 xaxis: {
                     ...plotLayout.xaxis,
-                    title: { text: "Time (s)" },
+                    title: {
+                        text: "Time (s)"
+                    }
                 },
                 yaxis: {
                     ...plotLayout.yaxis,
-                    title: { text: "Pressure (Pa)" },
-                },
-            }, plotConfig)
-                .then(() => {
+                    title: {
+                        text: "Pressure (Pa)"
+                    }
+                }
+            }, plotConfig).then(()=>{
                 attachWhiteBGDownloadButton(pressureDiv);
-            })
-                .catch((err) => {
+            }).catch((err)=>{
                 console.error("Plotly update failed:", err);
             });
         }
@@ -1723,8 +1777,12 @@ const updatePlots = async (injectedData) => {
                     type: "scattergl",
                     mode: "lines",
                     name: "|U|",
-                    line: { color: plotlyColors.red, ...lineStyle, width: 2.5 },
-                },
+                    line: {
+                        color: plotlyColors.red,
+                        ...lineStyle,
+                        width: 2.5
+                    }
+                }
             ];
             if (data.Ux) {
                 traces.push({
@@ -1737,8 +1795,8 @@ const updatePlots = async (injectedData) => {
                         color: plotlyColors.blue,
                         ...lineStyle,
                         dash: "dash",
-                        width: 2.5,
-                    },
+                        width: 2.5
+                    }
                 });
             }
             if (data.Uy) {
@@ -1752,8 +1810,8 @@ const updatePlots = async (injectedData) => {
                         color: plotlyColors.green,
                         ...lineStyle,
                         dash: "dot",
-                        width: 2.5,
-                    },
+                        width: 2.5
+                    }
                 });
             }
             if (data.Uz) {
@@ -1767,12 +1825,12 @@ const updatePlots = async (injectedData) => {
                         color: plotlyColors.purple,
                         ...lineStyle,
                         dash: "dashdot",
-                        width: 2.5,
-                    },
+                        width: 2.5
+                    }
                 });
             }
             // Apply saved visibility safely
-            traces.forEach((tr) => {
+            traces.forEach((tr)=>{
                 if (tr.name && Object.prototype.hasOwnProperty.call(legendVisibility, tr.name)) {
                     tr.visible = legendVisibility[tr.name];
                 }
@@ -1782,13 +1840,17 @@ const updatePlots = async (injectedData) => {
                 title: createBoldTitle("Velocity vs Time"),
                 xaxis: {
                     ...plotLayout.xaxis,
-                    title: { text: "Time (s)" },
+                    title: {
+                        text: "Time (s)"
+                    }
                 },
                 yaxis: {
                     ...plotLayout.yaxis,
-                    title: { text: "Velocity (m/s)" },
-                },
-            }, plotConfig).then(() => {
+                    title: {
+                        text: "Velocity (m/s)"
+                    }
+                }
+            }, plotConfig).then(()=>{
                 attachWhiteBGDownloadButton(velocityDiv);
             });
         }
@@ -1801,7 +1863,11 @@ const updatePlots = async (injectedData) => {
                 type: "scattergl",
                 mode: "lines",
                 name: "nut",
-                line: { color: plotlyColors.teal, ...lineStyle, width: 2.5 },
+                line: {
+                    color: plotlyColors.teal,
+                    ...lineStyle,
+                    width: 2.5
+                }
             });
         }
         if (data.nuTilda && data.time) {
@@ -1811,7 +1877,11 @@ const updatePlots = async (injectedData) => {
                 type: "scattergl",
                 mode: "lines",
                 name: "nuTilda",
-                line: { color: plotlyColors.cyan, ...lineStyle, width: 2.5 },
+                line: {
+                    color: plotlyColors.cyan,
+                    ...lineStyle,
+                    width: 2.5
+                }
             });
         }
         if (data.k && data.time) {
@@ -1821,7 +1891,11 @@ const updatePlots = async (injectedData) => {
                 type: "scattergl",
                 mode: "lines",
                 name: "k",
-                line: { color: plotlyColors.magenta, ...lineStyle, width: 2.5 },
+                line: {
+                    color: plotlyColors.magenta,
+                    ...lineStyle,
+                    width: 2.5
+                }
             });
         }
         if (data.omega && data.time) {
@@ -1831,7 +1905,11 @@ const updatePlots = async (injectedData) => {
                 type: "scattergl",
                 mode: "lines",
                 name: "omega",
-                line: { color: plotlyColors.brown, ...lineStyle, width: 2.5 },
+                line: {
+                    color: plotlyColors.brown,
+                    ...lineStyle,
+                    width: 2.5
+                }
             });
         }
         if (turbulenceTrace.length > 0) {
@@ -1842,40 +1920,42 @@ const updatePlots = async (injectedData) => {
                     title: createBoldTitle("Turbulence Properties vs Time"),
                     xaxis: {
                         ...plotLayout.xaxis,
-                        title: { text: "Time (s)" },
+                        title: {
+                            text: "Time (s)"
+                        }
                     },
                     yaxis: {
                         ...plotLayout.yaxis,
-                        title: { text: "Value" },
-                    },
-                }, plotConfig).then(() => {
+                        title: {
+                            text: "Value"
+                        }
+                    }
+                }, plotConfig).then(()=>{
                     attachWhiteBGDownloadButton(turbPlotDiv);
                 });
             }
         }
         // Update residuals and aero plots in parallel
-        const updatePromises = [updateResidualsPlot(selectedTutorial)];
+        const updatePromises = [
+            updateResidualsPlot(selectedTutorial)
+        ];
         // ⚡ Bolt Optimization: Pass the already fetched data to avoid redundant request
-        if (aeroVisible)
-            updatePromises.push(updateAeroPlots(data));
+        if (aeroVisible) updatePromises.push(updateAeroPlots(data));
         await Promise.allSettled(updatePromises);
         // After all plots are updated
         if (isFirstPlotLoad) {
             showNotification("Plots loaded successfully", "success", NOTIFY_LONG);
             isFirstPlotLoad = false;
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error("FOAMFlask Error updating plots", error);
         const currentTime = Date.now();
         const selectedTutorial = document.getElementById("tutorialSelect")?.value;
-        if (selectedTutorial &&
-            currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN) {
+        if (selectedTutorial && currentTime - lastErrorNotificationTime > ERROR_NOTIFICATION_COOLDOWN) {
             showNotification(`Error updating plots: ${error instanceof Error ? error.message : "Unknown error"}`, "error");
             lastErrorNotificationTime = currentTime;
         }
-    }
-    finally {
+    } finally{
         isUpdatingPlots = false;
         // FIX: Hide loader after update completes
         const loader = document.getElementById("plotsLoading");
@@ -1884,12 +1964,12 @@ const updatePlots = async (injectedData) => {
         }
         if (pendingPlotUpdate) {
             pendingPlotUpdate = false;
-            requestAnimationFrame(() => updatePlots());
+            requestAnimationFrame(()=>updatePlots());
         }
     }
 };
 // Geometry Functions
-const refreshGeometryList = async (btnElement) => {
+const refreshGeometryList = async (btnElement)=>{
     if (!activeCase) {
         showNotification("No active case selected to list geometries", "warning", NOTIFY_LONG);
         return;
@@ -1915,16 +1995,14 @@ const refreshGeometryList = async (btnElement) => {
                     opt.disabled = true;
                     opt.textContent = "No geometry files found";
                     select.appendChild(opt);
-                }
-                else {
+                } else {
                     // Handle both old format (string[]) and new format ({name, size}[])
-                    data.files.forEach((f) => {
+                    data.files.forEach((f)=>{
                         const opt = document.createElement("option");
                         if (typeof f === 'string') {
                             opt.value = f;
                             opt.textContent = f;
-                        }
-                        else {
+                        } else {
                             opt.value = f.name;
                             opt.textContent = `${f.name} (${formatBytes(f.size)})`;
                         }
@@ -1933,15 +2011,11 @@ const refreshGeometryList = async (btnElement) => {
                 }
             }
         }
-        if (btn)
-            showNotification("Geometry list refreshed", "success", NOTIFY_MEDIUM);
-    }
-    catch (e) {
+        if (btn) showNotification("Geometry list refreshed", "success", NOTIFY_MEDIUM);
+    } catch (e) {
         console.error(e);
-        if (btn)
-            showNotification("Failed to refresh geometry list", "error");
-    }
-    finally {
+        if (btn) showNotification("Failed to refresh geometry list", "error");
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -1950,32 +2024,34 @@ const refreshGeometryList = async (btnElement) => {
         }
     }
 };
-const switchGeometryTab = (tab) => {
+const switchGeometryTab = (tab)=>{
     const track = document.getElementById("geometry-track");
     const pill = document.getElementById("geometry-bg-pill");
     const uploadBtn = document.getElementById("tab-btn-geo-upload");
     const resourceBtn = document.getElementById("tab-btn-geo-resources");
     // Only toggle text styles now, background is handled by the pill
-    const activeTextClasses = ["text-cyan-800", "font-semibold"];
-    const inactiveTextClasses = ["text-gray-600", "hover:text-gray-800", "font-medium"];
+    const activeTextClasses = [
+        "text-cyan-800",
+        "font-semibold"
+    ];
+    const inactiveTextClasses = [
+        "text-gray-600",
+        "hover:text-gray-800",
+        "font-medium"
+    ];
     if (tab === "upload") {
-        if (track)
-            track.style.transform = "translateX(0%)";
-        if (pill)
-            pill.style.transform = "translateX(0)";
+        if (track) track.style.transform = "translateX(0%)";
+        if (pill) pill.style.transform = "translateX(0)";
         uploadBtn?.classList.remove(...inactiveTextClasses);
         uploadBtn?.classList.add(...activeTextClasses);
         uploadBtn?.setAttribute("aria-selected", "true");
         resourceBtn?.classList.remove(...activeTextClasses);
         resourceBtn?.classList.add(...inactiveTextClasses);
         resourceBtn?.setAttribute("aria-selected", "false");
-    }
-    else {
-        if (track)
-            track.style.transform = "translateX(-100%)";
+    } else {
+        if (track) track.style.transform = "translateX(-100%)";
         // Move pill to the second position (100% width + gap)
-        if (pill)
-            pill.style.transform = "translateX(calc(100% + 0.25rem))";
+        if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
         resourceBtn?.classList.remove(...inactiveTextClasses);
         resourceBtn?.classList.add(...activeTextClasses);
         resourceBtn?.setAttribute("aria-selected", "true");
@@ -1985,10 +2061,9 @@ const switchGeometryTab = (tab) => {
         loadResourceGeometries();
     }
 };
-const loadResourceGeometries = async (refresh = false) => {
+const loadResourceGeometries = async (refresh = false)=>{
     const select = document.getElementById("resourceGeometrySelect");
-    if (!select)
-        return;
+    if (!select) return;
     // Frontend Cache Check: If we have options (more than just the placeholder/loading) and strict refresh isn't requested
     if (!refresh && select.options.length > 1) {
         return;
@@ -2012,9 +2087,8 @@ const loadResourceGeometries = async (refresh = false) => {
                 opt.disabled = true;
                 opt.textContent = "No geometry files found";
                 select.appendChild(opt);
-            }
-            else {
-                data.files.forEach((f) => {
+            } else {
+                data.files.forEach((f)=>{
                     const opt = document.createElement("option");
                     opt.value = f;
                     opt.textContent = f;
@@ -2022,12 +2096,10 @@ const loadResourceGeometries = async (refresh = false) => {
                 });
             }
         }
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
         select.innerHTML = '<option>Error loading list</option>';
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.classList.remove("cursor-wait", "opacity-75");
@@ -2035,14 +2107,14 @@ const loadResourceGeometries = async (refresh = false) => {
         }
     }
 };
-const fetchResourceGeometry = async (btnElement) => {
+const fetchResourceGeometry = async (btnElement)=>{
     const select = document.getElementById("resourceGeometrySelect");
     const filename = select?.value;
     if (!filename || !activeCase) {
         showNotification("Please select a geometry and active case", "error");
         return;
     }
-    const btn = (btnElement || document.getElementById("fetchResourceGeometryBtn"));
+    const btn = btnElement || document.getElementById("fetchResourceGeometryBtn");
     const originalText = btn ? btn.innerHTML : "Fetch & Import";
     if (btn) {
         btn.disabled = true;
@@ -2051,22 +2123,24 @@ const fetchResourceGeometry = async (btnElement) => {
     try {
         const res = await fetch("/api/resources/geometry/fetch", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename, caseName: activeCase })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                filename,
+                caseName: activeCase
+            })
         });
         const result = await res.json();
         if (result.success) {
             showNotification(`Fetched ${filename} successfully`, "success");
             refreshGeometryList();
-        }
-        else {
+        } else {
             showNotification(result.message || "Fetch failed", "error");
         }
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Error fetching geometry", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -2074,7 +2148,7 @@ const fetchResourceGeometry = async (btnElement) => {
     }
 };
 window.fetchResourceGeometry = fetchResourceGeometry;
-const setCase = (btnElement) => {
+const setCase = (btnElement)=>{
     const caseDirInput = document.getElementById("caseDir");
     const caseDir = caseDirInput.value.trim();
     if (!caseDir) {
@@ -2092,29 +2166,26 @@ const setCase = (btnElement) => {
     fetchWithCache("/set_case", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         },
-        body: JSON.stringify({ caseDir }),
-    })
-        .then((data) => {
+        body: JSON.stringify({
+            caseDir
+        })
+    }).then((data)=>{
         if (data.caseDir) {
             showNotification(`Case root set to: ${data.caseDir}`, "success");
             refreshCaseList(); // Refresh the list of cases
             success = true;
-        }
-        else if (data.output) {
+        } else if (data.output) {
             showNotification(data.output, "info"); // Likely an error message from backend
         }
-    })
-        .catch((err) => {
+    }).catch((err)=>{
         showNotification(`Error setting case root: ${getErrorMessage(err)}`, "error");
-    })
-        .finally(() => {
+    }).finally(()=>{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Set!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -2123,29 +2194,26 @@ const setCase = (btnElement) => {
     });
 };
 window.setCase = setCase;
-const openCaseRoot = (btn) => {
+const openCaseRoot = (btn)=>{
     fetchWithCache("/open_case_root", {
-        method: "POST",
-    })
-        .then((data) => {
+        method: "POST"
+    }).then((data)=>{
         if (data.output) {
             if (data.output.toLowerCase().includes("error") || data.output.toLowerCase().includes("failed")) {
                 showNotification(data.output, "error");
-            }
-            else {
+            } else {
                 showNotification(data.output, "success");
             }
         }
-    })
-        .catch((err) => {
+    }).catch((err)=>{
         showNotification(`Failed to open case root: ${getErrorMessage(err)}`, "error");
     });
 };
 window.openCaseRoot = openCaseRoot;
 window.switchGeometryTab = switchGeometryTab;
-const uploadGeometry = async (btnElement) => {
+const uploadGeometry = async (btnElement)=>{
     const input = document.getElementById("geometryUpload");
-    const btn = (btnElement || document.getElementById("uploadGeometryBtn"));
+    const btn = btnElement || document.getElementById("uploadGeometryBtn");
     const file = input?.files?.[0];
     if (!activeCase) {
         showNotification("Please select an active case first", "warning");
@@ -2156,7 +2224,9 @@ const uploadGeometry = async (btnElement) => {
         if (input) {
             input.focus();
             input.setAttribute("aria-invalid", "true");
-            input.addEventListener("change", () => input.removeAttribute("aria-invalid"), { once: true });
+            input.addEventListener("change", ()=>input.removeAttribute("aria-invalid"), {
+                once: true
+            });
         }
         return;
     }
@@ -2168,9 +2238,13 @@ const uploadGeometry = async (btnElement) => {
         return;
     }
     // Validation: Check file extension
-    const allowedExtensions = [".stl", ".obj", ".gz"];
+    const allowedExtensions = [
+        ".stl",
+        ".obj",
+        ".gz"
+    ];
     const fileName = file.name.toLowerCase();
-    const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    const isValidExtension = allowedExtensions.some((ext)=>fileName.endsWith(ext));
     if (!isValidExtension) {
         showNotification("Invalid file type. Allowed: .stl, .obj, .gz", "error", NOTIFY_MEDIUM);
         return;
@@ -2187,24 +2261,23 @@ const uploadGeometry = async (btnElement) => {
     formData.append("file", file);
     formData.append("caseName", activeCase);
     try {
-        const response = await fetch("/api/geometry/upload", { method: "POST", body: formData });
-        if (!response.ok)
-            throw new Error("Upload failed");
+        const response = await fetch("/api/geometry/upload", {
+            method: "POST",
+            body: formData
+        });
+        if (!response.ok) throw new Error("Upload failed");
         showNotification("Geometry uploaded successfully", "success");
         input.value = "";
         refreshGeometryList();
         success = true;
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Failed to upload geometry", "error");
-    }
-    finally {
+    } finally{
         // Restore button state
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Uploaded!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -2212,13 +2285,11 @@ const uploadGeometry = async (btnElement) => {
         }
     }
 };
-const deleteGeometry = async (btnElement) => {
+const deleteGeometry = async (btnElement)=>{
     const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
-        return;
+    if (!filename || !activeCase) return;
     const confirmed = await showConfirmModal("Delete Geometry", `Are you sure you want to delete ${filename}?`);
-    if (!confirmed)
-        return;
+    if (!confirmed) return;
     const btn = btnElement;
     let originalText = "";
     let success = false;
@@ -2229,20 +2300,26 @@ const deleteGeometry = async (btnElement) => {
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...`;
     }
     try {
-        await fetch("/api/geometry/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        await fetch("/api/geometry/delete", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                filename
+            })
+        });
         await refreshGeometryList();
         showNotification("Geometry deleted", "success");
         success = true;
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Failed", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Deleted!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -2250,11 +2327,10 @@ const deleteGeometry = async (btnElement) => {
         }
     }
 };
-const loadGeometryView = async (btnElement) => {
+const loadGeometryView = async (btnElement)=>{
     const filename = document.getElementById("geometrySelect")?.value;
-    if (!filename || !activeCase)
-        return;
-    const btn = (btnElement || document.getElementById("viewGeometryBtn"));
+    if (!filename || !activeCase) return;
+    const btn = btnElement || document.getElementById("viewGeometryBtn");
     // Check for slow hardware
     let optimize = false;
     if (detectSlowHardware()) {
@@ -2265,26 +2341,38 @@ const loadGeometryView = async (btnElement) => {
         placeholderId: "geometryPlaceholder",
         loadingMessage: "Loading...",
         apiUrl: "/api/geometry/view",
-        apiBody: { caseName: activeCase, filename, optimize },
+        apiBody: {
+            caseName: activeCase,
+            filename,
+            optimize
+        },
         btnElement: btn,
         btnLoadingText: "Loading..."
     });
     // Info
     try {
-        const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        const res = await fetch("/api/geometry/info", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                filename
+            })
+        });
         const info = await res.json();
         if (info.success) {
             const div = document.getElementById("geometryInfoContent");
             if (div) {
                 const b = info.bounds;
-                const fmt = (n) => n.toFixed(3);
+                const fmt = (n)=>n.toFixed(3);
                 const dx = (b[1] - b[0]).toFixed(3);
                 const dy = (b[3] - b[2]).toFixed(3);
                 const dz = (b[5] - b[4]).toFixed(3);
-                const setText = (id, text) => {
+                const setText = (id, text)=>{
                     const el = document.getElementById(id);
-                    if (el)
-                        el.textContent = text;
+                    if (el) el.textContent = text;
                 };
                 setText("geo-bound-x-min", fmt(b[0]));
                 setText("geo-bound-x-max", fmt(b[1]));
@@ -2298,11 +2386,10 @@ const loadGeometryView = async (btnElement) => {
             }
             document.getElementById("geometryInfo")?.classList.remove("hidden");
         }
-    }
-    catch (e) { }
+    } catch (e) {}
 };
 // Meshing Functions
-const fillBoundsFromGeometry = async (btnElement) => {
+const fillBoundsFromGeometry = async (btnElement)=>{
     if (!activeCase) {
         showNotification("Please select an active case first", "warning");
         return;
@@ -2322,7 +2409,16 @@ const fillBoundsFromGeometry = async (btnElement) => {
         btn.innerHTML = `Auto-filling...`;
     }
     try {
-        const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
+        const res = await fetch("/api/geometry/info", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                filename
+            })
+        });
         const info = await res.json();
         if (info.success) {
             const b = info.bounds;
@@ -2335,15 +2431,12 @@ const fillBoundsFromGeometry = async (btnElement) => {
             document.getElementById("bmMin").value = minStr;
             document.getElementById("bmMax").value = maxStr;
             showNotification(`Bounds updated from ${filename}`, "success");
-        }
-        else {
+        } else {
             showNotification("Failed to get geometry info", "error");
         }
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Error auto-filling bounds", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -2351,7 +2444,7 @@ const fillBoundsFromGeometry = async (btnElement) => {
         }
     }
 };
-const generateBlockMeshDict = async (btnElement) => {
+const generateBlockMeshDict = async (btnElement)=>{
     if (!activeCase) {
         showNotification("Please select an active case first", "warning");
         return;
@@ -2370,13 +2463,25 @@ const generateBlockMeshDict = async (btnElement) => {
     const cells = document.getElementById("bmCells").value.trim().split(/\s+/).map(Number);
     const grading = document.getElementById("bmGrading").value.trim().split(/\s+/).map(Number);
     try {
-        await fetch("/api/meshing/blockMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { min_point: minVal, max_point: maxVal, cells, grading } }) });
+        await fetch("/api/meshing/blockMesh/config", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                config: {
+                    min_point: minVal,
+                    max_point: maxVal,
+                    cells,
+                    grading
+                }
+            })
+        });
         showNotification("Generated blockMeshDict", "success");
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Failed to generate blockMeshDict", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -2384,7 +2489,7 @@ const generateBlockMeshDict = async (btnElement) => {
         }
     }
 };
-const generateSnappyHexMeshDict = async (btnElement) => {
+const generateSnappyHexMeshDict = async (btnElement)=>{
     const filename = document.getElementById("shmObjectList")?.value;
     if (!activeCase) {
         showNotification("Please select an active case first", "warning");
@@ -2412,15 +2517,30 @@ const generateSnappyHexMeshDict = async (btnElement) => {
     // For now, I'll add selectShmObject.
     const level = 0; // Stub as element might be missing
     const locationInput = document.getElementById("shmLocation");
-    const location = locationInput ? locationInput.value.trim().split(/\s+/).map(Number) : [0, 0, 0];
+    const location = locationInput ? locationInput.value.trim().split(/\s+/).map(Number) : [
+        0,
+        0,
+        0
+    ];
     try {
-        await fetch("/api/meshing/snappyHexMesh/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, config: { stl_filename: filename, refinement_level: level, location_in_mesh: location } }) });
+        await fetch("/api/meshing/snappyHexMesh/config", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                config: {
+                    stl_filename: filename,
+                    refinement_level: level,
+                    location_in_mesh: location
+                }
+            })
+        });
         showNotification("Generated snappyHexMeshDict", "success");
-    }
-    catch (e) {
+    } catch (e) {
         showNotification("Failed to generate snappyHexMeshDict", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -2428,34 +2548,27 @@ const generateSnappyHexMeshDict = async (btnElement) => {
         }
     }
 };
-const selectShmObject = () => {
+const selectShmObject = ()=>{
     const list = document.getElementById("shmObjectList");
     const props = document.getElementById("shmObjectProps");
     const placeholder = document.getElementById("shmObjectPlaceholder");
     const nameLabel = document.getElementById("shmSelectedObjectName");
     if (list && list.value) {
-        if (props)
-            props.classList.remove("hidden");
-        if (placeholder)
-            placeholder.classList.add("hidden");
-        if (nameLabel)
-            nameLabel.textContent = list.value;
-        // In a real app, we would fetch existing config for this object here
-    }
-    else {
-        if (props)
-            props.classList.add("hidden");
-        if (placeholder)
-            placeholder.classList.remove("hidden");
+        if (props) props.classList.remove("hidden");
+        if (placeholder) placeholder.classList.add("hidden");
+        if (nameLabel) nameLabel.textContent = list.value;
+    // In a real app, we would fetch existing config for this object here
+    } else {
+        if (props) props.classList.add("hidden");
+        if (placeholder) placeholder.classList.remove("hidden");
     }
 };
-const updateShmObjectConfig = () => {
+const updateShmObjectConfig = ()=>{
     // Stub for updating object config
     console.log("Updated object config");
 };
-const runMeshingCommand = async (cmd, btnElement) => {
-    if (!activeCase)
-        return;
+const runMeshingCommand = async (cmd, btnElement)=>{
+    if (!activeCase) return;
     const btn = btnElement;
     let originalText = "";
     let success = false;
@@ -2467,13 +2580,21 @@ const runMeshingCommand = async (cmd, btnElement) => {
     }
     showNotification(`Running ${cmd}`, "info");
     try {
-        const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
+        const res = await fetch("/api/meshing/run", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                caseName: activeCase,
+                command: cmd
+            })
+        });
         const data = await res.json();
         if (data.success) {
             showNotification("Meshing completed successfully", "success");
             success = true;
-        }
-        else {
+        } else {
             showNotification(data.message || "Meshing failed", "error");
         }
         if (data.output) {
@@ -2483,17 +2604,14 @@ const runMeshingCommand = async (cmd, btnElement) => {
                 div.scrollTop = div.scrollHeight; // Auto-scroll to bottom
             }
         }
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
         showNotification("Meshing failed to execute", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Completed!");
-            }
-            else {
+            } else {
                 btn.disabled = false;
                 btn.removeAttribute("aria-busy");
                 btn.innerHTML = originalText;
@@ -2502,7 +2620,7 @@ const runMeshingCommand = async (cmd, btnElement) => {
     }
 };
 // Visualizer
-const runFoamToVTK = async (btnElement) => {
+const runFoamToVTK = async (btnElement)=>{
     if (!activeCase) {
         showNotification("Please select a case first", "warning");
         return;
@@ -2519,15 +2637,22 @@ const runFoamToVTK = async (btnElement) => {
     try {
         const response = await fetch("/run_foamtovtk", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tutorial: activeCase, caseDir: caseDir }) // passing caseDir global var
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tutorial: activeCase,
+                caseDir: caseDir
+            }) // passing caseDir global var
         });
-        if (!response.ok)
-            throw new Error("Failed to start foamToVTK");
+        if (!response.ok) throw new Error("Failed to start foamToVTK");
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        const read = async () => {
-            const { done, value } = (await reader?.read()) || { done: true, value: undefined };
+        const read = async ()=>{
+            const { done, value } = await reader?.read() || {
+                done: true,
+                value: undefined
+            };
             if (done) {
                 showNotification("foamToVTK completed", "success");
                 flushOutputBuffer();
@@ -2535,7 +2660,7 @@ const runFoamToVTK = async (btnElement) => {
                 return;
             }
             const text = decoder.decode(value);
-            text.split("\n").forEach(line => {
+            text.split("\n").forEach((line)=>{
                 if (line.trim()) {
                     // Simply append to output, maybe parse for errors if needed
                     const type = /error/i.test(line) ? "stderr" : "stdout";
@@ -2545,12 +2670,10 @@ const runFoamToVTK = async (btnElement) => {
             await read();
         };
         await read();
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
         showNotification("Error running foamToVTK", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -2558,7 +2681,7 @@ const runFoamToVTK = async (btnElement) => {
         }
     }
 };
-const refreshMeshList = async (btnElement) => {
+const refreshMeshList = async (btnElement)=>{
     if (!activeCase) {
         showNotification("No active case selected to list meshes", "warning", NOTIFY_LONG);
         return;
@@ -2579,10 +2702,9 @@ const refreshMeshList = async (btnElement) => {
         if (select && data.meshes) {
             if (data.meshes.length === 0) {
                 select.innerHTML = '<option value="" disabled selected>No mesh files found</option>';
-            }
-            else {
+            } else {
                 select.innerHTML = '<option value="">-- Select a mesh file --</option>';
-                data.meshes.forEach((m) => {
+                data.meshes.forEach((m)=>{
                     const opt = document.createElement("option");
                     opt.value = m.path;
                     opt.textContent = m.size ? `${m.name} (${formatBytes(m.size)})` : m.name;
@@ -2590,14 +2712,11 @@ const refreshMeshList = async (btnElement) => {
                 });
             }
         }
-        if (btn)
-            showNotification("Mesh list refreshed", "success", NOTIFY_MEDIUM);
-    }
-    catch (e) {
+        if (btn) showNotification("Mesh list refreshed", "success", NOTIFY_MEDIUM);
+    } catch (e) {
         console.error("Error refreshing mesh list:", e);
         showNotification("Failed to refresh mesh list", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -2606,7 +2725,7 @@ const refreshMeshList = async (btnElement) => {
         }
     }
 };
-const loadMeshVisualization = async () => {
+const loadMeshVisualization = async ()=>{
     const select = document.getElementById("meshSelect");
     const path = select?.value;
     const btn = document.getElementById("loadMeshBtn");
@@ -2615,7 +2734,9 @@ const loadMeshVisualization = async () => {
         if (select) {
             select.focus();
             select.setAttribute("aria-invalid", "true");
-            select.addEventListener("change", () => select.removeAttribute("aria-invalid"), { once: true });
+            select.addEventListener("change", ()=>select.removeAttribute("aria-invalid"), {
+                once: true
+            });
         }
         return;
     }
@@ -2631,12 +2752,10 @@ const loadMeshVisualization = async () => {
         if (isInteractiveMode) {
             // Default to interactive viewer
             await refreshInteractiveViewer();
-        }
-        else {
+        } else {
             await updateMeshView();
         }
-    }
-    finally {
+    } finally{
         // Restore button state
         if (btn) {
             btn.disabled = false;
@@ -2645,16 +2764,17 @@ const loadMeshVisualization = async () => {
         }
     }
 };
-const updateMeshView = async () => {
-    if (!currentMeshPath)
-        return;
+const updateMeshView = async ()=>{
+    if (!currentMeshPath) return;
     const showEdges = document.getElementById("showEdges")?.checked ?? true;
     const color = document.getElementById("meshColor")?.value ?? "lightblue";
     const cameraPosition = document.getElementById("cameraPosition")?.value || null;
     try {
         const res = await fetch("/api/mesh_screenshot", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
                 file_path: currentMeshPath,
                 width: 800,
@@ -2672,8 +2792,7 @@ const updateMeshView = async () => {
             document.getElementById("meshControls")?.classList.remove("hidden");
             document.getElementById("meshActionButtons")?.classList.add("hidden");
         }
-    }
-    catch (e) { }
+    } catch (e) {}
 };
 function displayMeshInfo(meshInfo) {
     const meshInfoDiv = document.getElementById("meshInfo");
@@ -2688,29 +2807,33 @@ function displayMeshInfo(meshInfo) {
     }
     // Format the mesh information
     const infoItems = [
-        { label: "Points", value: meshInfo.n_points?.toLocaleString() || "N/A" },
-        { label: "Cells", value: meshInfo.n_cells?.toLocaleString() || "N/A" },
+        {
+            label: "Points",
+            value: meshInfo.n_points?.toLocaleString() || "N/A"
+        },
+        {
+            label: "Cells",
+            value: meshInfo.n_cells?.toLocaleString() || "N/A"
+        },
         {
             label: "Length",
-            value: meshInfo.length ? meshInfo.length.toFixed(3) : "N/A",
+            value: meshInfo.length ? meshInfo.length.toFixed(3) : "N/A"
         },
         {
             label: "Volume",
-            value: meshInfo.volume ? meshInfo.volume.toFixed(3) : "N/A",
-        },
+            value: meshInfo.volume ? meshInfo.volume.toFixed(3) : "N/A"
+        }
     ];
-    meshInfoContent.innerHTML = infoItems
-        .map((item) => `<div><strong>${item.label}:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${item.value}</button></div>`)
-        .join("");
+    meshInfoContent.innerHTML = infoItems.map((item)=>`<div><strong>${item.label}:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${item.value}</button></div>`).join("");
     // Add bounds if available
     if (meshInfo.bounds && Array.isArray(meshInfo.bounds)) {
         // Space separated for easier pasting into vector fields
-        const boundsStr = `${meshInfo.bounds.map((b) => b.toFixed(2)).join(" ")}`;
+        const boundsStr = `${meshInfo.bounds.map((b)=>b.toFixed(2)).join(" ")}`;
         meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${boundsStr}</button></div>`;
     }
     // Add center if available
     if (meshInfo.center && Array.isArray(meshInfo.center)) {
-        const centerStr = `${meshInfo.center.map((c) => c.toFixed(2)).join(" ")}`;
+        const centerStr = `${meshInfo.center.map((c)=>c.toFixed(2)).join(" ")}`;
         meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${centerStr}</button></div>`;
     }
     meshInfoDiv.classList.remove("hidden");
@@ -2719,8 +2842,7 @@ async function refreshInteractiveViewer(successMessage = "Interactive mode enabl
     const toggleBtn = document.getElementById("toggleInteractiveBtn");
     const cameraControl = document.getElementById("cameraPosition");
     const updateBtn = document.getElementById("updateViewBtn");
-    if (!toggleBtn || !cameraControl || !updateBtn)
-        return;
+    if (!toggleBtn || !cameraControl || !updateBtn) return;
     const showEdgesInput = document.getElementById("showEdges");
     const colorInput = document.getElementById("meshColor");
     if (!showEdgesInput || !colorInput) {
@@ -2733,17 +2855,17 @@ async function refreshInteractiveViewer(successMessage = "Interactive mode enabl
     await loadInteractiveViewerCommon({
         iframeId: "meshInteractive",
         placeholderId: "meshPlaceholder",
-        imageId: "meshImage", // Special handling for mesh tab
+        imageId: "meshImage",
         loadingMessage: "Loading interactive viewer...",
         apiUrl: "/api/mesh_interactive",
         apiBody: {
             file_path: currentMeshPath,
             show_edges: showEdges,
-            color: color,
+            color: color
         },
         // We don't pass toggleBtn here because we handle its state manually below
         // (it toggles between Static/Interactive, not just loading)
-        onSuccess: () => {
+        onSuccess: ()=>{
             // Update button text
             toggleBtn.textContent = "Static Mode";
             toggleBtn.classList.remove("bg-purple-500", "hover:bg-purple-600");
@@ -2754,7 +2876,7 @@ async function refreshInteractiveViewer(successMessage = "Interactive mode enabl
             document.getElementById("interactiveModeHint")?.classList.remove("hidden");
             showNotification(successMessage, "success", NOTIFY_LONG);
         },
-        onError: (error) => {
+        onError: (error)=>{
             const errorMessage = error instanceof Error ? error.message : "Unknown error";
             showNotification(`Failed to load interactive viewer: ${errorMessage}`, "error");
             // Reset to static mode
@@ -2785,17 +2907,11 @@ async function toggleInteractiveMode() {
     const toggleBtn = document.getElementById("toggleInteractiveBtn");
     const cameraControl = document.getElementById("cameraPosition");
     const updateBtn = document.getElementById("updateViewBtn");
-    if (!toggleBtn || !cameraControl || !updateBtn)
-        return; // Guard clause for safety
+    if (!toggleBtn || !cameraControl || !updateBtn) return; // Guard clause for safety
     // Initialize button state if needed (e.g. on first load)
     // But since we default to true, the HTML should probably match or we update it here.
     // actually refreshInteractiveViewer updates the button state on success.
-    if (!meshImage ||
-        !meshInteractive ||
-        !meshPlaceholder ||
-        !toggleBtn ||
-        !cameraControl ||
-        !updateBtn) {
+    if (!meshImage || !meshInteractive || !meshPlaceholder || !toggleBtn || !cameraControl || !updateBtn) {
         showNotification("Required mesh elements not found", "error");
         return;
     }
@@ -2803,8 +2919,7 @@ async function toggleInteractiveMode() {
     if (isInteractiveMode) {
         // Switch to interactive mode
         await refreshInteractiveViewer("Interactive mode enabled");
-    }
-    else {
+    } else {
         // Switch back to static mode
         meshInteractive.classList.add("hidden");
         meshImage.classList.remove("hidden");
@@ -2822,64 +2937,64 @@ async function toggleInteractiveMode() {
 // Set camera view for interactive mode
 function setCameraView(view) {
     const iframe = document.getElementById("meshInteractive");
-    if (!iframe || !iframe.contentWindow)
-        return;
+    if (!iframe || !iframe.contentWindow) return;
     try {
         // Send message to iframe to set camera view
         iframe.contentWindow.postMessage({
             type: "setCameraView",
-            view: view,
+            view: view
         }, "*");
         showNotification(`Set view to ${view.toUpperCase()}`, "info", NOTIFY_SHORT);
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error setting camera view:", error);
     }
 }
 // Reset camera to default view
 function resetCamera() {
     const iframe = document.getElementById("meshInteractive");
-    if (!iframe || !iframe.contentWindow)
-        return;
+    if (!iframe || !iframe.contentWindow) return;
     try {
         // Send message to iframe to reset camera
         iframe.contentWindow.postMessage({
-            type: "resetCamera",
+            type: "resetCamera"
         }, "*");
         showNotification("Camera view reset", "info", NOTIFY_SHORT);
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error resetting camera:", error);
     }
 }
 // Initial state: Root node represents the base mesh
-let postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
-let activePipelineId = "root";
-const deletePipelineStep = (id) => {
-    if (id === 'root')
-        return; // Cannot delete root
-    // Find children recursively and delete them
-    const children = postPipeline.filter(n => n.parentId === id);
-    children.forEach(child => deletePipelineStep(child.id));
-    // Remove this node
-    postPipeline = postPipeline.filter(n => n.id !== id);
-    // If active node is no longer in pipeline (because it was deleted), reset to root
-    if (!postPipeline.find(n => n.id === activePipelineId)) {
-        selectPipelineStep('root');
+let postPipeline = [
+    {
+        id: "root",
+        type: "root",
+        name: "Mesh",
+        parentId: null
     }
-    else {
+];
+let activePipelineId = "root";
+const deletePipelineStep = (id)=>{
+    if (id === 'root') return; // Cannot delete root
+    // Find children recursively and delete them
+    const children = postPipeline.filter((n)=>n.parentId === id);
+    children.forEach((child)=>deletePipelineStep(child.id));
+    // Remove this node
+    postPipeline = postPipeline.filter((n)=>n.id !== id);
+    // If active node is no longer in pipeline (because it was deleted), reset to root
+    if (!postPipeline.find((n)=>n.id === activePipelineId)) {
+        selectPipelineStep('root');
+    } else {
         renderPipeline();
     }
 };
 window.deletePipelineStep = deletePipelineStep;
-const renderPipeline = () => {
+const renderPipeline = ()=>{
     const container = document.getElementById("post-pipeline-view");
-    if (!container)
-        return;
+    if (!container) return;
     // Clear container
     container.innerHTML = "";
     // Render full pipeline (assuming linear for MVP)
-    postPipeline.forEach((node, index) => {
+    postPipeline.forEach((node, index)=>{
         // 🎨 Palette UX: Accessible Button Group
         const groupEl = document.createElement("div");
         const isActive = node.id === activePipelineId;
@@ -2889,12 +3004,9 @@ const renderPipeline = () => {
         groupEl.className = `inline-flex items-center rounded-full border transition-colors whitespace-nowrap ${isActive ? activeWrapper : inactiveWrapper}`;
         // Icon based on type
         let icon = "";
-        if (node.type === "root")
-            icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>`;
-        else if (node.type === "contour")
-            icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`;
-        else
-            icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"></circle></svg>`;
+        if (node.type === "root") icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>`;
+        else if (node.type === "contour") icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`;
+        else icon = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"></circle></svg>`;
         // Select Button (Main)
         const selectBtn = document.createElement("button");
         const hasDelete = node.type !== 'root';
@@ -2904,7 +3016,7 @@ const renderPipeline = () => {
         const textClass = isActive ? "text-white" : "text-gray-700";
         selectBtn.className = `flex items-center gap-2 px-3 py-1.5 ${roundedClass} ${textClass} text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500 transition-colors`;
         selectBtn.innerHTML = `${icon} <span>${node.name}</span>`;
-        selectBtn.onclick = () => selectPipelineStep(node.id);
+        selectBtn.onclick = ()=>selectPipelineStep(node.id);
         groupEl.appendChild(selectBtn);
         // Delete Button (Sibling)
         if (hasDelete) {
@@ -2915,7 +3027,7 @@ const renderPipeline = () => {
             delBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
             delBtn.setAttribute("aria-label", `Delete ${node.name}`);
             delBtn.title = "Delete this step";
-            delBtn.onclick = (e) => {
+            delBtn.onclick = (e)=>{
                 e.stopPropagation();
                 if (confirm(`Delete ${node.name}? This will remove all subsequent steps.`)) {
                     deletePipelineStep(node.id);
@@ -2943,46 +3055,32 @@ const renderPipeline = () => {
         }
     });
 };
-const selectPipelineStep = (id) => {
+const selectPipelineStep = (id)=>{
     activePipelineId = id;
-    const node = postPipeline.find(n => n.id === id);
-    if (!node)
-        return;
+    const node = postPipeline.find((n)=>n.id === id);
+    if (!node) return;
     renderPipeline();
     // Show config for this step
     const landing = document.getElementById("post-landing-view");
     const contour = document.getElementById("post-contour-view");
-    if (!landing || !contour)
-        return;
+    if (!landing || !contour) return;
     // If selecting a "contour" node, show contour view
     if (node.type === "contour") {
         landing.classList.add("hidden");
         contour.classList.remove("hidden");
         refreshPostList(); // Refresh VTK list
-    }
-    // If selecting root or any node where we want to add a child (conceptually), show landing
-    // For this simplified logic: clicking a node shows its config.
-    // How do we add new?
-    // Let's say if you click "Back to Selection" or select "Mesh" (root), you get the landing view to ADD a new child to ROOT.
-    // Actually, standard behavior: selecting a node shows its settings.
-    // To add a new one, we need an "Add" mechanism.
-    // For now, let's treat the Landing View as the "Add Child to Current Node" view if we are at a leaf or explicitly adding.
-    // But to keep it simple and consistent with previous turn:
-    // If we are at ROOT, show Landing View to start a chain.
-    // If we are at a Leaf, showing the Config View.
-    else if (node.type === "root") {
+    } else if (node.type === "root") {
         // Root node -> Show selection to add new filter
         landing.classList.remove("hidden");
         contour.classList.add("hidden");
-    }
-    else {
+    } else {
         // Placeholder for other types
         landing.classList.add("hidden");
         contour.classList.add("hidden");
-        // Could show a "Not implemented" view here
+    // Could show a "Not implemented" view here
     }
 };
-const switchPostView = (view) => {
+const switchPostView = (view)=>{
     if (view === "contour") {
         // Add a new contour node to the pipeline
         const newNodeId = `contour_${Date.now()}`;
@@ -2993,25 +3091,23 @@ const switchPostView = (view) => {
             parentId: activePipelineId
         });
         selectPipelineStep(newNodeId);
-    }
-    else {
+    } else {
         // "Back" means go to parent or root?
         // Or just go to root to add another branch?
         // Let's assume "Back" means go up one level
-        const current = postPipeline.find(n => n.id === activePipelineId);
+        const current = postPipeline.find((n)=>n.id === activePipelineId);
         if (current && current.parentId) {
             selectPipelineStep(current.parentId);
-        }
-        else {
+        } else {
             selectPipelineStep("root");
         }
     }
 };
 window.switchPostView = switchPostView;
-const refreshPostList = async (btnElement) => {
+const refreshPostList = async (btnElement)=>{
     refreshPostListVTK(btnElement);
 };
-const refreshPostListVTK = async (btnElement) => {
+const refreshPostListVTK = async (btnElement)=>{
     if (!activeCase) {
         showNotification("No active case selected to list VTK files", "warning", NOTIFY_LONG);
         return;
@@ -3032,10 +3128,9 @@ const refreshPostListVTK = async (btnElement) => {
         if (select && data.meshes) {
             if (data.meshes.length === 0) {
                 select.innerHTML = '<option value="" disabled selected>No VTK files found</option>';
-            }
-            else {
+            } else {
                 select.innerHTML = '<option value="">-- Select a VTK file --</option>';
-                data.meshes.forEach((m) => {
+                data.meshes.forEach((m)=>{
                     const opt = document.createElement("option");
                     opt.value = m.path;
                     opt.textContent = m.name;
@@ -3043,15 +3138,11 @@ const refreshPostListVTK = async (btnElement) => {
                 });
             }
         }
-        if (btn)
-            showNotification("VTK file list refreshed", "success", NOTIFY_MEDIUM);
-    }
-    catch (e) {
+        if (btn) showNotification("VTK file list refreshed", "success", NOTIFY_MEDIUM);
+    } catch (e) {
         console.error(e);
-        if (btn)
-            showNotification("Failed to refresh VTK list", "error");
-    }
-    finally {
+        if (btn) showNotification("Failed to refresh VTK list", "error");
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
@@ -3060,11 +3151,11 @@ const refreshPostListVTK = async (btnElement) => {
         }
     }
 };
-const runPostOperation = async (operation) => {
-    // Stub
+const runPostOperation = async (operation)=>{
+// Stub
 };
-const loadCustomVTKFile = async () => { };
-const loadContourVTK = async () => {
+const loadCustomVTKFile = async ()=>{};
+const loadContourVTK = async ()=>{
     const vtkFileSelect = document.getElementById("vtkFileSelect");
     let fileToLoad = "";
     if (vtkFileSelect && vtkFileSelect.value) {
@@ -3085,12 +3176,10 @@ const loadContourVTK = async () => {
     try {
         await loadContourMesh(fileToLoad);
         showNotification("Contour mesh loaded successfully.", "success");
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
         showNotification("Failed to load contour mesh.", "error");
-    }
-    finally {
+    } finally{
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -3099,7 +3188,7 @@ const loadContourVTK = async () => {
 };
 window.loadContourVTK = loadContourVTK;
 // Check startup status
-const checkStartupStatus = async () => {
+const checkStartupStatus = async ()=>{
     const modal = document.createElement("div");
     modal.id = "startup-modal";
     modal.className = "fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50";
@@ -3111,18 +3200,16 @@ const checkStartupStatus = async () => {
     </div>
   `;
     document.body.appendChild(modal);
-    const pollStatus = async () => {
+    const pollStatus = async ()=>{
         try {
             const response = await fetch("/api/startup_status");
             const data = await response.json();
             const messageEl = document.getElementById("startup-message");
-            if (messageEl)
-                messageEl.textContent = data.message;
+            if (messageEl) messageEl.textContent = data.message;
             if (data.status === "completed") {
                 modal.remove();
                 return;
-            }
-            else if (data.status === "failed") {
+            } else if (data.status === "failed") {
                 if (messageEl) {
                     messageEl.className = "text-red-600";
                     messageEl.textContent = `Error: ${data.message}. Please check server logs.`;
@@ -3130,19 +3217,17 @@ const checkStartupStatus = async () => {
                 return;
             }
             setTimeout(pollStatus, 1000);
-        }
-        catch (e) {
+        } catch (e) {
             setTimeout(pollStatus, 5000);
         }
     };
     await pollStatus();
 };
 // Initialize
-window.onload = async () => {
+window.onload = async ()=>{
     try {
         await checkStartupStatus();
-    }
-    catch (e) {
+    } catch (e) {
         console.error(e);
     }
     const outputDiv = document.getElementById("output");
@@ -3160,20 +3245,18 @@ window.onload = async () => {
         const dockerConfigData = await fetchWithCache("/get_docker_config");
         caseDir = caseRootData.caseDir;
         const caseDirInput = document.getElementById("caseDir");
-        if (caseDirInput)
-            caseDirInput.value = caseDir;
+        if (caseDirInput) caseDirInput.value = caseDir;
         dockerImage = dockerConfigData.dockerImage;
         openfoamVersion = dockerConfigData.openfoamVersion;
         const openfoamRootInput = document.getElementById("openfoamRoot");
-        if (openfoamRootInput)
-            openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
+        if (openfoamRootInput) openfoamRootInput.value = `${dockerImage} OpenFOAM ${openfoamVersion}`;
         // Load Cases
         await refreshCaseList();
         const savedCase = localStorage.getItem("lastSelectedCase");
         if (savedCase) {
             const select = document.getElementById("caseSelect");
             let exists = false;
-            for (let i = 0; i < select.options.length; i++) {
+            for(let i = 0; i < select.options.length; i++){
                 if (select.options[i].value === savedCase) {
                     exists = true;
                     break;
@@ -3185,10 +3268,9 @@ window.onload = async () => {
                 updateActiveCaseBadge();
             }
         }
-        // Check if we need to restore any plot state or similar
-        // ...
-    }
-    catch (e) {
+    // Check if we need to restore any plot state or similar
+    // ...
+    } catch (e) {
         console.error(e);
     }
 };
@@ -3235,7 +3317,7 @@ window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
-const init = () => {
+const init = ()=>{
     // Palette UX: Optimistically restore active case
     const savedCase = localStorage.getItem("lastSelectedCase");
     if (savedCase) {
@@ -3250,7 +3332,7 @@ const init = () => {
         if (savedTutorial) {
             // Check if option exists
             let exists = false;
-            for (let i = 0; i < tutorialSelect.options.length; i++) {
+            for(let i = 0; i < tutorialSelect.options.length; i++){
                 if (tutorialSelect.options[i].value === savedTutorial) {
                     exists = true;
                     break;
@@ -3259,13 +3341,12 @@ const init = () => {
             if (exists) {
                 tutorialSelect.value = savedTutorial;
                 console.log("DEBUG: Restored tutorial selection:", savedTutorial);
-            }
-            else {
+            } else {
                 console.warn("DEBUG: Saved tutorial not found in options:", savedTutorial);
             }
         }
         // Save on change
-        tutorialSelect.addEventListener('change', (e) => {
+        tutorialSelect.addEventListener('change', (e)=>{
             const target = e.target;
             localStorage.setItem('lastSelectedTutorial', target.value);
         });
@@ -3276,17 +3357,24 @@ const init = () => {
     if (path !== "/" && path !== "") {
         const pageName = path.substring(1).toLowerCase(); // remove leading slash
         // check if it's a valid page
-        const pages = ["setup", "geometry", "meshing", "visualizer", "run", "plots", "post"];
+        const pages = [
+            "setup",
+            "geometry",
+            "meshing",
+            "visualizer",
+            "run",
+            "plots",
+            "post"
+        ];
         if (pages.includes(pageName)) {
             initialPage = pageName;
         }
     }
     // Handle browser back/forward buttons
-    window.onpopstate = (event) => {
+    window.onpopstate = (event)=>{
         if (event.state && event.state.page) {
             switchPage(event.state.page, false);
-        }
-        else {
+        } else {
             // Fallback if no state (e.g. initial load turned into history entry?)
             // or just parse URL again
             const p = window.location.pathname.substring(1).toLowerCase() || "setup";
@@ -3296,29 +3384,55 @@ const init = () => {
     // Switch to initial page (don't push state for the initial load)
     switchPage(initialPage, false);
     const navButtons = [
-        { id: 'nav-setup', mobileId: 'mobile-nav-setup', handler: () => switchPage('setup') },
-        { id: 'nav-run', mobileId: 'mobile-nav-run', handler: () => switchPage('run') },
-        { id: 'nav-geometry', mobileId: 'mobile-nav-geometry', handler: () => switchPage('geometry') },
-        { id: 'nav-meshing', mobileId: 'mobile-nav-meshing', handler: () => switchPage('meshing') },
-        { id: 'nav-visualizer', mobileId: 'mobile-nav-visualizer', handler: () => switchPage('visualizer') },
-        { id: 'nav-plots', mobileId: 'mobile-nav-plots', handler: () => switchPage('plots') },
-        { id: 'nav-post', mobileId: 'mobile-nav-post', handler: () => switchPage('post') }
+        {
+            id: 'nav-setup',
+            mobileId: 'mobile-nav-setup',
+            handler: ()=>switchPage('setup')
+        },
+        {
+            id: 'nav-run',
+            mobileId: 'mobile-nav-run',
+            handler: ()=>switchPage('run')
+        },
+        {
+            id: 'nav-geometry',
+            mobileId: 'mobile-nav-geometry',
+            handler: ()=>switchPage('geometry')
+        },
+        {
+            id: 'nav-meshing',
+            mobileId: 'mobile-nav-meshing',
+            handler: ()=>switchPage('meshing')
+        },
+        {
+            id: 'nav-visualizer',
+            mobileId: 'mobile-nav-visualizer',
+            handler: ()=>switchPage('visualizer')
+        },
+        {
+            id: 'nav-plots',
+            mobileId: 'mobile-nav-plots',
+            handler: ()=>switchPage('plots')
+        },
+        {
+            id: 'nav-post',
+            mobileId: 'mobile-nav-post',
+            handler: ()=>switchPage('post')
+        }
     ];
-    navButtons.forEach(({ id, mobileId, handler }) => {
+    navButtons.forEach(({ id, mobileId, handler })=>{
         const button = document.getElementById(id);
-        if (button)
-            button.addEventListener('click', handler);
+        if (button) button.addEventListener('click', handler);
         const mobileButton = document.getElementById(mobileId);
         if (mobileButton) {
-            mobileButton.addEventListener('click', () => {
+            mobileButton.addEventListener('click', ()=>{
                 handler();
                 setMobileMenuState(false);
             });
         }
     });
     const loadTutorialBtn = document.getElementById('loadTutorialBtn');
-    if (loadTutorialBtn)
-        loadTutorialBtn.addEventListener('click', loadTutorial);
+    if (loadTutorialBtn) loadTutorialBtn.addEventListener('click', loadTutorial);
     // Check for startup errors
     const startupError = document.getElementById("startup-error");
     if (startupError) {
@@ -3328,12 +3442,11 @@ const init = () => {
         }
     }
     // ⚡ Bolt Optimization: Resume updates immediately when tab becomes visible
-    document.addEventListener("visibilitychange", () => {
+    document.addEventListener("visibilitychange", ()=>{
         if (!document.hidden && plotsVisible && plotsInViewport) {
             if (!isUpdatingPlots) {
                 updatePlots();
-            }
-            else {
+            } else {
                 pendingPlotUpdate = true;
             }
         }
@@ -3348,7 +3461,13 @@ const init = () => {
         showEdgesCheck.addEventListener("change", onMeshParamChange);
     }
     // Auto-format vector inputs
-    ['bmCells', 'bmGrading', 'bmMin', 'bmMax', 'shmLocation'].forEach(setupVectorInputAutoFormat);
+    [
+        'bmCells',
+        'bmGrading',
+        'bmMin',
+        'bmMax',
+        'shmLocation'
+    ].forEach(setupVectorInputAutoFormat);
     // Scroll Listener for Navbar
     window.addEventListener("scroll", handleScroll);
     initLogScrollObserver();
@@ -3358,19 +3477,17 @@ const init = () => {
     setupGeometryDragDrop();
 };
 // UX: Setup dependency between "Add Layers" checkbox and "Surface Layers" input
-const setupLayersDependency = () => {
+const setupLayersDependency = ()=>{
     const shmLayers = document.getElementById("shmLayers");
     const shmObjLayers = document.getElementById("shmObjLayers");
-    if (!shmLayers || !shmObjLayers)
-        return;
-    const updateState = () => {
+    if (!shmLayers || !shmObjLayers) return;
+    const updateState = ()=>{
         const isEnabled = shmLayers.checked;
         shmObjLayers.disabled = !isEnabled;
         if (!isEnabled) {
             shmObjLayers.classList.add("cursor-not-allowed", "opacity-50", "bg-gray-100");
             shmObjLayers.setAttribute("aria-disabled", "true");
-        }
-        else {
+        } else {
             shmObjLayers.classList.remove("cursor-not-allowed", "opacity-50", "bg-gray-100");
             shmObjLayers.removeAttribute("aria-disabled");
         }
@@ -3378,17 +3495,15 @@ const setupLayersDependency = () => {
     shmLayers.addEventListener("change", updateState);
     updateState(); // Initialize state
 };
-const handleScroll = () => {
+const handleScroll = ()=>{
     const navbar = document.getElementById("navbar");
-    if (!navbar)
-        return;
+    if (!navbar) return;
     if (window.scrollY > 10) {
         if (navbar.classList.contains("glass")) {
             navbar.classList.remove("glass");
             navbar.classList.add("glass-plot");
         }
-    }
-    else {
+    } else {
         if (navbar.classList.contains("glass-plot")) {
             navbar.classList.remove("glass-plot");
             navbar.classList.add("glass");
@@ -3396,14 +3511,14 @@ const handleScroll = () => {
     }
 };
 // Auto-format Vector Inputs (comma to space)
-const setupVectorInputAutoFormat = (elementId) => {
+const setupVectorInputAutoFormat = (elementId)=>{
     const el = document.getElementById(elementId);
     if (el) {
         // Add transition class for smooth color change if not present
         if (!el.classList.contains('transition-colors')) {
             el.classList.add('transition-colors', 'duration-500');
         }
-        el.addEventListener('blur', () => {
+        el.addEventListener('blur', ()=>{
             let val = el.value;
             // Replace commas with spaces
             val = val.replace(/,/g, ' ');
@@ -3434,11 +3549,11 @@ const setupVectorInputAutoFormat = (elementId) => {
                     helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
                     helpEl.style.opacity = '1';
                     // Revert input styles and help text after delay
-                    const timerId = window.setTimeout(() => {
+                    const timerId = window.setTimeout(()=>{
                         el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
                         // Fade out help text
                         helpEl.style.opacity = '0';
-                        setTimeout(() => {
+                        setTimeout(()=>{
                             // Restore original help text
                             helpEl.textContent = helpEl.dataset.originalText || "";
                             helpEl.className = helpEl.dataset.originalClass || "";
@@ -3450,10 +3565,9 @@ const setupVectorInputAutoFormat = (elementId) => {
                         }, 300);
                     }, 2000);
                     helpEl.dataset.restoreTimer = timerId.toString();
-                }
-                else {
+                } else {
                     // Just revert input styles if no help text
-                    setTimeout(() => {
+                    setTimeout(()=>{
                         el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
                     }, 2000);
                 }
@@ -3462,14 +3576,16 @@ const setupVectorInputAutoFormat = (elementId) => {
     }
 };
 // Scroll to Bottom Logic
-const scrollToLogBottom = () => {
+const scrollToLogBottom = ()=>{
     const output = document.getElementById("output");
     if (output) {
         // Check if scrollTo options are supported (native smooth scroll)
         try {
-            output.scrollTo({ top: output.scrollHeight, behavior: "smooth" });
-        }
-        catch (e) {
+            output.scrollTo({
+                top: output.scrollHeight,
+                behavior: "smooth"
+            });
+        } catch (e) {
             // Fallback for older browsers
             output.scrollTop = output.scrollHeight;
         }
@@ -3477,25 +3593,26 @@ const scrollToLogBottom = () => {
 };
 window.scrollToLogBottom = scrollToLogBottom;
 // Scroll to Top Logic
-const scrollToLogTop = () => {
+const scrollToLogTop = ()=>{
     const output = document.getElementById("output");
     if (output) {
         try {
-            output.scrollTo({ top: 0, behavior: "smooth" });
-        }
-        catch (e) {
+            output.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        } catch (e) {
             output.scrollTop = 0;
         }
     }
 };
 window.scrollToLogTop = scrollToLogTop;
-const initLogScrollObserver = () => {
+const initLogScrollObserver = ()=>{
     const output = document.getElementById("output");
     const bottomBtn = document.getElementById("scrollToBottomBtn");
     const topBtn = document.getElementById("scrollToTopBtn");
-    if (!output)
-        return;
-    const handleLogScroll = () => {
+    if (!output) return;
+    const handleLogScroll = ()=>{
         // Scroll to Bottom Button Logic
         if (bottomBtn) {
             const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight;
@@ -3504,8 +3621,7 @@ const initLogScrollObserver = () => {
             if (shouldShowBottom) {
                 bottomBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
                 bottomBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
-            }
-            else {
+            } else {
                 bottomBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
                 bottomBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
             }
@@ -3516,17 +3632,16 @@ const initLogScrollObserver = () => {
             if (shouldShowTop) {
                 topBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
                 topBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
-            }
-            else {
+            } else {
                 topBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
                 topBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
             }
         }
     };
     let ticking = false;
-    output.addEventListener("scroll", () => {
+    output.addEventListener("scroll", ()=>{
         if (!ticking) {
-            window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(()=>{
                 handleLogScroll();
                 ticking = false;
             });
@@ -3534,31 +3649,28 @@ const initLogScrollObserver = () => {
         }
     });
 };
-const setupCopyableValues = () => {
-    document.addEventListener("click", (e) => {
+const setupCopyableValues = ()=>{
+    document.addEventListener("click", (e)=>{
         // Check if clicked element or parent is a copyable-value button
         const target = e.target.closest(".copyable-value");
-        if (!target)
-            return;
+        if (!target) return;
         const text = target.textContent?.trim();
-        if (!text)
-            return;
+        if (!text) return;
         // Prevent default (focus mostly)
         e.preventDefault();
-        const onSuccess = () => {
+        const onSuccess = ()=>{
             showNotification("Value copied", "success", NOTIFY_SHORT);
             // Visual feedback
             target.classList.add("bg-green-100", "text-green-800");
             target.classList.remove("hover:bg-cyan-100", "hover:text-cyan-800");
-            setTimeout(() => {
+            setTimeout(()=>{
                 target.classList.remove("bg-green-100", "text-green-800");
                 target.classList.add("hover:bg-cyan-100", "hover:text-cyan-800");
             }, 500);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyText(text, "Value copied", onSuccess));
-        }
-        else {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(()=>fallbackCopyText(text, "Value copied", onSuccess));
+        } else {
             fallbackCopyText(text, "Value copied", onSuccess);
         }
     });
@@ -3566,15 +3678,13 @@ const setupCopyableValues = () => {
 // --- Font Settings Logic ---
 let fontSettingsCleanup = null;
 let fontSettingsTimer = null;
-window.toggleFontSettings = () => {
+window.toggleFontSettings = ()=>{
     const menu = document.getElementById("fontSettingsMenu");
     const btn = document.getElementById("fontSettingsBtn");
-    if (!menu)
-        return;
-    const closeMenu = () => {
+    if (!menu) return;
+    const closeMenu = ()=>{
         menu.classList.add("hidden");
-        if (btn)
-            btn.setAttribute("aria-expanded", "false");
+        if (btn) btn.setAttribute("aria-expanded", "false");
         if (fontSettingsTimer !== null) {
             clearTimeout(fontSettingsTimer);
             fontSettingsTimer = null;
@@ -3587,38 +3697,34 @@ window.toggleFontSettings = () => {
     const isHidden = menu.classList.contains("hidden");
     if (isHidden) {
         menu.classList.remove("hidden");
-        if (btn)
-            btn.setAttribute("aria-expanded", "true");
-        const clickHandler = (e) => {
-            if (!menu.contains(e.target) &&
-                !btn?.contains(e.target)) {
+        if (btn) btn.setAttribute("aria-expanded", "true");
+        const clickHandler = (e)=>{
+            if (!menu.contains(e.target) && !btn?.contains(e.target)) {
                 closeMenu();
             }
         };
-        const keyHandler = (e) => {
+        const keyHandler = (e)=>{
             if (e.key === "Escape") {
                 closeMenu();
                 btn?.focus();
             }
         };
         // Delay to prevent immediate close if triggered by click
-        fontSettingsTimer = window.setTimeout(() => {
+        fontSettingsTimer = window.setTimeout(()=>{
             fontSettingsTimer = null;
             document.addEventListener("click", clickHandler);
             document.addEventListener("keydown", keyHandler);
         }, 0);
-        fontSettingsCleanup = () => {
+        fontSettingsCleanup = ()=>{
             document.removeEventListener("click", clickHandler);
             document.removeEventListener("keydown", keyHandler);
         };
-    }
-    else {
+    } else {
         closeMenu();
     }
 };
-window.changePlotFont = (fontFamily) => {
-    if (!fontFamily)
-        return;
+window.changePlotFont = (fontFamily)=>{
+    if (!fontFamily) return;
     // Update global layout config
     if (plotLayout.font) {
         plotLayout.font.family = fontFamily;
@@ -3632,10 +3738,12 @@ window.changePlotFont = (fontFamily) => {
         "cp-plot",
         "velocity-profile-plot"
     ];
-    plotIds.forEach(id => {
+    plotIds.forEach((id)=>{
         const el = document.getElementById(id);
-        if (el && el.data) { // Check if plot exists and has data
-            Plotly.relayout(el, { "font.family": fontFamily }).catch(err => {
+        if (el && el.data) {
+            Plotly.relayout(el, {
+                "font.family": fontFamily
+            }).catch((err)=>{
                 console.warn(`Failed to update font for ${id}:`, err);
             });
         }
@@ -3647,20 +3755,25 @@ window.changePlotFont = (fontFamily) => {
     }
     showNotification(`Plot font changed to ${fontFamily.split(',')[0]}`, "info", NOTIFY_MEDIUM);
 };
-window.switchCaseCreationTab = (tab) => {
+window.switchCaseCreationTab = (tab)=>{
     const track = document.getElementById("case-creation-track");
     const pill = document.getElementById("case-creation-bg-pill");
     const createBtn = document.getElementById("tab-btn-create");
     const importBtn = document.getElementById("tab-btn-import");
-    if (!track || !createBtn || !importBtn)
-        return;
+    if (!track || !createBtn || !importBtn) return;
     // Only toggle text styles now
-    const activeTextClasses = ["text-cyan-800", "font-semibold"];
-    const inactiveTextClasses = ["text-gray-600", "hover:text-gray-800", "font-medium"];
+    const activeTextClasses = [
+        "text-cyan-800",
+        "font-semibold"
+    ];
+    const inactiveTextClasses = [
+        "text-gray-600",
+        "hover:text-gray-800",
+        "font-medium"
+    ];
     if (tab === "create") {
         track.style.transform = "translateX(0%)";
-        if (pill)
-            pill.style.transform = "translateX(0)";
+        if (pill) pill.style.transform = "translateX(0)";
         // Active Style for Create
         createBtn.classList.remove(...inactiveTextClasses);
         createBtn.classList.add(...activeTextClasses);
@@ -3671,13 +3784,10 @@ window.switchCaseCreationTab = (tab) => {
         importBtn.setAttribute("aria-selected", "false");
         // Focus Input (UX Improvement)
         const input = document.getElementById("newCaseName");
-        if (input && tab === "create")
-            setTimeout(() => input.focus(), 300); // Wait for transition
-    }
-    else {
+        if (input && tab === "create") setTimeout(()=>input.focus(), 300); // Wait for transition
+    } else {
         track.style.transform = "translateX(-100%)";
-        if (pill)
-            pill.style.transform = "translateX(calc(100% + 0.25rem))";
+        if (pill) pill.style.transform = "translateX(calc(100% + 0.25rem))";
         // Active Style for Import
         importBtn.classList.remove(...inactiveTextClasses);
         importBtn.classList.add(...activeTextClasses);
@@ -3689,26 +3799,61 @@ window.switchCaseCreationTab = (tab) => {
         // Focus Input (UX Improvement)
         const select = document.getElementById("tutorialSelect");
         // Ensure we only focus if the tab is visible and it's the right element
-        if (select && tab === "import")
-            setTimeout(() => select.focus(), 300); // Wait for transition
+        if (select && tab === "import") setTimeout(()=>select.focus(), 300); // Wait for transition
     }
 };
-const setupQuickActions = () => {
+const setupQuickActions = ()=>{
     const bindings = [
-        { input: "tutorialSelect", btn: "loadTutorialBtn", events: ["keydown"] },
-        { input: "caseDir", btn: "setRootBtn", events: ["keydown"] },
-        { input: "geometrySelect", btn: "viewGeometryBtn", events: ["keydown", "dblclick"] },
-        { input: "resourceGeometrySelect", btn: "fetchResourceGeometryBtn", events: ["keydown"] },
-        { input: "meshSelect", btn: "loadMeshBtn", events: ["keydown"] },
-        { input: "vtkFileSelect", btn: "loadContourVTKBtn", events: ["keydown"] },
+        {
+            input: "tutorialSelect",
+            btn: "loadTutorialBtn",
+            events: [
+                "keydown"
+            ]
+        },
+        {
+            input: "caseDir",
+            btn: "setRootBtn",
+            events: [
+                "keydown"
+            ]
+        },
+        {
+            input: "geometrySelect",
+            btn: "viewGeometryBtn",
+            events: [
+                "keydown",
+                "dblclick"
+            ]
+        },
+        {
+            input: "resourceGeometrySelect",
+            btn: "fetchResourceGeometryBtn",
+            events: [
+                "keydown"
+            ]
+        },
+        {
+            input: "meshSelect",
+            btn: "loadMeshBtn",
+            events: [
+                "keydown"
+            ]
+        },
+        {
+            input: "vtkFileSelect",
+            btn: "loadContourVTKBtn",
+            events: [
+                "keydown"
+            ]
+        }
     ];
-    bindings.forEach(({ input, btn, events }) => {
+    bindings.forEach(({ input, btn, events })=>{
         const inputEl = document.getElementById(input);
         const btnEl = document.getElementById(btn);
-        if (!inputEl || !btnEl)
-            return;
+        if (!inputEl || !btnEl) return;
         if (events.includes("keydown")) {
-            inputEl.addEventListener("keydown", (e) => {
+            inputEl.addEventListener("keydown", (e)=>{
                 if (e.key === "Enter") {
                     e.preventDefault(); // Prevent form submission if any
                     btnEl.click();
@@ -3716,19 +3861,18 @@ const setupQuickActions = () => {
             });
         }
         if (events.includes("dblclick")) {
-            inputEl.addEventListener("dblclick", () => {
+            inputEl.addEventListener("dblclick", ()=>{
                 btnEl.click();
             });
         }
     });
 };
-const setupGeometryDragDrop = () => {
+const setupGeometryDragDrop = ()=>{
     const dropZone = document.getElementById('geo-drop-zone');
     const input = document.getElementById('geometryUpload');
     const nameDisplay = document.getElementById('geo-file-name');
-    if (!dropZone || !input)
-        return;
-    const showFile = () => {
+    if (!dropZone || !input) return;
+    const showFile = ()=>{
         if (input.files && input.files[0]) {
             if (nameDisplay) {
                 // 🎨 Palette UX: Add remove button to allow clearing selection
@@ -3746,7 +3890,7 @@ const setupGeometryDragDrop = () => {
                 // Add event listener to remove button
                 const removeBtn = document.getElementById("remove-file-btn");
                 if (removeBtn) {
-                    removeBtn.addEventListener("click", (e) => {
+                    removeBtn.addEventListener("click", (e)=>{
                         e.preventDefault();
                         e.stopPropagation();
                         input.value = ""; // Clear file input
@@ -3760,23 +3904,34 @@ const setupGeometryDragDrop = () => {
         }
     };
     input.addEventListener('change', showFile);
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, (e) => {
+    [
+        'dragenter',
+        'dragover',
+        'dragleave',
+        'drop'
+    ].forEach((eventName)=>{
+        dropZone.addEventListener(eventName, (e)=>{
             e.preventDefault();
             e.stopPropagation();
         });
     });
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
+    [
+        'dragenter',
+        'dragover'
+    ].forEach((eventName)=>{
+        dropZone.addEventListener(eventName, ()=>{
             dropZone.classList.add('border-cyan-500', 'bg-cyan-50');
         });
     });
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
+    [
+        'dragleave',
+        'drop'
+    ].forEach((eventName)=>{
+        dropZone.addEventListener(eventName, ()=>{
             dropZone.classList.remove('border-cyan-500', 'bg-cyan-50');
         });
     });
-    dropZone.addEventListener('drop', (e) => {
+    dropZone.addEventListener('drop', (e)=>{
         const dt = e.dataTransfer;
         if (dt && dt.files) {
             input.files = dt.files;
@@ -3785,14 +3940,13 @@ const setupGeometryDragDrop = () => {
     });
 };
 // Fullscreen Toggle
-window.toggleFullscreen = (containerId, btn) => {
+window.toggleFullscreen = (containerId, btn)=>{
     const container = document.getElementById(containerId);
-    if (!container)
-        return;
+    if (!container) return;
     // Icons
     const expandIcon = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>`;
     const compressIcon = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6v6M10 14L4 20M20 14h-6v6M14 14l6 20M4 10h6V4M10 10L4 4M20 10h-6V4M14 10l6-4" /></svg>`;
-    const updateUI = () => {
+    const updateUI = ()=>{
         // Check if this container is the one in fullscreen
         if (document.fullscreenElement === container) {
             btn.innerHTML = compressIcon;
@@ -3800,8 +3954,7 @@ window.toggleFullscreen = (containerId, btn) => {
             btn.setAttribute("title", "Exit Fullscreen");
             // Add background to ensure it's not transparent in fullscreen
             container.classList.add("bg-white", "flex", "flex-col");
-        }
-        else {
+        } else {
             btn.innerHTML = expandIcon;
             btn.setAttribute("aria-label", "Enter Fullscreen");
             btn.setAttribute("title", "Enter Fullscreen");
@@ -3814,23 +3967,21 @@ window.toggleFullscreen = (containerId, btn) => {
         container._fsListenerAttached = true;
     }
     if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(err => {
+        container.requestFullscreen().catch((err)=>{
             console.error(`Error attempting to enable full-screen mode: ${err.message}`);
         });
-    }
-    else {
+    } else {
         document.exitFullscreen();
     }
 };
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
-}
-else {
+} else {
     init();
 }
 window._fetchWithCache = fetchWithCache;
 window._requestCache = requestCache;
-const resetState = () => {
+const resetState = ()=>{
     requestCache = new Map();
     activeCase = null;
     caseDir = "";
@@ -3840,11 +3991,19 @@ const resetState = () => {
     availableMeshes = [];
     isInteractiveMode = true;
     selectedGeometry = null;
-    postPipeline = [{ id: "root", type: "root", name: "Mesh", parentId: null }];
+    postPipeline = [
+        {
+            id: "root",
+            type: "root",
+            name: "Mesh",
+            parentId: null
+        }
+    ];
     activePipelineId = "root";
     outputBuffer.length = 0;
     cachedLogHTML = "";
 };
 window._resetState = resetState;
 export { init, fetchWithCache, requestCache, setCase, refreshCaseList, uploadGeometry, deleteGeometry, resetState };
+
 //# sourceMappingURL=foamflask_frontend.js.map

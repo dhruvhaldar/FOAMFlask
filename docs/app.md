@@ -373,7 +373,7 @@ Common HTTP status codes:
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 3. Start the development server:
    ```bash

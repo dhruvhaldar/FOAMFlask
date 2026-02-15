@@ -1,9 +1,10 @@
 /**
  * Contour Visualization Module
- * Handles isosurface generation and 3D visualization using PyVista
+ * Handles isosurface generation using PyVista, and 3D visualization using Trame
+ * 
+ * When making changes to the frontend, always edit isosurface.ts and build isosurface.js using `npm run build`
  */
 
-// Type definitions
 // Type definitions
 interface ContourOptions {
     tutorial?: string | null;
@@ -739,7 +740,10 @@ export function resetContourViewer() {
 }
 
 /**
- * Update range inputs based on selected scalar field
+ * Update UI range controls and the isovalue slider using stored statistics for the given scalar field.
+ * Updates the numeric min/max inputs, the formatted displayMin/displayMax text, reveals the scalar range card,
+ * and sets the isovalue slider's min, max, step, value, and display text when statistics for `fieldName` exist.
+ * @param fieldName - The scalar field key to read statistics from `currentFieldStats`; no action is taken if stats are missing
  */
 function updateRangeInputs(fieldName: string): void {
     if (!currentFieldStats || !currentFieldStats[fieldName]) return;
@@ -752,9 +756,15 @@ function updateRangeInputs(fieldName: string): void {
     if (min !== undefined && max !== undefined) {
         const minInput = document.getElementById('rangeMin') as HTMLInputElement;
         const maxInput = document.getElementById('rangeMax') as HTMLInputElement;
+        const displayMin = document.getElementById('displayMin');
+        const displayMax = document.getElementById('displayMax');
+        const scalarRangeCard = document.getElementById('scalarRangeCard');
 
-        if (minInput) minInput.value = parseFloat(min).toFixed(4);
-        if (maxInput) maxInput.value = parseFloat(max).toFixed(4);
+        if (minInput) minInput.value = min.toString();
+        if (maxInput) maxInput.value = max.toString();
+        if (displayMin) displayMin.textContent = parseFloat(min).toFixed(4);
+        if (displayMax) displayMax.textContent = parseFloat(max).toFixed(4);
+        if (scalarRangeCard) scalarRangeCard.classList.remove('hidden');
 
         // Update slider as well
         const slider = document.getElementById('isovalueSlider') as HTMLInputElement;

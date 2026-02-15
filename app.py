@@ -15,6 +15,7 @@ from functools import wraps, lru_cache
 import email.utils
 from queue import Queue, Empty
 import secrets
+from datetime import datetime, timezone
 
 # Third-party imports
 import docker
@@ -22,6 +23,7 @@ import orjson
 from docker import DockerClient
 from docker.errors import DockerException
 from flask import Flask, Response, render_template_string, request, send_from_directory, stream_with_context
+from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
 from werkzeug.utils import secure_filename
 from flask_compress import Compress
@@ -58,6 +60,25 @@ app.config["COMPRESS_MIMETYPES"] = [
 app.config["COMPRESS_LEVEL"] = 6
 app.config["COMPRESS_MIN_SIZE"] = 500
 compress = Compress(app)
+
+# Configure SQLAlchemy
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///simulation_runs.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
+
+class SimulationRun(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    case_name = db.Column(db.Text, nullable=False)
+    tutorial = db.Column(db.String(200), nullable=False)
+    command = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="Pending")
+    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    end_time = db.Column(db.DateTime, nullable=True)
+    execution_duration = db.Column(db.Float, nullable=True) # in seconds
+    log_file_path = db.Column(db.String(255), nullable=True)
+
+    def __repr__(self):
+        return f"<SimulationRun {self.id} {self.case_name} {self.status}>"
 
 # Security: Set maximum upload size to 500MB to prevent DoS
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -1403,6 +1424,32 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
                 logger.debug(f"[FOAMFlask] Error removing container: {e}")
 
 
+@app.route("/api/runs", methods=["GET"])
+def api_list_runs() -> Response:
+    """Get list of simulation runs."""
+    try:
+        # Use simple select query compatible with SQLAlchemy 2.0
+        stmt = db.select(SimulationRun).order_by(SimulationRun.start_time.desc())
+        runs = db.session.execute(stmt).scalars().all()
+
+        runs_data = []
+        for run in runs:
+            runs_data.append({
+                "id": run.id,
+                "case_name": run.case_name,
+                "tutorial": run.tutorial,
+                "command": run.command,
+                "status": run.status,
+                "start_time": run.start_time.isoformat() if run.start_time else None,
+                "end_time": run.end_time.isoformat() if run.end_time else None,
+                "execution_duration": run.execution_duration
+            })
+
+        return fast_jsonify({"runs": runs_data})
+    except Exception as e:
+        logger.error(f"Error fetching runs: {e}")
+        return fast_jsonify({"error": str(e)}), 500
+
 @app.route("/run", methods=["POST"])
 @rate_limit(limit=5, window=60)
 def run_case() -> Union[Response, Tuple[Dict, int]]:
@@ -1440,12 +1487,37 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
         logger.warning(f"Security violation in run_case: {e}")
         return {"error": str(e)}, 400
 
-    def stream_container_logs() -> Generator[str, None, None]:
+    # Create Run Record
+    try:
+        new_run = SimulationRun(
+            case_name=case_dir,
+            tutorial=tutorial,
+            command=command,
+            status="Running",
+            start_time=datetime.now(timezone.utc)
+        )
+        db.session.add(new_run)
+        db.session.commit()
+        run_id = new_run.id
+        logger.info(f"Created run record ID: {run_id}")
+    except Exception as e:
+        logger.error(f"Failed to create run record: {e}")
+        # We continue even if DB fails, or should we abort?
+        # User requirement implies saving runs is key. Let's log heavily but maybe allow run?
+        # No, better to be strict if the feature is requested.
+        # But for now, let's log and proceed, or we risk breaking core functionality for DB issues.
+        run_id = None
+
+    def stream_container_logs(run_id) -> Generator[str, None, None]:
         """Stream container logs for OpenFOAM command execution.
         
         Yields:
             Log lines as raw text strings (newline-delimited).
         """
+        start_ts = time.time()
+        status = "Completed"
+        error_msg = None
+
         client = get_docker_client()
         if client is None:
             # Return a short message explaining the issue
@@ -1564,14 +1636,37 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 for line in container.logs(stream=True):
                     yield line.decode(errors='ignore')
             except Exception as e:
+                status = "Failed"
+                error_msg = str(e)
                 yield f"[FOAMFlask] [Error] Log stream interrupted: {str(e)}\n"
 
         except Exception as e:
+            status = "Failed"
+            error_msg = str(e)
             logger.error(f"Error running container: {e}", exc_info=True)
             yield f"[FOAMFlask] [Error] Failed to start container: {sanitize_error(e)}\n"
             return
 
         finally:
+            end_ts = time.time()
+            duration = end_ts - start_ts
+
+            if run_id:
+                try:
+                    with app.app_context():
+                        run = db.session.get(SimulationRun, run_id)
+                        if run:
+                            run.status = status
+                            run.end_time = datetime.now(timezone.utc)
+                            run.execution_duration = duration
+                            if error_msg:
+                                # Append error to log path for now, or just leave it.
+                                # Model doesn't have explicit error message field.
+                                pass
+                            db.session.commit()
+                except Exception as db_err:
+                    logger.error(f"Failed to update run record: {db_err}")
+
             if 'container' in locals():
                 try:
                     container.kill()
@@ -1582,7 +1677,7 @@ def run_case() -> Union[Response, Tuple[Dict, int]]:
                 except Exception as remove_err:
                     logger.error(f"[FOAMPilot] Could not remove container: {remove_err}")
 
-    return Response(stream_with_context(stream_container_logs()), mimetype="text/plain")
+    return Response(stream_with_context(stream_container_logs(run_id)), mimetype="text/plain")
 
 
 # --- Realtime Plotting Endpoints ---
@@ -2633,6 +2728,10 @@ def main() -> None:
     OPENFOAM_VERSION = CONFIG["OPENFOAM_VERSION"]
 
     Path(CASE_ROOT).mkdir(parents=True, exist_ok=True)
+
+    # Initialize database
+    with app.app_context():
+        db.create_all()
 
     # Start startup check in background
     # We use a thread to not block the server startup

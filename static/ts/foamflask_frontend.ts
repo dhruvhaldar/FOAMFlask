@@ -1,5 +1,9 @@
 /**
- * FOAMFlask Frontend JavaScript
+ * FOAMFlask Frontend * 
+
+ * Background Color Palette: https://coolors.co/gradient-maker/b6f0ff-ffb1b9?position=0,100&opacity=100,100&type=linear&rotation=180
+
+ * When making changes to the frontend, always edit foamflask_frontend.ts and build foamflask_frontend.js using `npm run build`
  */
 
 import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
@@ -60,7 +64,23 @@ declare global {
     switchPostView: (view: "landing" | "contour") => void;
     scrollToLogTop: () => void;
     downloadLog: () => void;
+    fetchRunHistory: () => void;
   }
+}
+
+interface RunRecord {
+  id: number;
+  case_name: string;
+  tutorial: string;
+  command: string;
+  status: string;
+  start_time: string;
+  end_time?: string;
+  execution_duration?: number;
+}
+
+interface RunHistoryResponse extends ApiResponse {
+  runs: RunRecord[];
 }
 
 interface ApiResponse {
@@ -860,6 +880,9 @@ const switchPage = (pageName: string, updateUrl: boolean = true): void => {
         refreshMeshList();
       }
       break;
+    case "run":
+      fetchRunHistory();
+      break;
     case "plots":
       const plotsContainer = document.getElementById("plotsContainer");
       if (plotsContainer) {
@@ -1586,6 +1609,49 @@ const confirmRunCommand = async (cmd: string, btnElement?: HTMLElement): Promise
   runCommand(cmd, btnElement);
 };
 
+const fetchRunHistory = async () => {
+  const container = document.getElementById("runHistoryList");
+  if (!container) return;
+
+  try {
+    const response = await fetch("/api/runs");
+    if (!response.ok) throw new Error("Failed to fetch runs");
+    const data = await response.json() as RunHistoryResponse;
+
+    if (data.runs && data.runs.length > 0) {
+      container.innerHTML = data.runs.map(run => {
+        let statusColor = "bg-gray-100 text-gray-800";
+        if (run.status === "Completed") statusColor = "bg-green-100 text-green-800";
+        else if (run.status === "Failed") statusColor = "bg-red-100 text-red-800";
+        else if (run.status === "Running") statusColor = "bg-blue-100 text-blue-800";
+
+        const startTime = new Date(run.start_time).toLocaleString();
+        const duration = run.execution_duration ? `${run.execution_duration.toFixed(2)}s` : "-";
+
+        return `
+          <tr class="hover:bg-gray-50 transition-colors border-b last:border-b-0 border-gray-100">
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">#${run.id}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${run.command}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                ${run.status}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${duration}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${startTime}</td>
+          </tr>
+        `;
+      }).join("");
+    } else {
+      container.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">No run history available</td></tr>`;
+    }
+  } catch (e) {
+    console.error("Error fetching run history:", e);
+    container.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-red-500">Failed to load history</td></tr>`;
+  }
+};
+(window as any).fetchRunHistory = fetchRunHistory;
+
 const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> => {
   if (!cmd) { showNotification("No command specified", "error"); return; }
 
@@ -1603,6 +1669,10 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
     btn.setAttribute("aria-busy", "true");
     btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
   }
+
+  // Optimistically refresh list to show "Running" state
+  // We wait a tick to allow the backend (previous implementation step) to create the record
+  setTimeout(fetchRunHistory, 500);
 
   try {
     showNotification(`Running ${cmd}...`, "info");
@@ -1651,6 +1721,7 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
     }
     isSimulationRunning = false;
     updatePlots(); // Final update to catch last data
+    fetchRunHistory(); // Refresh history table
   }
 };
 
