@@ -599,12 +599,15 @@ COMPILED_TEMPLATE = None
 _TUTORIALS_CACHE: Dict[str, Union[Tuple[Optional[str], Optional[str]], List[str]]] = {}
 
 
-def generate_grouped_tutorial_options(tutorials: List[str]) -> str:
+# ⚡ Bolt Optimization: Cache the HTML generation for tutorial options
+# This avoids O(N) string processing and sorting on every index page load.
+@lru_cache(maxsize=16)
+def generate_grouped_tutorial_options(tutorials: Tuple[str, ...]) -> str:
     """
     Generate grouped HTML options for tutorials.
 
     Args:
-        tutorials: List of tutorial paths (e.g. "basic/pitzDaily")
+        tutorials: Tuple of tutorial paths (e.g. "basic/pitzDaily")
 
     Returns:
         HTML string with <optgroup> tags.
@@ -810,7 +813,8 @@ def index() -> str:
 
     tutorials, error = get_tutorials()
     # 🎨 Palette UX: Group tutorials by category
-    options_html = generate_grouped_tutorial_options(tutorials)
+    # ⚡ Bolt Optimization: Use cached generator (requires tuple)
+    options_html = generate_grouped_tutorial_options(tuple(tutorials))
 
     # ⚡ Bolt Optimization: Use pre-compiled template rendering
     # We must manually update the context with Flask globals (url_for, request, etc.)
