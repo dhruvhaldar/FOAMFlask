@@ -326,6 +326,47 @@ const clearMeshingOutput = async ()=>{
 const copyMeshingOutput = (btnElement)=>{
     copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
 };
+// Download Meshing Log
+const downloadMeshingLog = ()=>{
+    const outputDiv = document.getElementById("meshingOutput");
+    if (!outputDiv) {
+        showNotification("Meshing output not found", "error");
+        return;
+    }
+    // Use innerText to preserve line breaks from divs
+    const text = outputDiv.innerText || outputDiv.textContent || "";
+    if (!text.trim() || text.trim() === "Ready...") {
+        showNotification("Log is empty", "warning", NOTIFY_SHORT);
+        return;
+    }
+    try {
+        const blob = new Blob([
+            text
+        ], {
+            type: "text/plain"
+        });
+        const url = URL.createObjectURL(blob);
+        // Create timestamped filename
+        const now = new Date();
+        // Format: YYYY-MM-DDTHH-mm-ss
+        const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `meshing_log_${timestamp}.txt`;
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        // Cleanup
+        setTimeout(()=>{
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+        showNotification("Meshing log download started", "success", NOTIFY_SHORT);
+    } catch (e) {
+        console.error(e);
+        showNotification("Failed to download meshing log", "error");
+    }
+};
 // Storage for Console Log
 const CONSOLE_LOG_KEY = "foamflask_console_log";
 // Global state
@@ -686,6 +727,9 @@ const switchPage = (pageName, updateUrl = true)=>{
                 visualizerContainer.setAttribute("data-initialized", "true");
                 refreshMeshList();
             }
+            break;
+        case "run":
+            fetchRunHistory();
             break;
         case "plots":
             const plotsContainer = document.getElementById("plotsContainer");
@@ -1348,6 +1392,44 @@ const confirmRunCommand = async (cmd, btnElement)=>{
     }
     runCommand(cmd, btnElement);
 };
+const fetchRunHistory = async ()=>{
+    const container = document.getElementById("runHistoryList");
+    if (!container) return;
+    try {
+        const response = await fetch("/api/runs");
+        if (!response.ok) throw new Error("Failed to fetch runs");
+        const data = await response.json();
+        if (data.runs && data.runs.length > 0) {
+            container.innerHTML = data.runs.map((run)=>{
+                let statusColor = "bg-gray-100 text-gray-800";
+                if (run.status === "Completed") statusColor = "bg-green-100 text-green-800";
+                else if (run.status === "Failed") statusColor = "bg-red-100 text-red-800";
+                else if (run.status === "Running") statusColor = "bg-blue-100 text-blue-800";
+                const startTime = new Date(run.start_time).toLocaleString();
+                const duration = run.execution_duration ? `${run.execution_duration.toFixed(2)}s` : "-";
+                return `
+          <tr class="hover:bg-gray-50 transition-colors border-b last:border-b-0 border-gray-100">
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">#${run.id}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${run.command}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                ${run.status}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${duration}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${startTime}</td>
+          </tr>
+        `;
+            }).join("");
+        } else {
+            container.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">No run history available</td></tr>`;
+        }
+    } catch (e) {
+        console.error("Error fetching run history:", e);
+        container.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-red-500">Failed to load history</td></tr>`;
+    }
+};
+window.fetchRunHistory = fetchRunHistory;
 const runCommand = async (cmd, btnElement)=>{
     if (!cmd) {
         showNotification("No command specified", "error");
@@ -1367,6 +1449,9 @@ const runCommand = async (cmd, btnElement)=>{
         btn.setAttribute("aria-busy", "true");
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
     }
+    // Optimistically refresh list to show "Running" state
+    // We wait a tick to allow the backend (previous implementation step) to create the record
+    setTimeout(fetchRunHistory, 500);
     try {
         showNotification(`Running ${cmd}...`, "info");
         const response = await fetch("/run", {
@@ -1424,6 +1509,7 @@ const runCommand = async (cmd, btnElement)=>{
         }
         isSimulationRunning = false;
         updatePlots(); // Final update to catch last data
+        fetchRunHistory(); // Refresh history table
     }
 };
 // Realtime Plotting Functions
@@ -3315,6 +3401,7 @@ window.downloadLog = downloadLog;
 window.copyInputToClipboard = copyInputToClipboard;
 window.clearMeshingOutput = clearMeshingOutput;
 window.copyMeshingOutput = copyMeshingOutput;
+window.downloadMeshingLog = downloadMeshingLog;
 window.togglePlots = togglePlots;
 window.toggleSection = toggleSection;
 const init = ()=>{
