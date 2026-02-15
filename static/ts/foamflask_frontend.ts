@@ -57,6 +57,7 @@ declare global {
     runCommand: (cmd: string, btn?: HTMLElement) => void;
     clearMeshingOutput: () => void;
     copyMeshingOutput: () => void;
+    downloadMeshingLog: () => void;
     refreshMeshes: (btn?: HTMLElement) => void;
     viewMesh: () => void;
     copyRunOutput: () => void;
@@ -516,6 +517,51 @@ const clearMeshingOutput = async (): Promise<void> => {
 // Copy Meshing Output
 const copyMeshingOutput = (btnElement?: HTMLElement): void => {
   copyTextFromElement("meshingOutput", "Meshing output copied", btnElement);
+};
+
+// Download Meshing Log
+const downloadMeshingLog = (): void => {
+  const outputDiv = document.getElementById("meshingOutput");
+  if (!outputDiv) {
+    showNotification("Meshing output not found", "error");
+    return;
+  }
+
+  // Use innerText to preserve line breaks from divs
+  const text = outputDiv.innerText || outputDiv.textContent || "";
+
+  if (!text.trim() || text.trim() === "Ready...") {
+    showNotification("Log is empty", "warning", NOTIFY_SHORT);
+    return;
+  }
+
+  try {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    // Create timestamped filename
+    const now = new Date();
+    // Format: YYYY-MM-DDTHH-mm-ss
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `meshing_log_${timestamp}.txt`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+
+    showNotification("Meshing log download started", "success", NOTIFY_SHORT);
+  } catch (e) {
+    console.error(e);
+    showNotification("Failed to download meshing log", "error");
+  }
 };
 
 // Storage for Console Log
@@ -3742,6 +3788,7 @@ window.onload = async () => {
 (window as any).copyInputToClipboard = copyInputToClipboard;
 (window as any).clearMeshingOutput = clearMeshingOutput;
 (window as any).copyMeshingOutput = copyMeshingOutput;
+(window as any).downloadMeshingLog = downloadMeshingLog;
 (window as any).togglePlots = togglePlots;
 (window as any).toggleSection = toggleSection;
 

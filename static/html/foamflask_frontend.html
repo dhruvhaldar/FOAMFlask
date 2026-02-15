@@ -1153,10 +1153,10 @@
       <div class="mt-6">
         <div class="flex justify-between items-center mb-1">
           <h3 class="text-sm font-semibold">Meshing Output</h3>
-          <div class="flex gap-3">
+          <div class="flex gap-2">
             <button onclick="clearMeshingOutput()"
-              class="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 focus:outline-none focus:underline"
-              aria-label="Clear meshing output">
+              class="text-xs bg-red-100 hover:bg-red-200 text-red-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              aria-label="Clear meshing output" title="Clear output">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1165,14 +1165,24 @@
               Clear
             </button>
             <button onclick="copyMeshingOutput(this)"
-              class="text-xs text-cyan-600 hover:text-cyan-800 flex items-center gap-1 focus:outline-none focus:underline"
-              aria-label="Copy meshing output">
+              class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              title="Copy output to clipboard" aria-label="Copy output to clipboard">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
               Copy
+            </button>
+            <button onclick="downloadMeshingLog()"
+              class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-500 px-3 py-1 rounded transition-colors flex items-center gap-1"
+              aria-label="Download meshing log" title="Download Log">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
             </button>
           </div>
         </div>
