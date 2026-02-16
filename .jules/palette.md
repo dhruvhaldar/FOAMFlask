@@ -51,3 +51,7 @@
 ## 2026-05-24 - [Keyboard Navigation Shortcuts]
 **Learning:** `accesskey` attribute provides native keyboard shortcuts without custom JS listeners, but discoverability relies on tooltips or visual hints. Using standard modifier keys (Alt+Shift+Key) is browser-dependent, so "AccessKey" in tooltip is a neutral hint.
 **Action:** Use `accesskey` for primary navigation elements to empower power users and improve accessibility.
+
+## 2026-05-25 - [Inconsistent Focus States]
+**Learning:** `focus:outline-none` removes the default browser focus ring, rendering elements invisible to keyboard users if not replaced with a custom focus style (e.g., `focus:ring`). Several interactive elements were using this anti-pattern.
+**Action:** Audit all uses of `focus:outline-none` and ensure they are immediately followed by `focus:ring-*` or equivalent visual indicators to maintain accessibility.
