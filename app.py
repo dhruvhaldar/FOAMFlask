@@ -1875,8 +1875,14 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
         return fast_jsonify({"error": "Case directory not found"}), 404
 
     try:
+        # ⚡ Bolt Optimization: Stat case directory once
+        try:
+            case_mtime = os.stat(str(case_dir)).st_mtime
+        except OSError:
+            case_mtime = None
+
         parser = OpenFOAMFieldParser(str(case_dir))
-        data = parser.get_latest_time_data()
+        data = parser.get_latest_time_data(known_case_mtime=case_mtime)
         return fast_jsonify(data if data else {})
     except Exception as e:
         logger.error(f"Error getting latest data: {e}", exc_info=True)
