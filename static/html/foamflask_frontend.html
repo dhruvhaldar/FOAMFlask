@@ -2250,17 +2250,9 @@
   </div>
   <!-- End Main Content Area -->
 
-  <!-- Plotly.js - Load synchronously to ensure it's available when needed -->
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script>
-    // Initialize after both DOM and Plotly are loaded
+    // Initialize after DOM is loaded
     document.addEventListener("DOMContentLoaded", function () {
-      // Check if Plotly is loaded
-      if (typeof Plotly === "undefined") {
-        console.error("Plotly.js not loaded!");
-        return;
-      }
-
       // Initialize modebar styling
       const observer = new MutationObserver(() => {
         document.querySelectorAll(".modebar").forEach((bar) => {
@@ -2271,16 +2263,6 @@
 
       // Observe the document for Plotly plot creation
       observer.observe(document.body, { childList: true, subtree: true });
-
-      // Initialize plots if we're on the plots page
-      if (
-        document.getElementById("page-plots") &&
-        !document.getElementById("page-plots").classList.contains("hidden")
-      ) {
-        if (typeof startPlotUpdates === "function") {
-          startPlotUpdates();
-        }
-      }
     });
   </script>
 
