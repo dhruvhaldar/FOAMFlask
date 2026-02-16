@@ -1264,7 +1264,7 @@
       <div class="glass-panel rounded-lg overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
           <h3 class="text-sm font-semibold text-gray-900">Run History</h3>
-          <button onclick="fetchRunHistory()" class="text-cyan-600 hover:text-cyan-800 text-xs font-medium focus:outline-none">
+          <button onclick="fetchRunHistory()" class="text-cyan-600 hover:text-cyan-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500 rounded px-1">
             Refresh
           </button>
         </div>
@@ -1452,11 +1452,11 @@
 
               <div class="flex gap-2">
                 <button onclick="updateMeshView()" id="updateViewBtn"
-                  class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm w-1/2">
+                  class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm w-1/2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
                   Update View
                 </button>
                 <button onclick="toggleInteractiveMode()" id="toggleInteractiveBtn"
-                  class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm w-1/2">
+                  class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm w-1/2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1">
                   Interactive Mode
                 </button>
               </div>
@@ -1616,7 +1616,7 @@
           <!-- Font Settings Button -->
           <div class="relative">
             <button onclick="toggleFontSettings()" id="fontSettingsBtn"
-              class="bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 transition-colors">
+              class="bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
                   d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
@@ -1686,7 +1686,7 @@
 
           <!-- Show Aero Plots Button -->
           <button onclick="toggleAeroPlots()" id="toggleAeroBtn"
-            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded shadow-sm">
+            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
             Show Aero Plots
           </button>
         </div>
@@ -2010,7 +2010,7 @@
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate" />
                     </div>
                     <button onclick="loadCustomVTKFile()"
-                      class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap w-full sm:w-auto">
+                      class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                       Load File
                     </button>
                   </div>
@@ -2021,7 +2021,7 @@
 
             <!-- Load Selected VTK Button -->
             <button id="loadContourVTKBtn" onclick="loadContourVTK()" title="Load for Contour (Enter)"
-              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full font-medium">
+              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
               Load for Contour
             </button>
 
@@ -2122,7 +2122,7 @@
 
             <!-- Generate Contours Button -->
             <button id="generateContoursBtn" onclick="generateContours()"
-              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full mt-2">
+              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
               Generate Contours
             </button>
 
