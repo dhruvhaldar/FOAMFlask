@@ -5,6 +5,23 @@
 
  * When making changes to the frontend, always edit foamflask_frontend.ts and build foamflask_frontend.js using `npm run build`
  */ import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
+// ⚡ Bolt Optimization: Lazy load Plotly.js
+let plotlyPromise = null;
+const ensurePlotlyLoaded = ()=>{
+    if (window.Plotly) return Promise.resolve();
+    if (plotlyPromise) return plotlyPromise;
+    plotlyPromise = new Promise((resolve, reject)=>{
+        const script = document.createElement("script");
+        script.src = "https://cdn.plot.ly/plotly-2.27.0.min.js";
+        script.onload = ()=>resolve();
+        script.onerror = ()=>{
+            plotlyPromise = null; // Reset on error so we can retry
+            reject(new Error("Failed to load Plotly"));
+        };
+        document.head.appendChild(script);
+    });
+    return plotlyPromise;
+};
 // CSRF Protection Helpers
 const getCookie = (name)=>{
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
@@ -524,7 +541,13 @@ const createBoldTitle = (text)=>({
         }
     });
 // Helper: Download plot as PNG
-const downloadPlotAsPNG = (plotIdOrDiv, filename = "plot.png")=>{
+const downloadPlotAsPNG = async (plotIdOrDiv, filename = "plot.png")=>{
+    try {
+        await ensurePlotlyLoaded();
+    } catch (e) {
+        showNotification("Failed to load plotting library", "error");
+        return;
+    }
     // Handle both string ID (from HTML) or direct element
     const plotDiv = typeof plotIdOrDiv === "string" ? document.getElementById(plotIdOrDiv) : plotIdOrDiv;
     if (!plotDiv) {
@@ -1588,6 +1611,7 @@ const stopPlotUpdates = ()=>{
 };
 const updateResidualsPlot = async (tutorial, injectedData)=>{
     try {
+        await ensurePlotlyLoaded();
         let data = injectedData;
         if (!data) {
             data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
@@ -1682,6 +1706,7 @@ const updateAeroPlots = async (preFetchedData)=>{
     const selectedTutorial = document.getElementById("tutorialSelect")?.value;
     if (!selectedTutorial) return;
     try {
+        await ensurePlotlyLoaded();
         let data = preFetchedData;
         // ⚡ Bolt Optimization: Use pre-fetched data if available to save a network request
         if (!data) {
@@ -1787,6 +1812,13 @@ const updatePlots = async (injectedData)=>{
     console.log("DEBUG: updatePlots polling for tutorial:", selectedTutorial); // Debug log
     if (!selectedTutorial || isUpdatingPlots) {
         if (!selectedTutorial) console.warn("DEBUG: No tutorial selected, skipping update.");
+        return;
+    }
+    // ⚡ Bolt Optimization: Lazy load Plotly
+    try {
+        await ensurePlotlyLoaded();
+    } catch (e) {
+        showNotification("Failed to load plotting library", "error");
         return;
     }
     isUpdatingPlots = true;
@@ -3810,8 +3842,13 @@ window.toggleFontSettings = ()=>{
         closeMenu();
     }
 };
-window.changePlotFont = (fontFamily)=>{
+window.changePlotFont = async (fontFamily)=>{
     if (!fontFamily) return;
+    try {
+        await ensurePlotlyLoaded();
+    } catch (e) {
+        return;
+    }
     // Update global layout config
     if (plotLayout.font) {
         plotLayout.font.family = fontFamily;

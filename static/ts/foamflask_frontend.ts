@@ -9,6 +9,26 @@
 import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
 import * as Plotly from "plotly.js";
 
+// ⚡ Bolt Optimization: Lazy load Plotly.js
+let plotlyPromise: Promise<void> | null = null;
+
+const ensurePlotlyLoaded = (): Promise<void> => {
+  if ((window as any).Plotly) return Promise.resolve();
+  if (plotlyPromise) return plotlyPromise;
+
+  plotlyPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.plot.ly/plotly-2.27.0.min.js";
+    script.onload = () => resolve();
+    script.onerror = () => {
+      plotlyPromise = null; // Reset on error so we can retry
+      reject(new Error("Failed to load Plotly"));
+    };
+    document.head.appendChild(script);
+  });
+  return plotlyPromise;
+};
+
 // CSRF Protection Helpers
 const getCookie = (name: string): string | null => {
   const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
@@ -705,10 +725,17 @@ const createBoldTitle = (text: string): { text: string; font?: any } => ({
 });
 
 // Helper: Download plot as PNG
-const downloadPlotAsPNG = (
+const downloadPlotAsPNG = async (
   plotIdOrDiv: string | any,
   filename: string = "plot.png"
-): void => {
+): Promise<void> => {
+  try {
+    await ensurePlotlyLoaded();
+  } catch (e) {
+    showNotification("Failed to load plotting library", "error");
+    return;
+  }
+
   // Handle both string ID (from HTML) or direct element
   const plotDiv = typeof plotIdOrDiv === "string"
     ? document.getElementById(plotIdOrDiv)
@@ -1856,6 +1883,8 @@ const stopPlotUpdates = (): void => {
 
 const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsResponse): Promise<void> => {
   try {
+    await ensurePlotlyLoaded();
+
     let data = injectedData;
     if (!data) {
       data = await fetchWithCache<ResidualsResponse>(
@@ -1935,6 +1964,8 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
   )?.value;
   if (!selectedTutorial) return;
   try {
+    await ensurePlotlyLoaded();
+
     let data = preFetchedData;
 
     // ⚡ Bolt Optimization: Use pre-fetched data if available to save a network request
@@ -2049,6 +2080,15 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
     if (!selectedTutorial) console.warn("DEBUG: No tutorial selected, skipping update.");
     return;
   }
+
+  // ⚡ Bolt Optimization: Lazy load Plotly
+  try {
+    await ensurePlotlyLoaded();
+  } catch (e) {
+    showNotification("Failed to load plotting library", "error");
+    return;
+  }
+
   isUpdatingPlots = true;
 
   try {
@@ -4218,8 +4258,14 @@ let fontSettingsTimer: number | null = null;
   }
 };
 
-(window as any).changePlotFont = (fontFamily: string): void => {
+(window as any).changePlotFont = async (fontFamily: string): Promise<void> => {
   if (!fontFamily) return;
+
+  try {
+    await ensurePlotlyLoaded();
+  } catch (e) {
+    return;
+  }
 
   // Update global layout config
   if (plotLayout.font) {
