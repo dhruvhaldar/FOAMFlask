@@ -624,9 +624,9 @@ class OpenFOAMFieldParser:
             logger.error(f"Error parsing vector field {path_str}: {e}")
             return 0.0, 0.0, 0.0
 
-    def get_latest_time_data(self) -> Optional[Dict[str, Any]]:
+    def get_latest_time_data(self, known_case_mtime: Optional[float] = None) -> Optional[Dict[str, Any]]:
         """Get data from the latest time directory using dynamic field discovery."""
-        time_dirs = self.get_time_directories()
+        time_dirs = self.get_time_directories(known_mtime=known_case_mtime)
         if not time_dirs:
             return None
 
@@ -1079,21 +1079,42 @@ class OpenFOAMFieldParser:
 
                                             # Parse value
                                             val_start = res_idx + len(INITIAL_RESIDUAL_TOKEN)
-                                            val_chunk = line[val_start:].strip()
 
-                                            # Value ends at comma or space
-                                            comma2_idx = val_chunk.find(b",")
-                                            if comma2_idx != -1:
-                                                val_bytes = val_chunk[:comma2_idx]
+                                            # Find delimiter (comma or space)
+                                            # We rely on float() to strip leading/trailing whitespace
+                                            comma_pos = line.find(b",", val_start)
+                                            space_pos = line.find(b" ", val_start)
+
+                                            # Determine the end position
+                                            val_end = len(line)
+
+                                            if comma_pos != -1:
+                                                val_end = comma_pos
+
+                                            # If space is found and it is BEFORE the comma (or no comma), it might be the delimiter.
+                                            # BUT we must ensure it's not a leading space.
+                                            # " =   1.23" -> space_pos is at start.
+                                            # If we trust float(), we can just slice.
+                                            # However, float(b"   1.23") works. float(b"   ") fails.
+                                            # float(b"   1.23 4.56") fails.
+
+                                            # To handle "   1.23 Final", we need to cut at the space AFTER the number.
+                                            # If we simply take until comma, we get "   1.23 Final". float() fails.
+
+                                            # So we DO need to skip leading spaces first to find the TRUE delimiter.
+                                            while val_start < val_end and line[val_start] == 32:
+                                                val_start += 1
+
+                                            # Now search for space starting from the number
+                                            space_pos = line.find(b" ", val_start)
+
+                                            if space_pos != -1 and space_pos < val_end:
+                                                val_end = space_pos
+
+                                            if val_end > val_start:
+                                                value = float(line[val_start:val_end])
                                             else:
-                                                val_bytes = val_chunk
-
-                                            # Handle potential space after value (e.g. before "Final") if no comma
-                                            space_idx = val_bytes.find(b" ")
-                                            if space_idx != -1:
-                                                val_bytes = val_bytes[:space_idx]
-
-                                            value = float(val_bytes)
+                                                continue
 
                                             # ⚡ Bolt Optimization: Dynamic field registration
                                             if field not in chunk_residuals:
