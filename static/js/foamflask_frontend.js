@@ -4002,6 +4002,7 @@ const setupGeometryDragDrop = ()=>{
     const dropZone = document.getElementById('geo-drop-zone');
     const input = document.getElementById('geometryUpload');
     const nameDisplay = document.getElementById('geo-file-name');
+    const overlay = document.getElementById('geo-drop-overlay');
     if (!dropZone || !input) return;
     const showFile = ()=>{
         if (input.files && input.files[0]) {
@@ -4035,6 +4036,7 @@ const setupGeometryDragDrop = ()=>{
         }
     };
     input.addEventListener('change', showFile);
+    let dragCounter = 0;
     [
         'dragenter',
         'dragover',
@@ -4046,23 +4048,33 @@ const setupGeometryDragDrop = ()=>{
             e.stopPropagation();
         });
     });
-    [
-        'dragenter',
-        'dragover'
-    ].forEach((eventName)=>{
-        dropZone.addEventListener(eventName, ()=>{
-            dropZone.classList.add('border-cyan-500', 'bg-cyan-50');
-        });
+    dropZone.addEventListener('dragenter', ()=>{
+        dragCounter++;
+        if (dragCounter === 1) {
+            dropZone.classList.add('border-cyan-500');
+            if (overlay) {
+                overlay.classList.remove('opacity-0', 'scale-95');
+                overlay.classList.add('opacity-100', 'scale-100');
+            }
+        }
     });
-    [
-        'dragleave',
-        'drop'
-    ].forEach((eventName)=>{
-        dropZone.addEventListener(eventName, ()=>{
-            dropZone.classList.remove('border-cyan-500', 'bg-cyan-50');
-        });
+    dropZone.addEventListener('dragleave', ()=>{
+        dragCounter--;
+        if (dragCounter === 0) {
+            dropZone.classList.remove('border-cyan-500');
+            if (overlay) {
+                overlay.classList.remove('opacity-100', 'scale-100');
+                overlay.classList.add('opacity-0', 'scale-95');
+            }
+        }
     });
     dropZone.addEventListener('drop', (e)=>{
+        dragCounter = 0;
+        dropZone.classList.remove('border-cyan-500');
+        if (overlay) {
+            overlay.classList.remove('opacity-100', 'scale-100');
+            overlay.classList.add('opacity-0', 'scale-95');
+        }
         const dt = e.dataTransfer;
         if (dt && dt.files) {
             input.files = dt.files;
