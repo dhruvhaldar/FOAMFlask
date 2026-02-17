@@ -167,7 +167,7 @@ class OpenFOAMFieldParser:
 
         return sorted_dirs
 
-    def _get_field_type(self, field_entry: Union[Path, os.DirEntry]) -> Optional[str]:
+    def _get_field_type(self, field_entry: Union[Path, os.DirEntry], known_mtime: Optional[float] = None) -> Optional[str]:
         """
         Determine if a file is a volScalarField or volVectorField by reading the header.
         Returns 'scalar', 'vector', or None.
@@ -178,21 +178,30 @@ class OpenFOAMFieldParser:
             if isinstance(field_entry, os.DirEntry):
                 path_str = field_entry.path
                 filename = field_entry.name
-                mtime = field_entry.stat().st_mtime
+                # mtime extraction moved down
                 # ⚡ Bolt Optimization: Avoid Path object creation
                 # field_path = Path(path_str) # REMOVED
             else:
                 field_path = field_entry
                 path_str = str(field_path)
                 filename = field_path.name
-                mtime = os.stat(path_str).st_mtime
+                # mtime extraction moved down
 
             # ⚡ Bolt Optimization: Check case-wide filename cache first
             # If we know 'p' is scalar in this case, we don't need to read '0.1/p', '0.2/p'...
+            # This check is done BEFORE obtaining mtime to avoid stat() calls for known fields.
             case_path_str = str(self.case_dir)
             if case_path_str in _CASE_FIELD_TYPES:
                 if filename in _CASE_FIELD_TYPES[case_path_str]:
                     return _CASE_FIELD_TYPES[case_path_str][filename]
+
+            # ⚡ Bolt Optimization: Get mtime only if needed (cache miss)
+            if known_mtime is not None:
+                mtime = known_mtime
+            elif isinstance(field_entry, os.DirEntry):
+                mtime = field_entry.stat().st_mtime
+            else:
+                mtime = os.stat(path_str).st_mtime
 
             # Fallback to path-specific cache (useful if logic changes or for non-standard structures)
             if path_str in _FIELD_TYPE_CACHE:
@@ -266,9 +275,10 @@ class OpenFOAMFieldParser:
                     if entry.is_file() and not entry.name.startswith("."):
                         all_files.append(entry.name)
                         # ⚡ Bolt Optimization: Capture mtime while scanning
-                        file_mtimes[entry.name] = entry.stat().st_mtime
+                        entry_mtime = entry.stat().st_mtime
+                        file_mtimes[entry.name] = entry_mtime
 
-                        field_type = self._get_field_type(entry)
+                        field_type = self._get_field_type(entry, known_mtime=entry_mtime)
                         if field_type == "scalar":
                             scalar_fields.append(entry.name)
                         elif field_type == "vector" and entry.name == "U":
@@ -643,18 +653,21 @@ class OpenFOAMFieldParser:
             with os.scandir(time_path_str) as entries:
                 for entry in entries:
                     if entry.is_file() and not entry.name.startswith("."):
-                        field_type = self._get_field_type(entry)
+                        # ⚡ Bolt Optimization: Capture mtime once to avoid multiple stat() calls
+                        entry_mtime = entry.stat().st_mtime
+
+                        field_type = self._get_field_type(entry, known_mtime=entry_mtime)
 
                         if field_type == "scalar":
                             # Pass mtime from entry to avoid re-stat
                             # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
-                            val = self.parse_scalar_field(entry.path, known_mtime=entry.stat().st_mtime)
+                            val = self.parse_scalar_field(entry.path, known_mtime=entry_mtime)
                             if val is not None:
                                 data[entry.name] = val
 
                         elif field_type == "vector" and entry.name == "U":
                              # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
-                             ux, uy, uz = self.parse_vector_field(entry.path, known_mtime=entry.stat().st_mtime)
+                             ux, uy, uz = self.parse_vector_field(entry.path, known_mtime=entry_mtime)
                              data["Ux"] = ux
                              data["Uy"] = uy
                              data["Uz"] = uz
