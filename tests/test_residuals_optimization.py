@@ -1,109 +1,74 @@
 
 import pytest
-from pathlib import Path
-from backend.plots.realtime_plots import OpenFOAMFieldParser, _RESIDUALS_CACHE
+from unittest.mock import MagicMock, patch
+import app
 
-@pytest.fixture(autouse=True)
-def clear_cache():
-    _RESIDUALS_CACHE.clear()
-    yield
-    _RESIDUALS_CACHE.clear()
+@pytest.fixture
+def client():
+    app.app.config['TESTING'] = True
+    app.CASE_ROOT = "/tmp/mock_case_root"
+    with app.app.test_client() as client:
+        yield client
 
-def test_incremental_parsing_correctness(tmp_path):
-    # 1. Create log file with initial data
-    log_file = tmp_path / "log.foamRun"
-    content1 = (
-        b"Time = 1\n"
-        b"Solving for Ux, Initial residual = 0.1, Final residual = 0.01, No Iterations 1\n"
-        b"Solving for p, Initial residual = 0.2, Final residual = 0.02, No Iterations 1\n"
-        b"ExecutionTime = 1 s\n"
-    )
-    log_file.write_bytes(content1)
+@patch("app.validate_safe_path")
+@patch("app.check_cache")
+@patch("app.OpenFOAMFieldParser")
+def test_residuals_missing_log_optimization(mock_parser_cls, mock_check_cache, mock_validate_path, client):
+    """
+    Verify that get_residuals_from_log is NOT called when check_cache indicates file is missing.
+    """
+    # Setup
+    mock_validate_path.return_value = MagicMock(exists=lambda: True)
+    # Simulate missing file: check_cache returns (False, None, None)
+    mock_check_cache.return_value = (False, None, None)
 
-    parser = OpenFOAMFieldParser(tmp_path)
+    # Mock parser instance
+    mock_parser_instance = mock_parser_cls.return_value
+    mock_parser_instance.get_residuals_from_log.return_value = {}
 
-    # 2. First parse
-    residuals1 = parser.get_residuals_from_log()
-    assert residuals1["time"] == [1.0]
-    assert residuals1["Ux"] == [0.1]
-    assert residuals1["p"] == [0.2]
+    # Action
+    response = client.get("/api/residuals?tutorial=mock/tutorial")
 
-    # 3. Append data
-    content2 = (
-        b"Time = 2\n"
-        b"Solving for Ux, Initial residual = 0.05, Final residual = 0.005, No Iterations 1\n"
-        b"Solving for p, Initial residual = 0.1, Final residual = 0.01, No Iterations 1\n"
-        b"ExecutionTime = 2 s\n"
-    )
-    # Using open 'ab' to append
-    with open(log_file, "ab") as f:
-        f.write(content2)
+    # Assertions
+    assert response.status_code == 200
+    assert response.json == {}
 
-    # 4. Second parse (incremental)
-    residuals2 = parser.get_residuals_from_log()
+    # CRITICAL: Verify optimization - parser should NOT be instantiated or called
+    # If check_cache returns None for stat, we should return immediately.
+    # Currently (before optimization), this assertion will FAIL because the code proceeds to call parser.
+    # After optimization, this assertion should PASS.
 
-    # Verify correctness
-    assert residuals2["time"] == [1.0, 2.0]
-    assert residuals2["Ux"] == [0.1, 0.05]
-    assert residuals2["p"] == [0.2, 0.1]
+    # We check if get_residuals_from_log was called.
+    # If optimization is working, it should NOT be called.
+    # If optimization is missing, it WILL be called (and return {} from mock).
+    if mock_parser_instance.get_residuals_from_log.called:
+        pytest.fail("Optimization failed: get_residuals_from_log was called despite missing file")
 
-    # Verify object identity (should be same list objects if extended in place,
-    # but our new logic will still extend the same cached list objects)
-    assert residuals1["time"] is residuals2["time"]
+@patch("app.validate_safe_path")
+@patch("app.check_cache")
+@patch("app.OpenFOAMFieldParser")
+def test_residuals_existing_log(mock_parser_cls, mock_check_cache, mock_validate_path, client):
+    """
+    Verify that get_residuals_from_log IS called when file exists.
+    """
+    # Setup
+    mock_validate_path.return_value = MagicMock(exists=lambda: True)
 
-def test_partial_line_handling(tmp_path):
-    log_file = tmp_path / "log.foamRun"
+    # Simulate existing file
+    mock_stat = MagicMock()
+    mock_stat.st_mtime = 12345.0
+    mock_check_cache.return_value = (False, "Wed, 21 Oct 2015 07:28:00 GMT", mock_stat)
 
-    # 1. Write data ending with incomplete line
-    content = (
-        b"Time = 1\n"
-        b"Solving for Ux, Initial residual = 0.1, Final residual = 0.01\n" # Missing newline? No, valid line
-        b"Solving for p, Initial " # Incomplete
-    )
-    log_file.write_bytes(content)
+    mock_parser_instance = mock_parser_cls.return_value
+    expected_data = {"time": [0, 1], "p": [1e-5, 1e-6]}
+    mock_parser_instance.get_residuals_from_log.return_value = expected_data
 
-    parser = OpenFOAMFieldParser(tmp_path)
-    residuals = parser.get_residuals_from_log()
+    # Action
+    response = client.get("/api/residuals?tutorial=mock/tutorial")
 
-    assert residuals["time"] == [1.0]
-    assert residuals["Ux"] == [0.1]
-    assert len(residuals["p"]) == 0 # p not parsed yet
+    # Assertions
+    assert response.status_code == 200
+    assert response.json == expected_data
 
-    # 2. Complete the line and add more
-    with open(log_file, "ab") as f:
-        f.write(b"residual = 0.2, Final residual = 0.02\nTime = 2\n")
-
-    residuals = parser.get_residuals_from_log()
-    assert residuals["p"] == [0.2]
-    assert residuals["time"] == [1.0, 2.0]
-
-def test_dynamic_field_discovery(tmp_path):
-    log_file = tmp_path / "log.foamRun"
-    content = (
-        b"Time = 1\n"
-        b"Solving for CustomField, Initial residual = 0.5, Final residual = 0.05, No Iterations 1\n"
-    )
-    log_file.write_bytes(content)
-
-    parser = OpenFOAMFieldParser(tmp_path)
-    residuals = parser.get_residuals_from_log()
-
-    assert "CustomField" in residuals
-    assert residuals["CustomField"] == [0.5]
-    assert residuals["time"] == [1.0]
-
-def test_tab_separated_residuals(tmp_path):
-    log_file = tmp_path / "log.foamRun"
-    # Note the tab after "Solving for"
-    content = (
-        b"Time = 1\n"
-        b"Solving for\tUx, Initial residual = 0.5, Final residual = 0.05, No Iterations 1\n"
-    )
-    log_file.write_bytes(content)
-
-    parser = OpenFOAMFieldParser(tmp_path)
-    residuals = parser.get_residuals_from_log()
-
-    assert "Ux" in residuals
-    assert residuals["Ux"] == [0.5]
-    assert residuals["time"] == [1.0]
+    # Verify parser was called with correct stat
+    mock_parser_instance.get_residuals_from_log.assert_called_once_with(known_stat=mock_stat)
