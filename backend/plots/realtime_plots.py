@@ -1096,7 +1096,6 @@ class OpenFOAMFieldParser:
                                             # Find delimiter (comma or space)
                                             # We rely on float() to strip leading/trailing whitespace
                                             comma_pos = line.find(b",", val_start)
-                                            space_pos = line.find(b" ", val_start)
 
                                             # Determine the end position
                                             val_end = len(line)
