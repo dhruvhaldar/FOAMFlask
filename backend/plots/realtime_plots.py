@@ -1038,6 +1038,22 @@ class OpenFOAMFieldParser:
                             # ⚡ Bolt Optimization: Use startswith + manual parse (~30% faster than regex)
                             # Most lines are not Time lines, so startswith fails fast.
                             if line.startswith(TIME_PREFIX):
+                                # ⚡ Bolt Optimization: Try fast manual parsing first (split by '=')
+                                # Most Time lines are simple "Time = <number>".
+                                # This avoids regex overhead for >99% of cases.
+                                eq_idx = line.find(b'=')
+                                if eq_idx != -1:
+                                    try:
+                                        # Extract value part after '='
+                                        val_part = line[eq_idx+1:].strip()
+                                        current_time = float(val_part)
+                                        chunk_residuals["time"].append(current_time)
+                                        new_offset += line_len
+                                        continue
+                                    except ValueError:
+                                        # Fallback to regex if float() fails (e.g. units '10s')
+                                        pass
+
                                 # ⚡ Bolt Optimization: Use pre-compiled regex for robust parsing (handles '24s' units)
                                 # While manual split is faster, it fails on units. 
                                 # Regex with specific capture group handles this fallback correctly.
