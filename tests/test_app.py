@@ -462,7 +462,8 @@ def test_api_residuals(client, tmp_path):
 
     # Test with mock
     with patch('app.CASE_ROOT', str(tmp_path)), \
-         patch('app.OpenFOAMFieldParser') as mock_parser_cls:
+         patch('app.OpenFOAMFieldParser') as mock_parser_cls, \
+         patch('app.check_cache') as mock_check_cache:
         # Setup mock parser
         mock_parser = MagicMock()
         mock_parser.get_residuals_from_log.return_value = {
@@ -474,6 +475,13 @@ def test_api_residuals(client, tmp_path):
             }
         }
         mock_parser_cls.return_value = mock_parser
+
+        # Setup mock check_cache to simulate file existence
+        # Returns: (is_not_modified, last_modified_str, stat_result)
+        mock_stat = MagicMock()
+        mock_stat.st_mtime = 12345.0
+        mock_stat.st_size = 100
+        mock_check_cache.return_value = (False, "Wed, 21 Oct 2015 07:28:00 GMT", mock_stat)
 
         # Make the request
         response = client.get('/api/residuals?tutorial=test_tutorial')
