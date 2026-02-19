@@ -742,7 +742,10 @@ window.toggleMobileMenu = toggleMobileMenu;
 const showNotification = (message, type, duration = NOTIFY_DEFAULT)=>{
     // If a notification with the same message already exists, do not show another one
     // This prevents spamming the user with the same message
-    if (document.querySelector(`.notification .message-slot[data-message="${message}"]`)) {
+    // 🎨 Palette UX: Use Array.from().some() instead of querySelector with attribute selector
+    // to prevent DOMException when message contains special characters (like quotes or newlines)
+    const existingNotifications = Array.from(document.querySelectorAll('.notification .message-slot'));
+    if (existingNotifications.some((el)=>el.getAttribute('data-message') === message)) {
         return null;
     }
     const container = document.getElementById("notificationContainer");
@@ -3475,6 +3478,49 @@ const init = ()=>{
     setupCopyableValues();
     setupLayersDependency();
     setupGeometryDragDrop();
+    initAccessibleTabs();
+};
+// 🎨 Palette UX: Initialize accessible tabs (Keyboard Nav + Roving Tabindex)
+const initAccessibleTabs = ()=>{
+    // Select all tablists
+    const tabLists = document.querySelectorAll('[role="tablist"]');
+    tabLists.forEach((tabList)=>{
+        const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+        if (tabs.length === 0) return;
+        // Add keyboard navigation
+        tabList.addEventListener('keydown', (e)=>{
+            const key = e.key;
+            const target = e.target;
+            const index = tabs.indexOf(target);
+            let newIndex = -1;
+            if (key === 'ArrowRight' || key === 'ArrowDown') {
+                newIndex = (index + 1) % tabs.length;
+            } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
+                newIndex = (index - 1 + tabs.length) % tabs.length;
+            } else if (key === 'Home') {
+                newIndex = 0;
+            } else if (key === 'End') {
+                newIndex = tabs.length - 1;
+            }
+            if (newIndex !== -1) {
+                e.preventDefault();
+                tabs[newIndex].focus();
+                tabs[newIndex].click();
+            }
+        });
+        // Manage tabindex
+        tabs.forEach((tab)=>{
+            // Add visual focus style if missing
+            if (!tab.classList.contains('focus:ring-2')) {
+                tab.classList.add('focus:outline-none', 'focus:ring-2', 'focus:ring-cyan-500', 'focus:ring-offset-2', 'rounded-md');
+            }
+            tab.addEventListener('focusin', ()=>{
+                // When a tab receives focus, make it the only focusable one in the list (roving tabindex)
+                tabs.forEach((t)=>t.setAttribute('tabindex', '-1'));
+                tab.setAttribute('tabindex', '0');
+            });
+        });
+    });
 };
 // UX: Setup dependency between "Add Layers" checkbox and "Surface Layers" input
 const setupLayersDependency = ()=>{
