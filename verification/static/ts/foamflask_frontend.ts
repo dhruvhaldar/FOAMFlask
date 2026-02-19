@@ -1,5 +1,5 @@
 /**
- * FOAMFlask Frontend * 
+ * FOAMFlask Frontend *
 
  * Background Color Palette: https://coolors.co/gradient-maker/b6f0ff-ffb1b9?position=0,100&opacity=100,100&type=linear&rotation=180
 
