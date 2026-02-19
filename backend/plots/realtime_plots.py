@@ -57,6 +57,23 @@ _CASE_FIELD_TYPES: Dict[str, Dict[str, str]] = {}
 # ⚡ Bolt Optimization: Cache for decoded field names to avoid repeated decoding in tight loops
 _FIELD_NAME_CACHE: Dict[bytes, str] = {}
 
+# ⚡ Bolt Optimization: Standard OpenFOAM field types to avoid reading headers
+# This avoids sys calls (open/read) for common fields.
+STANDARD_FIELD_TYPES = {
+    "p": "scalar",
+    "T": "scalar",
+    "U": "vector",
+    "rho": "scalar",
+    "k": "scalar",
+    "epsilon": "scalar",
+    "omega": "scalar",
+    "nut": "scalar",
+    "nuTilda": "scalar",
+    "alpha.water": "scalar",
+    "p_rgh": "scalar",
+    "phi": "scalar",  # flux is usually scalar (surfaceScalarField, treated as scalar here)
+}
+
 # Pre-compiled regex patterns
 # Matches "Time = <number>"
 # ⚡ Bolt Optimization: Bytes regex for high-performance log parsing
@@ -194,6 +211,14 @@ class OpenFOAMFieldParser:
             if case_path_str in _CASE_FIELD_TYPES:
                 if filename in _CASE_FIELD_TYPES[case_path_str]:
                     return _CASE_FIELD_TYPES[case_path_str][filename]
+
+            # ⚡ Bolt Optimization: Check standard field types
+            # This avoids reading headers for common fields on first load
+            if filename in STANDARD_FIELD_TYPES:
+                # We can update the case cache too, but it's redundant if we check here.
+                # But updating it makes subsequent lookups slightly faster (dict lookup vs dict lookup).
+                # Let's just return.
+                return STANDARD_FIELD_TYPES[filename]
 
             # ⚡ Bolt Optimization: Get mtime only if needed (cache miss)
             if known_mtime is not None:
@@ -1043,30 +1068,43 @@ class OpenFOAMFieldParser:
                                 # This avoids regex overhead for >99% of cases.
                                 eq_idx = line.find(b'=')
                                 if eq_idx != -1:
-                                    try:
-                                        # Extract value part after '='
-                                        val_part = line[eq_idx+1:].strip()
-                                        current_time = float(val_part)
-                                        chunk_residuals["time"].append(current_time)
-                                        new_offset += line_len
-                                        continue
-                                    except ValueError:
-                                        # Fallback to regex if float() fails (e.g. units '10s')
-                                        pass
+                                    # ⚡ Bolt Optimization: Guard against "Time step execution..." lines
+                                    # We verify that the text between "Time" and "=" is empty/whitespace.
+                                    # TIME_PREFIX is b"Time" (len 4).
+                                    # If line is "Time step = ...", prefix_segment is " step ".
+                                    prefix_segment = line[4:eq_idx]
+                                    if not prefix_segment.strip():
+                                        try:
+                                            # Extract value part after '='
+                                            val_part = line[eq_idx+1:].strip()
+                                            current_time = float(val_part)
+                                            chunk_residuals["time"].append(current_time)
+                                            new_offset += line_len
+                                            continue
+                                        except ValueError:
+                                            # Fallback to regex if float() fails (e.g. units '10s')
+                                            pass
 
-                                # ⚡ Bolt Optimization: Use pre-compiled regex for robust parsing (handles '24s' units)
-                                # While manual split is faster, it fails on units. 
-                                # Regex with specific capture group handles this fallback correctly.
-                                time_match = TIME_REGEX_BYTES.search(line)
-                                if time_match:
-                                    try:
-                                        current_time = float(time_match.group(1))
-                                        chunk_residuals["time"].append(current_time)
-                                        # Optimization: Time line never contains residuals, skip regex
-                                        new_offset += line_len
-                                        continue
-                                    except ValueError:
+                                        # ⚡ Bolt Optimization: Use pre-compiled regex for robust parsing (handles '24s' units)
+                                        # While manual split is faster, it fails on units.
+                                        # Regex with specific capture group handles this fallback correctly.
+                                        # We only run regex if we confirmed it looks like "Time =" (prefix check passed)
+                                        time_match = TIME_REGEX_BYTES.search(line)
+                                        if time_match:
+                                            try:
+                                                current_time = float(time_match.group(1))
+                                                chunk_residuals["time"].append(current_time)
+                                                # Optimization: Time line never contains residuals, skip regex
+                                                new_offset += line_len
+                                                continue
+                                            except ValueError:
+                                                pass
+                                    else:
+                                        # "Time step =" or similar. Regex would fail anyway.
                                         pass
+                                else:
+                                    # No '=', regex would fail anyway.
+                                    pass
 
                             # Optimized residual matching (on bytes)
                             # Optimization: Check if we have any time steps first (in global or local cache)
