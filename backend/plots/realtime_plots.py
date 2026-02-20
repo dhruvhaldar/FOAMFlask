@@ -15,6 +15,7 @@ from typing import List, Optional, Tuple, Dict, Union, Any
 # ⚡ Bolt Optimization: Import Rust accelerator if available
 try:
     import accelerator
+
     RUST_ACCELERATOR = True
 except ImportError:
     RUST_ACCELERATOR = False
@@ -47,7 +48,9 @@ MAX_CACHE_CASES = int(os.environ.get("FOAMFLASK_MAX_CACHE_CASES", 5))
 
 # Structure: { "dir_path_str": (mtime, scalar_fields, has_U, all_files, file_mtimes) }
 # ⚡ Bolt Optimization: Cache directory contents to avoid redundant scandir/field_type checks
-_DIR_SCAN_CACHE: Dict[str, Tuple[float, List[str], bool, List[str], Dict[str, float]]] = {}
+_DIR_SCAN_CACHE: Dict[
+    str, Tuple[float, List[str], bool, List[str], Dict[str, float]]
+] = {}
 
 # Structure: { "case_dir_str": { "filename": "type" } }
 # ⚡ Bolt Optimization: Cache field types by filename per case to avoid re-reading headers
@@ -88,7 +91,9 @@ TIME_PREFIX = b"Time"
 # ⚡ Bolt Optimization: Bytes regex to avoid decoding log lines
 # ⚡ Bolt Optimization: Generic pattern to support dynamic field discovery (e.g. O2, nut, etc.)
 # ⚡ Bolt Optimization: Anchored to "Solving for" to fail fast. Benchmarks show generic regex is ~5% faster than specific alternation.
-RESIDUAL_REGEX_BYTES = re.compile(rb"Solving for\s+([\w_]+).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+RESIDUAL_REGEX_BYTES = re.compile(
+    rb"Solving for\s+([\w_]+).*Initial residual\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
+)
 
 # ⚡ Bolt Optimization: Tokens for manual parsing (~40% faster than regex)
 SOLVING_FOR_TOKEN = b"Solving for "
@@ -111,16 +116,23 @@ _RE_VOL_VECTOR = re.compile(rb"class\s+volVectorField;")
 
 _RE_SCALAR_UNIFORM_VAR = re.compile(rb"internalField\s+uniform\s+(\$[a-zA-Z0-9_]+);")
 _RE_SCALAR_UNIFORM_VAL = re.compile(rb"internalField\s+uniform\s+([^;]+);")
-_RE_NONUNIFORM_LIST = re.compile(r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;", re.DOTALL)
+_RE_NONUNIFORM_LIST = re.compile(
+    r"internalField\s+nonuniform\s+.*?\(\s*([\s\S]*?)\s*\)\s*;", re.DOTALL
+)
 _RE_NUMBERS_FINDALL = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
-_RE_VECTOR_UNIFORM_VAR_CHECK = re.compile(rb"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;")
-_RE_VECTOR_UNIFORM_VAL_GROUP = re.compile(rb"internalField\s+uniform\s+(\([^;]+\));", re.DOTALL)
+_RE_VECTOR_UNIFORM_VAR_CHECK = re.compile(
+    rb"internalField\s+uniform\s+\$[a-zA-Z0-9_]+;"
+)
+_RE_VECTOR_UNIFORM_VAL_GROUP = re.compile(
+    rb"internalField\s+uniform\s+(\([^;]+\));", re.DOTALL
+)
 _RE_VECTOR_COMPONENTS = re.compile(
     rb"\(\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
     rb"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)"
 )
+
 
 # ⚡ Bolt Optimization: Cache variable resolution patterns to avoid recompilation
 @functools.lru_cache(maxsize=128)
@@ -184,7 +196,9 @@ class OpenFOAMFieldParser:
 
         return sorted_dirs
 
-    def _get_field_type(self, field_entry: Union[Path, os.DirEntry], known_mtime: Optional[float] = None) -> Optional[str]:
+    def _get_field_type(
+        self, field_entry: Union[Path, os.DirEntry], known_mtime: Optional[float] = None
+    ) -> Optional[str]:
         """
         Determine if a file is a volScalarField or volVectorField by reading the header.
         Returns 'scalar', 'vector', or None.
@@ -249,7 +263,7 @@ class OpenFOAMFieldParser:
             # ⚡ Bolt Optimization: Use built-in open() with string path to avoid Path object overhead
             with open(path_str, "rb") as f:
                 header = f.read(2048)
-            
+
             field_type = None
             if _RE_VOL_SCALAR.search(header):
                 field_type = "scalar"
@@ -270,7 +284,9 @@ class OpenFOAMFieldParser:
             # print(f"DEBUG: _get_field_type failed for {field_entry}: {e}")
             return None
 
-    def _scan_time_dir(self, time_path: Union[str, Path], known_mtime: Optional[float] = None) -> Tuple[List[str], bool, List[str], Dict[str, float]]:
+    def _scan_time_dir(
+        self, time_path: Union[str, Path], known_mtime: Optional[float] = None
+    ) -> Tuple[List[str], bool, List[str], Dict[str, float]]:
         """
         Scan a time directory and categorize fields.
         Returns: (scalar_fields, has_U, all_files, file_mtimes)
@@ -286,7 +302,9 @@ class OpenFOAMFieldParser:
 
             # ⚡ Bolt Optimization: Check cache first
             if path_str in _DIR_SCAN_CACHE:
-                cached_mtime, scalar_fields, has_U, all_files, file_mtimes = _DIR_SCAN_CACHE[path_str]
+                cached_mtime, scalar_fields, has_U, all_files, file_mtimes = (
+                    _DIR_SCAN_CACHE[path_str]
+                )
                 if cached_mtime == mtime:
                     return scalar_fields, has_U, all_files, file_mtimes
 
@@ -303,7 +321,9 @@ class OpenFOAMFieldParser:
                         entry_mtime = entry.stat().st_mtime
                         file_mtimes[entry.name] = entry_mtime
 
-                        field_type = self._get_field_type(entry, known_mtime=entry_mtime)
+                        field_type = self._get_field_type(
+                            entry, known_mtime=entry_mtime
+                        )
                         if field_type == "scalar":
                             scalar_fields.append(entry.name)
                         elif field_type == "vector" and entry.name == "U":
@@ -313,29 +333,40 @@ class OpenFOAMFieldParser:
             scalar_fields.sort()
             all_files.sort()
 
-            _DIR_SCAN_CACHE[path_str] = (mtime, scalar_fields, has_U, all_files, file_mtimes)
+            _DIR_SCAN_CACHE[path_str] = (
+                mtime,
+                scalar_fields,
+                has_U,
+                all_files,
+                file_mtimes,
+            )
             return scalar_fields, has_U, all_files, file_mtimes
 
         except OSError as e:
             logger.error(f"Error scanning time directory {time_path}: {e}")
             return [], False, [], {}
 
-    def _resolve_variable(self, content: Union[str, bytes, mmap.mmap], var_name: Union[str, bytes], search_limit: Optional[int] = None) -> Optional[str]:
+    def _resolve_variable(
+        self,
+        content: Union[str, bytes, mmap.mmap],
+        var_name: Union[str, bytes],
+        search_limit: Optional[int] = None,
+    ) -> Optional[str]:
         """
         Attempt to resolve a variable definition within the file content.
         Looks for patterns like 'varName value;'
         """
         # ⚡ Bolt Optimization: Handle mmap as binary
         is_binary = not isinstance(content, str)
-        
+
         if is_binary:
             if isinstance(var_name, str):
-                var_name = var_name.encode('utf-8')
-            clean_var = var_name.lstrip(b'$')
+                var_name = var_name.encode("utf-8")
+            clean_var = var_name.lstrip(b"$")
         else:
             if isinstance(var_name, bytes):
-                var_name = var_name.decode('utf-8')
-            clean_var = var_name.lstrip('$')
+                var_name = var_name.decode("utf-8")
+            clean_var = var_name.lstrip("$")
 
         # ⚡ Bolt Optimization: Use cached pattern
         pattern = _get_variable_pattern(clean_var)
@@ -347,26 +378,32 @@ class OpenFOAMFieldParser:
             match = pattern.search(content, 0, search_limit)
         else:
             match = pattern.search(content)
-        
+
         if match:
             value = match.group(1).strip()
-            
+
             if is_binary:
-                if value.startswith(b'$'):
+                if value.startswith(b"$"):
                     return self._resolve_variable(content, value, search_limit)
                 if b"#calc" in value:
                     return None
-                return value.decode('utf-8')
+                return value.decode("utf-8")
             else:
-                if value.startswith('$'):
+                if value.startswith("$"):
                     return self._resolve_variable(content, value, search_limit)
                 if "#calc" in value:
                     return None
                 return value
-            
+
         return None
 
-    def parse_scalar_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None, store_cache: bool = True) -> Optional[float]:
+    def parse_scalar_field(
+        self,
+        field_path: Union[str, Path],
+        check_mtime: bool = True,
+        known_mtime: Optional[float] = None,
+        store_cache: bool = True,
+    ) -> Optional[float]:
         """Parse a scalar field file and return average value with caching."""
         if isinstance(field_path, str):
             path_str = field_path
@@ -376,8 +413,8 @@ class OpenFOAMFieldParser:
         # ⚡ Bolt Optimization: Use Rust accelerator if available
         # Rust handles mmap and parsing significantly faster.
         if RUST_ACCELERATOR and not check_mtime and path_str in _FILE_CACHE:
-             # Fast path: Skip everything if cache hit requested without checks
-             return _FILE_CACHE[path_str][1]
+            # Fast path: Skip everything if cache hit requested without checks
+            return _FILE_CACHE[path_str][1]
 
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
@@ -395,7 +432,7 @@ class OpenFOAMFieldParser:
                 except OSError:
                     # File might not exist
                     return None
-            
+
             # Return cached if valid (only if we checked mtime or have known mtime)
             if (check_mtime or known_mtime is not None) and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
@@ -421,7 +458,7 @@ class OpenFOAMFieldParser:
                     # mmap can fail for empty files or if file is too small
                     # ⚡ Bolt Optimization: Use os.fstat(fd) instead of Path.stat() to avoid extra syscall
                     if f.fileno() != -1 and os.fstat(f.fileno()).st_size > 0:
-                         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                             # 1. Check for nonuniform list
                             # Look for "internalField nonuniform"
                             idx = mm.find(b"internalField")
@@ -432,23 +469,31 @@ class OpenFOAMFieldParser:
 
                                 if nonuniform_idx != -1:
                                     # Locate list start '('
-                                    start_paren = mm.find(b'(', nonuniform_idx)
+                                    start_paren = mm.find(b"(", nonuniform_idx)
                                     if start_paren != -1:
                                         # Locate list end ')'
                                         # It usually ends with ');' before 'boundaryField'
-                                        boundary_idx = mm.find(b"boundaryField", start_paren)
+                                        boundary_idx = mm.find(
+                                            b"boundaryField", start_paren
+                                        )
                                         end_paren = -1
                                         if boundary_idx != -1:
-                                            end_paren = mm.rfind(b')', start_paren, boundary_idx)
+                                            end_paren = mm.rfind(
+                                                b")", start_paren, boundary_idx
+                                            )
                                         else:
-                                            end_paren = mm.rfind(b')') # Fallback to last paren
+                                            end_paren = mm.rfind(
+                                                b")"
+                                            )  # Fallback to last paren
 
                                         if end_paren != -1:
                                             # Slice data efficiently
                                             # np.fromstring handles bytes directly
-                                            data_block = mm[start_paren+1:end_paren]
+                                            data_block = mm[start_paren + 1 : end_paren]
                                             try:
-                                                numbers = np.fromstring(data_block, sep=" ")
+                                                numbers = np.fromstring(
+                                                    data_block, sep=" "
+                                                )
                                                 if numbers.size > 0:
                                                     val = float(np.mean(numbers))
                                             except ValueError:
@@ -458,7 +503,7 @@ class OpenFOAMFieldParser:
                             if val is None:
                                 # Reset for search
                                 if idx != -1:
-                                    pass # idx is already valid for internalField
+                                    pass  # idx is already valid for internalField
                                 else:
                                     idx = mm.find(b"internalField")
 
@@ -468,18 +513,24 @@ class OpenFOAMFieldParser:
                                     # Search range limited to ~200 bytes after internalField
 
                                     # Check for uniform with variable substitution
-                                    var_match = _RE_SCALAR_UNIFORM_VAR.search(mm, idx, idx + 200)
+                                    var_match = _RE_SCALAR_UNIFORM_VAR.search(
+                                        mm, idx, idx + 200
+                                    )
                                     if var_match:
-                                        var_name = var_match.group(1) # bytes
+                                        var_name = var_match.group(1)  # bytes
                                         # ⚡ Bolt Optimization: Use mmap buffer directly for variable resolution
                                         # Avoids reading entire file into memory with read_bytes()
                                         # ⚡ Bolt Optimization: Limit search to header (up to internalField)
-                                        resolved_value = self._resolve_variable(mm, var_name, search_limit=idx)
+                                        resolved_value = self._resolve_variable(
+                                            mm, var_name, search_limit=idx
+                                        )
                                         if resolved_value:
                                             val = float(resolved_value)
 
                                     if val is None:
-                                        match = _RE_SCALAR_UNIFORM_VAL.search(mm, idx, idx + 200)
+                                        match = _RE_SCALAR_UNIFORM_VAL.search(
+                                            mm, idx, idx + 200
+                                        )
                                         if match:
                                             try:
                                                 val = float(match.group(1).strip())
@@ -504,7 +555,7 @@ class OpenFOAMFieldParser:
                                 val = float(np.mean([float(n) for n in numbers_list]))
                 except (FileNotFoundError, OSError):
                     pass
-            
+
             # Update cache
             if store_cache:
                 _FILE_CACHE[path_str] = (mtime, val)
@@ -514,7 +565,13 @@ class OpenFOAMFieldParser:
             logger.error(f"Error parsing scalar field {path_str}: {e}")
             return None
 
-    def parse_vector_field(self, field_path: Union[str, Path], check_mtime: bool = True, known_mtime: Optional[float] = None, store_cache: bool = True) -> Tuple[float, float, float]:
+    def parse_vector_field(
+        self,
+        field_path: Union[str, Path],
+        check_mtime: bool = True,
+        known_mtime: Optional[float] = None,
+        store_cache: bool = True,
+    ) -> Tuple[float, float, float]:
         """Parse a vector field file and return average components with caching."""
         if isinstance(field_path, str):
             path_str = field_path
@@ -523,7 +580,7 @@ class OpenFOAMFieldParser:
 
         # ⚡ Bolt Optimization: Use Rust accelerator if available
         if RUST_ACCELERATOR and not check_mtime and path_str in _FILE_CACHE:
-             return _FILE_CACHE[path_str][1]
+            return _FILE_CACHE[path_str][1]
 
         try:
             # ⚡ Bolt Optimization: Skip stat() for historical files
@@ -539,7 +596,7 @@ class OpenFOAMFieldParser:
                     mtime = os.stat(path_str).st_mtime
                 except OSError:
                     return 0.0, 0.0, 0.0
-            
+
             # Return cached if valid (only if we checked mtime or have known mtime)
             if (check_mtime or known_mtime is not None) and path_str in _FILE_CACHE:
                 cached_mtime, cached_val = _FILE_CACHE[path_str]
@@ -570,18 +627,22 @@ class OpenFOAMFieldParser:
                                 nonuniform_idx = mm.find(b"nonuniform", idx, idx + 200)
 
                                 if nonuniform_idx != -1:
-                                    start_paren = mm.find(b'(', nonuniform_idx)
+                                    start_paren = mm.find(b"(", nonuniform_idx)
                                     if start_paren != -1:
-                                        boundary_idx = mm.find(b"boundaryField", start_paren)
+                                        boundary_idx = mm.find(
+                                            b"boundaryField", start_paren
+                                        )
                                         end_paren = -1
                                         if boundary_idx != -1:
-                                            end_paren = mm.rfind(b')', start_paren, boundary_idx)
+                                            end_paren = mm.rfind(
+                                                b")", start_paren, boundary_idx
+                                            )
                                         else:
-                                            end_paren = mm.rfind(b')')
+                                            end_paren = mm.rfind(b")")
 
                                         if end_paren != -1:
                                             # Slice data
-                                            data_block = mm[start_paren+1:end_paren]
+                                            data_block = mm[start_paren + 1 : end_paren]
                                             try:
                                                 # Use translate on bytes (requires making a copy, but still better than full file read)
                                                 # Or simpler: replace b'(' and b')' with space
@@ -591,13 +652,19 @@ class OpenFOAMFieldParser:
 
                                                 # replace(b'(', b' ') is fast on bytes
                                                 # ⚡ Bolt Optimization: Use translate() for bytes to avoid intermediate copies (~15% faster)
-                                                clean_data = data_block.translate(_PARENS_TRANS_BYTES)
-                                                arr = np.fromstring(clean_data, sep=' ')
+                                                clean_data = data_block.translate(
+                                                    _PARENS_TRANS_BYTES
+                                                )
+                                                arr = np.fromstring(clean_data, sep=" ")
 
                                                 if arr.size > 0:
                                                     arr = arr.reshape(-1, 3)
                                                     mean_vec = np.mean(arr, axis=0)
-                                                    val = (float(mean_vec[0]), float(mean_vec[1]), float(mean_vec[2]))
+                                                    val = (
+                                                        float(mean_vec[0]),
+                                                        float(mean_vec[1]),
+                                                        float(mean_vec[2]),
+                                                    )
                                             except ValueError:
                                                 pass
 
@@ -610,15 +677,21 @@ class OpenFOAMFieldParser:
 
                                 if idx != -1:
                                     # ⚡ Bolt Optimization: Use bytes regex search on mmap buffer directly
-                                    if _RE_VECTOR_UNIFORM_VAR_CHECK.search(mm, idx, idx + 200):
+                                    if _RE_VECTOR_UNIFORM_VAR_CHECK.search(
+                                        mm, idx, idx + 200
+                                    ):
                                         # Variable detected
                                         val = (0.0, 0.0, 0.0)
                                     else:
-                                        match = _RE_VECTOR_UNIFORM_VAL_GROUP.search(mm, idx, idx + 200)
+                                        match = _RE_VECTOR_UNIFORM_VAL_GROUP.search(
+                                            mm, idx, idx + 200
+                                        )
                                         if match:
                                             vec_str = match.group(1)
                                             # Simple regex for (x y z)
-                                            vec_match = _RE_VECTOR_COMPONENTS.search(vec_str)
+                                            vec_match = _RE_VECTOR_COMPONENTS.search(
+                                                vec_str
+                                            )
                                             if vec_match:
                                                 val = (
                                                     float(vec_match.group(1)),
@@ -640,16 +713,20 @@ class OpenFOAMFieldParser:
                             field_data = match.group(1)
                             try:
                                 clean_data = field_data.translate(_PARENS_TRANS)
-                                arr = np.fromstring(clean_data, sep=' ')
+                                arr = np.fromstring(clean_data, sep=" ")
                                 if arr.size > 0:
                                     arr = arr.reshape(-1, 3)
                                     mean_vec = np.mean(arr, axis=0)
-                                    val = (float(mean_vec[0]), float(mean_vec[1]), float(mean_vec[2]))
+                                    val = (
+                                        float(mean_vec[0]),
+                                        float(mean_vec[1]),
+                                        float(mean_vec[2]),
+                                    )
                             except ValueError:
                                 pass
                 except (FileNotFoundError, OSError):
                     pass
-            
+
             # Update cache
             if store_cache:
                 _FILE_CACHE[path_str] = (mtime, val)
@@ -659,7 +736,9 @@ class OpenFOAMFieldParser:
             logger.error(f"Error parsing vector field {path_str}: {e}")
             return 0.0, 0.0, 0.0
 
-    def get_latest_time_data(self, known_case_mtime: Optional[float] = None) -> Optional[Dict[str, Any]]:
+    def get_latest_time_data(
+        self, known_case_mtime: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get data from the latest time directory using dynamic field discovery."""
         time_dirs = self.get_time_directories(known_mtime=known_case_mtime)
         if not time_dirs:
@@ -716,7 +795,12 @@ class OpenFOAMFieldParser:
 
         return data
 
-    def get_all_time_series_data(self, max_points: int = 100, known_case_mtime: Optional[float] = None, known_latest_mtime: Optional[float] = None) -> Dict[str, List[float]]:
+    def get_all_time_series_data(
+        self,
+        max_points: int = 100,
+        known_case_mtime: Optional[float] = None,
+        known_latest_mtime: Optional[float] = None,
+    ) -> Dict[str, List[float]]:
         """Get time series data for all available fields dynamically."""
         all_time_dirs = self.get_time_directories(known_mtime=known_case_mtime)
         if not all_time_dirs:
@@ -759,7 +843,7 @@ class OpenFOAMFieldParser:
         min_len = min(len(src_dirs), len(all_time_dirs))
 
         # Fast prefix check: if lengths differ but prefix matches
-        if all_time_dirs[:len(src_dirs)] == src_dirs:
+        if all_time_dirs[: len(src_dirs)] == src_dirs:
             valid_cache_len = len(src_dirs)
         else:
             # Slower element-wise check if there was a divergence (e.g. restart)
@@ -777,16 +861,20 @@ class OpenFOAMFieldParser:
 
         latest_time = all_time_dirs[-1]
         stable_dirs_to_process = all_time_dirs[valid_cache_len:-1]
-        
+
         # ⚡ Bolt Optimization: Use os.path.join for latest step path to avoid Path creation overhead
         latest_time_path_str = os.path.join(self.case_dir_str, latest_time)
 
         # ⚡ Bolt Optimization: Use cached scanning for field discovery
         # ⚡ Bolt Optimization: Pass known_latest_mtime and capture file_mtimes
-        scalar_fields, has_U, _, file_mtimes = self._scan_time_dir(latest_time_path_str, known_mtime=known_latest_mtime)
+        scalar_fields, has_U, _, file_mtimes = self._scan_time_dir(
+            latest_time_path_str, known_mtime=known_latest_mtime
+        )
 
         # Decision: Do we need to modify the cache?
-        needs_update = (valid_cache_len < len(src_dirs)) or (len(stable_dirs_to_process) > 0)
+        needs_update = (valid_cache_len < len(src_dirs)) or (
+            len(stable_dirs_to_process) > 0
+        )
 
         working_data = None
         working_dirs_len = 0
@@ -814,10 +902,10 @@ class OpenFOAMFieldParser:
                 for f in scalar_fields:
                     cached_data[f] = []
                 if has_U:
-                    cached_data['Ux'] = []
-                    cached_data['Uy'] = []
-                    cached_data['Uz'] = []
-                    cached_data['U_mag'] = []
+                    cached_data["Ux"] = []
+                    cached_data["Uy"] = []
+                    cached_data["Uz"] = []
+                    cached_data["U_mag"] = []
 
             # Process new stable steps and append to cache (working copy)
             try:
@@ -841,7 +929,9 @@ class OpenFOAMFieldParser:
 
                         # Skip check_mtime for stable steps (assumed immutable)
                         # Pass string directly
-                        val = self.parse_scalar_field(field_path_str, check_mtime=False, store_cache=False)
+                        val = self.parse_scalar_field(
+                            field_path_str, check_mtime=False, store_cache=False
+                        )
                         cached_data[field].append(val if val is not None else 0.0)
 
                         # ⚡ Bolt Optimization: Aggressive cache cleanup for stable steps
@@ -855,20 +945,28 @@ class OpenFOAMFieldParser:
                         u_path_str = os.path.join(time_path_str, "U")
 
                         # Pass string directly
-                        ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False, store_cache=False)
+                        ux, uy, uz = self.parse_vector_field(
+                            u_path_str, check_mtime=False, store_cache=False
+                        )
 
                         # ⚡ Bolt Optimization: Cleanup vector file cache
                         _FILE_CACHE.pop(u_path_str, None)
 
                         # Ensure vector fields exist in cache
-                        for k in ['Ux', 'Uy', 'Uz', 'U_mag']:
+                        for k in ["Ux", "Uy", "Uz", "U_mag"]:
                             if k not in cached_data:
                                 cached_data[k] = [0.0] * (len(cached_data["time"]) - 1)
 
                         cached_data["Ux"].append(ux)
                         cached_data["Uy"].append(uy)
                         cached_data["Uz"].append(uz)
-                        cached_data["U_mag"].append(float(np.sqrt(ux**2 + uy**2 + uz**2)))
+                        cached_data["U_mag"].append(
+                            float(np.sqrt(ux**2 + uy**2 + uz**2))
+                        )
+
+                    # ⚡ Bolt Optimization: Clear directory scan cache for this stable step
+                    # We don't need to re-scan this directory as data is now archived in _TIME_SERIES_CACHE
+                    _DIR_SCAN_CACHE.pop(time_path_str, None)
 
                 # Update global cache with new stable state (atomic-ish update)
                 # Note: cached_dirs + stable_dirs_to_process == all_time_dirs[:-1]
@@ -884,11 +982,11 @@ class OpenFOAMFieldParser:
                 working_data = cached_data
                 working_dirs_len = len(cached_dirs) + len(stable_dirs_to_process)
         else:
-             # ⚡ Bolt Optimization: Zero-copy path for steady state
-             # No changes to stable history, so we read directly from source
-             # This avoids O(N) copy operations when simulation is running but no new time steps have appeared yet.
-             working_data = src_data
-             working_dirs_len = len(src_dirs)
+            # ⚡ Bolt Optimization: Zero-copy path for steady state
+            # No changes to stable history, so we read directly from source
+            # This avoids O(N) copy operations when simulation is running but no new time steps have appeared yet.
+            working_data = src_data
+            working_dirs_len = len(src_dirs)
 
         # Construct final result: Cache Slice + Latest Step
         # We need the last `max_points` points.
@@ -905,7 +1003,7 @@ class OpenFOAMFieldParser:
 
         # Calculate how many points from cache we need
         # We take everything from start_idx up to end of cache
-        cache_slice_start = max(0, start_idx) # Index in cache
+        cache_slice_start = max(0, start_idx)  # Index in cache
 
         # Since working_data might be the global cache (in zero-copy path),
         # we MUST ensure we don't mutate it. Slicing creates new lists.
@@ -918,13 +1016,15 @@ class OpenFOAMFieldParser:
         time_val = float(latest_time)
 
         # Ensure latest step keys exist
-        if "time" not in result_data: result_data["time"] = []
+        if "time" not in result_data:
+            result_data["time"] = []
         result_data["time"].append(time_val)
 
         # ⚡ Bolt Optimization: Pre-scan logic removed, we use file_mtimes from _scan_time_dir
 
         for field in scalar_fields:
-            if field not in result_data: result_data[field] = []
+            if field not in result_data:
+                result_data[field] = []
 
             # field_path = time_path / field # REMOVED: Use string path
             field_path_str = os.path.join(time_path_str, field)
@@ -933,9 +1033,11 @@ class OpenFOAMFieldParser:
             # Pass known_mtime. If missing (file deleted?), parse_scalar_field handles it by stat-ing again (if None)
             if known_mtime is not None:
                 # ⚡ Bolt Optimization: Pass string path directly
-                val = self.parse_scalar_field(field_path_str, check_mtime=False, known_mtime=known_mtime)
+                val = self.parse_scalar_field(
+                    field_path_str, check_mtime=False, known_mtime=known_mtime
+                )
             else:
-                 val = self.parse_scalar_field(field_path_str, check_mtime=True)
+                val = self.parse_scalar_field(field_path_str, check_mtime=True)
 
             result_data[field].append(val if val is not None else 0.0)
 
@@ -945,18 +1047,30 @@ class OpenFOAMFieldParser:
             known_mtime = file_mtimes.get("U")
 
             if known_mtime is not None:
-                ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=False, known_mtime=known_mtime)
+                ux, uy, uz = self.parse_vector_field(
+                    u_path_str, check_mtime=False, known_mtime=known_mtime
+                )
             else:
                 ux, uy, uz = self.parse_vector_field(u_path_str, check_mtime=True)
 
-            for k, v in [('Ux', ux), ('Uy', uy), ('Uz', uz), ('U_mag', float(np.sqrt(ux**2 + uy**2 + uz**2)))]:
-                if k not in result_data: result_data[k] = []
+            for k, v in [
+                ("Ux", ux),
+                ("Uy", uy),
+                ("Uz", uz),
+                ("U_mag", float(np.sqrt(ux**2 + uy**2 + uz**2))),
+            ]:
+                if k not in result_data:
+                    result_data[k] = []
                 result_data[k].append(v)
 
         return result_data
 
     def calculate_pressure_coefficient(
-        self, p_field: Optional[float], p_inf: float = 101325, rho: float = 1.225, u_inf: float = 1.0
+        self,
+        p_field: Optional[float],
+        p_inf: float = 101325,
+        rho: float = 1.225,
+        u_inf: float = 1.0,
     ) -> Optional[float]:
         """Calculate pressure coefficient Cp = (p - p_inf) / (0.5 * rho * u_inf^2)."""
         if p_field is None:
@@ -964,7 +1078,9 @@ class OpenFOAMFieldParser:
         q_inf = 0.5 * rho * u_inf**2
         return (p_field - p_inf) / q_inf if q_inf != 0 else 0.0
 
-    def get_residuals_from_log(self, log_file: str = "log.foamRun", known_stat: Optional[os.stat_result] = None) -> Dict[str, List[float]]:
+    def get_residuals_from_log(
+        self, log_file: str = "log.foamRun", known_stat: Optional[os.stat_result] = None
+    ) -> Dict[str, List[float]]:
         """
         Parse residuals from OpenFOAM log file incrementally.
 
@@ -987,7 +1103,10 @@ class OpenFOAMFieldParser:
             # We assume leakage risk is low as we only serve previously cached data.
             if known_stat and path_str in _RESIDUALS_CACHE:
                 cached_mtime, cached_size, _, cached_data = _RESIDUALS_CACHE[path_str]
-                if cached_mtime == known_stat.st_mtime and cached_size == known_stat.st_size:
+                if (
+                    cached_mtime == known_stat.st_mtime
+                    and cached_size == known_stat.st_size
+                ):
                     return cached_data
 
             # Security & Optimization: Atomic open + fstat
@@ -996,6 +1115,7 @@ class OpenFOAMFieldParser:
             # While known_stat avoids a syscall, it relies on os.stat() which follows symlinks.
 
             import errno
+
             try:
                 fd = os.open(path_str, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
             except OSError as e:
@@ -1029,7 +1149,9 @@ class OpenFOAMFieldParser:
 
                 # ⚡ Bolt Optimization: Check cache first for incremental update
                 if path_str in _RESIDUALS_CACHE:
-                    cached_mtime, cached_size, cached_offset, cached_data = _RESIDUALS_CACHE[path_str]
+                    cached_mtime, cached_size, cached_offset, cached_data = (
+                        _RESIDUALS_CACHE[path_str]
+                    )
 
                     # Case 1: File unchanged
                     if cached_mtime == mtime and cached_size == size:
@@ -1041,7 +1163,7 @@ class OpenFOAMFieldParser:
                     # Case 2: File grew (append) - Reuse cached data and offset
                     if size > cached_size and cached_size > 0:
                         start_offset = cached_offset
-                        residuals = cached_data # Reference to existing mutable dict
+                        residuals = cached_data  # Reference to existing mutable dict
 
                     # Case 3: File shrank or reset - Start over (defaults apply)
 
@@ -1058,13 +1180,13 @@ class OpenFOAMFieldParser:
 
                 # Use os.fdopen to wrap the existing FD
                 with os.fdopen(fd, "rb") as f:
-                    fd = None # Ownership transferred to file object
+                    fd = None  # Ownership transferred to file object
                     if start_offset > 0:
                         f.seek(start_offset)
 
                     for line in f:
                         # Check for complete line (active writes might leave incomplete lines at EOF)
-                        if not line.endswith(b'\n'):
+                        if not line.endswith(b"\n"):
                             break
 
                         line_len = len(line)
@@ -1079,7 +1201,7 @@ class OpenFOAMFieldParser:
                                 # ⚡ Bolt Optimization: Try fast manual parsing first (split by '=')
                                 # Most Time lines are simple "Time = <number>".
                                 # This avoids regex overhead for >99% of cases.
-                                eq_idx = line.find(b'=')
+                                eq_idx = line.find(b"=")
                                 if eq_idx != -1:
                                     # ⚡ Bolt Optimization: Guard against "Time step execution..." lines
                                     # We verify that the text between "Time" and "=" is empty/whitespace.
@@ -1089,7 +1211,7 @@ class OpenFOAMFieldParser:
                                     if not prefix_segment.strip():
                                         try:
                                             # Extract value part after '='
-                                            val_part = line[eq_idx+1:].strip()
+                                            val_part = line[eq_idx + 1 :].strip()
                                             current_time = float(val_part)
                                             chunk_residuals["time"].append(current_time)
                                             new_offset += line_len
@@ -1105,8 +1227,12 @@ class OpenFOAMFieldParser:
                                         time_match = TIME_REGEX_BYTES.search(line)
                                         if time_match:
                                             try:
-                                                current_time = float(time_match.group(1))
-                                                chunk_residuals["time"].append(current_time)
+                                                current_time = float(
+                                                    time_match.group(1)
+                                                )
+                                                chunk_residuals["time"].append(
+                                                    current_time
+                                                )
                                                 # Optimization: Time line never contains residuals, skip regex
                                                 new_offset += line_len
                                                 continue
@@ -1135,19 +1261,23 @@ class OpenFOAMFieldParser:
 
                                 # Check if followed by space (ASCII 32)
                                 # Ensure we don't go out of bounds
-                                if len(line) > idx + 11 and line[idx+11] == 32:
+                                if len(line) > idx + 11 and line[idx + 11] == 32:
                                     try:
                                         # Parse field name
                                         # field starts after "Solving for " (idx + 12)
                                         field_start = idx + 12
-                                        res_idx = line.find(INITIAL_RESIDUAL_TOKEN, field_start)
+                                        res_idx = line.find(
+                                            INITIAL_RESIDUAL_TOKEN, field_start
+                                        )
                                         if res_idx != -1:
                                             # Field is between field_start and res_idx, likely followed by comma
                                             # e.g. "Ux, "
                                             field_chunk = line[field_start:res_idx]
                                             comma_idx = field_chunk.find(b",")
                                             if comma_idx != -1:
-                                                field_bytes = field_chunk[:comma_idx].strip()
+                                                field_bytes = field_chunk[
+                                                    :comma_idx
+                                                ].strip()
                                             else:
                                                 field_bytes = field_chunk.strip()
 
@@ -1158,7 +1288,9 @@ class OpenFOAMFieldParser:
                                                 _FIELD_NAME_CACHE[field_bytes] = field
 
                                             # Parse value
-                                            val_start = res_idx + len(INITIAL_RESIDUAL_TOKEN)
+                                            val_start = res_idx + len(
+                                                INITIAL_RESIDUAL_TOKEN
+                                            )
 
                                             # Find delimiter (comma or space)
                                             # We rely on float() to strip leading/trailing whitespace
@@ -1181,7 +1313,10 @@ class OpenFOAMFieldParser:
                                             # If we simply take until comma, we get "   1.23 Final". float() fails.
 
                                             # So we DO need to skip leading spaces first to find the TRUE delimiter.
-                                            while val_start < val_end and line[val_start] == 32:
+                                            while (
+                                                val_start < val_end
+                                                and line[val_start] == 32
+                                            ):
                                                 val_start += 1
 
                                             # Now search for space starting from the number
@@ -1292,22 +1427,22 @@ def clear_cache(case_dir: str = None) -> None:
     else:
         # Clear specific entries where possible
         # Some caches are keyed by file path, others by case dir
-        
+
         # 1. Time Series Cache (Key: case_dir)
         _TIME_SERIES_CACHE.pop(case_dir, None)
-        
+
         # 2. Time Dirs Cache (Key: case_dir)
         _TIME_DIRS_CACHE.pop(case_dir, None)
-        
+
         # 3. Case Field Types (Key: case_dir)
         _CASE_FIELD_TYPES.pop(case_dir, None)
-        
+
         # 4. Residuals (Key: log path)
         # We iteration to find keys starting with case_dir
         keys_to_remove = [k for k in _RESIDUALS_CACHE if k.startswith(case_dir)]
         for k in keys_to_remove:
             del _RESIDUALS_CACHE[k]
-            
+
         # 5. File Cache (Key: file path)
         file_keys = [k for k in _FILE_CACHE if k.startswith(case_dir)]
         for k in file_keys:
@@ -1317,7 +1452,7 @@ def clear_cache(case_dir: str = None) -> None:
         type_keys = [k for k in _FIELD_TYPE_CACHE if k.startswith(case_dir)]
         for k in type_keys:
             del _FIELD_TYPE_CACHE[k]
-            
+
         # 7. Dir Scan Cache (Key: dir path)
         scan_keys = [k for k in _DIR_SCAN_CACHE if k.startswith(case_dir)]
         for k in scan_keys:
