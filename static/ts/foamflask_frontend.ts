@@ -827,41 +827,58 @@ const createBoldTitle = (text: string): { text: string; font?: any } => ({
 // Helper: Download plot as PNG
 const downloadPlotAsPNG = async (
   plotIdOrDiv: string | any,
-  filename: string = "plot.png"
+  filename: string = "plot.png",
+  btnElement?: HTMLElement
 ): Promise<void> => {
+  let originalText = "";
+  if (btnElement) {
+    originalText = btnElement.innerHTML;
+    btnElement.disabled = true;
+    btnElement.setAttribute("aria-busy", "true");
+    btnElement.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
+  }
+
   try {
     await ensurePlotlyLoaded();
-  } catch (e) {
-    showNotification("Failed to load plotting library", "error");
-    return;
-  }
 
-  // Handle both string ID (from HTML) or direct element
-  const plotDiv = typeof plotIdOrDiv === "string"
-    ? document.getElementById(plotIdOrDiv)
-    : plotIdOrDiv;
+    // Handle both string ID (from HTML) or direct element
+    const plotDiv = typeof plotIdOrDiv === "string"
+      ? document.getElementById(plotIdOrDiv)
+      : plotIdOrDiv;
 
-  if (!plotDiv) {
-    console.error(`Plot element not found: ${plotIdOrDiv}`);
-    return;
-  }
+    if (!plotDiv) {
+      console.error(`Plot element not found: ${plotIdOrDiv}`);
+      if (btnElement) showNotification("Plot not found", "error");
+      return;
+    }
 
-  // Plotly.toImage options (layout overrides are not supported here directly)
-  Plotly.toImage(plotDiv, {
-    format: "png",
-    width: plotDiv.offsetWidth,
-    height: plotDiv.offsetHeight,
-    scale: 2, // Higher resolution
-  }).then((dataUrl: string) => {
+    // Await the image generation
+    const dataUrl = await Plotly.toImage(plotDiv, {
+      format: "png",
+      width: plotDiv.offsetWidth,
+      height: plotDiv.offsetHeight,
+      scale: 2, // Higher resolution
+    });
+
     const link = document.createElement("a");
     link.href = dataUrl;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }).catch((err: any) => {
+
+    if (btnElement) showNotification("Download started", "success", 1500);
+
+  } catch (err: any) {
     console.error("Error downloading plot:", err);
-  });
+    if (btnElement) showNotification("Failed to download plot", "error");
+  } finally {
+    if (btnElement) {
+      btnElement.disabled = false;
+      btnElement.removeAttribute("aria-busy");
+      btnElement.innerHTML = originalText;
+    }
+  }
 };
 
 // Helper: Save current legend visibility
