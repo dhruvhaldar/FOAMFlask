@@ -670,36 +670,49 @@ class OpenFOAMFieldParser:
         time_path_str = os.path.join(self.case_dir_str, latest_time)
 
         data: Dict[str, Any] = {"time": float(latest_time)}
-        
+
         try:
-            # ⚡ Bolt Optimization: Use os.scandir to avoid creating Path objects and redundant stat()
-            # Note: We do NOT use _scan_time_dir here because we need the DirEntry objects
-            # to pass mtime to parse_* methods efficiently.
-            with os.scandir(time_path_str) as entries:
-                for entry in entries:
-                    if entry.is_file() and not entry.name.startswith("."):
-                        # ⚡ Bolt Optimization: Capture mtime once to avoid multiple stat() calls
-                        entry_mtime = entry.stat().st_mtime
+            # ⚡ Bolt Optimization: Stat directory once to use cached scanning
+            latest_dir_mtime = None
+            try:
+                latest_dir_mtime = os.stat(time_path_str).st_mtime
+            except OSError:
+                return None
 
-                        field_type = self._get_field_type(entry, known_mtime=entry_mtime)
+            # ⚡ Bolt Optimization: Use _scan_time_dir to leverage directory cache
+            # This avoids redundant os.scandir and stat calls when directory hasn't changed
+            scalar_fields, has_U, _, file_mtimes = self._scan_time_dir(
+                time_path_str, known_mtime=latest_dir_mtime
+            )
 
-                        if field_type == "scalar":
-                            # Pass mtime from entry to avoid re-stat
-                            # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
-                            val = self.parse_scalar_field(entry.path, known_mtime=entry_mtime)
-                            if val is not None:
-                                data[entry.name] = val
+            for field in scalar_fields:
+                field_path_str = os.path.join(time_path_str, field)
 
-                        elif field_type == "vector" and entry.name == "U":
-                             # ⚡ Bolt Optimization: Pass entry.path string directly to avoid Path creation
-                             ux, uy, uz = self.parse_vector_field(entry.path, known_mtime=entry_mtime)
-                             data["Ux"] = ux
-                             data["Uy"] = uy
-                             data["Uz"] = uz
-                             data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
-                        
+                # Pass known_mtime to avoid re-stat
+                known_mtime = file_mtimes.get(field)
+
+                # ⚡ Bolt Optimization: Pass string path and known mtime directly
+                val = self.parse_scalar_field(
+                    field_path_str, check_mtime=False, known_mtime=known_mtime
+                )
+
+                if val is not None:
+                    data[field] = val
+
+            if has_U:
+                u_path_str = os.path.join(time_path_str, "U")
+                known_mtime = file_mtimes.get("U")
+
+                ux, uy, uz = self.parse_vector_field(
+                    u_path_str, check_mtime=False, known_mtime=known_mtime
+                )
+                data["Ux"] = ux
+                data["Uy"] = uy
+                data["Uz"] = uz
+                data["U_mag"] = float(np.sqrt(ux**2 + uy**2 + uz**2))
+
         except Exception as e:
-            logger.error(f"Error scanning fields in {time_path}: {e}")
+            logger.error(f"Error scanning fields in {time_path_str}: {e}")
 
         return data
 
