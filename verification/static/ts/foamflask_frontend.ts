@@ -1,5 +1,5 @@
 /**
- * FOAMFlask Frontend * 
+ * FOAMFlask Frontend *
 
  * Background Color Palette: https://coolors.co/gradient-maker/b6f0ff-ffb1b9?position=0,100&opacity=100,100&type=linear&rotation=180
 
@@ -72,7 +72,6 @@ declare global {
     toggleMobileMenu: () => void;
     uploadGeometry: (btn?: HTMLElement) => void;
     refreshGeometryList: (btn?: HTMLElement) => void;
-    fillLocationFromGeometry: (btn?: HTMLElement) => void;
     generateBlockMeshDict: (btn?: HTMLElement) => void;
     generateSnappyHexMeshDict: (btn?: HTMLElement) => void;
     runCommand: (cmd: string, btn?: HTMLElement) => void;
@@ -283,55 +282,6 @@ const loadInteractiveViewerCommon = async (config: ViewerConfig): Promise<void> 
       btn.disabled = false;
       btn.removeAttribute("aria-busy");
       btn.innerHTML = originalBtnText;
-    }
-  }
-};
-
-const fillLocationFromGeometry = async (btnElement?: HTMLElement) => {
-  if (!activeCase) {
-    showNotification("Please select an active case first", "warning");
-    return;
-  }
-
-  const filename = (document.getElementById("shmObjectList") as HTMLSelectElement)?.value;
-  if (!filename) {
-    showNotification("Please select a geometry object in the 'Object Settings' list", "warning");
-    return;
-  }
-
-  const btn = btnElement as HTMLButtonElement | undefined;
-  let originalText = "";
-
-  if (btn) {
-    originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = `Calculating...`;
-  }
-
-  try {
-    const res = await fetch("/api/geometry/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, filename }) });
-    const info = await res.json();
-    if (info.success && info.bounds) {
-      const b = info.bounds;
-      const cx = (b[0] + b[1]) / 2;
-      const cy = (b[2] + b[3]) / 2;
-      const cz = (b[4] + b[5]) / 2;
-
-      const centerStr = `${cx.toFixed(3)} ${cy.toFixed(3)} ${cz.toFixed(3)}`;
-      (document.getElementById("shmLocation") as HTMLInputElement).value = centerStr;
-
-      showNotification(`Location set to center of ${filename}`, "success");
-    } else {
-      showNotification("Failed to get geometry info", "error");
-    }
-  } catch (e) {
-    showNotification("Error calculating center", "error");
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
     }
   }
 };
@@ -3904,7 +3854,6 @@ window.onload = async () => {
 (window as any).deleteGeometry = deleteGeometry;
 (window as any).loadGeometryView = loadGeometryView;
 (window as any).fillBoundsFromGeometry = fillBoundsFromGeometry;
-(window as any).fillLocationFromGeometry = fillLocationFromGeometry;
 (window as any).generateBlockMeshDict = generateBlockMeshDict;
 (window as any).generateSnappyHexMeshDict = generateSnappyHexMeshDict;
 (window as any).selectShmObject = selectShmObject;

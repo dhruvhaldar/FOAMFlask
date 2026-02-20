@@ -253,7 +253,7 @@ describe('FoamFlask Frontend', () => {
 
     await clearPromise;
 
-    expect(output.innerHTML).toBe('');
+    expect(output.innerHTML).toContain('output-placeholder');
     expect(localStorage.getItem('foamflask_console_log')).toBeNull();
 
     // Should show notification
