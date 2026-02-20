@@ -389,6 +389,29 @@ const copyInputToClipboard = (elementId, btnElement)=>{
         fallbackCopyText(text, "Copied", onSuccess);
     }
 };
+const copyText = (text, btnElement)=>{
+    if (!text) return;
+    const onSuccess = ()=>{
+        showNotification("Copied to clipboard", "success", NOTIFY_SHORT);
+        if (btnElement) {
+            if (btnElement.dataset.isCopying) return;
+            btnElement.dataset.isCopying = "true";
+            const originalHTML = btnElement.innerHTML;
+            // Visual feedback: Green Checkmark
+            btnElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+            setTimeout(()=>{
+                btnElement.innerHTML = originalHTML;
+                delete btnElement.dataset.isCopying;
+            }, 1000);
+        }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(()=>fallbackCopyText(text, "Copied", onSuccess));
+    } else {
+        fallbackCopyText(text, "Copied", onSuccess);
+    }
+};
+window.copyText = copyText;
 // Clear Meshing Output
 const clearMeshingOutput = async ()=>{
     const div = document.getElementById("meshingOutput");
@@ -1521,22 +1544,43 @@ const fetchRunHistory = async (btnElement)=>{
                 const startTime = new Date(run.start_time).toLocaleString();
                 const duration = run.execution_duration ? `${run.execution_duration.toFixed(2)}s` : "-";
                 return `
-          <tr class="hover:bg-gray-50 transition-colors border-b last:border-b-0 border-gray-100">
+          <tr class="group hover:bg-gray-50 transition-colors border-b last:border-b-0 border-gray-100">
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">#${run.id}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${run.command}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">${run.command}</span>
+                <button onclick="copyText('${run.command}', this)" class="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 hover:text-cyan-600 transition-all p-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500" aria-label="Copy command" title="Copy command">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </td>
             <td class="px-4 py-3 whitespace-nowrap">
               <span class="px-2 py-0.5 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${statusColor}">
                 ${getStatusIcon(run.status)}
                 ${run.status}
               </span>
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${duration}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">${duration}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${startTime}</td>
           </tr>
         `;
             }).join("");
         } else {
-            container.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">No run history available</td></tr>`;
+            container.innerHTML = `
+        <tr>
+          <td colspan="5" class="px-4 py-12 text-center">
+            <div class="flex flex-col items-center justify-center text-gray-400">
+              <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h4 class="text-sm font-medium text-gray-900">No runs yet</h4>
+              <p class="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Run a simulation command like "blockMesh" or "Allrun" to see history here.</p>
+            </div>
+          </td>
+        </tr>
+      `;
         }
         if (btn) showNotification("Run history refreshed", "success", NOTIFY_SHORT);
     } catch (e) {
