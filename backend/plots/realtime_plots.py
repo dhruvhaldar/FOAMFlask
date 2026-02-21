@@ -1272,14 +1272,12 @@ class OpenFOAMFieldParser:
                                         if res_idx != -1:
                                             # Field is between field_start and res_idx, likely followed by comma
                                             # e.g. "Ux, "
-                                            field_chunk = line[field_start:res_idx]
-                                            comma_idx = field_chunk.find(b",")
+                                            # ⚡ Bolt Optimization: Find comma in line slice without creating intermediate object
+                                            comma_idx = line.find(b",", field_start, res_idx)
                                             if comma_idx != -1:
-                                                field_bytes = field_chunk[
-                                                    :comma_idx
-                                                ].strip()
+                                                field_bytes = line[field_start:comma_idx].strip()
                                             else:
-                                                field_bytes = field_chunk.strip()
+                                                field_bytes = line[field_start:res_idx].strip()
 
                                             # ⚡ Bolt Optimization: Use cache to avoid repeated decoding (~50% faster)
                                             field = _FIELD_NAME_CACHE.get(field_bytes)
