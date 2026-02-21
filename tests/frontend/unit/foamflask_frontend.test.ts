@@ -8,6 +8,7 @@ vi.mock('plotly.js', () => ({
   newPlot: vi.fn(),
   extendTraces: vi.fn(),
   toImage: vi.fn().mockResolvedValue('data:image/png;base64,mock'),
+  relayout: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('../../static/ts/frontend/isosurface.js', () => ({
@@ -129,6 +130,7 @@ describe('FoamFlask Frontend', () => {
     // We overwrite window.fetch directly to bypass the monkey-patch and ensure our mock is called.
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => null },
       json: async () => ({ files: [], cases: [] })
     });
     window.fetch = mockFetch;
@@ -328,9 +330,9 @@ describe('FoamFlask Frontend', () => {
     const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
     (global.fetch as any).mockImplementation((url: string) => {
         if (url.includes('/api/geometry/delete')) {
-            return fetchPromise.then(() => ({ ok: true, json: () => Promise.resolve({ success: true }) }));
+            return fetchPromise.then(() => ({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ success: true }) }));
         }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ files: [] }) });
+        return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ files: [] }) });
     });
 
     // Start deleteGeometry
@@ -497,9 +499,9 @@ describe('FoamFlask Frontend', () => {
     const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
     (global.fetch as any).mockImplementation((url: string) => {
         if (url.includes('/set_case')) {
-            return fetchPromise.then(() => ({ ok: true, json: () => Promise.resolve({ caseDir: '/tmp/case' }) }));
+            return fetchPromise.then(() => ({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ caseDir: '/tmp/case' }) }));
         }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ files: [], cases: [] }) });
+        return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ files: [], cases: [] }) });
     });
 
     // Start setCase
@@ -521,6 +523,69 @@ describe('FoamFlask Frontend', () => {
         expect(btn.disabled).toBe(false);
         expect(btn.getAttribute('aria-busy')).toBeNull();
         expect(btn.innerHTML).toContain('Set!');
+        expect(btn.classList.contains('!bg-green-600')).toBe(true);
+    }, 2000);
+  });
+
+  it('runCommand should show success state on completion', async () => {
+    const { runCommand, selectCase } = window as any;
+    selectCase('test_case');
+
+    const btn = document.createElement('button');
+    btn.innerHTML = 'Run Allrun';
+    document.body.appendChild(btn);
+
+    // Mock fetch stream
+    let resolveStream: any;
+    const streamPromise = new Promise(resolve => { resolveStream = resolve; });
+
+    (global.fetch as any).mockImplementation((url: string) => {
+        if (url.includes('/run')) {
+            return Promise.resolve({
+                ok: true,
+                headers: { get: () => null },
+                body: {
+                    getReader: () => ({
+                        read: vi.fn()
+                            .mockImplementationOnce(async () => {
+                                await streamPromise; // Wait for manual trigger
+                                return { done: false, value: new TextEncoder().encode('Running...\n') };
+                            })
+                            .mockResolvedValueOnce({ done: true })
+                    })
+                }
+            });
+        }
+        // Mock plot data fetch that happens after run
+        if (url.includes('/api/plot_data')) {
+             return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ time: [], p: [] }) });
+        }
+        if (url.includes('/api/residuals')) {
+             return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ time: [], p: [] }) });
+        }
+        if (url.includes('/api/runs')) {
+             return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ runs: [] }) });
+        }
+        return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ success: true }) });
+    });
+
+    const runPromise = runCommand('Allrun', btn);
+
+    // Wait for microtasks
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-busy')).toBe('true');
+    expect(btn.innerHTML).toContain('Running...');
+
+    resolveStream(); // Resume execution
+    await runPromise;
+
+    // Check success state
+    await waitFor(() => {
+        expect(btn.disabled).toBe(false);
+        expect(btn.getAttribute('aria-busy')).toBeNull();
+        expect(btn.innerHTML).toContain('Completed!');
         expect(btn.classList.contains('!bg-green-600')).toBe(true);
     }, 2000);
   });
