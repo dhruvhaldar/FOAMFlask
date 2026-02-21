@@ -417,8 +417,11 @@ const temporarilyShowSuccess = (btn: HTMLButtonElement, originalHTML: string, me
   btn.classList.add(...successClasses);
 
   setTimeout(() => {
-    btn.innerHTML = originalHTML;
-    btn.classList.remove(...successClasses);
+    // Only restore if not busy (prevent overwriting spinner if clicked again)
+    if (!btn.hasAttribute("aria-busy")) {
+      btn.innerHTML = originalHTML;
+      btn.classList.remove(...successClasses);
+    }
   }, 2000);
 };
 
@@ -1362,6 +1365,15 @@ const fetchWithCache = async <T = any>(
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION)
     return cached.data as T;
 
+  // Robust access to abortControllers
+  if (!abortControllers) {
+    if ((window as any)._abortControllers) abortControllers = (window as any)._abortControllers;
+    else {
+      abortControllers = new Map<string, AbortController>();
+      if (typeof window !== 'undefined') (window as any)._abortControllers = abortControllers;
+    }
+  }
+
   if (abortControllers.has(url)) abortControllers.get(url)?.abort();
   const controller = new AbortController();
   abortControllers.set(url, controller);
@@ -1419,7 +1431,7 @@ const fetchWithCache = async <T = any>(
     });
     return data as T;
   } finally {
-    abortControllers.delete(url);
+    if (abortControllers) abortControllers.delete(url);
   }
 };
 
@@ -1916,7 +1928,13 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
   const btn = btnElement as HTMLButtonElement;
 
   if (btn) {
-    originalText = btn.innerHTML;
+    if (btn.dataset.originalHtml) {
+      originalText = btn.dataset.originalHtml;
+    } else {
+      originalText = btn.innerHTML;
+      btn.dataset.originalHtml = originalText;
+    }
+
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
 
@@ -1933,6 +1951,8 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
   // Optimistically refresh list to show "Running" state
   // We wait a tick to allow the backend (previous implementation step) to create the record
   setTimeout(fetchRunHistory, 500);
+
+  let success = false;
 
   try {
     showNotification(`Running ${cmd}...`, "info");
@@ -1952,6 +1972,7 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
         if (buffer) appendOutput(buffer, "stdout"); // Flush remaining buffer
         showNotification("Simulation completed successfully", "success");
         flushOutputBuffer();
+        success = true;
         break;
       }
 
@@ -1975,9 +1996,15 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
   } finally {
     const btn = btnElement as HTMLButtonElement;
     if (btn) {
-      btn.disabled = false;
+      // Remove busy state regardless of success
       btn.removeAttribute("aria-busy");
-      btn.innerHTML = originalText;
+
+      if (success) {
+        temporarilyShowSuccess(btn, originalText, "Completed!");
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     }
     isSimulationRunning = false;
     updatePlots(); // Final update to catch last data
@@ -4711,6 +4738,11 @@ if (document.readyState === 'loading') {
 
 const resetState = () => {
   requestCache = new Map<string, CacheEntry>();
+  if (typeof window !== 'undefined') (window as any)._requestCache = requestCache;
+
+  abortControllers = new Map<string, AbortController>();
+  if (typeof window !== 'undefined') (window as any)._abortControllers = abortControllers;
+
   activeCase = null;
   caseDir = "";
   dockerImage = "";
