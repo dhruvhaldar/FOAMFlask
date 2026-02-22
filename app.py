@@ -2068,6 +2068,25 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
         parser = OpenFOAMFieldParser(str(case_dir))
         # ⚡ Bolt Optimization: Pass the stat result from check_cache to avoid re-stat call
         residuals = parser.get_residuals_from_log(known_stat=stat_result)
+
+        # ⚡ Bolt Optimization: Incremental data fetching
+        try:
+            start_index = int(request.args.get("start_index", 0))
+        except ValueError:
+            start_index = 0
+
+        if start_index > 0:
+            # We assume time array is the reference for length
+            current_len = len(residuals.get("time", []))
+
+            if start_index < current_len:
+                # Slice all lists to return only new data
+                residuals = {k: v[start_index:] for k, v in residuals.items()}
+            elif start_index == current_len:
+                # No new data
+                residuals = {k: [] for k in residuals}
+            # If start_index > current_len, we return full dataset (implicit reset/resync)
+
         response = fast_jsonify(residuals)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
