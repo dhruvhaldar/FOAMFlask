@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from app import OpenFOAMFieldParser, get_available_fields
+from backend.plots.realtime_plots import OpenFOAMFieldParser, get_available_fields
 
 
 def test_get_time_directories(tmp_path):
