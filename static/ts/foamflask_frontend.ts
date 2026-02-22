@@ -734,6 +734,10 @@ let isSimulationRunning: boolean = false; // Controls polling loop
 let plotsInViewport: boolean = true;
 let isFirstPlotLoad: boolean = true;
 
+// ⚡ Bolt Optimization: State for incremental residuals fetching
+let lastResidualsCount: number = 0;
+let currentResidualsData: ResidualsResponse = {};
+
 // Request management
 let abortControllers = new Map<string, AbortController>();
 interface CacheEntry {
@@ -1765,6 +1769,9 @@ const selectCase = (val: string) => {
   activeCase = val;
   localStorage.setItem("lastSelectedCase", val);
   updateActiveCaseBadge();
+  // Reset residuals state for new case
+  lastResidualsCount = 0;
+  currentResidualsData = {};
 };
 
 const createNewCase = async () => {
@@ -2100,15 +2107,67 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
     await ensurePlotlyLoaded();
 
     let data = injectedData;
+    let isIncremental = false;
+
+    // ⚡ Bolt Optimization: Use incremental fetching to save bandwidth
     if (!data) {
-      data = await fetchWithCache<ResidualsResponse>(
-        `/api/residuals?tutorial=${encodeURIComponent(tutorial)}`
-      );
+      const url = `/api/residuals?tutorial=${encodeURIComponent(tutorial)}&start_index=${lastResidualsCount}`;
+      // Use direct fetch to bypass cache pollution and handle unique URLs
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch residuals");
+      data = await res.json() as ResidualsResponse;
+      isIncremental = true;
     }
 
-    if (data.error || !data.time || data.time.length === 0) {
+    if (data.error) return;
+
+    // Merge data logic
+    if (isIncremental) {
+      const newTime = data.time || [];
+      const newPointsCount = newTime.length;
+
+      // If we have new data
+      if (newPointsCount > 0) {
+        const oldTime = currentResidualsData.time || [];
+        const firstNewTime = newTime[0];
+        const lastOldTime = oldTime.length > 0 ? oldTime[oldTime.length - 1] : -Infinity;
+
+        // Detect reset: if new data starts before old data ended
+        // Note: checking < lastOldTime handles overlaps or full restarts
+        if (firstNewTime <= lastOldTime && lastOldTime !== -Infinity && lastResidualsCount > 0) {
+          // Reset detected, replace full data
+          currentResidualsData = data;
+        } else {
+          // Append new data
+          for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+              const val = (data as any)[key];
+              if (Array.isArray(val)) {
+                if (!currentResidualsData[key]) {
+                  currentResidualsData[key] = [];
+                }
+                (currentResidualsData[key] as any[]).push(...val);
+              }
+            }
+          }
+        }
+        lastResidualsCount = (currentResidualsData.time || []).length;
+      } else if (lastResidualsCount === 0) {
+        // First load but empty
+        currentResidualsData = data;
+      }
+    } else {
+      // Full data injected (e.g. from initial load)
+      currentResidualsData = data;
+      lastResidualsCount = (data.time || []).length;
+    }
+
+    const plotData = currentResidualsData;
+
+    if (!plotData.time || plotData.time.length === 0) {
       return;
     }
+
     const traces: any[] = [];
     const fields = ["Ux", "Uy", "Uz", "p", "h", "T", "rho", "p_rgh", "k", "epsilon", "omega"] as const;
     const colors = [
@@ -2125,7 +2184,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       plotlyColors.yellow,
     ];
     fields.forEach((field, idx) => {
-      const fieldData = (data as any)[field];
+      const fieldData = (plotData as any)[field];
       if (fieldData && fieldData.length > 0) {
         traces.push({
           x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
@@ -4755,6 +4814,8 @@ const resetState = () => {
   activePipelineId = "root";
   outputBuffer.length = 0;
   cachedLogHTML = "";
+  lastResidualsCount = 0;
+  currentResidualsData = {};
 };
 (window as any)._resetState = resetState;
 

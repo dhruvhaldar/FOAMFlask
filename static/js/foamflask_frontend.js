@@ -518,6 +518,9 @@ let pendingPlotUpdate = false;
 let isSimulationRunning = false; // Controls polling loop
 let plotsInViewport = true;
 let isFirstPlotLoad = true;
+// ⚡ Bolt Optimization: State for incremental residuals fetching
+let lastResidualsCount = 0;
+let currentResidualsData = {};
 // Request management
 let abortControllers = new Map();
 let requestCache = new Map();
@@ -1476,6 +1479,9 @@ const selectCase = (val)=>{
     activeCase = val;
     localStorage.setItem("lastSelectedCase", val);
     updateActiveCaseBadge();
+    // Reset residuals state for new case
+    lastResidualsCount = 0;
+    currentResidualsData = {};
 };
 const createNewCase = async ()=>{
     const caseName = document.getElementById("newCaseName").value;
@@ -1805,10 +1811,57 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
     try {
         await ensurePlotlyLoaded();
         let data = injectedData;
+        let isIncremental = false;
+        // ⚡ Bolt Optimization: Use incremental fetching to save bandwidth
         if (!data) {
-            data = await fetchWithCache(`/api/residuals?tutorial=${encodeURIComponent(tutorial)}`);
+            const url = `/api/residuals?tutorial=${encodeURIComponent(tutorial)}&start_index=${lastResidualsCount}`;
+            // Use direct fetch to bypass cache pollution and handle unique URLs
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch residuals");
+            data = await res.json();
+            isIncremental = true;
         }
-        if (data.error || !data.time || data.time.length === 0) {
+        if (data.error) return;
+        // Merge data logic
+        if (isIncremental) {
+            const newTime = data.time || [];
+            const newPointsCount = newTime.length;
+            // If we have new data
+            if (newPointsCount > 0) {
+                const oldTime = currentResidualsData.time || [];
+                const firstNewTime = newTime[0];
+                const lastOldTime = oldTime.length > 0 ? oldTime[oldTime.length - 1] : -Infinity;
+                // Detect reset: if new data starts before old data ended
+                // Note: checking < lastOldTime handles overlaps or full restarts
+                if (firstNewTime <= lastOldTime && lastOldTime !== -Infinity && lastResidualsCount > 0) {
+                    // Reset detected, replace full data
+                    currentResidualsData = data;
+                } else {
+                    // Append new data
+                    for(const key in data){
+                        if (Object.prototype.hasOwnProperty.call(data, key)) {
+                            const val = data[key];
+                            if (Array.isArray(val)) {
+                                if (!currentResidualsData[key]) {
+                                    currentResidualsData[key] = [];
+                                }
+                                currentResidualsData[key].push(...val);
+                            }
+                        }
+                    }
+                }
+                lastResidualsCount = (currentResidualsData.time || []).length;
+            } else if (lastResidualsCount === 0) {
+                // First load but empty
+                currentResidualsData = data;
+            }
+        } else {
+            // Full data injected (e.g. from initial load)
+            currentResidualsData = data;
+            lastResidualsCount = (data.time || []).length;
+        }
+        const plotData = currentResidualsData;
+        if (!plotData.time || plotData.time.length === 0) {
             return;
         }
         const traces = [];
@@ -1839,7 +1892,7 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
             plotlyColors.yellow
         ];
         fields.forEach((field, idx)=>{
-            const fieldData = data[field];
+            const fieldData = plotData[field];
             if (fieldData && fieldData.length > 0) {
                 traces.push({
                     x: Array.from({
@@ -4334,6 +4387,8 @@ const resetState = ()=>{
     activePipelineId = "root";
     outputBuffer.length = 0;
     cachedLogHTML = "";
+    lastResidualsCount = 0;
+    currentResidualsData = {};
 };
 window._resetState = resetState;
 export { init, fetchWithCache, requestCache, setCase, refreshCaseList, uploadGeometry, deleteGeometry, resetState };
