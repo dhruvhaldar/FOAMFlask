@@ -461,6 +461,7 @@
                     </div>
                     <div class="flex flex-col sm:flex-row gap-2">
                       <input type="text" id="newCaseName" placeholder="e.g. my_case" required pattern="^[a-zA-Z0-9_-]+$"
+                        spellcheck="false" autocorrect="off" autocapitalize="off"
                         title="Alphanumeric characters, underscores, and dashes only (no spaces)"
                         aria-describedby="caseNameHelp"
                         class="border border-gray-300 rounded-lg px-4 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:valid:ring-green-500 focus:valid:border-green-500 focus:[&:not(:placeholder-shown):invalid]:ring-red-500 focus:[&:not(:placeholder-shown):invalid]:border-red-500 [&:not(:placeholder-shown):invalid]:border-red-500 [&:not(:placeholder-shown):invalid]:text-red-600 transition-all" />
@@ -546,6 +547,7 @@
             <label for="caseDir" class="w-32 font-medium text-gray-900">Case Root:</label>
             <div class="relative flex-1">
               <input type="text" id="caseDir" name="caseDir" placeholder="e.g. /home/user/openfoam/run/my_case"
+                spellcheck="false" autocorrect="off" autocapitalize="off"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8 text-gray-900" />
               <button onclick="copyInputToClipboard('caseDir', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
@@ -580,6 +582,7 @@
             <label for="dockerImage" class="w-32 font-medium text-gray-900">Docker Image:</label>
             <div class="relative flex-1">
               <input type="text" id="dockerImage" name="dockerImage" placeholder="e.g. opencfd/openfoam-default"
+                spellcheck="false" autocorrect="off" autocapitalize="off"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8" />
               <button onclick="copyInputToClipboard('dockerImage', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
@@ -592,6 +595,7 @@
               </button>
             </div>
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
+              spellcheck="false" autocorrect="off" autocapitalize="off"
               class="border border-gray-300 rounded px-3 py-2 w-24" aria-label="OpenFOAM Version" />
             <button id="setDockerConfigBtn" type="button" onclick="
                   setDockerConfig(
@@ -927,9 +931,11 @@
                 <label class="block text-sm font-medium text-gray-900">Bounds (Min / Max)</label>
                 <div class="grid grid-cols-2 gap-2">
                   <input type="text" id="bmMin" placeholder="-1 -1 -1" aria-describedby="bmBoundsHelp"
+                    spellcheck="false" autocorrect="off" autocapitalize="off"
                     class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     aria-label="BlockMesh Min Bounds" />
                   <input type="text" id="bmMax" placeholder="1 1 1" aria-describedby="bmBoundsHelp"
+                    spellcheck="false" autocorrect="off" autocapitalize="off"
                     class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     aria-label="BlockMesh Max Bounds" />
                 </div>
@@ -944,6 +950,7 @@
               <div>
                 <label for="bmCells" class="block text-sm font-medium text-gray-900">Cells (x y z)</label>
                 <input type="text" id="bmCells" value="20 20 20" aria-describedby="bmCellsHelp"
+                  spellcheck="false" autocorrect="off" autocapitalize="off"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                 <p id="bmCellsHelp" class="text-xs text-gray-500 mt-1">
                   Format: 20 20 20 (Space-separated integers)
@@ -952,6 +959,7 @@
               <div>
                 <label for="bmGrading" class="block text-sm font-medium text-gray-900">Grading (x y z)</label>
                 <input type="text" id="bmGrading" value="1 1 1" aria-describedby="bmGradingHelp"
+                  spellcheck="false" autocorrect="off" autocapitalize="off"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                 <p id="bmGradingHelp" class="text-xs text-gray-500 mt-1">
                   Format: 1 1 1 (Space-separated expansion ratios)
@@ -1004,6 +1012,7 @@
                   <label for="shmLocation" class="block text-sm font-medium text-gray-900">Location In Mesh (x y
                     z)</label>
                   <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
+                    spellcheck="false" autocorrect="off" autocapitalize="off"
                     placeholder="e.g. 0.1 0.1 0.1" aria-describedby="shmLocationHelp" />
                   <p id="shmLocationHelp" class="text-xs text-gray-500 mt-1">
                     Point inside the mesh region (Space-separated)
