@@ -4231,6 +4231,9 @@ const init = () => {
   // Auto-format vector inputs
   ['bmCells', 'bmGrading', 'bmMin', 'bmMax', 'shmLocation'].forEach(setupVectorInputAutoFormat);
 
+  // Auto-format case name
+  setupCaseNameAutoFormat('newCaseName');
+
   // Scroll Listener for Navbar
   window.addEventListener("scroll", handleScroll);
 
@@ -4281,6 +4284,61 @@ const handleScroll = (): void => {
   }
 };
 
+// Helper: Flash input with visual feedback
+const flashInputFeedback = (el: HTMLInputElement, message: string) => {
+  // Flash input green
+  el.classList.add('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+
+  // Update help text if available
+  const helpId = el.getAttribute('aria-describedby');
+  const helpEl = helpId ? document.getElementById(helpId) : null;
+
+  if (helpEl) {
+    // Store original state if not already stored (prevent race condition)
+    if (!helpEl.dataset.originalText) {
+      helpEl.dataset.originalText = helpEl.textContent || "";
+      helpEl.dataset.originalClass = helpEl.className;
+    }
+
+    // Clear any pending restore timer
+    if (helpEl.dataset.restoreTimer) {
+      clearTimeout(parseInt(helpEl.dataset.restoreTimer, 10));
+    }
+
+    // Set feedback state
+    helpEl.textContent = message;
+    helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
+    helpEl.style.opacity = '1';
+
+    // Revert input styles and help text after delay
+    const timerId = window.setTimeout(() => {
+      el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+
+      // Fade out help text
+      helpEl.style.opacity = '0';
+
+      setTimeout(() => {
+        // Restore original help text
+        helpEl.textContent = helpEl.dataset.originalText || "";
+        helpEl.className = helpEl.dataset.originalClass || "";
+        helpEl.style.opacity = '1';
+
+        // Cleanup data attributes
+        delete helpEl.dataset.originalText;
+        delete helpEl.dataset.originalClass;
+        delete helpEl.dataset.restoreTimer;
+      }, 300);
+    }, 2000);
+
+    helpEl.dataset.restoreTimer = timerId.toString();
+  } else {
+    // Just revert input styles if no help text
+    setTimeout(() => {
+      el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+    }, 2000);
+  }
+};
+
 // Auto-format Vector Inputs (comma to space)
 const setupVectorInputAutoFormat = (elementId: string) => {
   const el = document.getElementById(elementId) as HTMLInputElement;
@@ -4300,60 +4358,32 @@ const setupVectorInputAutoFormat = (elementId: string) => {
 
       if (val !== el.value && val.length > 0) {
         el.value = val;
+        flashInputFeedback(el, "✨ Auto-formatted to space-separated");
+      }
+    });
+  }
+};
 
-        // 🎨 Palette UX Improvement: Visual feedback for auto-formatting
-        // Flash input green
-        const originalClasses = el.className;
-        el.classList.add('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+// Auto-format Case Name (spaces to underscores, remove invalid chars)
+const setupCaseNameAutoFormat = (elementId: string) => {
+  const el = document.getElementById(elementId) as HTMLInputElement;
+  if (el) {
+    if (!el.classList.contains('transition-colors')) {
+      el.classList.add('transition-colors', 'duration-500');
+    }
 
-        // Update help text if available
-        const helpId = el.getAttribute('aria-describedby');
-        const helpEl = helpId ? document.getElementById(helpId) : null;
+    el.addEventListener('blur', () => {
+      let val = el.value;
+      const original = val;
 
-        if (helpEl) {
-          // Store original state if not already stored (prevent race condition)
-          if (!helpEl.dataset.originalText) {
-            helpEl.dataset.originalText = helpEl.textContent || "";
-            helpEl.dataset.originalClass = helpEl.className;
-          }
+      // Replace spaces with underscores
+      val = val.replace(/\s+/g, '_');
+      // Remove any character that is not alphanumeric, underscore, or dash
+      val = val.replace(/[^a-zA-Z0-9_-]/g, '');
 
-          // Clear any pending restore timer
-          if (helpEl.dataset.restoreTimer) {
-            clearTimeout(parseInt(helpEl.dataset.restoreTimer, 10));
-          }
-
-          // Set feedback state
-          helpEl.textContent = "✨ Auto-formatted to space-separated";
-          helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
-          helpEl.style.opacity = '1';
-
-          // Revert input styles and help text after delay
-          const timerId = window.setTimeout(() => {
-            el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
-
-            // Fade out help text
-            helpEl.style.opacity = '0';
-
-            setTimeout(() => {
-              // Restore original help text
-              helpEl.textContent = helpEl.dataset.originalText || "";
-              helpEl.className = helpEl.dataset.originalClass || "";
-              helpEl.style.opacity = '1';
-
-              // Cleanup data attributes
-              delete helpEl.dataset.originalText;
-              delete helpEl.dataset.originalClass;
-              delete helpEl.dataset.restoreTimer;
-            }, 300);
-          }, 2000);
-
-          helpEl.dataset.restoreTimer = timerId.toString();
-        } else {
-          // Just revert input styles if no help text
-          setTimeout(() => {
-            el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
-          }, 2000);
-        }
+      if (val !== original && val.length > 0) {
+        el.value = val;
+        flashInputFeedback(el, "✨ Auto-formatted: spaces to underscores");
       }
     });
   }
