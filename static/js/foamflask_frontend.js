@@ -521,6 +521,7 @@ let isFirstPlotLoad = true;
 // ⚡ Bolt Optimization: State for incremental residuals fetching
 let lastResidualsCount = 0;
 let currentResidualsData = {};
+let cachedXArray = null;
 // Request management
 let abortControllers = new Map();
 let requestCache = new Map();
@@ -1836,7 +1837,16 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
                                 if (!currentResidualsData[key]) {
                                     currentResidualsData[key] = [];
                                 }
-                                currentResidualsData[key].push(...val);
+                                // ⚡ Bolt Optimization: Chunked push to prevent stack overflow for large updates
+                                const targetArray = currentResidualsData[key];
+                                const CHUNK_SIZE = 30000;
+                                if (val.length > CHUNK_SIZE) {
+                                    for(let i = 0; i < val.length; i += CHUNK_SIZE){
+                                        targetArray.push(...val.slice(i, i + CHUNK_SIZE));
+                                    }
+                                } else {
+                                    targetArray.push(...val);
+                                }
                             }
                         }
                     }
@@ -1858,9 +1868,23 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
         // ⚡ Bolt Optimization: Reuse x-axis array for all traces
         // Avoids allocating 11 identical arrays of size N every update
         const dataLength = plotData.time.length;
-        const xArray = Array.from({
-            length: dataLength
-        }, (_, i)=>i + 1);
+        // ⚡ Bolt Optimization: Use cached Float32Array to avoid allocation and iteration overhead
+        if (!cachedXArray || cachedXArray.length < dataLength) {
+            // Allocate with buffer to prevent frequent resizing
+            const newSize = Math.max(Math.ceil(dataLength * 1.2), 1000);
+            const newArr = new Float32Array(newSize);
+            // Copy existing data
+            if (cachedXArray) {
+                newArr.set(cachedXArray);
+                // Fill new part
+                for(let i = cachedXArray.length; i < newSize; i++)newArr[i] = i + 1;
+            } else {
+                // Fill from scratch
+                for(let i = 0; i < newSize; i++)newArr[i] = i + 1;
+            }
+            cachedXArray = newArr;
+        }
+        const xArray = cachedXArray.subarray(0, dataLength);
         const traces = [];
         const fields = [
             "Ux",
@@ -4469,6 +4493,7 @@ const resetState = ()=>{
     cachedLogHTML = "";
     lastResidualsCount = 0;
     currentResidualsData = {};
+    cachedXArray = null;
 };
 window._resetState = resetState;
 export { init, fetchWithCache, requestCache, setCase, refreshCaseList, uploadGeometry, deleteGeometry, resetState };
