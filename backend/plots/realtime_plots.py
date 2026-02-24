@@ -535,7 +535,8 @@ class OpenFOAMFieldParser:
                                         )
                                         if match:
                                             try:
-                                                val = float(match.group(1).strip())
+                                                # ⚡ Bolt Optimization: Avoid strip() - float() handles whitespace natively
+                                                val = float(match.group(1))
                                             except ValueError:
                                                 pass
 
@@ -1237,7 +1238,8 @@ class OpenFOAMFieldParser:
                             # ⚡ Bolt Optimization: Search directly in mmap buffer to avoid line copy
                             eq_idx = mm.find(b"=", content_start, eol)
                             if eq_idx != -1:
-                                val_part = mm[eq_idx + 1 : eol].strip()
+                                # ⚡ Bolt Optimization: Avoid strip() - float() handles whitespace natively
+                                val_part = mm[eq_idx + 1 : eol]
                                 try:
                                     t_val = float(val_part)
                                     chunk_residuals["time"].append(t_val)
