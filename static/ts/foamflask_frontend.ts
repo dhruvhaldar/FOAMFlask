@@ -1764,7 +1764,6 @@ const refreshCaseList = async (btnElement?: HTMLElement) => {
     }
   }
 };
-
 const selectCase = (val: string) => {
   activeCase = val;
   localStorage.setItem("lastSelectedCase", val);
@@ -2640,7 +2639,7 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
 };
 
 // Geometry Functions
-const refreshGeometryList = async (btnElement?: HTMLElement) => {
+const refreshGeometryList = async (btnElement?: HTMLElement, targetSelection?: string) => {
   if (!activeCase) {
     showNotification("No active case selected to list geometries", "warning", NOTIFY_LONG);
     return;
@@ -2663,6 +2662,8 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
     if (data.success) {
       const select = document.getElementById("geometrySelect") as HTMLSelectElement;
       if (select) {
+        // Capture current selection
+        const currentSelection = select.value;
         select.innerHTML = "";
         if (data.files.length === 0) {
           const opt = document.createElement("option");
@@ -2682,6 +2683,13 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
             }
             select.appendChild(opt);
           });
+
+          // Auto-select logic: Target > Current
+          if (targetSelection && Array.from(select.options).some(o => o.value === targetSelection)) {
+            select.value = targetSelection;
+          } else if (currentSelection && Array.from(select.options).some(o => o.value === currentSelection)) {
+            select.value = currentSelection;
+          }
         }
       }
     }
@@ -2700,6 +2708,8 @@ const refreshGeometryList = async (btnElement?: HTMLElement) => {
 };
 
 
+
+(window as any).refreshGeometryList = refreshGeometryList;
 
 const switchGeometryTab = (tab: "upload" | "resources") => {
   const track = document.getElementById("geometry-track");
@@ -2816,7 +2826,7 @@ const fetchResourceGeometry = async (btnElement?: HTMLElement) => {
     const result = await res.json();
     if (result.success) {
       showNotification(`Fetched ${filename} successfully`, "success");
-      refreshGeometryList();
+      refreshGeometryList(undefined, filename);
     } else {
       showNotification(result.message || "Fetch failed", "error");
     }
@@ -2957,9 +2967,10 @@ const uploadGeometry = async (btnElement?: HTMLElement) => {
   try {
     const response = await fetch("/api/geometry/upload", { method: "POST", body: formData });
     if (!response.ok) throw new Error("Upload failed");
+    const data = await response.json();
     showNotification("Geometry uploaded successfully", "success");
     input.value = "";
-    refreshGeometryList();
+    refreshGeometryList(undefined, data.filename);
     success = true;
   } catch (e) {
     showNotification("Failed to upload geometry", "error");
