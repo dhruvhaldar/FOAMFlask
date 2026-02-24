@@ -920,28 +920,19 @@ const getLegendVisibility = (
   }
 };
 
-// Helper: Attach white-bg download button to a plot
-const attachWhiteBGDownloadButton = (plotDiv: any): void => {
-  if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
-  // plotDiv.layout.paper_bgcolor = "white"; // Disable white BG enforcement
-  // plotDiv.layout.plot_bgcolor = "white";
-  plotDiv.dataset.whiteButtonAdded = "true";
-  const configWithWhiteBG = { ...plotDiv.fullLayout?.config, ...plotConfig };
-  configWithWhiteBG.toImageButtonOptions = {
-    format: "png",
-    filename: `${plotDiv.id}whitebg`,
-    height: plotDiv.clientHeight,
-    width: plotDiv.clientWidth,
-    scale: 2,
+// ⚡ Bolt Optimization: Helper to get plot config with white background download options
+// Replaces attachWhiteBGDownloadButton to avoid double renders and configuration overwrites
+const getPlotConfigWithDownload = (plotDiv: HTMLElement): Partial<Plotly.Config> => {
+  return {
+    ...plotConfig,
+    toImageButtonOptions: {
+      format: "png",
+      filename: `${plotDiv.id}whitebg`,
+      height: plotDiv.clientHeight || 400, // Fallback if hidden
+      width: plotDiv.clientWidth || 600,
+      scale: 2,
+    },
   };
-
-  void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG)
-    .then(() => {
-      plotDiv.dataset.whiteButtonAdded = "true";
-    })
-    .catch((err: unknown) => {
-      console.error("Plotly update failed:", err);
-    });
 };
 
 const downloadPlotData = (plotId: string, filename: string): void => {
@@ -2167,6 +2158,11 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       return;
     }
 
+    // ⚡ Bolt Optimization: Reuse x-axis array for all traces
+    // Avoids allocating 11 identical arrays of size N every update
+    const dataLength = plotData.time.length;
+    const xArray = Array.from({ length: dataLength }, (_, i) => i + 1);
+
     const traces: any[] = [];
     const fields = ["Ux", "Uy", "Uz", "p", "h", "T", "rho", "p_rgh", "k", "epsilon", "omega"] as const;
     const colors = [
@@ -2186,7 +2182,7 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
       const fieldData = (plotData as any)[field];
       if (fieldData && fieldData.length > 0) {
         traces.push({
-          x: Array.from({ length: fieldData.length }, (_, i) => i + 1),
+          x: xArray,
           y: fieldData,
           type: "scattergl",
           mode: "lines",
@@ -2218,11 +2214,13 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
             gridcolor: "rgba(0,0,0,0.1)",
           },
         };
+        // ⚡ Bolt Optimization: Use enhanced config directly to avoid second render
+        const config = getPlotConfigWithDownload(residualsPlotDiv);
         void Plotly.react(residualsPlotDiv, traces as any, layout as any, {
-          ...plotConfig,
+          ...config,
           displayModeBar: true,
           scrollZoom: false,
-        }).then(() => attachWhiteBGDownloadButton(residualsPlotDiv));
+        });
       }
     }
   } catch (error: unknown) {
@@ -2273,6 +2271,8 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
           name: "Cp",
           line: { color: plotlyColors.red, width: 2.5 },
         };
+        // ⚡ Bolt Optimization: Use enhanced config directly
+        const config = getPlotConfigWithDownload(cpDiv);
         void Plotly.react(
           cpDiv,
           [cpTrace as any],
@@ -2288,14 +2288,10 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
               title: { text: "Cp" },
             },
           },
-          plotConfig
-        )
-          .then(() => {
-            attachWhiteBGDownloadButton(cpDiv);
-          })
-          .catch((err: unknown) => {
-            console.error("Plotly update failed:", err);
-          });
+          config
+        ).catch((err: unknown) => {
+          console.error("Plotly update failed:", err);
+        });
       }
     }
 
@@ -2316,6 +2312,8 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
           name: "Velocity",
           marker: { color: plotlyColors.blue, size: 5 },
         };
+        // ⚡ Bolt Optimization: Use enhanced config directly
+        const config = getPlotConfigWithDownload(velocityDiv);
         void Plotly.react(
           velocityDiv,
           [velocityTrace as any],
@@ -2328,14 +2326,10 @@ const updateAeroPlots = async (preFetchedData?: PlotData): Promise<void> => {
               zaxis: { title: { text: "Uz" } },
             },
           },
-          plotConfig
-        )
-          .then(() => {
-            attachWhiteBGDownloadButton(velocityDiv);
-          })
-          .catch((err: unknown) => {
-            console.error("Plotly update failed:", err);
-          });
+          config
+        ).catch((err: unknown) => {
+          console.error("Plotly update failed:", err);
+        });
       }
     }
   } catch (error: unknown) {
@@ -2404,6 +2398,8 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
           | "legendonly";
       }
 
+      // ⚡ Bolt Optimization: Use enhanced config directly
+      const config = getPlotConfigWithDownload(pressureDiv);
       void Plotly.react(
         pressureDiv,
         [pressureTrace as any],
@@ -2419,14 +2415,10 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
             title: { text: "Pressure (Pa)" },
           },
         },
-        plotConfig
-      )
-        .then(() => {
-          attachWhiteBGDownloadButton(pressureDiv);
-        })
-        .catch((err: unknown) => {
-          console.error("Plotly update failed:", err);
-        });
+        config
+      ).catch((err: unknown) => {
+        console.error("Plotly update failed:", err);
+      });
     }
 
     // Velocity plot
@@ -2505,6 +2497,8 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
         }
       });
 
+      // ⚡ Bolt Optimization: Use enhanced config directly
+      const config = getPlotConfigWithDownload(velocityDiv);
       void Plotly.react(
         velocityDiv,
         traces as any,
@@ -2520,10 +2514,8 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
             title: { text: "Velocity (m/s)" },
           },
         },
-        plotConfig
-      ).then(() => {
-        attachWhiteBGDownloadButton(velocityDiv);
-      });
+        config
+      );
     }
 
     // Turbulence plot
@@ -2572,6 +2564,8 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
     if (turbulenceTrace.length > 0) {
       const turbPlotDiv = document.getElementById("turbulence-plot");
       if (turbPlotDiv) {
+        // ⚡ Bolt Optimization: Use enhanced config directly
+        const config = getPlotConfigWithDownload(turbPlotDiv);
         void Plotly.react(
           turbPlotDiv,
           turbulenceTrace as any,
@@ -2587,10 +2581,8 @@ const updatePlots = async (injectedData?: PlotData): Promise<void> => {
               title: { text: "Value" },
             },
           },
-          plotConfig
-        ).then(() => {
-          attachWhiteBGDownloadButton(turbPlotDiv);
-        });
+          config
+        );
       }
     }
 
