@@ -737,6 +737,7 @@ let isFirstPlotLoad: boolean = true;
 // ⚡ Bolt Optimization: State for incremental residuals fetching
 let lastResidualsCount: number = 0;
 let currentResidualsData: ResidualsResponse = {};
+let cachedXArray: Float32Array | null = null;
 
 // Request management
 let abortControllers = new Map<string, AbortController>();
@@ -2136,7 +2137,17 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
                 if (!currentResidualsData[key]) {
                   currentResidualsData[key] = [];
                 }
-                (currentResidualsData[key] as any[]).push(...val);
+
+              // ⚡ Bolt Optimization: Chunked push to prevent stack overflow for large updates
+              const targetArray = currentResidualsData[key] as any[];
+              const CHUNK_SIZE = 30000;
+              if (val.length > CHUNK_SIZE) {
+                for (let i = 0; i < val.length; i += CHUNK_SIZE) {
+                  targetArray.push(...val.slice(i, i + CHUNK_SIZE));
+                }
+              } else {
+                targetArray.push(...val);
+              }
               }
             }
           }
@@ -2161,7 +2172,26 @@ const updateResidualsPlot = async (tutorial: string, injectedData?: ResidualsRes
     // ⚡ Bolt Optimization: Reuse x-axis array for all traces
     // Avoids allocating 11 identical arrays of size N every update
     const dataLength = plotData.time.length;
-    const xArray = Array.from({ length: dataLength }, (_, i) => i + 1);
+
+    // ⚡ Bolt Optimization: Use cached Float32Array to avoid allocation and iteration overhead
+    if (!cachedXArray || cachedXArray.length < dataLength) {
+      // Allocate with buffer to prevent frequent resizing
+      const newSize = Math.max(Math.ceil(dataLength * 1.2), 1000);
+      const newArr = new Float32Array(newSize);
+
+      // Copy existing data
+      if (cachedXArray) {
+        newArr.set(cachedXArray);
+        // Fill new part
+        for (let i = cachedXArray.length; i < newSize; i++) newArr[i] = i + 1;
+      } else {
+        // Fill from scratch
+        for (let i = 0; i < newSize; i++) newArr[i] = i + 1;
+      }
+      cachedXArray = newArr;
+    }
+
+    const xArray = cachedXArray.subarray(0, dataLength);
 
     const traces: any[] = [];
     const fields = ["Ux", "Uy", "Uz", "p", "h", "T", "rho", "p_rgh", "k", "epsilon", "omega"] as const;
@@ -4912,6 +4942,7 @@ const resetState = () => {
   cachedLogHTML = "";
   lastResidualsCount = 0;
   currentResidualsData = {};
+  cachedXArray = null;
 };
 (window as any)._resetState = resetState;
 
