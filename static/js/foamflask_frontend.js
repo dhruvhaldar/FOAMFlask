@@ -706,28 +706,19 @@ const getLegendVisibility = (plotDiv)=>{
         return {};
     }
 };
-// Helper: Attach white-bg download button to a plot
-const attachWhiteBGDownloadButton = (plotDiv)=>{
-    if (!plotDiv || plotDiv.dataset.whiteButtonAdded) return;
-    // plotDiv.layout.paper_bgcolor = "white"; // Disable white BG enforcement
-    // plotDiv.layout.plot_bgcolor = "white";
-    plotDiv.dataset.whiteButtonAdded = "true";
-    const configWithWhiteBG = {
-        ...plotDiv.fullLayout?.config,
-        ...plotConfig
+// ⚡ Bolt Optimization: Helper to get plot config with white background download options
+// Replaces attachWhiteBGDownloadButton to avoid double renders and configuration overwrites
+const getPlotConfigWithDownload = (plotDiv)=>{
+    return {
+        ...plotConfig,
+        toImageButtonOptions: {
+            format: "png",
+            filename: `${plotDiv.id}whitebg`,
+            height: plotDiv.clientHeight || 400,
+            width: plotDiv.clientWidth || 600,
+            scale: 2
+        }
     };
-    configWithWhiteBG.toImageButtonOptions = {
-        format: "png",
-        filename: `${plotDiv.id}whitebg`,
-        height: plotDiv.clientHeight,
-        width: plotDiv.clientWidth,
-        scale: 2
-    };
-    void Plotly.react(plotDiv, plotDiv.data, plotDiv.layout, configWithWhiteBG).then(()=>{
-        plotDiv.dataset.whiteButtonAdded = "true";
-    }).catch((err)=>{
-        console.error("Plotly update failed:", err);
-    });
 };
 const downloadPlotData = (plotId, filename)=>{
     const plotDiv = document.getElementById(plotId);
@@ -1864,6 +1855,12 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
         if (!plotData.time || plotData.time.length === 0) {
             return;
         }
+        // ⚡ Bolt Optimization: Reuse x-axis array for all traces
+        // Avoids allocating 11 identical arrays of size N every update
+        const dataLength = plotData.time.length;
+        const xArray = Array.from({
+            length: dataLength
+        }, (_, i)=>i + 1);
         const traces = [];
         const fields = [
             "Ux",
@@ -1895,9 +1892,7 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
             const fieldData = plotData[field];
             if (fieldData && fieldData.length > 0) {
                 traces.push({
-                    x: Array.from({
-                        length: fieldData.length
-                    }, (_, i)=>i + 1),
+                    x: xArray,
                     y: fieldData,
                     type: "scattergl",
                     mode: "lines",
@@ -1936,11 +1931,13 @@ const updateResidualsPlot = async (tutorial, injectedData)=>{
                         gridcolor: "rgba(0,0,0,0.1)"
                     }
                 };
+                // ⚡ Bolt Optimization: Use enhanced config directly to avoid second render
+                const config = getPlotConfigWithDownload(residualsPlotDiv);
                 void Plotly.react(residualsPlotDiv, traces, layout, {
-                    ...plotConfig,
+                    ...config,
                     displayModeBar: true,
                     scrollZoom: false
-                }).then(()=>attachWhiteBGDownloadButton(residualsPlotDiv));
+                });
             }
         }
     } catch (error) {
@@ -1979,6 +1976,8 @@ const updateAeroPlots = async (preFetchedData)=>{
                         width: 2.5
                     }
                 };
+                // ⚡ Bolt Optimization: Use enhanced config directly
+                const config = getPlotConfigWithDownload(cpDiv);
                 void Plotly.react(cpDiv, [
                     cpTrace
                 ], {
@@ -1996,9 +1995,7 @@ const updateAeroPlots = async (preFetchedData)=>{
                             text: "Cp"
                         }
                     }
-                }, plotConfig).then(()=>{
-                    attachWhiteBGDownloadButton(cpDiv);
-                }).catch((err)=>{
+                }, config).catch((err)=>{
                     console.error("Plotly update failed:", err);
                 });
             }
@@ -2019,6 +2016,8 @@ const updateAeroPlots = async (preFetchedData)=>{
                         size: 5
                     }
                 };
+                // ⚡ Bolt Optimization: Use enhanced config directly
+                const config = getPlotConfigWithDownload(velocityDiv);
                 void Plotly.react(velocityDiv, [
                     velocityTrace
                 ], {
@@ -2041,9 +2040,7 @@ const updateAeroPlots = async (preFetchedData)=>{
                             }
                         }
                     }
-                }, plotConfig).then(()=>{
-                    attachWhiteBGDownloadButton(velocityDiv);
-                }).catch((err)=>{
+                }, config).catch((err)=>{
                     console.error("Plotly update failed:", err);
                 });
             }
@@ -2102,6 +2099,8 @@ const updatePlots = async (injectedData)=>{
             if (pressureTrace.name && legendVisibility.hasOwnProperty(pressureTrace.name)) {
                 pressureTrace.visible = legendVisibility[pressureTrace.name];
             }
+            // ⚡ Bolt Optimization: Use enhanced config directly
+            const config = getPlotConfigWithDownload(pressureDiv);
             void Plotly.react(pressureDiv, [
                 pressureTrace
             ], {
@@ -2119,9 +2118,7 @@ const updatePlots = async (injectedData)=>{
                         text: "Pressure (Pa)"
                     }
                 }
-            }, plotConfig).then(()=>{
-                attachWhiteBGDownloadButton(pressureDiv);
-            }).catch((err)=>{
+            }, config).catch((err)=>{
                 console.error("Plotly update failed:", err);
             });
         }
@@ -2198,6 +2195,8 @@ const updatePlots = async (injectedData)=>{
                     tr.visible = legendVisibility[tr.name];
                 }
             });
+            // ⚡ Bolt Optimization: Use enhanced config directly
+            const config = getPlotConfigWithDownload(velocityDiv);
             void Plotly.react(velocityDiv, traces, {
                 ...plotLayout,
                 title: createBoldTitle("Velocity vs Time"),
@@ -2213,9 +2212,7 @@ const updatePlots = async (injectedData)=>{
                         text: "Velocity (m/s)"
                     }
                 }
-            }, plotConfig).then(()=>{
-                attachWhiteBGDownloadButton(velocityDiv);
-            });
+            }, config);
         }
         // Turbulence plot
         const turbulenceTrace = [];
@@ -2278,6 +2275,8 @@ const updatePlots = async (injectedData)=>{
         if (turbulenceTrace.length > 0) {
             const turbPlotDiv = document.getElementById("turbulence-plot");
             if (turbPlotDiv) {
+                // ⚡ Bolt Optimization: Use enhanced config directly
+                const config = getPlotConfigWithDownload(turbPlotDiv);
                 void Plotly.react(turbPlotDiv, turbulenceTrace, {
                     ...plotLayout,
                     title: createBoldTitle("Turbulence Properties vs Time"),
@@ -2293,9 +2292,7 @@ const updatePlots = async (injectedData)=>{
                             text: "Value"
                         }
                     }
-                }, plotConfig).then(()=>{
-                    attachWhiteBGDownloadButton(turbPlotDiv);
-                });
+                }, config);
             }
         }
         // Update residuals and aero plots in parallel
@@ -2395,6 +2392,7 @@ const refreshGeometryList = async (btnElement, targetSelection)=>{
         }
     }
 };
+window.refreshGeometryList = refreshGeometryList;
 const switchGeometryTab = (tab)=>{
     const track = document.getElementById("geometry-track");
     const pill = document.getElementById("geometry-bg-pill");
@@ -2830,6 +2828,15 @@ const generateBlockMeshDict = async (btnElement)=>{
         btn.setAttribute("aria-busy", "true");
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
     }
+    // Validate inputs
+    if (!validateVector3("bmMin", "Min Bounds") || !validateVector3("bmMax", "Max Bounds") || !validateVector3("bmCells", "Cells") || !validateVector3("bmGrading", "Grading")) {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute("aria-busy");
+            btn.innerHTML = originalText;
+        }
+        return;
+    }
     const minVal = document.getElementById("bmMin").value.trim().split(/\s+/).map(Number);
     const maxVal = document.getElementById("bmMax").value.trim().split(/\s+/).map(Number);
     const cells = document.getElementById("bmCells").value.trim().split(/\s+/).map(Number);
@@ -2888,6 +2895,14 @@ const generateSnappyHexMeshDict = async (btnElement)=>{
     // I should fix this too? Or just stub selectShmObject.
     // For now, I'll add selectShmObject.
     const level = 0; // Stub as element might be missing
+    if (!validateVector3("shmLocation", "Location In Mesh")) {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute("aria-busy");
+            btn.innerHTML = originalText;
+        }
+        return;
+    }
     const locationInput = document.getElementById("shmLocation");
     const location = locationInput ? locationInput.value.trim().split(/\s+/).map(Number) : [
         0,
@@ -3887,9 +3902,13 @@ const handleScroll = ()=>{
     }
 };
 // Helper: Flash input with visual feedback
-const flashInputFeedback = (el, message)=>{
-    // Flash input green
-    el.classList.add('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+const flashInputFeedback = (el, message, isError = false)=>{
+    const color = isError ? 'red' : 'green';
+    const bgColor = isError ? 'bg-red-100' : 'bg-green-50';
+    // Remove potential conflicting classes first
+    el.classList.remove('border-green-500', 'ring-green-500', 'bg-green-50', 'border-red-500', 'ring-red-500', 'bg-red-100');
+    // Add new classes
+    el.classList.add(`border-${color}-500`, 'ring-1', `ring-${color}-500`, bgColor);
     // Update help text if available
     const helpId = el.getAttribute('aria-describedby');
     const helpEl = helpId ? document.getElementById(helpId) : null;
@@ -3905,11 +3924,16 @@ const flashInputFeedback = (el, message)=>{
         }
         // Set feedback state
         helpEl.textContent = message;
-        helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
+        if (isError) {
+            helpEl.className = "text-xs text-red-600 font-medium mt-1 transition-all duration-300";
+        } else {
+            helpEl.className = "text-xs text-green-600 font-medium mt-1 transition-all duration-300";
+        }
         helpEl.style.opacity = '1';
         // Revert input styles and help text after delay
+        const duration = isError ? 3000 : 2000;
         const timerId = window.setTimeout(()=>{
-            el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
+            el.classList.remove(`border-${color}-500`, 'ring-1', `ring-${color}-500`, bgColor);
             // Fade out help text
             helpEl.style.opacity = '0';
             setTimeout(()=>{
@@ -3922,14 +3946,35 @@ const flashInputFeedback = (el, message)=>{
                 delete helpEl.dataset.originalClass;
                 delete helpEl.dataset.restoreTimer;
             }, 300);
-        }, 2000);
+        }, duration);
         helpEl.dataset.restoreTimer = timerId.toString();
     } else {
         // Just revert input styles if no help text
+        const duration = isError ? 3000 : 2000;
         setTimeout(()=>{
-            el.classList.remove('border-green-500', 'ring-1', 'ring-green-500', 'bg-green-50');
-        }, 2000);
+            el.classList.remove(`border-${color}-500`, 'ring-1', `ring-${color}-500`, bgColor);
+        }, duration);
     }
+};
+// Helper: Validate Vector3 Input
+const validateVector3 = (elementId, label)=>{
+    const el = document.getElementById(elementId);
+    if (!el) return true; // Skip if element missing
+    const val = el.value.trim();
+    if (!val) {
+        flashInputFeedback(el, `${label} is required`, true);
+        el.focus();
+        return false;
+    }
+    // Allow comma or space separated
+    const parts = val.replace(/,/g, ' ').split(/\s+/);
+    const nums = parts.map(Number);
+    if (parts.length !== 3 || nums.some(isNaN)) {
+        flashInputFeedback(el, `Invalid format: Expected 3 numbers (x y z)`, true);
+        el.focus();
+        return false;
+    }
+    return true;
 };
 // Auto-format Vector Inputs (comma to space)
 const setupVectorInputAutoFormat = (elementId)=>{
