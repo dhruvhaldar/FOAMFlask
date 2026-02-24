@@ -1233,18 +1233,17 @@ class OpenFOAMFieldParser:
                                 # Partial line, stop and wait for more data
                                 break
 
-                            line_segment = mm[content_start:eol]
-
                             # Manual parse "Time = <val>"
-                            eq_idx = line_segment.find(b"=")
+                            # ⚡ Bolt Optimization: Search directly in mmap buffer to avoid line copy
+                            eq_idx = mm.find(b"=", content_start, eol)
                             if eq_idx != -1:
-                                val_part = line_segment[eq_idx + 1 :].strip()
+                                val_part = mm[eq_idx + 1 : eol].strip()
                                 try:
                                     t_val = float(val_part)
                                     chunk_residuals["time"].append(t_val)
                                 except ValueError:
                                     # Fallback to regex
-                                    time_match = TIME_REGEX_BYTES.search(line_segment)
+                                    time_match = TIME_REGEX_BYTES.search(mm, content_start, eol)
                                     if time_match:
                                         try:
                                             chunk_residuals["time"].append(
@@ -1271,11 +1270,14 @@ class OpenFOAMFieldParser:
 
                             if res_idx != -1:
                                 # Extract field
-                                chunk = mm[field_start:res_idx]
-                                if b"," in chunk:
-                                    field_bytes = chunk.split(b",")[0].strip()
+                                # ⚡ Bolt Optimization: Avoid creating chunk copy and splitting
+                                comma_in_field = mm.find(b",", field_start, res_idx)
+                                if comma_in_field != -1:
+                                    raw_field_end = comma_in_field
                                 else:
-                                    field_bytes = chunk.strip()
+                                    raw_field_end = res_idx
+
+                                field_bytes = mm[field_start:raw_field_end].strip()
 
                                 # Cache field name
                                 field = _FIELD_NAME_CACHE.get(field_bytes)
@@ -1285,14 +1287,13 @@ class OpenFOAMFieldParser:
 
                                 # Extract value
                                 val_start = res_idx + len(INITIAL_RESIDUAL_TOKEN)
-                                val_segment = mm[val_start:eol]
+                                # ⚡ Bolt Optimization: Avoid creating val_segment copy
+                                comma_pos = mm.find(b",", val_start, eol)
 
-                                # Find next comma
-                                comma_pos = val_segment.find(b",")
                                 if comma_pos != -1:
-                                    val_str = val_segment[:comma_pos]
+                                    val_str = mm[val_start:comma_pos]
                                 else:
-                                    val_str = val_segment
+                                    val_str = mm[val_start:eol]
 
                                 try:
                                     val = float(val_str)
