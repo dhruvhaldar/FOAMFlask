@@ -1172,11 +1172,11 @@ class OpenFOAMFieldParser:
 
                 new_offset = start_offset
 
-                # Initialize working buffer for this chunk
-                # We use a separate buffer to avoid modifying the cached residuals in-place
-                # until we have successfully parsed the chunk.
-                # ⚡ Bolt Optimization: Dynamic initialization to support arbitrary fields
-                chunk_residuals: Dict[str, List[float]] = {"time": []}
+                # ⚡ Bolt Optimization: Avoid intermediate buffer allocation
+                # Append directly to residuals to save memory and avoid copying.
+                # If parsing fails, the cache entry is cleared anyway, so partial updates are safe.
+                # We capture initial length to support backfilling new fields.
+                initial_steps_count = len(residuals["time"])
 
                 # ⚡ Bolt Optimization: Use mmap + find() instead of line-by-line streaming
                 # This skips ~90% of parsing overhead by jumping directly to tokens.
@@ -1242,13 +1242,13 @@ class OpenFOAMFieldParser:
                                 val_part = mm[eq_idx + 1 : eol]
                                 try:
                                     t_val = float(val_part)
-                                    chunk_residuals["time"].append(t_val)
+                                    residuals["time"].append(t_val)
                                 except ValueError:
                                     # Fallback to regex
                                     time_match = TIME_REGEX_BYTES.search(mm, content_start, eol)
                                     if time_match:
                                         try:
-                                            chunk_residuals["time"].append(
+                                            residuals["time"].append(
                                                 float(time_match.group(1))
                                             )
                                         except ValueError:
@@ -1299,29 +1299,16 @@ class OpenFOAMFieldParser:
 
                                 try:
                                     val = float(val_str)
-                                    if field not in chunk_residuals:
-                                        chunk_residuals[field] = []
-                                    chunk_residuals[field].append(val)
+                                    if field not in residuals:
+                                        # Backfill with zeros for previous steps to maintain alignment
+                                        residuals[field] = [0.0] * initial_steps_count
+                                    residuals[field].append(val)
                                 except ValueError:
                                     pass
 
                             pos = eol + 1
                             new_offset = pos
                             next_solving = mm.find(SOLVING_FOR_TOKEN, pos)
-
-                # Merge chunk data into main residuals (atomic-ish update)
-                current_steps_count = len(residuals["time"])
-
-                for key, val_list in chunk_residuals.items():
-                    if not val_list:
-                        continue
-
-                    # ⚡ Bolt Optimization: Support dynamic fields
-                    if key not in residuals:
-                        # Backfill with zeros for previous steps to maintain alignment
-                        residuals[key] = [0.0] * current_steps_count
-
-                    residuals[key].extend(val_list)
 
             finally:
                 if fd is not None:
