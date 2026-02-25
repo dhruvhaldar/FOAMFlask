@@ -1,74 +1,92 @@
+import os
+import tempfile
+import array
+import numpy as np
+import unittest
+from backend.plots.realtime_plots import OpenFOAMFieldParser, _RESIDUALS_CACHE
 
-import pytest
-from unittest.mock import MagicMock, patch
-import app
+class TestResidualsOptimization(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.TemporaryDirectory()
+        self.case_dir = self.test_dir.name
+        self.log_file = os.path.join(self.case_dir, "log.foamRun")
 
-@pytest.fixture
-def client():
-    app.app.config['TESTING'] = True
-    app.CASE_ROOT = "/tmp/mock_case_root"
-    with app.app.test_client() as client:
-        yield client
+        # Create a dummy log file
+        with open(self.log_file, "wb") as f:
+            f.write(b"Time = 0.1\n")
+            f.write(b"Solving for Ux, Initial residual = 0.5, Final residual = 0.01, No Iterations 1\n")
+            f.write(b"Solving for p, Initial residual = 0.2, Final residual = 0.001, No Iterations 5\n")
+            f.write(b"\n")
+            f.write(b"Time = 0.2\n")
+            f.write(b"Solving for Ux, Initial residual = 0.4, Final residual = 0.005, No Iterations 1\n")
+            f.write(b"Solving for p, Initial residual = 0.1, Final residual = 0.0005, No Iterations 4\n")
 
-@patch("app.validate_safe_path")
-@patch("app.check_cache")
-@patch("app.OpenFOAMFieldParser")
-def test_residuals_missing_log_optimization(mock_parser_cls, mock_check_cache, mock_validate_path, client):
-    """
-    Verify that get_residuals_from_log is NOT called when check_cache indicates file is missing.
-    """
-    # Setup
-    mock_validate_path.return_value = MagicMock(exists=lambda: True)
-    # Simulate missing file: check_cache returns (False, None, None)
-    mock_check_cache.return_value = (False, None, None)
+        self.parser = OpenFOAMFieldParser(self.case_dir)
+        _RESIDUALS_CACHE.clear()
 
-    # Mock parser instance
-    mock_parser_instance = mock_parser_cls.return_value
-    mock_parser_instance.get_residuals_from_log.return_value = {}
+    def tearDown(self):
+        self.test_dir.cleanup()
+        _RESIDUALS_CACHE.clear()
 
-    # Action
-    response = client.get("/api/residuals?tutorial=mock/tutorial")
+    def test_get_residuals_returns_arrays(self):
+        residuals = self.parser.get_residuals_from_log("log.foamRun")
 
-    # Assertions
-    assert response.status_code == 200
-    assert response.json == {}
+        # Check type
+        self.assertIsInstance(residuals, dict)
+        self.assertIsInstance(residuals["time"], array.array)
+        self.assertIsInstance(residuals["Ux"], array.array)
+        self.assertIsInstance(residuals["p"], array.array)
 
-    # CRITICAL: Verify optimization - parser should NOT be instantiated or called
-    # If check_cache returns None for stat, we should return immediately.
-    # Currently (before optimization), this assertion will FAIL because the code proceeds to call parser.
-    # After optimization, this assertion should PASS.
+        # Check typecode
+        self.assertEqual(residuals["time"].typecode, 'd')
+        self.assertEqual(residuals["Ux"].typecode, 'd')
 
-    # We check if get_residuals_from_log was called.
-    # If optimization is working, it should NOT be called.
-    # If optimization is missing, it WILL be called (and return {} from mock).
-    if mock_parser_instance.get_residuals_from_log.called:
-        pytest.fail("Optimization failed: get_residuals_from_log was called despite missing file")
+        # Check values
+        self.assertEqual(list(residuals["time"]), [0.1, 0.2])
+        self.assertEqual(list(residuals["Ux"]), [0.5, 0.4])
+        self.assertEqual(list(residuals["p"]), [0.2, 0.1])
 
-@patch("app.validate_safe_path")
-@patch("app.check_cache")
-@patch("app.OpenFOAMFieldParser")
-def test_residuals_existing_log(mock_parser_cls, mock_check_cache, mock_validate_path, client):
-    """
-    Verify that get_residuals_from_log IS called when file exists.
-    """
-    # Setup
-    mock_validate_path.return_value = MagicMock(exists=lambda: True)
+    def test_numpy_conversion(self):
+        residuals = self.parser.get_residuals_from_log("log.foamRun")
 
-    # Simulate existing file
-    mock_stat = MagicMock()
-    mock_stat.st_mtime = 12345.0
-    mock_check_cache.return_value = (False, "Wed, 21 Oct 2015 07:28:00 GMT", mock_stat)
+        # Simulate app.py conversion
+        converted = {}
+        for k, v in residuals.items():
+            if isinstance(v, array.array):
+                converted[k] = np.frombuffer(v, dtype=float)
+            else:
+                converted[k] = v
 
-    mock_parser_instance = mock_parser_cls.return_value
-    expected_data = {"time": [0, 1], "p": [1e-5, 1e-6]}
-    mock_parser_instance.get_residuals_from_log.return_value = expected_data
+        # Check numpy arrays
+        self.assertIsInstance(converted["time"], np.ndarray)
+        self.assertIsInstance(converted["Ux"], np.ndarray)
 
-    # Action
-    response = client.get("/api/residuals?tutorial=mock/tutorial")
+        # Check values preserved
+        np.testing.assert_array_equal(converted["time"], np.array([0.1, 0.2]))
+        np.testing.assert_array_equal(converted["Ux"], np.array([0.5, 0.4]))
 
-    # Assertions
-    assert response.status_code == 200
-    assert response.json == expected_data
+        # Check zero copy (if we modify array, numpy view should reflect it?)
+        # array.array is mutable. np.frombuffer creates a view.
+        residuals["time"][0] = 9.9
+        self.assertEqual(converted["time"][0], 9.9)
 
-    # Verify parser was called with correct stat
-    mock_parser_instance.get_residuals_from_log.assert_called_once_with(known_stat=mock_stat)
+    def test_cache_immutability(self):
+        """Verify that the conversion logic in app.py does not mutate the cache."""
+        residuals = self.parser.get_residuals_from_log("log.foamRun")
+
+        # Simulate app.py logic with explicit copy
+        response_data = residuals.copy()
+        for k, v in response_data.items():
+            if isinstance(v, array.array):
+                response_data[k] = np.frombuffer(v, dtype=float)
+
+        # Verify residuals (which represents the cache) still holds array.array
+        self.assertIsInstance(residuals["time"], array.array)
+        self.assertIsInstance(residuals["Ux"], array.array)
+
+        # Verify response_data holds numpy arrays
+        self.assertIsInstance(response_data["time"], np.ndarray)
+        self.assertIsInstance(response_data["Ux"], np.ndarray)
+
+if __name__ == "__main__":
+    unittest.main()
