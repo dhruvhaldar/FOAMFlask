@@ -9,6 +9,8 @@ import logging
 import os
 import mmap
 import functools
+import array
+import itertools
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Union, Any
 
@@ -29,7 +31,8 @@ _FILE_CACHE: Dict[str, Tuple[float, Any]] = {}
 
 # Structure: { "log_path_str": (mtime, size, offset, residuals_data) }
 # ⚡ Bolt Optimization: Added offset to support incremental reading
-_RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, List[float]]]] = {}
+# ⚡ Bolt Optimization: Use array.array for compact storage (saves ~3x memory vs lists)
+_RESIDUALS_CACHE: Dict[str, Tuple[float, int, int, Dict[str, Any]]] = {}
 
 # Structure: { "file_path_str": (mtime, field_type) }
 _FIELD_TYPE_CACHE: Dict[str, Tuple[float, Optional[str]]] = {}
@@ -1135,19 +1138,21 @@ class OpenFOAMFieldParser:
                 size = stat.st_size
 
                 start_offset = 0
-                residuals: Dict[str, List[float]] = {
-                    "time": [],
-                    "Ux": [],
-                    "Uy": [],
-                    "Uz": [],
-                    "p": [],
-                    "h": [],
-                    "T": [],
-                    "rho": [],
-                    "p_rgh": [],
-                    "k": [],
-                    "epsilon": [],
-                    "omega": [],
+                # ⚡ Bolt Optimization: Use array.array('d') for compact storage
+                # This significantly reduces memory overhead for large log files (millions of points).
+                residuals: Dict[str, Any] = {
+                    "time": array.array("d"),
+                    "Ux": array.array("d"),
+                    "Uy": array.array("d"),
+                    "Uz": array.array("d"),
+                    "p": array.array("d"),
+                    "h": array.array("d"),
+                    "T": array.array("d"),
+                    "rho": array.array("d"),
+                    "p_rgh": array.array("d"),
+                    "k": array.array("d"),
+                    "epsilon": array.array("d"),
+                    "omega": array.array("d"),
                 }
 
                 # ⚡ Bolt Optimization: Check cache first for incremental update
@@ -1301,7 +1306,11 @@ class OpenFOAMFieldParser:
                                     val = float(val_str)
                                     if field not in residuals:
                                         # Backfill with zeros for previous steps to maintain alignment
-                                        residuals[field] = [0.0] * initial_steps_count
+                                        # ⚡ Bolt Optimization: Use itertools.repeat for efficient initialization
+                                        # Avoids creating large temporary lists like [0.0] * N
+                                        residuals[field] = array.array(
+                                            "d", itertools.repeat(0.0, initial_steps_count)
+                                        )
                                     residuals[field].append(val)
                                 except ValueError:
                                     pass

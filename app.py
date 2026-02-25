@@ -9,6 +9,7 @@ import platform
 import posixpath
 import re
 import sys
+import array
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Generator, Any
 from functools import wraps, lru_cache
@@ -20,6 +21,7 @@ from datetime import datetime, timezone
 # Third-party imports
 import docker
 import orjson
+import numpy as np
 from docker import DockerClient
 from docker.errors import DockerException
 from flask import (
@@ -2087,7 +2089,16 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
                 residuals = {k: [] for k in residuals}
             # If start_index > current_len, we return full dataset (implicit reset/resync)
 
-        response = fast_jsonify(residuals)
+        # ⚡ Bolt Optimization: Convert array.array to numpy for efficient serialization
+        # orjson handles numpy arrays efficiently (zero copy serialization)
+        # We use np.frombuffer to create a view on the array without copying data
+        # IMPORTANT: Create a shallow copy of the dict to avoid mutating the global cache!
+        response_data = residuals.copy()
+        for k, v in response_data.items():
+            if isinstance(v, array.array):
+                response_data[k] = np.frombuffer(v, dtype=float)
+
+        response = fast_jsonify(response_data)
         if last_modified:
             response.headers["Last-Modified"] = last_modified
         return response
