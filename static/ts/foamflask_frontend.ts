@@ -4530,9 +4530,11 @@ const initLogScrollObserver = (): void => {
       if (shouldShowBottom) {
         bottomBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
         bottomBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+        bottomBtn.removeAttribute("tabindex");
       } else {
         bottomBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
         bottomBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+        bottomBtn.setAttribute("tabindex", "-1");
       }
     }
 
@@ -4543,9 +4545,11 @@ const initLogScrollObserver = (): void => {
       if (shouldShowTop) {
         topBtn.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
         topBtn.classList.add("opacity-100", "translate-y-0", "pointer-events-auto");
+        topBtn.removeAttribute("tabindex");
       } else {
         topBtn.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
         topBtn.classList.remove("opacity-100", "translate-y-0", "pointer-events-auto");
+        topBtn.setAttribute("tabindex", "-1");
       }
     }
   };
