@@ -9,6 +9,37 @@
 import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
 import * as Plotly from "plotly.js";
 
+// 🎨 Palette UX: Dynamic Page Title
+const DEFAULT_TITLE = "FOAMFlask";
+let titleResetTimer: number | null = null;
+
+const updatePageTitle = (state: "running" | "success" | "error" | "default"): void => {
+  if (titleResetTimer) {
+    clearTimeout(titleResetTimer);
+    titleResetTimer = null;
+  }
+
+  switch (state) {
+    case "running":
+      document.title = "▶ Running... | FOAMFlask";
+      break;
+    case "success":
+      document.title = "✓ Success | FOAMFlask";
+      titleResetTimer = window.setTimeout(() => {
+        document.title = DEFAULT_TITLE;
+      }, 5000);
+      break;
+    case "error":
+      document.title = "✗ Error | FOAMFlask";
+      titleResetTimer = window.setTimeout(() => {
+        document.title = DEFAULT_TITLE;
+      }, 5000);
+      break;
+    default:
+      document.title = DEFAULT_TITLE;
+  }
+};
+
 // ⚡ Bolt Optimization: Lazy load Plotly.js
 let plotlyPromise: Promise<void> | null = null;
 
@@ -1607,6 +1638,7 @@ const loadTutorial = async (): Promise<void> => {
     const selected = tutorialSelect.value;
     if (selected) localStorage.setItem("lastSelectedTutorial", selected);
     showNotification("Importing tutorial...", "info");
+    updatePageTitle("running");
     const response = await fetch("/load_tutorial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tutorial: selected }) });
     const data = await response.json() as TutorialLoadResponse;
     if (!response.ok) throw new Error(data.output || data.message || "Unknown error");
@@ -1636,6 +1668,7 @@ const loadTutorial = async (): Promise<void> => {
   } catch (e) {
     showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
   } finally {
+    updatePageTitle(success ? "success" : "error");
     if (btn) {
       if (success) {
         temporarilyShowSuccess(btn, originalText, "Imported!");
@@ -1952,6 +1985,8 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
 
   let success = false;
 
+  updatePageTitle("running");
+
   try {
     showNotification(`Running ${cmd}...`, "info");
     const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseDir, tutorial: selectedTutorial, command: cmd }) });
@@ -1992,6 +2027,7 @@ const runCommand = async (cmd: string, btnElement?: HTMLElement): Promise<void> 
     console.error(err); // Keep console error for debugging
     showNotification(`Error: ${err}`, "error");
   } finally {
+    updatePageTitle(success ? "success" : "error");
     const btn = btnElement as HTMLButtonElement;
     if (btn) {
       // Remove busy state regardless of success
@@ -3303,6 +3339,7 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
   }
 
   showNotification(`Running ${cmd}`, "info");
+  updatePageTitle("running");
   try {
     const res = await fetch("/api/meshing/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseName: activeCase, command: cmd }) });
     const data = await res.json();
@@ -3325,6 +3362,7 @@ const runMeshingCommand = async (cmd: string, btnElement?: HTMLElement) => {
     console.error(e);
     showNotification("Meshing failed to execute", "error");
   } finally {
+    updatePageTitle(success ? "success" : "error");
     if (btn) {
       if (success) {
         temporarilyShowSuccess(btn, originalText, "Completed!");
@@ -3355,6 +3393,9 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
   }
 
   showNotification("Running foamToVTK...", "info");
+  updatePageTitle("running");
+
+  let success = false;
 
   try {
     const response = await fetch("/run_foamtovtk", {
@@ -3374,6 +3415,7 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
         showNotification("foamToVTK completed", "success");
         flushOutputBuffer();
         refreshMeshList();
+        success = true;
         return;
       }
 
@@ -3393,6 +3435,7 @@ const runFoamToVTK = async (btnElement?: HTMLElement) => {
     console.error(e);
     showNotification("Error running foamToVTK", "error");
   } finally {
+    updatePageTitle(success ? "success" : "error");
     if (btn) {
       btn.disabled = false;
       btn.removeAttribute("aria-busy");
