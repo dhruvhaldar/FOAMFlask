@@ -1191,6 +1191,10 @@ class OpenFOAMFieldParser:
                     return residuals
 
                 with mmap.mmap(fd, 0, access=mmap.ACCESS_READ) as mm:
+                    # ⚡ Bolt Optimization: Use memoryview to allow zero-copy slicing for float parsing.
+                    # float() in Python 3.x accepts memoryview, avoiding intermediate bytes objects.
+                    mv = memoryview(mm)
+
                     if start_offset > 0:
                         mm.seek(start_offset)
 
@@ -1243,8 +1247,8 @@ class OpenFOAMFieldParser:
                             # ⚡ Bolt Optimization: Search directly in mmap buffer to avoid line copy
                             eq_idx = mm.find(b"=", content_start, eol)
                             if eq_idx != -1:
-                                # ⚡ Bolt Optimization: Avoid strip() - float() handles whitespace natively
-                                val_part = mm[eq_idx + 1 : eol]
+                                # ⚡ Bolt Optimization: Use memoryview slice to avoid bytes copy
+                                val_part = mv[eq_idx + 1 : eol]
                                 try:
                                     t_val = float(val_part)
                                     residuals["time"].append(t_val)
@@ -1284,6 +1288,8 @@ class OpenFOAMFieldParser:
                                 else:
                                     raw_field_end = res_idx
 
+                                # Note: Dictionary lookups require hashable keys (bytes), not memoryview.
+                                # So we still create a bytes object here.
                                 field_bytes = mm[field_start:raw_field_end].strip()
 
                                 # Cache field name
@@ -1294,13 +1300,13 @@ class OpenFOAMFieldParser:
 
                                 # Extract value
                                 val_start = res_idx + len(INITIAL_RESIDUAL_TOKEN)
-                                # ⚡ Bolt Optimization: Avoid creating val_segment copy
+                                # ⚡ Bolt Optimization: Use memoryview slice for values
                                 comma_pos = mm.find(b",", val_start, eol)
 
                                 if comma_pos != -1:
-                                    val_str = mm[val_start:comma_pos]
+                                    val_str = mv[val_start:comma_pos]
                                 else:
-                                    val_str = mm[val_start:eol]
+                                    val_str = mv[val_start:eol]
 
                                 try:
                                     val = float(val_str)
