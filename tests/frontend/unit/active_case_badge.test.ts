@@ -91,14 +91,15 @@ describe('Active Case Badge', () => {
         if (url && typeof url === 'string' && url.includes('/api/cases/list')) {
             return Promise.resolve({
                 ok: true,
+                headers: { get: () => null },
                 json: () => Promise.resolve({ cases: ['case1', 'case2'] })
             });
         }
-        if (url === '/get_case_root') return Promise.resolve({ ok: true, json: () => Promise.resolve({ caseDir: '/tmp' }) });
-        if (url === '/get_docker_config') return Promise.resolve({ ok: true, json: () => Promise.resolve({ dockerImage: 'test', openfoamVersion: 'v1' }) });
-        if (url === '/api/startup_status') return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'completed' }) });
+        if (url === '/get_case_root') return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ caseDir: '/tmp' }) });
+        if (url === '/get_docker_config') return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ dockerImage: 'test', openfoamVersion: 'v1' }) });
+        if (url === '/api/startup_status') return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ status: 'completed' }) });
 
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+        return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({}) });
     });
 
     window.fetch = mockFetch;
@@ -164,10 +165,13 @@ describe('Active Case Badge', () => {
         if (typeof url === 'string' && url.includes('/api/cases/list')) {
             return Promise.resolve({
                 ok: true,
+                headers: { get: () => null },
                 json: () => Promise.resolve({ cases: ['restored_case', 'other_case'] })
             });
         }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+        if (url === '/get_case_root') return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ caseDir: '/tmp' }) });
+        if (url === '/get_docker_config') return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ dockerImage: 'test', openfoamVersion: 'v1' }) });
+        return Promise.resolve({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({}) });
     });
 
     if (window.onload) {

@@ -5,6 +5,34 @@
 
  * When making changes to the frontend, always edit foamflask_frontend.ts and build foamflask_frontend.js using `npm run build`
  */ import { generateContours as generateContoursFn, loadContourMesh } from "./frontend/isosurface.js";
+// 🎨 Palette UX: Dynamic Page Title
+const DEFAULT_TITLE = "FOAMFlask";
+let titleResetTimer = null;
+const updatePageTitle = (state)=>{
+    if (titleResetTimer) {
+        clearTimeout(titleResetTimer);
+        titleResetTimer = null;
+    }
+    switch(state){
+        case "running":
+            document.title = "▶ Running... | FOAMFlask";
+            break;
+        case "success":
+            document.title = "✓ Success | FOAMFlask";
+            titleResetTimer = window.setTimeout(()=>{
+                document.title = DEFAULT_TITLE;
+            }, 5000);
+            break;
+        case "error":
+            document.title = "✗ Error | FOAMFlask";
+            titleResetTimer = window.setTimeout(()=>{
+                document.title = DEFAULT_TITLE;
+            }, 5000);
+            break;
+        default:
+            document.title = DEFAULT_TITLE;
+    }
+};
 // ⚡ Bolt Optimization: Lazy load Plotly.js
 let plotlyPromise = null;
 const ensurePlotlyLoaded = ()=>{
@@ -1322,6 +1350,7 @@ const loadTutorial = async ()=>{
         const selected = tutorialSelect.value;
         if (selected) localStorage.setItem("lastSelectedTutorial", selected);
         showNotification("Importing tutorial...", "info");
+        updatePageTitle("running");
         const response = await fetch("/load_tutorial", {
             method: "POST",
             headers: {
@@ -1356,6 +1385,7 @@ const loadTutorial = async ()=>{
     } catch (e) {
         showNotification(`Failed to load tutorial: ${getErrorMessage(e)}`, "error");
     } finally{
+        updatePageTitle(success ? "success" : "error");
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Imported!");
@@ -1659,6 +1689,7 @@ const runCommand = async (cmd, btnElement)=>{
     // We wait a tick to allow the backend (previous implementation step) to create the record
     setTimeout(fetchRunHistory, 500);
     let success = false;
+    updatePageTitle("running");
     try {
         showNotification(`Running ${cmd}...`, "info");
         const response = await fetch("/run", {
@@ -1709,6 +1740,7 @@ const runCommand = async (cmd, btnElement)=>{
         console.error(err); // Keep console error for debugging
         showNotification(`Error: ${err}`, "error");
     } finally{
+        updatePageTitle(success ? "success" : "error");
         const btn = btnElement;
         if (btn) {
             // Remove busy state regardless of success
@@ -2990,6 +3022,7 @@ const runMeshingCommand = async (cmd, btnElement)=>{
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
     }
     showNotification(`Running ${cmd}`, "info");
+    updatePageTitle("running");
     try {
         const res = await fetch("/api/meshing/run", {
             method: "POST",
@@ -3019,6 +3052,7 @@ const runMeshingCommand = async (cmd, btnElement)=>{
         console.error(e);
         showNotification("Meshing failed to execute", "error");
     } finally{
+        updatePageTitle(success ? "success" : "error");
         if (btn) {
             if (success) {
                 temporarilyShowSuccess(btn, originalText, "Completed!");
@@ -3045,6 +3079,8 @@ const runFoamToVTK = async (btnElement)=>{
         btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline-block mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`;
     }
     showNotification("Running foamToVTK...", "info");
+    updatePageTitle("running");
+    let success = false;
     try {
         const response = await fetch("/run_foamtovtk", {
             method: "POST",
@@ -3068,6 +3104,7 @@ const runFoamToVTK = async (btnElement)=>{
                 showNotification("foamToVTK completed", "success");
                 flushOutputBuffer();
                 refreshMeshList();
+                success = true;
                 return;
             }
             const text = decoder.decode(value);
@@ -3085,6 +3122,7 @@ const runFoamToVTK = async (btnElement)=>{
         console.error(e);
         showNotification("Error running foamToVTK", "error");
     } finally{
+        updatePageTitle(success ? "success" : "error");
         if (btn) {
             btn.disabled = false;
             btn.removeAttribute("aria-busy");
