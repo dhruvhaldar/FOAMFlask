@@ -4446,6 +4446,10 @@ const setupVectorInputAutoFormat = (elementId: string) => {
 
     el.addEventListener('blur', () => {
       let val = el.value;
+      // 🎨 Palette UX: Handle OpenFOAM syntax (parentheses, brackets, simpleGrading)
+      val = val.replace(/[()\[\]]/g, ' ');
+      val = val.replace(/simpleGrading/g, ' ');
+
       // Replace commas with spaces
       val = val.replace(/,/g, ' ');
       // Collapse multiple spaces
@@ -4454,7 +4458,7 @@ const setupVectorInputAutoFormat = (elementId: string) => {
 
       if (val !== el.value && val.length > 0) {
         el.value = val;
-        flashInputFeedback(el, "✨ Auto-formatted to space-separated");
+        flashInputFeedback(el, "✨ Auto-formatted from OpenFOAM syntax");
       }
     });
   }
