@@ -104,13 +104,19 @@
       position: relative;
     }
 
-    /* Show modebar on plot hover */
+    /* Show modebar on plot hover or keyboard focus */
     .plot-container:hover .modebar,
+    .plot-container:focus-within .modebar,
     .js-plotly-plot:hover .modebar,
+    .js-plotly-plot:focus-within .modebar,
     .plotly-graph-div:hover .modebar,
+    .plotly-graph-div:focus-within .modebar,
     .plot-container:hover .modebar-container .modebar,
+    .plot-container:focus-within .modebar-container .modebar,
     .js-plotly-plot:hover .modebar-container .modebar,
-    .plotly-graph-div:hover .modebar-container .modebar {
+    .js-plotly-plot:focus-within .modebar-container .modebar,
+    .plotly-graph-div:hover .modebar-container .modebar,
+    .plotly-graph-div:focus-within .modebar-container .modebar {
       opacity: 1;
       pointer-events: auto;
       z-index: 1000;
@@ -455,7 +461,7 @@
                         Case Name
                         <span class="text-red-500" title="Required">*</span>
                       </label>
-                      <p id="caseNameHelp" class="text-xs text-gray-500 mt-1">
+                      <p id="caseNameHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
                         Alphanumeric characters, underscores, and dashes only.
                       </p>
                     </div>
@@ -939,7 +945,7 @@
                     class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     aria-label="BlockMesh Max Bounds" />
                 </div>
-                <p id="bmBoundsHelp" class="text-xs text-gray-500 mt-1">
+                <p id="bmBoundsHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
                   Format: x y z (Space-separated coordinates)
                 </p>
                 <button onclick="fillBoundsFromGeometry(this)"
@@ -952,7 +958,7 @@
                 <input type="text" id="bmCells" value="20 20 20" aria-describedby="bmCellsHelp"
                   spellcheck="false" autocorrect="off" autocapitalize="off"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
-                <p id="bmCellsHelp" class="text-xs text-gray-500 mt-1">
+                <p id="bmCellsHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
                   Format: 20 20 20 (Space-separated integers)
                 </p>
               </div>
@@ -961,7 +967,7 @@
                 <input type="text" id="bmGrading" value="1 1 1" aria-describedby="bmGradingHelp"
                   spellcheck="false" autocorrect="off" autocapitalize="off"
                   class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
-                <p id="bmGradingHelp" class="text-xs text-gray-500 mt-1">
+                <p id="bmGradingHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
                   Format: 1 1 1 (Space-separated expansion ratios)
                 </p>
               </div>
@@ -1014,7 +1020,7 @@
                   <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
                     spellcheck="false" autocorrect="off" autocapitalize="off"
                     placeholder="e.g. 0.1 0.1 0.1" aria-describedby="shmLocationHelp" />
-                  <p id="shmLocationHelp" class="text-xs text-gray-500 mt-1">
+                  <p id="shmLocationHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
                     Point inside the mesh region (Space-separated)
                   </p>
                   <button onclick="fillLocationFromGeometry(this)"
@@ -1382,7 +1388,7 @@
         <!-- Scroll to Top Button -->
         <button id="scrollToTopBtn" onclick="scrollToLogTop()" tabindex="-1"
           class="absolute bottom-16 right-6 bg-cyan-600/90 hover:bg-cyan-700 text-white rounded-full p-2 shadow-lg transition-all duration-300 opacity-0 translate-y-2 pointer-events-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 z-10"
-          aria-label="Scroll to top of log" title="Scroll to top" tabindex="-1">
+          aria-label="Scroll to top of log" title="Scroll to top">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd"
               d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
@@ -1393,7 +1399,7 @@
         <!-- Scroll to Bottom Button -->
         <button id="scrollToBottomBtn" onclick="scrollToLogBottom()" tabindex="-1"
           class="absolute bottom-4 right-6 bg-cyan-600/90 hover:bg-cyan-700 text-white rounded-full p-2 shadow-lg transition-all duration-300 opacity-0 translate-y-2 pointer-events-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 z-10"
-          aria-label="Scroll to bottom of log" title="Scroll to bottom" tabindex="-1">
+          aria-label="Scroll to bottom of log" title="Scroll to bottom">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd"
               d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
