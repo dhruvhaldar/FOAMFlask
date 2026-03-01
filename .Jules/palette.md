@@ -13,3 +13,6 @@
 ## 2025-06-12 - [Plotly Keyboard Accessibility]
 **Learning:** Plotly modebars (toolbars) are only visible on mouse hover by default (`.plot-container:hover .modebar`). This completely excludes keyboard-only and screen reader users from accessing critical interactive features like zoom, pan, and download.
 **Action:** Always append `:focus-within` to the hover CSS rules for Plotly modebars (e.g., `.plot-container:focus-within .modebar`) so that tabbing into the plot container forces the modebar to appear and become operable.
+## 2026-03-01 - Added missing aria-labels to main action buttons
+**Learning:** Adding explicit aria-labels and descriptive titles to primarily icon-or-text action buttons (like 'Create Case', 'Update View', etc.) makes the UI significantly more accessible for screen readers without altering visual layout. Found that many key action buttons were missing comprehensive descriptions.
+**Action:** Always check form and primary interaction buttons for accessibility context beyond their visual text, especially in dynamic applications.
