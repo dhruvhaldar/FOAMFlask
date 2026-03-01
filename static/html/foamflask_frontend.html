@@ -554,7 +554,7 @@
             <div class="relative flex-1">
               <input type="text" id="caseDir" name="caseDir" placeholder="e.g. /home/user/openfoam/run/my_case"
                 spellcheck="false" autocorrect="off" autocapitalize="off"
-                class="border border-gray-300 rounded px-3 py-2 w-full pr-8 text-gray-900" />
+                class="border border-gray-300 rounded px-3 py-2 w-full pr-8 text-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
               <button onclick="copyInputToClipboard('caseDir', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
                 title="Copy Path" aria-label="Copy Case Root Path">
@@ -589,7 +589,7 @@
             <div class="relative flex-1">
               <input type="text" id="dockerImage" name="dockerImage" placeholder="e.g. opencfd/openfoam-default"
                 spellcheck="false" autocorrect="off" autocapitalize="off"
-                class="border border-gray-300 rounded px-3 py-2 w-full pr-8" />
+                class="border border-gray-300 rounded px-3 py-2 w-full pr-8 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
               <button onclick="copyInputToClipboard('dockerImage', this)"
                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
                 title="Copy Docker Image" aria-label="Copy Docker Image">
@@ -602,7 +602,7 @@
             </div>
             <input type="text" id="openfoamVersion" name="openfoamVersion" placeholder="Version"
               spellcheck="false" autocorrect="off" autocapitalize="off"
-              class="border border-gray-300 rounded px-3 py-2 w-24" aria-label="OpenFOAM Version" />
+              class="border border-gray-300 rounded px-3 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" aria-label="OpenFOAM Version" />
             <button id="setDockerConfigBtn" type="button" onclick="
                   setDockerConfig(
                     document.getElementById('dockerImage').value,
@@ -1002,22 +1002,22 @@
                 </h4>
                 <div class="grid grid-cols-2 gap-3">
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmCastellated" checked class="rounded text-cyan-600" />
+                    <input type="checkbox" id="shmCastellated" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                     <span class="text-sm">Castellated Mesh</span>
                   </label>
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmSnap" checked class="rounded text-cyan-600" />
+                    <input type="checkbox" id="shmSnap" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                     <span class="text-sm">Snap</span>
                   </label>
                   <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmLayers" class="rounded text-cyan-600" />
+                    <input type="checkbox" id="shmLayers" class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                     <span class="text-sm">Add Layers</span>
                   </label>
                 </div>
                 <div class="mt-3">
                   <label for="shmLocation" class="block text-sm font-medium text-gray-900">Location In Mesh (x y
                     z)</label>
-                  <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full"
+                  <input type="text" id="shmLocation" value="0 0 0" class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     spellcheck="false" autocorrect="off" autocapitalize="off"
                     placeholder="e.g. 0.1 0.1 0.1" aria-describedby="shmLocationHelp" />
                   <p id="shmLocationHelp" class="text-xs text-gray-500 mt-1" aria-live="polite" aria-atomic="true">
@@ -1053,12 +1053,12 @@
                       <div>
                         <label for="shmMaxNonOrtho" class="block text-xs text-black">Max Non-Ortho</label>
                         <input type="number" id="shmMaxNonOrtho" value="65"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                       <div>
                         <label for="shmMinTriangleTwist" class="block text-xs text-black">Min Triangle Twist</label>
                         <input type="number" id="shmMinTriangleTwist" value="-1"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                     </div>
                   </div>
@@ -1072,22 +1072,22 @@
                       <div>
                         <label for="shmLayerFeatureAngle" class="block text-xs text-black">Feature Angle</label>
                         <input type="number" id="shmLayerFeatureAngle" value="130"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                       <div>
                         <label for="shmExpansionRatio" class="block text-xs text-black">Expansion Ratio</label>
                         <input type="number" id="shmExpansionRatio" value="1.2" step="0.1"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                       <div>
                         <label for="shmFinalThickness" class="block text-xs text-black">Final Thickness</label>
                         <input type="number" id="shmFinalThickness" value="0.3" step="0.1"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                       <div>
                         <label for="shmMinThickness" class="block text-xs text-black">Min Thickness</label>
                         <input type="number" id="shmMinThickness" value="0.1" step="0.01"
-                          class="border rounded px-2 py-1 text-sm w-full" />
+                          class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                       </div>
                     </div>
                   </div>
@@ -1101,7 +1101,7 @@
 
               <div class="flex flex-col gap-2 h-48">
                 <label for="shmObjectList" class="text-sm text-black">Loaded Geometry Objects</label>
-                <select id="shmObjectList" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full" size="5"
+                <select id="shmObjectList" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" size="5"
                   onchange="selectShmObject()">
                   <!-- Populated by JS -->
                 </select>
@@ -1119,11 +1119,11 @@
                     <label class="block text-xs font-medium text-gray-900">Refinement Level (Min / Max)</label>
                     <div class="flex items-center gap-2">
                       <input type="number" id="shmObjRefMin" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
+                        class="border rounded px-2 py-1 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" onchange="updateShmObjectConfig()"
                         aria-label="Min Refinement Level" />
                       <span class="text-gray-900">-</span>
                       <input type="number" id="shmObjRefMax" min="0" max="10"
-                        class="border rounded px-2 py-1 text-sm w-20" onchange="updateShmObjectConfig()"
+                        class="border rounded px-2 py-1 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" onchange="updateShmObjectConfig()"
                         aria-label="Max Refinement Level" />
                     </div>
                   </div>
@@ -1131,7 +1131,7 @@
                     <label for="shmObjLayers" class="block text-xs font-medium text-gray-900">Number of Surface
                       Layers</label>
                     <input type="number" id="shmObjLayers" min="0" max="10"
-                      class="border rounded px-2 py-1 text-sm w-full" onchange="updateShmObjectConfig()" />
+                      class="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" onchange="updateShmObjectConfig()" />
                     <p class="text-xs text-gray-900 mt-1">
                       Requires "Add Layers" to be enabled globally.
                     </p>
@@ -1464,7 +1464,7 @@
             <!-- Mesh Controls -->
             <div id="meshControls" class="hidden flex flex-col gap-3 bg-white p-3 rounded border border-gray-300">
               <div class="flex items-center gap-2">
-                <input type="checkbox" id="showEdges" checked class="rounded" />
+                <input type="checkbox" id="showEdges" checked class="rounded focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                 <label for="showEdges" class="text-sm cursor-pointer">Show Edges</label>
               </div>
 
@@ -2050,7 +2050,7 @@
                     <div class="flex-1 min-w-0">
                       <input type="file" id="vtkFileBrowser" accept=".vtk,.vtp,.vtu,.vtm,.pvtu"
                         aria-label="Upload custom VTK file"
-                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate" />
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm truncate focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
                     </div>
                     <button onclick="loadCustomVTKFile()"
                       class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
