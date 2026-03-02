@@ -1660,6 +1660,7 @@
           <!-- Font Settings Button -->
           <div class="relative">
             <button onclick="toggleFontSettings()" id="fontSettingsBtn"
+              aria-haspopup="true" aria-expanded="false"
               class="bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cyan-500">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
@@ -1670,7 +1671,7 @@
             </button>
 
             <!-- MegaMenu Popup -->
-            <div id="fontSettingsMenu"
+            <div id="fontSettingsMenu" role="menu" aria-labelledby="fontSettingsBtn"
               class="hidden absolute glass-panel right-0 mt-2 w-80 origin-top-right rounded-xl shadow-2xl z-50 p-4 flex flex-col gap-4 bg-white/40 border-cyan-300">
               <div class="flex justify-between items-center pb-2">
                 <h3 class="font-semibold text-black">Plot Appearance</h3>
@@ -1688,27 +1689,27 @@
               <div>
                 <label class="text-xs text-black font-medium mb-2 block uppercase tracking-wider">Presets</label>
                 <div class="grid grid-cols-2 gap-2">
-                  <button onclick="changePlotFont('Inter, sans-serif')"
+                  <button onclick="changePlotFont('Inter, sans-serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Inter']">
                     Inter
                   </button>
-                  <button onclick="changePlotFont('Roboto, sans-serif')"
+                  <button onclick="changePlotFont('Roboto, sans-serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Roboto']">
                     Roboto
                   </button>
-                  <button onclick="changePlotFont('Open Sans, sans-serif')"
+                  <button onclick="changePlotFont('Open Sans, sans-serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Open_Sans']">
                     Open Sans
                   </button>
-                  <button onclick="changePlotFont('Lato, sans-serif')"
+                  <button onclick="changePlotFont('Lato, sans-serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Lato']">
                     Lato
                   </button>
-                  <button onclick="changePlotFont('Montserrat, sans-serif')"
+                  <button onclick="changePlotFont('Montserrat, sans-serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-['Montserrat']">
                     Montserrat
                   </button>
-                  <button onclick="changePlotFont('Computer Modern Serif, serif')"
+                  <button onclick="changePlotFont('Computer Modern Serif, serif')" role="menuitem"
                     class="text-sm p-2 rounded glass-panel hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all text-left font-serif">
                     Times New Roman / Computer Modern Serif
                   </button>
