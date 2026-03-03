@@ -1,11 +1,7 @@
-## 2025-02-23 - Realtime Log Parsing Optimization
-**Learning:** Python's `string.strip()` and slicing create copies, which can add up in high-frequency parsing loops. Using `index`-based parsing and `find()` allows avoiding intermediate allocations. However, manual parsing in Python loops (character by character) is much slower than C-optimized string methods. The sweet spot is using C-methods like `find()` to determine indices and then slicing only the final result.
-**Action:** When optimizing string parsing in Python, prefer `find()`/`index()` to locate delimiters and slice once, rather than iteratively stripping/splitting which creates garbage. Also, avoid `while` loops over string characters in Python.
+## 2025-02-23 - Avoiding Redundant Path.exists() Checks
+**Learning:** Python backend endpoints frequently incur a double system call overhead when using "Look Before You Leap" (LBYL) code patterns like `if not path.exists(): return error` immediately followed by `os.stat(path)` or `os.scandir(path)`. This is especially costly for high-frequency polling endpoints.
+**Action:** When a file or directory operation is intended immediately after checking its existence, replace the explicit `Path.exists()` check with an "Easier to Ask for Forgiveness than Permission" (EAFP) approach. Wrap the primary operation (`os.stat`, `os.scandir`, etc.) in a `try...except FileNotFoundError` (or `OSError`) block and handle the missing file case within the exception handler. Note that corresponding tests mocking `Path.exists` will need to be updated to mock `os.stat` or similar.
 
-## 2025-02-23 - OS System Call Reduction
-**Learning:** `os.stat()` is a relatively expensive system call, especially when called frequently in a loop (e.g., polling directory contents). `os.scandir` on POSIX systems caches file type information but NOT mtime (unless the OS returns it in the dirent, which Python's `os.DirEntry.stat()` handles but might still trigger a syscall if not cached). Calling `stat()` multiple times on the same file in a single logic flow (e.g. once for type check, once for mtime extraction) is wasteful.
-**Action:** Capture `stat` results (like mtime) once and pass them down the call stack. Also, verify if a check (like file type) can be inferred from other sources (like a filename cache) to avoid the `stat` call entirely.
-
-## 2025-02-23 - Regex vs Set Intersection for Character Validation
-**Learning:** While `set(string).isdisjoint(DANGEROUS_CHARS)` is fast in pure Python, it incurs a significant overhead due to the allocation of a `set` on every function call. A pre-compiled regular expression `re.compile(r'[;&|`$()<>"\'*?\[\]~!\n\r{}\\\\#]')` searching over the string is over 2x faster, eliminating the allocation bottleneck.
-**Action:** Prefer pre-compiled regular expressions for simple character exclusion checks on high-frequency validation functions instead of dynamically constructing sets.
+## 2025-02-23 - Git Hygiene for Local Databases
+**Learning:** Local database files, such as SQLite `.db` files generated during testing or local development (e.g., `instance/simulation_runs.db`), should never be committed to version control. Doing so causes repository bloat, overrides the local state of other developers, and risks leaking sensitive testing data.
+**Action:** Always run `git status` before committing to ensure unintended files are not staged. If auto-generated binaries or databases appear, unstage them (`git reset HEAD <file>`), remove them if necessary, and ensure they are covered by `.gitignore`.

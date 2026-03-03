@@ -434,8 +434,9 @@ class TestPlottingEndpoints:
             assert 'p' in data['fields']
 
     def test_api_available_fields_mocked(self, client):
-        with patch('pathlib.Path.exists', return_value=True), \
+        with patch('os.stat') as mock_stat, \
              patch('app.get_available_fields', return_value=['U', 'p']):
+            mock_stat.return_value.st_mtime = 12345.0
             response = client.get('/api/available_fields?tutorial=test_tutorial')
             assert response.status_code == 200
             data = response.get_json()
@@ -445,8 +446,9 @@ class TestPlottingEndpoints:
     def test_api_plot_data_mocked(self, client):
         mock_parser = MagicMock()
         mock_parser.get_all_time_series_data.return_value = {'time': [0.1], 'data': {'U': [1, 2, 3]}}
-        with patch('pathlib.Path.exists', return_value=True), \
+        with patch('os.stat') as mock_stat, \
              patch('app.OpenFOAMFieldParser', return_value=mock_parser):
+            mock_stat.return_value.st_mtime = 12345.0
             response = client.get('/api/plot_data?tutorial=test_tutorial')
             assert response.status_code == 200
             data = response.get_json()
@@ -462,8 +464,10 @@ def test_api_residuals(client, tmp_path):
 
     # Test with mock
     with patch('app.CASE_ROOT', str(tmp_path)), \
+         patch('os.stat') as mock_os_stat, \
          patch('app.OpenFOAMFieldParser') as mock_parser_cls, \
          patch('app.check_cache') as mock_check_cache:
+        mock_os_stat.return_value.st_mtime = 12345.0
         # Setup mock parser
         mock_parser = MagicMock()
         mock_parser.get_residuals_from_log.return_value = {
