@@ -16,3 +16,7 @@
 ## 2026-03-01 - Added missing aria-labels to main action buttons
 **Learning:** Adding explicit aria-labels and descriptive titles to primarily icon-or-text action buttons (like 'Create Case', 'Update View', etc.) makes the UI significantly more accessible for screen readers without altering visual layout. Found that many key action buttons were missing comprehensive descriptions.
 **Action:** Always check form and primary interaction buttons for accessibility context beyond their visual text, especially in dynamic applications.
+
+## 2026-03-03 - Focus Rings for Dynamically Generated Interactive Elements
+**Learning:** In heavily dynamic UI frameworks or vanilla JS applications, elements that are dynamically injected into the DOM (like the `.copyable-value` buttons in the Geometry and Mesh info panels) are often overlooked for basic accessibility styling compared to their static counterparts. Specifically, failing to include keyboard focus rings (`focus:outline-none focus:ring-2`) makes them invisible to keyboard-only users navigating the interface.
+**Action:** Always cross-reference the styles applied to interactive elements in static HTML with their equivalents generated in TypeScript/JavaScript template strings. Create a shared styling constant or strictly ensure focus-visible styles are manually added to all dynamically created buttons and links.

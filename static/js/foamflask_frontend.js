@@ -3273,17 +3273,17 @@ function displayMeshInfo(meshInfo) {
             value: meshInfo.volume ? meshInfo.volume.toFixed(3) : "N/A"
         }
     ];
-    meshInfoContent.innerHTML = infoItems.map((item)=>`<div><strong>${item.label}:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${item.value}</button></div>`).join("");
+    meshInfoContent.innerHTML = infoItems.map((item)=>`<div><strong>${item.label}:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500" title="Click to copy">${item.value}</button></div>`).join("");
     // Add bounds if available
     if (meshInfo.bounds && Array.isArray(meshInfo.bounds)) {
         // Space separated for easier pasting into vector fields
         const boundsStr = `${meshInfo.bounds.map((b)=>b.toFixed(2)).join(" ")}`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${boundsStr}</button></div>`;
+        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Bounds:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500" title="Click to copy">${boundsStr}</button></div>`;
     }
     // Add center if available
     if (meshInfo.center && Array.isArray(meshInfo.center)) {
         const centerStr = `${meshInfo.center.map((c)=>c.toFixed(2)).join(" ")}`;
-        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors" title="Click to copy">${centerStr}</button></div>`;
+        meshInfoContent.innerHTML += `<div class="col-span-2"><strong>Center:</strong> <button type="button" class="copyable-value hover:bg-cyan-100 hover:text-cyan-800 px-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500" title="Click to copy">${centerStr}</button></div>`;
     }
     meshInfoDiv.classList.remove("hidden");
 }
