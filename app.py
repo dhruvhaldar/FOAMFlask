@@ -992,8 +992,6 @@ def api_list_cases() -> Response:
         return fast_jsonify({"cases": []})
 
     root = Path(CASE_ROOT)
-    if not root.exists():
-        return fast_jsonify({"cases": []})
 
     # List subdirectories that look like cases (or just all dirs)
     # ⚡ Bolt Optimization: Use os.scandir instead of Path.iterdir()
@@ -1843,10 +1841,12 @@ def api_available_fields() -> Union[Response, Tuple[Response, int]]:
     except ValueError as e:
         return fast_jsonify({"error": str(e)}), 400
 
-    if not case_dir.exists():
-        return fast_jsonify({"error": "Case directory not found"}), 404
-
     try:
+        try:
+            os.stat(str(case_dir))
+        except OSError:
+            return fast_jsonify({"error": "Case directory not found"}), 404
+
         fields = get_available_fields(str(case_dir))
         return fast_jsonify({"fields": fields})
     except Exception as e:
@@ -1911,9 +1911,6 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
     except ValueError as e:
         return fast_jsonify({"error": str(e)}), 400
 
-    if not case_dir.exists():
-        return fast_jsonify({"error": "Case directory not found"}), 404
-
     try:
         # ⚡ Bolt Optimization: Removed 'log.foamRun' proxy check.
         # Previously we checked if log file changed as a fast path. However, during active simulation,
@@ -1931,6 +1928,9 @@ def api_plot_data() -> Union[Response, Tuple[Response, int]]:
             case_mtime = os.stat(str(case_dir)).st_mtime
         except OSError:
             pass
+
+        if case_mtime is None:
+            return fast_jsonify({"error": "Case directory not found"}), 404
 
         # Get time directories (cached if case mtime matches)
         time_dirs = parser.get_time_directories(known_mtime=case_mtime)
@@ -2009,15 +2009,15 @@ def api_latest_data() -> Union[Response, Tuple[Response, int]]:
     except ValueError as e:
         return fast_jsonify({"error": str(e)}), 400
 
-    if not case_dir.exists():
-        return fast_jsonify({"error": "Case directory not found"}), 404
-
     try:
         # ⚡ Bolt Optimization: Stat case directory once
         try:
             case_mtime = os.stat(str(case_dir)).st_mtime
         except OSError:
             case_mtime = None
+
+        if case_mtime is None:
+            return fast_jsonify({"error": "Case directory not found"}), 404
 
         parser = OpenFOAMFieldParser(str(case_dir))
         data = parser.get_latest_time_data(known_case_mtime=case_mtime)
@@ -2049,10 +2049,12 @@ def api_residuals() -> Union[Response, Tuple[Response, int]]:
     except ValueError as e:
         return fast_jsonify({"error": str(e)}), 400
 
-    if not case_dir.exists():
-        return fast_jsonify({"error": "Case directory not found"}), 404
-
     try:
+        try:
+            os.stat(str(case_dir))
+        except OSError:
+            return fast_jsonify({"error": "Case directory not found"}), 404
+
         # Optimization: Check if log file has changed
         # We need to find the log file. It could be log.foamRun or custom.
         # OpenFOAMFieldParser.get_residuals_from_log searches for 'log.foamRun' or 'log.*'.
