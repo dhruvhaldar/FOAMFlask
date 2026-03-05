@@ -246,6 +246,9 @@ def rate_limit(limit: int = 5, window: int = 60):
 
 
 # Security validation functions
+# ⚡ Bolt Optimization: Pre-compile security validation regexes to avoid cache lookup overhead
+_SAFE_TUTORIAL_PATH_RE = re.compile(r"^[a-zA-Z0-9_./-]+$")
+
 def is_safe_tutorial_path(path: str) -> bool:
     """
     Validate tutorial path to prevent command injection.
@@ -259,7 +262,7 @@ def is_safe_tutorial_path(path: str) -> bool:
     if not path or not isinstance(path, str):
         return False
     # Only allow alphanumeric, underscore, hyphen, dot, and slash
-    if not re.match(r"^[a-zA-Z0-9_./-]+$", path):
+    if not _SAFE_TUTORIAL_PATH_RE.match(path):
         return False
     if ".." in path:
         return False
@@ -271,6 +274,8 @@ def is_safe_tutorial_path(path: str) -> bool:
         return False
     return True
 
+
+_SAFE_SCRIPT_NAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+$")
 
 def is_safe_script_name(script_name: str) -> bool:
     """
@@ -286,7 +291,7 @@ def is_safe_script_name(script_name: str) -> bool:
         return False
 
     # Only allow alphanumeric characters, underscores, hyphens, and dots
-    if not re.match(r"^[a-zA-Z0-9_.-]+$", script_name):
+    if not _SAFE_SCRIPT_NAME_RE.match(script_name):
         return False
 
     # Prevent path traversal
@@ -333,6 +338,8 @@ def format_mtime(mtime: float) -> str:
     return _format_mtime_cached(int(mtime))
 
 
+_WIN_DRIVE_ROOT_RE = re.compile(r"^[a-z]:\\?+$")
+
 def is_safe_case_root(path_str: str) -> bool:
     """
     Check if the path is safe to use as a case root.
@@ -368,7 +375,7 @@ def is_safe_case_root(path_str: str) -> bool:
 
         # Check for drive root (e.g. C:\)
         # Regex: ^[a-z]:\\?$ or ^[a-z]:$
-        if re.match(r"^[a-z]:\\?$", norm_lower):
+        if _WIN_DRIVE_ROOT_RE.match(norm_lower):
             return False
 
         forbidden_prefixes = [
@@ -1357,6 +1364,9 @@ def get_docker_config() -> Response:
     )
 
 
+_SAFE_DOCKER_IMAGE_RE = re.compile(r"^[a-zA-Z0-9_./:-]+$")
+_SAFE_OPENFOAM_VERSION_RE = re.compile(r"^[a-zA-Z0-9.-]+$")
+
 @app.route("/set_docker_config", methods=["POST"])
 def set_docker_config() -> Union[Response, Tuple[Response, int]]:
     """Update Docker configuration.
@@ -1380,7 +1390,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
         # Security: Validate docker image string
         # Allow alphanumeric, underscore, hyphen, dot, slash, colon
         image_str = str(data["dockerImage"])
-        if not re.match(r"^[a-zA-Z0-9_./:-]+$", image_str):
+        if not _SAFE_DOCKER_IMAGE_RE.match(image_str):
             return (
                 fast_jsonify(
                     {"output": "[FOAMFlask] [Error] Invalid Docker image string"}
@@ -1395,7 +1405,7 @@ def set_docker_config() -> Union[Response, Tuple[Response, int]]:
         # Security: Validate version string to prevent command injection
         # Allow alphanumeric, dot, hyphen
         version_str = str(data["openfoamVersion"])
-        if not re.match(r"^[a-zA-Z0-9.-]+$", version_str):
+        if not _SAFE_OPENFOAM_VERSION_RE.match(version_str):
             return (
                 fast_jsonify(
                     {"output": "[FOAMFlask] [Error] Invalid OpenFOAM version string"}
