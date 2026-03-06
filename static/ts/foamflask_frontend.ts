@@ -1871,7 +1871,8 @@ const fetchRunHistory = async (btnElement?: HTMLElement) => {
   }
 
   try {
-    const response = await fetch("/api/runs");
+    // ⚡ Bolt Optimization: Request limited number of runs to prevent DOM overload
+    const response = await fetch("/api/runs?limit=50");
     if (!response.ok) throw new Error("Failed to fetch runs");
     const data = await response.json() as RunHistoryResponse;
 

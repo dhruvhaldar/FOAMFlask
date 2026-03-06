@@ -12,3 +12,7 @@
 ## 2026-03-01 - [Batch NumPy Percentile Calculations]
 **Learning:** Calling `np.percentile` multiple times on a large dataset forces NumPy to independently partition or sort the array for each call, leading to O(k*N) complexity. Providing a list of percentiles allows NumPy to optimize the operation.
 **Action:** Group multiple percentile queries into a single `np.percentile(data, [p1, p2, p3...])` call and unpack the result.
+
+## 2025-02-23 - Prevent DOM and DB Overload with Pagination
+**Learning:** Returning all simulation history from `SimulationRun.query.all()` caused large network payloads, huge memory usage, and severe performance degradation when iterating over rows and rendering them as DOM elements in the `fetchRunHistory` function. Adding an index to `start_time` accelerates sorting queries but returning thousands of rows without pagination makes the application unresponsive.
+**Action:** When querying historical data (such as simulation runs), always enforce pagination or a strict limit (`.limit(limit)`) at the database query level to prevent backend bloat. Simultaneously limit the requested bounds from the frontend (`fetch("/api/runs?limit=50")`) to avoid mapping through immense JSON payloads and generating thousands of DOM nodes, ensuring UI smoothness. Added a DB index to the primary sorting key (`start_time`) to keep response times consistently low as the table grows.

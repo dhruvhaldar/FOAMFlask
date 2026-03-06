@@ -86,7 +86,7 @@ describe('Palette Re-run Button', () => {
 
         // Mock fetch response
         const mockFetch = vi.fn().mockImplementation((url) => {
-            if (url === '/api/runs') {
+            if (url.includes('/api/runs')) {
                 return Promise.resolve({
                     ok: true,
                     json: () => Promise.resolve({

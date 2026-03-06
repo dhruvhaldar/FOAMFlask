@@ -1583,7 +1583,8 @@ const fetchRunHistory = async (btnElement)=>{
         btn.innerHTML = `<svg class="animate-spin h-3 w-3 inline-block mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refreshing...`;
     }
     try {
-        const response = await fetch("/api/runs");
+        // ⚡ Bolt Optimization: Request limited number of runs to prevent DOM overload
+        const response = await fetch("/api/runs?limit=50");
         if (!response.ok) throw new Error("Failed to fetch runs");
         const data = await response.json();
         if (data.runs && data.runs.length > 0) {
