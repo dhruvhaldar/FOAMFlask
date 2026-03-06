@@ -86,7 +86,8 @@ class SimulationRun(db.Model):
     tutorial = db.Column(db.String(200), nullable=False)
     command = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="Pending")
-    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # ⚡ Bolt Optimization: Add index to start_time to speed up descending sort queries in /api/runs
+    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     end_time = db.Column(db.DateTime, nullable=True)
     execution_duration = db.Column(db.Float, nullable=True)  # in seconds
     log_file_path = db.Column(db.String(255), nullable=True)
@@ -1549,9 +1550,15 @@ def load_tutorial() -> Union[Response, Tuple[Response, int]]:
 @app.route("/api/runs", methods=["GET"])
 def api_list_runs() -> Response:
     """Get list of simulation runs."""
+    # ⚡ Bolt Optimization: Add limit parameter to prevent unbounded memory fetch and massive JSON payload
+    try:
+        limit = int(request.args.get("limit", 100))
+    except ValueError:
+        limit = 100
+
     try:
         # Use simple select query compatible with SQLAlchemy 2.0
-        stmt = db.select(SimulationRun).order_by(SimulationRun.start_time.desc())
+        stmt = db.select(SimulationRun).order_by(SimulationRun.start_time.desc()).limit(limit)
         runs = db.session.execute(stmt).scalars().all()
 
         runs_data = []
