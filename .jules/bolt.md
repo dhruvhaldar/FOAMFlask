@@ -9,3 +9,6 @@
 ## 2025-03-05 - Pre-compiling regexes for validation functions
 **Learning:** Calling `re.match` or `re.search` with string literals directly inside functions causes the Python regex engine to perform internal cache lookups. For frequently called functions, especially validation functions used in multiple endpoints, this overhead accumulates.
 **Action:** Extract inline regexes to module-level global variables using `re.compile()`, and call `.match()` or `.search()` on the compiled object. This skips the cache lookup step entirely and offers a ~2x performance speedup.
+## 2026-03-01 - [Batch NumPy Percentile Calculations]
+**Learning:** Calling `np.percentile` multiple times on a large dataset forces NumPy to independently partition or sort the array for each call, leading to O(k*N) complexity. Providing a list of percentiles allows NumPy to optimize the operation.
+**Action:** Group multiple percentile queries into a single `np.percentile(data, [p1, p2, p3...])` call and unpack the result.

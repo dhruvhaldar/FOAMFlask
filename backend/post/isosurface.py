@@ -719,17 +719,19 @@ class IsosurfaceVisualizer:
             # Add velocity magnitude statistics if available
             if "U_Magnitude" in self.mesh.point_data:
                 u_mag = self.mesh.point_data["U_Magnitude"]
+                # ⚡ Bolt Optimization: Batch percentile calculation to avoid repeated sorting/partitioning of large arrays
+                p0, p25, p50, p75, p100 = np.percentile(u_mag, [0, 25, 50, 75, 100])
                 mesh_info["u_magnitude"] = {
                     "min": float(np.min(u_mag)),
                     "max": float(np.max(u_mag)),
                     "mean": float(np.mean(u_mag)),
                     "std": float(np.std(u_mag)),
                     "percentiles": {
-                        "0": float(np.percentile(u_mag, 0)),
-                        "25": float(np.percentile(u_mag, 25)),
-                        "50": float(np.percentile(u_mag, 50)),
-                        "75": float(np.percentile(u_mag, 75)),
-                        "100": float(np.percentile(u_mag, 100)),
+                        "0": float(p0),
+                        "25": float(p25),
+                        "50": float(p50),
+                        "75": float(p75),
+                        "100": float(p100),
                     },
                 }
 
@@ -895,6 +897,8 @@ class IsosurfaceVisualizer:
                         },
                     }
                 else:
+                    # ⚡ Bolt Optimization: Batch percentile calculation to avoid repeated sorting/partitioning of large arrays
+                    p0, p25, p50, p75, p100 = np.percentile(data, [0, 25, 50, 75, 100])
                     result[field] = {
                         "type": "scalar",
                         "min": float(np.min(data)),
@@ -902,11 +906,11 @@ class IsosurfaceVisualizer:
                         "mean": float(np.mean(data)),
                         "std": float(np.std(data)),
                         "percentiles": {
-                            "0": float(np.percentile(data, 0)),
-                            "25": float(np.percentile(data, 25)),
-                            "50": float(np.percentile(data, 50)),
-                            "75": float(np.percentile(data, 75)),
-                            "100": float(np.percentile(data, 100)),
+                            "0": float(p0),
+                            "25": float(p25),
+                            "50": float(p50),
+                            "75": float(p75),
+                            "100": float(p100),
                         },
                     }
 
