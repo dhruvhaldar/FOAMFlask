@@ -72,7 +72,7 @@ describe('Palette Re-run Button', () => {
         expect(btn.getAttribute('aria-busy')).toBe('true');
 
         // Check innerHTML contains spinner but NOT "Running..."
-        expect(btn.innerHTML).toContain('<svg class="animate-spin');
+        expect(btn.innerHTML).toContain('<svg aria-hidden="true" class="animate-spin');
         expect(btn.innerHTML).not.toContain('Running...');
         // Check for text-current
         expect(btn.innerHTML).toContain('text-current');
