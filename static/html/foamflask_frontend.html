@@ -424,12 +424,12 @@
 
             <button id="tab-btn-create" onclick="switchCaseCreationTab('create')" role="tab" aria-selected="true"
               aria-controls="tab-content-create"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-transparent">
               Create Blank Case
             </button>
             <button id="tab-btn-import" onclick="switchCaseCreationTab('import')" role="tab" aria-selected="false"
               aria-controls="tab-content-import"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-transparent">
               Import Tutorial
             </button>
           </div>
@@ -557,7 +557,7 @@
                 spellcheck="false" autocorrect="off" autocapitalize="off"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8 text-gray-900" />
               <button onclick="copyInputToClipboard('caseDir', this)"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:text-cyan-600 transition-colors p-1 rounded"
                 title="Copy Path" aria-label="Copy Case Root Path">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor" aria-hidden="true">
@@ -592,7 +592,7 @@
                 spellcheck="false" autocorrect="off" autocapitalize="off"
                 class="border border-gray-300 rounded px-3 py-2 w-full pr-8" />
               <button onclick="copyInputToClipboard('dockerImage', this)"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:text-cyan-600 transition-colors p-1 rounded"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:text-cyan-600 transition-colors p-1 rounded"
                 title="Copy Docker Image" aria-label="Copy Docker Image">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor" aria-hidden="true">
@@ -638,12 +638,12 @@
 
             <button onclick="switchGeometryTab('upload')" id="tab-btn-geo-upload" role="tab" aria-selected="true"
               aria-controls="tab-geo-upload"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-semibold text-cyan-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-transparent">
               Upload File
             </button>
             <button onclick="switchGeometryTab('resources')" id="tab-btn-geo-resources" role="tab" aria-selected="false"
               aria-controls="tab-geo-resources"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none bg-transparent">
+              class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-black hover:text-black transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-transparent">
               From Resources
             </button>
           </div>
@@ -2120,7 +2120,7 @@
                   Scalar Range
                 </h3>
                 <button type="button" id="resetRangeBtn" onclick="resetScalarRange()"
-                  class="text-xs text-cyan-600 hover:text-cyan-800 focus:outline-none focus:underline flex items-center gap-1"
+                  class="text-xs text-cyan-600 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:underline flex items-center gap-1"
                   title="Reset to data bounds" aria-label="Reset scalar range to data bounds">
                   <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" aria-hidden="true">
