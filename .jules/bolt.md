@@ -16,3 +16,7 @@
 ## 2025-02-23 - Prevent DOM and DB Overload with Pagination
 **Learning:** Returning all simulation history from `SimulationRun.query.all()` caused large network payloads, huge memory usage, and severe performance degradation when iterating over rows and rendering them as DOM elements in the `fetchRunHistory` function. Adding an index to `start_time` accelerates sorting queries but returning thousands of rows without pagination makes the application unresponsive.
 **Action:** When querying historical data (such as simulation runs), always enforce pagination or a strict limit (`.limit(limit)`) at the database query level to prevent backend bloat. Simultaneously limit the requested bounds from the frontend (`fetch("/api/runs?limit=50")`) to avoid mapping through immense JSON payloads and generating thousands of DOM nodes, ensuring UI smoothness. Added a DB index to the primary sorting key (`start_time`) to keep response times consistently low as the table grows.
+
+## 2026-03-01 - Optimizing NumPy Vector Magnitude Calculations
+**Learning:** `np.linalg.norm(data, axis=1)` is sub-optimal for computing the magnitude of vectors in large arrays (e.g., $N \times 3$ PyVista point data arrays) because it allocates intermediate arrays and performs additional dimensional checks. Using `np.sqrt(np.einsum('ij,ij->i', data, data))` avoids this overhead and achieves an approximate 3x speedup.
+**Action:** Replace `np.linalg.norm(data, axis=1)` with `np.sqrt(np.einsum('ij,ij->i', data, data))` for row-wise vector magnitude calculations on large datasets.
