@@ -38,8 +38,9 @@ def safe_decompress(
 
 
 # ⚡ Bolt Optimization: Pre-compile regexes for error sanitization
-_RE_QUOTED_UNIX_PATH = re.compile(r"(['\"])(/(?:(?!\1).)+)\1")
-_RE_QUOTED_WIN_PATH = re.compile(r"(['\"])([a-zA-Z]:\\\\?(?:(?!\1).)+)\1")
+# ⚡ Bolt Optimization: Use lazy matching `.*?` instead of negative lookahead `(?:(?!\1).)+` to avoid O(N^2) backtracking
+_RE_QUOTED_UNIX_PATH = re.compile(r"(['\"])(/.*?)\1")
+_RE_QUOTED_WIN_PATH = re.compile(r"(['\"])([a-zA-Z]:\\\\?.*?)\1")
 _CHARS = r"\w\.\-@+=%~#"
 _RE_UNIX_PATH = re.compile(rf"(?<!\w)(?<!://)(?<!:/)(/(?:[{_CHARS}][{_CHARS} ]*/)*[{_CHARS}][{_CHARS} ]*)")
 _RE_WIN_PATH = re.compile(rf"([a-zA-Z]:\\\\?(?:[{_CHARS}][{_CHARS} ]*\\\\?)*[{_CHARS}][{_CHARS} ]*)")
