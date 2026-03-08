@@ -24,3 +24,7 @@
 ## $(date +%Y-%m-%d) - [Decorative SVGs Accessibility]
 **Learning:** Found that many `<svg>` icons used inside buttons and links lacked the `aria-hidden="true"` attribute. This causes screen readers to potentially read out meaningless or confusing descriptions for these SVG elements, when the parent button's text or `aria-label` is already sufficient.
 **Action:** Always add `aria-hidden="true"` to purely decorative `<svg>` elements inside interactive components to streamline the experience for screen reader users.
+
+## $(date +%Y-%m-%d) - Focus Rings for Primary Navigation and Custom Dropdowns
+**Learning:** Found that custom-built navigation elements (like the desktop and mobile nav bars) and custom dropdown menus often strip default browser focus rings without providing alternative `focus-visible` styling. This creates a severe accessibility barrier where keyboard-only users cannot perceive their current location within the main site navigation or menu options.
+**Action:** Ensure all navigation buttons (`nav-btn`), custom dropdown items (`role="menuitem"`), and dialog close buttons explicitly define focus-visible styling (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500`) to guarantee keyboard accessibility.
