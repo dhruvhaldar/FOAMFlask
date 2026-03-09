@@ -20,3 +20,7 @@
 ## 2026-03-01 - Optimizing NumPy Vector Magnitude Calculations
 **Learning:** `np.linalg.norm(data, axis=1)` is sub-optimal for computing the magnitude of vectors in large arrays (e.g., $N \times 3$ PyVista point data arrays) because it allocates intermediate arrays and performs additional dimensional checks. Using `np.sqrt(np.einsum('ij,ij->i', data, data))` avoids this overhead and achieves an approximate 3x speedup.
 **Action:** Replace `np.linalg.norm(data, axis=1)` with `np.sqrt(np.einsum('ij,ij->i', data, data))` for row-wise vector magnitude calculations on large datasets.
+
+## 2026-03-01 - Optimize scalar vector magnitude with math.hypot
+**Learning:** While `np.sqrt` and `np.linalg.norm` are great for vectorized array operations, using `np.sqrt(x**2 + y**2 + z**2)` for individual scalar floats introduces significant overhead from the Python-to-C API transitions and manual math operators. Python's built-in `math.hypot(x, y, z)` is written in C specifically for computing Euclidean norms and avoids this overhead, making it ~2.5x faster.
+**Action:** When calculating the magnitude or Euclidean norm of a small, fixed number of independent scalar variables (e.g., parsing a 3D vector like `ux, uy, uz`), use `math.hypot(x, y, z)` instead of NumPy functions or manual arithmetic.
