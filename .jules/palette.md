@@ -55,3 +55,7 @@
 ## 2026-05-25 - [Inconsistent Focus States]
 **Learning:** `focus:outline-none` removes the default browser focus ring, rendering elements invisible to keyboard users if not replaced with a custom focus style (e.g., `focus:ring`). Several interactive elements were using this anti-pattern.
 **Action:** Audit all uses of `focus:outline-none` and ensure they are immediately followed by `focus:ring-*` or equivalent visual indicators to maintain accessibility.
+
+## $(date +%Y-%m-%d) - Standardize Form Field Focus States
+**Learning:** In a heavily utility-styled UI, form fields and interactive components (like select menus and inputs) often lack the default browser focus ring, rendering keyboard navigation nearly invisible for users. Applying standard Tailwind focus states makes a dramatic impact on accessibility.
+**Action:** Consistently apply `focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500` (or `focus:ring-2 focus:ring-cyan-500` for checkboxes) to all form inputs, and test via keyboard tabbing to ensure the active element is always obvious.
