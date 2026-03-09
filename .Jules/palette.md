@@ -28,3 +28,7 @@
 ## $(date +%Y-%m-%d) - Focus Rings for Primary Navigation and Custom Dropdowns
 **Learning:** Found that custom-built navigation elements (like the desktop and mobile nav bars) and custom dropdown menus often strip default browser focus rings without providing alternative `focus-visible` styling. This creates a severe accessibility barrier where keyboard-only users cannot perceive their current location within the main site navigation or menu options.
 **Action:** Ensure all navigation buttons (`nav-btn`), custom dropdown items (`role="menuitem"`), and dialog close buttons explicitly define focus-visible styling (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500`) to guarantee keyboard accessibility.
+
+## $(date +%Y-%m-%d) - Focus Rings for Secondary Inputs and Advanced Settings
+**Learning:** In complex configuration panels like Advanced Settings or Meshing settings, inputs (like docker image versions, shm location vectors, custom VTK file browsers) and secondary action buttons (`setRootBtn`, `setDockerConfigBtn`) often miss standard keyboard focus outlines compared to primary forms. This creates a confusing experience for power users navigating via keyboard.
+**Action:** Consistently apply standardized focus utility classes (e.g. `focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500`) to all form inputs and interactive elements, even those buried in collapsible details menus or secondary tabs.
