@@ -112,10 +112,11 @@ class GeometryManager:
             path = Path(case_path).resolve()
             filepath = path / "constant" / "triSurface" / secure_filename(filename)
 
-            if not filepath.exists():
+            # ⚡ Bolt Optimization: Use EAFP to avoid redundant Path.exists() check
+            try:
+                os.remove(filepath)
+            except FileNotFoundError:
                 return {"success": False, "message": "File not found."}
-
-            os.remove(filepath)
             logger.info(f"Deleted STL {filepath}")
             return {"success": True, "message": "File deleted successfully."}
 
