@@ -507,7 +507,7 @@
                       <div class="relative flex-1 w-full">
                         <select id="tutorialSelect"
                           class="appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all bg-white"
-                          aria-label="Select Tutorial">
+                          aria-label="Select Tutorial Source">
                           {{ options|safe }}
                         </select>
                         <div
@@ -714,7 +714,7 @@
                       Refresh
                     </button>
                   </div>
-                  <select id="resourceGeometrySelect"
+                  <select id="resourceGeometrySelect" aria-label="Select Resource Geometry"
                     class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md bg-white bg-opacity-80">
                     <option value="" disabled selected>Loading...</option>
                   </select>
@@ -743,7 +743,7 @@
                 Refresh
               </button>
             </div>
-            <select id="geometrySelect"
+            <select id="geometrySelect" aria-label="Available Geometries"
               class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               size="5">
               <!-- Populated by JS -->
@@ -1102,7 +1102,7 @@
 
               <div class="flex flex-col gap-2 h-48">
                 <label for="shmObjectList" class="text-sm text-black">Loaded Geometry Objects</label>
-                <select id="shmObjectList" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" size="5"
+                <select id="shmObjectList" aria-label="Loaded Geometry Objects" class="border border-gray-300 rounded px-2 py-2 flex-1 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" size="5"
                   onchange="selectShmObject()">
                   <!-- Populated by JS -->
                 </select>
@@ -1471,7 +1471,7 @@
 
               <div class="flex items-center gap-2">
                 <label for="meshColor" class="text-sm">Color:</label>
-                <select id="meshColor"
+                <select id="meshColor" aria-label="Select Mesh Color"
                   class="border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                   <option value="lightblue">Light Blue</option>
                   <option value="white">White</option>
@@ -1484,7 +1484,7 @@
 
               <div class="flex items-center gap-2">
                 <label for="cameraPosition" class="text-sm">View:</label>
-                <select id="cameraPosition"
+                <select id="cameraPosition" aria-label="Select Camera View"
                   class="border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                   <option value="">Auto</option>
                   <option value="xy">XY Plane</option>
@@ -2030,7 +2030,7 @@
                   Refresh
                 </button>
               </div>
-              <select id="vtkFileSelect"
+              <select id="vtkFileSelect" aria-label="Select VTK File"
                 class="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <option value="">-- Select a VTK file --</option>
               </select>
@@ -2081,7 +2081,7 @@
             <!-- Scalar Field Selection -->
             <div class="flex flex-col gap-2">
               <label for="scalarField" class="text-sm font-medium">Scalar Field</label>
-              <select id="scalarField"
+              <select id="scalarField" aria-label="Select Scalar Field"
                 class="border border-gray-300 rounded px-3 py-2 [&_.point-data-option]:text-cyan-500 [&_.cell-data-option]:text-green-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <style>
                   option.point-data-option {
@@ -2102,7 +2102,7 @@
             <!-- Color Map Selection -->
             <div class="flex flex-col gap-2">
               <label for="colorMap" class="text-sm font-medium">Color Map</label>
-              <select id="colorMap"
+              <select id="colorMap" aria-label="Select Color Map"
                 class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                 <option value="viridis">Viridis</option>
                 <option value="plasma">Plasma</option>
