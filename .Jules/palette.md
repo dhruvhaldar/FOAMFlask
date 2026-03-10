@@ -32,3 +32,6 @@
 ## $(date +%Y-%m-%d) - Focus Rings for Secondary Inputs and Advanced Settings
 **Learning:** In complex configuration panels like Advanced Settings or Meshing settings, inputs (like docker image versions, shm location vectors, custom VTK file browsers) and secondary action buttons (`setRootBtn`, `setDockerConfigBtn`) often miss standard keyboard focus outlines compared to primary forms. This creates a confusing experience for power users navigating via keyboard.
 **Action:** Consistently apply standardized focus utility classes (e.g. `focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500`) to all form inputs and interactive elements, even those buried in collapsible details menus or secondary tabs.
+## 2026-04-01 - Add missing aria-labels to select elements
+**Learning:** Found that `<select>` elements used as configuration dropdowns (like Active Case, Tutorial Source, Available Geometries, etc.) often lacked `aria-label` attributes. This reduces accessibility for screen reader users since they would not be able to determine the purpose of the dropdown when focusing on it.
+**Action:** Always verify that all `<select>` form elements have explicit `aria-label`s describing their purpose or function.
