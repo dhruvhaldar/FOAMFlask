@@ -13,6 +13,7 @@
 ## 2025-06-12 - [Plotly Keyboard Accessibility]
 **Learning:** Plotly modebars (toolbars) are only visible on mouse hover by default (`.plot-container:hover .modebar`). This completely excludes keyboard-only and screen reader users from accessing critical interactive features like zoom, pan, and download.
 **Action:** Always append `:focus-within` to the hover CSS rules for Plotly modebars (e.g., `.plot-container:focus-within .modebar`) so that tabbing into the plot container forces the modebar to appear and become operable.
+
 ## 2026-03-01 - Added missing aria-labels to main action buttons
 **Learning:** Adding explicit aria-labels and descriptive titles to primarily icon-or-text action buttons (like 'Create Case', 'Update View', etc.) makes the UI significantly more accessible for screen readers without altering visual layout. Found that many key action buttons were missing comprehensive descriptions.
 **Action:** Always check form and primary interaction buttons for accessibility context beyond their visual text, especially in dynamic applications.
@@ -21,14 +22,18 @@
 **Learning:** In heavily dynamic UI frameworks or vanilla JS applications, elements that are dynamically injected into the DOM (like the `.copyable-value` buttons in the Geometry and Mesh info panels) are often overlooked for basic accessibility styling compared to their static counterparts. Specifically, failing to include keyboard focus rings (`focus:outline-none focus:ring-2`) makes them invisible to keyboard-only users navigating the interface.
 **Action:** Always cross-reference the styles applied to interactive elements in static HTML with their equivalents generated in TypeScript/JavaScript template strings. Create a shared styling constant or strictly ensure focus-visible styles are manually added to all dynamically created buttons and links.
 
-## $(date +%Y-%m-%d) - [Decorative SVGs Accessibility]
+## 2026-03-04 - [Decorative SVGs Accessibility]
 **Learning:** Found that many `<svg>` icons used inside buttons and links lacked the `aria-hidden="true"` attribute. This causes screen readers to potentially read out meaningless or confusing descriptions for these SVG elements, when the parent button's text or `aria-label` is already sufficient.
 **Action:** Always add `aria-hidden="true"` to purely decorative `<svg>` elements inside interactive components to streamline the experience for screen reader users.
 
-## $(date +%Y-%m-%d) - Focus Rings for Primary Navigation and Custom Dropdowns
+## 2026-03-04 - Focus Rings for Primary Navigation and Custom Dropdowns
 **Learning:** Found that custom-built navigation elements (like the desktop and mobile nav bars) and custom dropdown menus often strip default browser focus rings without providing alternative `focus-visible` styling. This creates a severe accessibility barrier where keyboard-only users cannot perceive their current location within the main site navigation or menu options.
 **Action:** Ensure all navigation buttons (`nav-btn`), custom dropdown items (`role="menuitem"`), and dialog close buttons explicitly define focus-visible styling (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500`) to guarantee keyboard accessibility.
 
-## $(date +%Y-%m-%d) - Focus Rings for Secondary Inputs and Advanced Settings
+## 2026-03-04 - Focus Rings for Secondary Inputs and Advanced Settings
 **Learning:** In complex configuration panels like Advanced Settings or Meshing settings, inputs (like docker image versions, shm location vectors, custom VTK file browsers) and secondary action buttons (`setRootBtn`, `setDockerConfigBtn`) often miss standard keyboard focus outlines compared to primary forms. This creates a confusing experience for power users navigating via keyboard.
 **Action:** Consistently apply standardized focus utility classes (e.g. `focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500`) to all form inputs and interactive elements, even those buried in collapsible details menus or secondary tabs.
+
+## 2026-03-04 - [Interactive Element Feedback and Clickability]
+**Learning:** Some elements like checkbox `<label>` wrappers or statically styled primary buttons lacked appropriate visual affordances (e.g., missing `cursor-pointer` or redundant hover classes like `bg-cyan-600 hover:bg-cyan-600`). This made the interface feel less responsive and the interactive areas less obvious.
+**Action:** Always verify that interactive wrapper elements (like checkbox labels) have `cursor-pointer` to indicate clickability across the entire area, and ensure that all interactive buttons define distinct hover states (e.g. `hover:bg-cyan-700`) rather than repeating the base background color.

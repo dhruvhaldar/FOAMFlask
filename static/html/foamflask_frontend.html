@@ -691,7 +691,7 @@
                   </div>
 
                   <button id="uploadGeometryBtn" onclick="uploadGeometry(this)"
-                    class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
+                    class="bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
                     Upload
                   </button>
                 </div>
@@ -720,7 +720,7 @@
                   </select>
                   <button id="fetchResourceGeometryBtn" onclick="fetchResourceGeometry(this)"
                     title="Fetch & Import (Enter)" aria-label="Fetch and import the selected resource geometry"
-                    class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
+                    class="bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
                     Fetch & Import
                   </button>
                 </div>
@@ -1002,16 +1002,16 @@
                   Global Settings
                 </h4>
                 <div class="grid grid-cols-2 gap-3">
-                  <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmCastellated" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="shmCastellated" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-cyan-50" />
                     <span class="text-sm">Castellated Mesh</span>
                   </label>
-                  <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmSnap" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="shmSnap" checked class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-cyan-50" />
                     <span class="text-sm">Snap</span>
                   </label>
-                  <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="shmLayers" class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="shmLayers" class="rounded text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-cyan-50" />
                     <span class="text-sm">Add Layers</span>
                   </label>
                 </div>
@@ -1457,7 +1457,7 @@
                 <option value="">-- Select a mesh file --</option>
               </select>
               <button id="loadMeshBtn" onclick="loadMeshVisualization()" title="Load Mesh (Enter)" aria-label="Load selected mesh for visualization"
-                class="bg-cyan-600 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2">
+                class="bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2">
                 Load Mesh
               </button>
             </div>
@@ -1465,7 +1465,7 @@
             <!-- Mesh Controls -->
             <div id="meshControls" class="hidden flex flex-col gap-3 bg-white p-3 rounded border border-gray-300">
               <div class="flex items-center gap-2">
-                <input type="checkbox" id="showEdges" checked class="rounded focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                <input type="checkbox" id="showEdges" checked class="rounded focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-cyan-50 text-cyan-600" />
                 <label for="showEdges" class="text-sm cursor-pointer">Show Edges</label>
               </div>
 
@@ -1760,7 +1760,7 @@
                     3000,
                   );
                 "
-              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Pressure Data as CSV">
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" aria-hidden="true">
@@ -1790,7 +1790,7 @@
             <div id="velocity-plot" class="w-full p-2" style="min-height: 300px"></div>
 
             <button onclick="downloadPlotData('velocity-plot', 'velocity_data.csv')"
-              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Velocity Data as separate CSV">
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" aria-hidden="true">
@@ -1822,7 +1822,7 @@
             <button onclick="
                   downloadPlotData('turbulence-plot', 'turbulence_data.csv')
                 "
-              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Turbulence Data as CSV">
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" aria-hidden="true">
@@ -1854,7 +1854,7 @@
             <button onclick="
                   downloadPlotData('residuals-plot', 'residuals_data.csv')
                 "
-              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-600 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
+              class="absolute bottom-3 right-3 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200 z-10"
               title="Download Residuals Data as CSV">
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" aria-hidden="true">
@@ -2066,7 +2066,7 @@
 
             <!-- Load Selected VTK Button -->
             <button id="loadContourVTKBtn" onclick="loadContourVTK()" title="Load for Contour (Enter)" aria-label="Load selected VTK file for contour generation"
-              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
+              class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded w-full font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
               Load for Contour
             </button>
 
@@ -2150,8 +2150,8 @@
             <!-- Show Isovalue Widget Toggle -->
             <div class="flex items-center gap-2 mt-2">
               <input type="checkbox" id="showIsovalueWidget"
-                class="w-4 h-4 text-cyan-600 bg-gray-100 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500" checked />
-              <label for="showIsovalueWidget" class="text-sm font-medium text-gray-900">Enable Interactive
+                class="w-4 h-4 text-cyan-600 bg-gray-100 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer hover:bg-cyan-50" checked />
+              <label for="showIsovalueWidget" class="text-sm font-medium text-gray-900 cursor-pointer">Enable Interactive
                 Slider</label>
             </div>
 
@@ -2167,7 +2167,7 @@
 
             <!-- Generate Contours Button -->
             <button id="generateContoursBtn" onclick="generateContours()" aria-label="Generate contours from loaded VTK data" title="Generate contours"
-              class="bg-cyan-600 hover:bg-cyan-600 text-white px-4 py-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
+              class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
               Generate Contours
             </button>
 
