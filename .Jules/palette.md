@@ -35,3 +35,7 @@
 ## 2026-04-01 - Add missing aria-labels to select elements
 **Learning:** Found that `<select>` elements used as configuration dropdowns (like Active Case, Tutorial Source, Available Geometries, etc.) often lacked `aria-label` attributes. This reduces accessibility for screen reader users since they would not be able to determine the purpose of the dropdown when focusing on it.
 **Action:** Always verify that all `<select>` form elements have explicit `aria-label`s describing their purpose or function.
+
+## 2026-04-02 - Consistent Cursor-Pointer on Checkboxes
+**Learning:** Found that several checkbox inputs (`<input type="checkbox">`) and their associated `<label>` wrappers/elements lacked the `cursor-pointer` class. This inconsistency meant users hovering over these interactive elements did not receive standard pointer cursor feedback, creating a slightly confusing UX, especially when other interactive elements (like buttons) provided clear feedback.
+**Action:** Always verify that both the `input[type="checkbox"]` and its corresponding `<label>` (either wrapping the input or using `for="id"`) include the `cursor-pointer` utility class to clearly indicate they are clickable.
