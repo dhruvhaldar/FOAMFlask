@@ -607,10 +607,12 @@ def _generate_isosurface_html_process(
         # Log error to logger if possible or just print
         # Avoid writing to hardcoded paths
             
-        if os.path.exists(output_path):
+        try:
             os.remove(output_path)
+        except OSError:
+            pass
     finally:
-        if temp_read_path and os.path.exists(temp_read_path):
+        if temp_read_path:
             try:
                 os.remove(temp_read_path)
             except OSError:
@@ -662,10 +664,10 @@ class IsosurfaceVisualizer:
         """
         temp_read_path = None
         try:
-            if not os.path.exists(file_path):
+            try:
+                mtime = os.path.getmtime(file_path)
+            except OSError:
                 raise FileNotFoundError(f"Mesh file not found: {file_path}")
-
-            mtime = os.path.getmtime(file_path)
 
             # ⚡ Bolt Optimization: Cache Check
             if (
@@ -747,7 +749,7 @@ class IsosurfaceVisualizer:
             )
             return {"success": False, "error": str(e)}
         finally:
-            if temp_read_path and os.path.exists(temp_read_path):
+            if temp_read_path:
                 try:
                     os.remove(temp_read_path)
                 except OSError:
@@ -1010,14 +1012,18 @@ class IsosurfaceVisualizer:
                 p.terminate()
                 p.join()
                 logger.error("Isosurface HTML generation timed out")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
                 return self._generate_error_html("Generation timed out", scalar_field)
 
             if p.exitcode != 0:
                 logger.error("Isosurface HTML generation process failed")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
                 return self._generate_error_html("Generation process failed", scalar_field)
 
             with open(temp_output_path, "r", encoding="utf-8") as f:
@@ -1029,8 +1035,10 @@ class IsosurfaceVisualizer:
                 shutil.move(temp_output_path, cache_path)
             except Exception as e:
                 logger.warning(f"Failed to save to cache: {e}")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
 
             return html_content
 

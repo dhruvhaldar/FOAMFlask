@@ -141,8 +141,10 @@ def _generate_html_process(file_path: str, output_path: str, color: str, opacity
 
     except Exception as e:
         print(f"Error in subprocess: {e}")
-        if os.path.exists(output_path):
+        try:
             os.remove(output_path)
+        except OSError:
+            pass
 
 class GeometryVisualizer(BaseVisualizer):
     """Visualizes geometry files (STL) using PyVista with caching and multiprocessing."""
@@ -192,20 +194,30 @@ class GeometryVisualizer(BaseVisualizer):
                 p.terminate()
                 p.join()
                 logger.error("HTML generation timed out")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
                 return None
 
             if p.exitcode != 0:
                 logger.error("HTML generation process failed")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
                 return None
 
-            if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) == 0:
-                 logger.error("HTML output file is empty or missing")
-                 if os.path.exists(temp_output_path):
-                    os.remove(temp_output_path)
+            try:
+                if os.path.getsize(temp_output_path) == 0:
+                     logger.error("HTML output file is empty")
+                     try:
+                        os.remove(temp_output_path)
+                     except OSError:
+                        pass
+                     return None
+            except OSError:
+                 logger.error("HTML output file is missing")
                  return None
 
             with open(temp_output_path, "r", encoding="utf-8") as f:
@@ -217,8 +229,10 @@ class GeometryVisualizer(BaseVisualizer):
                 shutil.move(temp_output_path, cache_path)
             except Exception as e:
                 logger.warning(f"Failed to save to cache: {e}")
-                if os.path.exists(temp_output_path):
+                try:
                     os.remove(temp_output_path)
+                except OSError:
+                    pass
 
             return html_content
 
