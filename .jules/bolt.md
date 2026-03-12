@@ -28,3 +28,6 @@
 ## 2026-03-01 - [Avoid Redundant os.path.exists() Checks for File Operations]
 **Learning:** Python operations like `os.remove(path)` and `os.path.getsize(path)` frequently incur a double system call overhead when using "Look Before You Leap" (LBYL) code patterns like `if os.path.exists(path): os.remove(path)`. This is especially costly for high-frequency operations or cleanup code.
 **Action:** Use an "Easier to Ask for Forgiveness than Permission" (EAFP) approach. Wrap the primary operation (`os.remove`, `os.path.getsize`, etc.) in a `try...except OSError` block and handle the missing file case within the exception handler. Note that corresponding tests mocking `os.path.exists` will need to be updated to mock `os.remove` or similar.
+## 2026-03-12 - [Replace path.exists() LBYL with EAFP exceptions for reading cache files]
+**Learning:** When retrieving temporary cache files (e.g., HTML cache for PyVista), calling `path.exists()` immediately before `open()` results in two separate `stat` system calls. This LBYL pattern is not performant for heavily cached endpoints.
+**Action:** Replaced `if path.exists(): open(...)` with `try: open(...) except FileNotFoundError`.

@@ -988,10 +988,13 @@ class IsosurfaceVisualizer:
                 cache_dir = _get_cache_dir()
                 cache_path = cache_dir / f"{cache_key}.html"
 
-                if cache_path.exists():
-                    logger.debug(f"Serving isosurface from cache: {cache_path}")
+                # ⚡ Bolt Optimization: EAFP pattern for cache read avoids double syscall
+                try:
                     with open(cache_path, "r", encoding="utf-8") as f:
+                        logger.debug(f"Serving isosurface from cache: {cache_path}")
                         return f.read()
+                except FileNotFoundError:
+                    pass
             except Exception as e:
                 logger.warning(f"Cache check failed: {e}")
 
