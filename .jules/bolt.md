@@ -24,3 +24,7 @@
 ## 2026-03-01 - Optimize scalar vector magnitude with math.hypot
 **Learning:** While `np.sqrt` and `np.linalg.norm` are great for vectorized array operations, using `np.sqrt(x**2 + y**2 + z**2)` for individual scalar floats introduces significant overhead from the Python-to-C API transitions and manual math operators. Python's built-in `math.hypot(x, y, z)` is written in C specifically for computing Euclidean norms and avoids this overhead, making it ~2.5x faster.
 **Action:** When calculating the magnitude or Euclidean norm of a small, fixed number of independent scalar variables (e.g., parsing a 3D vector like `ux, uy, uz`), use `math.hypot(x, y, z)` instead of NumPy functions or manual arithmetic.
+
+## 2026-03-01 - [Avoid Redundant os.path.exists() Checks for File Operations]
+**Learning:** Python operations like `os.remove(path)` and `os.path.getsize(path)` frequently incur a double system call overhead when using "Look Before You Leap" (LBYL) code patterns like `if os.path.exists(path): os.remove(path)`. This is especially costly for high-frequency operations or cleanup code.
+**Action:** Use an "Easier to Ask for Forgiveness than Permission" (EAFP) approach. Wrap the primary operation (`os.remove`, `os.path.getsize`, etc.) in a `try...except OSError` block and handle the missing file case within the exception handler. Note that corresponding tests mocking `os.path.exists` will need to be updated to mock `os.remove` or similar.
