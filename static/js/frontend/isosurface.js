@@ -437,7 +437,9 @@ let currentFieldStats = null;
                 </div>
                 <button 
                     onclick="generateContours()" 
-                    class="mt-4 px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700">
+                    title="Retry generating contours"
+                    aria-label="Try Again: Retry generating contours"
+                    class="mt-4 px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2">
                     Try Again
                 </button>
             </div>
