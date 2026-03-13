@@ -1462,6 +1462,18 @@ const fetchWithCache = async <T = any>(
   }
 };
 
+// Helper for manual HTML escaping
+// ⚡ Bolt Optimization: Extract outside render loop and use single-pass regex to avoid O(N) string allocations
+const htmlEntities: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#039;"
+};
+const _escapeHtmlRe = /[&<>"']/g;
+const escapeHtml = (str: string) => str.replace(_escapeHtmlRe, (char) => htmlEntities[char]);
+
 // Logging
 const appendOutput = (message: string, type: string): void => {
   outputBuffer.push({ message, type });
@@ -1522,16 +1534,6 @@ const flushOutputBuffer = (): void => {
   const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 50;
 
   let newHtmlChunks = ""; // ⚡ Bolt Optimization: Accumulate HTML for cache
-
-  // Helper for manual HTML escaping (significantly faster than browser serialization)
-  const escapeHtml = (str: string) => {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  };
 
   outputBuffer.forEach(({ message, type }) => {
     // Determine class name

@@ -31,3 +31,9 @@
 ## 2026-03-12 - [Replace path.exists() LBYL with EAFP exceptions for reading cache files]
 **Learning:** When retrieving temporary cache files (e.g., HTML cache for PyVista), calling `path.exists()` immediately before `open()` results in two separate `stat` system calls. This LBYL pattern is not performant for heavily cached endpoints.
 **Action:** Replaced `if path.exists(): open(...)` with `try: open(...) except FileNotFoundError`.
+## 2026-03-13 - Optimize HTML Escaping in Render Loop
+**Learning:** For high-frequency JavaScript string processing (e.g., HTML escaping in log rendering ), defining the function inside the loop and chaining `.replace()` calls forces the engine to repeatedly re-allocate the function and traverse the string multiple times, creating O(N) intermediate string allocations and garbage collection thrashing.
+**Action:** Extract the escaping function outside the render loop and replace chained `.replace()` calls with a single-pass regular expression (e.g., `/[&<>"']/g`) combined with a dictionary lookup to execute in O(N) time with minimal allocations.
+## 2024-05-18 - Optimize HTML Escaping in Render Loop
+**Learning:** For high-frequency JavaScript string processing (e.g., HTML escaping in log rendering), defining the function inside the loop and chaining `.replace()` calls forces the engine to repeatedly re-allocate the function and traverse the string multiple times, creating O(N) intermediate string allocations and garbage collection thrashing.
+**Action:** Extract the escaping function outside the render loop and replace chained `.replace()` calls with a single-pass regular expression (e.g., `/[&<>"']/g`) combined with a dictionary lookup to execute in O(N) time with minimal allocations.
