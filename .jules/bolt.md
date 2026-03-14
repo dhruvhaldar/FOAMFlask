@@ -37,3 +37,7 @@
 ## 2024-05-18 - Optimize HTML Escaping in Render Loop
 **Learning:** For high-frequency JavaScript string processing (e.g., HTML escaping in log rendering), defining the function inside the loop and chaining `.replace()` calls forces the engine to repeatedly re-allocate the function and traverse the string multiple times, creating O(N) intermediate string allocations and garbage collection thrashing.
 **Action:** Extract the escaping function outside the render loop and replace chained `.replace()` calls with a single-pass regular expression (e.g., `/[&<>"']/g`) combined with a dictionary lookup to execute in O(N) time with minimal allocations.
+
+## 2025-03-14 - Replace path.exists() LBYL with EAFP for file creation
+**Learning:** Checking `path.exists()` immediately before opening and writing to a file (LBYL pattern) causes redundant file system calls (`stat` followed by `open`). This is inefficient, especially when generating many default configuration files during initialization.
+**Action:** Replace `if not path.exists(): write(...)` checks with an "Easier to Ask for Forgiveness than Permission" (EAFP) approach using `open(path, 'x')` (exclusive creation). Catch and ignore the `FileExistsError`. This reduces file operations by combining the existence check and open operation into a single atomic system call.
